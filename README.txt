@@ -9,7 +9,7 @@ Also make it easy to add other models and mechanisms too
 
 List of components needed in a namelist or to add to bash scripts
 	-radius of influence (dependent on model resolution)
-	-model
+	-model (naming,projection,reading input)
 	-output name
 	-mapping table
 
