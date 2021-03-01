@@ -2,13 +2,23 @@ model:
   cmaq:
     files: cmaq_files_*.nc
     label: cmaq_v1
+    mapping:
+      aeronet:
+        aod550: aod_550nm
+      airnow:
+        PM25_TOT: "pm2.5"
+        O3: "o3"
   rapchem:
     files: rapchem_files_*.nc
     label: rapchem_v2.15
+    mapping:
+      aeronet:
+        aod: aod_550nm
 obs:
   aeronet:
       use_aeronet: True
-      paired_filename: aeronet_cmaq_combined_file.nc
+      filename: aeronet_cmaq_combined_file.nc
+      obs_type: pt_sfc
       radius_of_influence: 1e5
       plots:
           plots_basename: 'aeronet_cmaq_%Y%m%d_'
@@ -18,12 +28,13 @@ obs:
           giorgi_regional: False
           epa_regions: True
       stats:
-          - rmse: True
-          - mse: True
-          - ioa: True
+          rmse: True
+          mse: True
+          ioa: True
   airnow:
       use_airnow: True
-      paired_filename: aeronet_cmaq_combined_file.nc
+      filename: aeronet_cmaq_combined_file.nc
+      obs_type: pt_sfc
       radius_of_influence: 1e5
       plots:
           plots_basename: 'aeronet_cmaq_%Y%m%d_'
@@ -33,6 +44,6 @@ obs:
           giorgi_regional: False
           epa_regions: True
       stats:
-          - rmse: True
-          - mse: True
-          - ioa: True
+          rmse: True
+          mse: True
+          ioa: True
