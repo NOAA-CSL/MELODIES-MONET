@@ -1,0 +1,38 @@
+model:
+  cmaq:
+    files: cmaq_files_*.nc
+    label: cmaq_v1
+  rapchem:
+    files: rapchem_files_*.nc
+    label: rapchem_v2.15
+obs:
+  aeronet:
+      use_aeronet: True
+      paired_filename: aeronet_cmaq_combined_file.nc
+      radius_of_influence: 1e5
+      plots:
+          plots_basename: 'aeronet_cmaq_%Y%m%d_'
+          taylor_diagram: True
+          bias_plots: False
+          timeseries: True
+          giorgi_regional: False
+          epa_regions: True
+      stats:
+          - rmse: True
+          - mse: True
+          - ioa: True
+  airnow:
+      use_airnow: True
+      paired_filename: aeronet_cmaq_combined_file.nc
+      radius_of_influence: 1e5
+      plots:
+          plots_basename: 'aeronet_cmaq_%Y%m%d_'
+          taylor_diagram: True
+          bias_plots: False
+          timeseries: True
+          giorgi_regional: False
+          epa_regions: True
+      stats:
+          - rmse: True
+          - mse: True
+          - ioa: True
