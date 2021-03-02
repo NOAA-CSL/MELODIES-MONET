@@ -19,6 +19,7 @@ class pair:
         self.radius_of_influence = 1e6
         self.obs = None
         self.model = None
+        self.filename = None
 
 class observation:
     def __init__(self):
@@ -49,6 +50,8 @@ class observation:
             if os.path.isfile(self.file):
                 _,extension = os.path.splitext(self.file)
                 if extension in ['.nc','.ncf','.netcdf','.nc4']:
+                    if len(glob(self.file)) > 1:
+                        self.obj = xr.open_dataset()
                     self.obj = xr.open_dataset(self.file)
         except ValueError:
             print('something happened opening file')
@@ -192,6 +195,14 @@ class analysis:
                 self.obs[o.label] = o
 
     def pair_data(self):
+        """Short summary.
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
         pairs = {}
         for m in self.models:
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -199,6 +210,8 @@ class analysis:
             for obs_to_pair in m.mapping.keys():
                 # get the variables to pair from the model data (ie don't pair all data)
                 model_obj = m.obj[m.mapping[obs_to_pair].keys()]
+                ## TODO:  add in ability for simple addition of variables from
+
                 # simplify the objs object with the correct mapping vairables
                 obs = self.obs[obs_to_pair]
                 # pair the data
@@ -207,4 +220,15 @@ class analysis:
                     # convert this to pandas dataframe
                     obs.obs_to_df()
                     # now combine obs with
-                    model_obj.monet.combine_point(obs.obj,radius_of_influence=1e6,suffix=m.label)
+                    paired_data = model_obj.monet.combine_point(obs.obj,radius_of_influence=1e6,suffix=m.label)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.obs = obs.label
+                    p.model = m.label
+                    p.filename = '{}_{}.nc'.format(p.obs,p.model)
+                    p.obj = paired_data.monet._df_to_da()
+                    write_util.write_ncf(p.obj,p.filename) # write out to file
+                # TODO: add other network types / data types where (ie flight, satellite etc)
+
+    ### TODO: Create the plotting driver (most complicated one)
+    #def plotting(self):

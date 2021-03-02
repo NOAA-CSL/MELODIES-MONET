@@ -8,6 +8,7 @@ model:
       airnow:
         PM25_TOT: "pm2.5"
         O3: "o3"
+    projection: None
   rapchem:
     files: rapchem_files_*.nc
     label: rapchem_v2.15
