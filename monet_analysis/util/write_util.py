@@ -1,5 +1,5 @@
 import numpy as np
-
+from pandas.api.types import is_float_dtype
 def write_ncf(dset,output_name, title=''):
     """Short summary.
 
@@ -22,8 +22,8 @@ def write_ncf(dset,output_name, title=''):
     encoding = {}
     for i in dset.data_vars.keys():
         mask_and_scale = ['float','float32','float16','float8','float64']
-        if (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
-            print(i,dset[i].dtype)
+        if is_float_dtype(dset[i]):# (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
+            print("Compressing: {}, original_dtype: {}".format(i,dset[i].dtype))
             dset[i] = compress_variable(dset[i])
         encoding[i] = comp
     dset.attrs['title'] = title

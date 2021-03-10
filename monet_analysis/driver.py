@@ -3,7 +3,8 @@ import monetio as mio
 import monet as m
 import os
 import xarray as xr
-from .util import write_ncf
+import pandas as pd
+# from util import write_ncf
 
 class pair:
     def __init__(self):
@@ -46,12 +47,14 @@ class observation:
             Description of returned object.
 
         """
+        from glob import glob
+        from numpy import sort
         try:
             if os.path.isfile(self.file):
                 _,extension = os.path.splitext(self.file)
                 if extension in ['.nc','.ncf','.netcdf','.nc4']:
                     if len(glob(self.file)) > 1:
-                        self.obj = xr.open_dataset()
+                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
                     self.obj = xr.open_dataset(self.file)
         except ValueError:
             print('something happened opening file')
@@ -65,7 +68,7 @@ class observation:
             Description of returned object.
 
         """
-        self.obj = self.obj.monet._df_to_da()
+        self.obj = self.obj.to_dataframe().reset_index().drop(['x','y'],axis=1)
 
 class model:
     def __init__(self):
@@ -95,6 +98,7 @@ class model:
         """
         from numpy import sort
         from glob import glob
+        print(self.file_str)
         self.files = sort(glob(self.file_str))
 
     def open_model_files(self):
@@ -107,22 +111,22 @@ class model:
 
         """
         self.glob_files()
-        if self.model.lower() == 'cmaq':
+        if 'cmaq' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.cmaq.open_mfdataset(self.files)
             else:
                 self.obj = mio.cmaq.open_dataset(self.files[0])
-        elif self.model.lower() == 'wrfchem':
+        elif 'wrfchem' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.wrfchem.open_mfdataset(self.files)
             else:
                 self.obj = mio.wrfchem.open_dataset(self.files)
-        elif self.model.lower() == 'rrfs_cmaq':
+        elif 'rrfs' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.rrfs_cmaq.open_mfdataset(self.files)
             else:
                 self.obj = mio.rrfs_cmaq.open_dataset(self.files)
-        elif self.model.lower() == 'gsdchem':
+        elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.fv3chem.open_mfdataset(self.files)
             else:
@@ -143,8 +147,10 @@ class analysis:
         self.models = {}
         self.obs = {}
         self.paired = {}
+        self.start_time = None
+        self.end_time = None
 
-    def read_control(self):
+    def read_control(self, control=None):
         """Short summary.
 
         Returns
@@ -154,8 +160,15 @@ class analysis:
 
         """
         import yaml
+        if control is not None:
+            self.control = control
+
         with open(self.control, 'r') as stream:
             self.control_dict = yaml.safe_load(stream)
+
+        # set analysis time
+        self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
+        self.end_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
 
     def open_models(self):
         """Short summary.
@@ -168,12 +181,19 @@ class analysis:
         """
         if 'model' in self.control_dict:
             # open each model
-            for model in self.control_dict['model']:
+            for mod in self.control_dict['model']:
+                # create a new model instance
                 m = model()
-                m.model = model
-                m.label = self.control_dict['model'][model]['label']
-                m.glob_files()
-                m.mapping = self.control_dict['model'][model]['mapping']
+                # this is the model type (ie cmaq, rapchem, gsdchem etc)
+                m.model = self.control_dict['model'][mod]['mod_type']
+                #set the model label in the dictionary and model class intance
+                m.label = mod
+                # create file string (note this can include hot strings)
+                m.file_str = self.control_dict['model'][mod]['files']
+                #create mapping
+                m.mapping = self.control_dict['model'][mod]['mapping']
+                #open the model
+                m.open_model_files()
                 self.models[m.label] = m
 
     def open_obs(self):
@@ -191,7 +211,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.open_file(self.control_dict['obs'][obs]['filename'])
+                o.file = self.control_dict['obs'][obs]['filename']
+                o.open_obs()
                 self.obs[o.label] = o
 
     def pair_data(self):
@@ -204,30 +225,35 @@ class analysis:
 
         """
         pairs = {}
-        for m in self.models:
+        for model_label in self.models:
+            mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
             # each paired dataset will be output to a netcdf file with 'model_label_network.nc'
-            for obs_to_pair in m.mapping.keys():
+            for obs_to_pair in mod.mapping.keys():
                 # get the variables to pair from the model data (ie don't pair all data)
-                model_obj = m.obj[m.mapping[obs_to_pair].keys()]
+                keys = [key for key in mod.mapping[obs_to_pair].keys()]
+                model_obj = mod.obj[keys]
                 ## TODO:  add in ability for simple addition of variables from
 
                 # simplify the objs object with the correct mapping vairables
                 obs = self.obs[obs_to_pair]
+
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
                     # convert this to pandas dataframe
                     obs.obs_to_df()
                     # now combine obs with
-                    paired_data = model_obj.monet.combine_point(obs.obj,radius_of_influence=1e6,suffix=m.label)
+                    paired_data = model_obj.monet.combine_point(obs.obj,radius_of_influence=1e6,suffix=mod.label)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.obs = obs.label
-                    p.model = m.label
+                    p.model = mod.label
                     p.filename = '{}_{}.nc'.format(p.obs,p.model)
                     p.obj = paired_data.monet._df_to_da()
-                    write_util.write_ncf(p.obj,p.filename) # write out to file
+                    label = "{}_{}".format(p.obs,p.model)
+                    self.paired[label] = p
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
 
     ### TODO: Create the plotting driver (most complicated one)
