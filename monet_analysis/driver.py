@@ -56,6 +56,8 @@ class observation:
                     if len(glob(self.file)) > 1:
                         self.obj = xr.open_mfdataset(sort(glob(self.file)))
                     self.obj = xr.open_dataset(self.file)
+                elif extension in ['.ict','.icarrt']:
+                    self.obj = mio.icarrt.add_data(self.file)
         except ValueError:
             print('something happened opening file')
 
@@ -151,7 +153,12 @@ class analysis:
         self.end_time = None
 
     def read_control(self, control=None):
-        """Short summary.
+        """Reads the yaml control file.  If not set assumes control file is control.yaml
+
+        Parameters
+        ----------
+        control : type
+            Description of parameter `control`.
 
         Returns
         -------
@@ -171,12 +178,7 @@ class analysis:
         self.end_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
 
     def open_models(self):
-        """Short summary.
-
-        Returns
-        -------
-        type
-            Description of returned object.
+        """Opens all models and creates model instances for monet-analysis
 
         """
         if 'model' in self.control_dict:
