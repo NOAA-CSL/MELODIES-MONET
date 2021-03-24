@@ -3,8 +3,8 @@ try:
 except ImportError:
     from distutils.core import setup
 
-setup(name='monet',
-      version='2.2.2',
+setup(name='monet_analysis',
+      version='0.1',
       url='https://github.com/noaa-csl/monet-analysis',
       license='MIT',
       include_package_data=True,
@@ -21,11 +21,11 @@ setup(name='monet',
       },
       keywords=[
           'model', 'verification', 'hysplit', 'cmaq', 'atmosphere', 'camx',
-          'evaluation'
+          'evaluation', 'ufs', 'rrfs'
       ],
-      description='The Model and Observation Evaluation Toolkit (MONET)',
+      description='MONET-Analysis Unified verification package',
       install_requires=[
           'pandas', 'netcdf4', 'xarray', 'dask', 'pyresample', 'matplotlib',
-          'seaborn', 'cartopy', 'pydecorate', 'global_land_mask'
+          'seaborn', 'cartopy', 'pydecorate', 'global_land_mask', 'pyyaml'
       ],
       extra_requires={'xesmf;platform_system!="Windows"'})
