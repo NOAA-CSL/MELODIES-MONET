@@ -1,0 +1,54 @@
+analysis:
+    start_time: '2019-08-18'
+    end_time: '2019-08-20'
+model:
+  cmaq_v1:
+    files: cmaq_files_*.nc
+    mod_type: 'cmaq'
+    mapping:
+      aeronet:
+        aod550: aod_550nm
+      airnow:
+        PM25_TOT: "pm2.5"
+        O3: "o3"
+    projection: None
+  rapchem_v2.15:
+    files: rapchem_files_*.nc
+    mod_type: rapchem
+    mapping:
+      aeronet:
+        aod: aod_550nm
+obs:
+  aeronet:
+      use_aeronet: True
+      filename: aeronet_cmaq_combined_file.nc
+      obs_type: pt_sfc
+      start_time: '2018'
+      radius_of_influence: 1e5
+      plots:
+          plots_basename: 'aeronet_cmaq_%Y%m%d_'
+          taylor_diagram: True
+          bias_plots: False
+          timeseries: True
+          giorgi_regional: False
+          epa_regions: True
+      stats:
+          rmse: True
+          mse: True
+          ioa: True
+  airnow:
+      use_airnow: True
+      filename: aeronet_cmaq_combined_file.nc
+      obs_type: pt_sfc
+      radius_of_influence: 1e5
+      plots:
+          plots_basename: 'aeronet_cmaq_%Y%m%d_'
+          taylor_diagram: True
+          bias_plots: False
+          timeseries: True
+          giorgi_regional: False
+          epa_regions: True
+      stats:
+          rmse: True
+          mse: True
+          ioa: True
