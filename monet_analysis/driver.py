@@ -247,6 +247,7 @@ class analysis:
                     obs.obs_to_df()
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj,radius_of_influence=1e6,suffix=mod.label)
+                    print(paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.obs = obs.label
@@ -260,3 +261,33 @@ class analysis:
 
     ### TODO: Create the plotting driver (most complicated one)
     #def plotting(self):
+    def plotting(self):
+        """Short summary.
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
+        # Make plots for each pair
+        for paired_label in self.paired:
+            paired = self.paired[paired_label]
+            mapping_table = self.models[paired.model].mapping[paired.obs]
+            subset = self.control_dict['obs'][paired.obs]['plots']['epa_regions']
+            reg = self.control_dict['obs'][paired.obs]['plots']['regulatory']
+            df = paired.obj.to_dataframe()
+            regions = self.control_dict['obs'][paired.obs]['plots']['epa_regions_names']
+            out_name = paired_label + '_' + self.control_dict['obs'][paired.obs]['plots']['plots_basename']
+            #For each model species in the mapping table make plots.
+            # if pt_sfc (surface point network or monitor)
+            if self.control_dict['obs'][paired.obs]['obs_type'].lower() == 'pt_sfc':
+                if self.control_dict['obs'][paired.obs]['plots']['taylor_diagram'] == True:
+                    scale_ty = self.control_dict['obs'][paired.obs]['plots']['taylor_diagram_scale']
+                    import taylor_plots as taylor
+                    if subset == True:
+                        for region in regions:
+                            taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table,region)
+                    else:
+                        taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table)
+                     
