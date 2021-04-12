@@ -22,6 +22,34 @@ class pair:
         self.model = None
         self.filename = None
 
+    def fix_paired_xarray(self,dset=None):
+
+        # first convert to dataframe
+        df = dset.to_dataframe().reset_index(drop=True)
+
+        # now get just the single site index
+        dfpsite = df.rename({'siteid':'x'},axis=1).drop_duplicates(subset=['x'])
+        columns = dfpsite.columns # all columns
+        site_columns = ['latitude','longitude','x','site','msa_code','cmsa_name','epa_region','state_name','msa_name','site','utcoffset'] # only columns for single site identificaiton
+
+        # site only xarray obj (no time dependence)
+        dfps = dfpsite.loc[:,columns[columns.isin(site_columns)]].set_index(['x']).to_xarray() # single column index
+
+        # now pivot df and convert back to xarray using only non site_columns
+        site_columns.remove('x') # need to keep x to merge later
+        dfx = df.loc[:,df.columns[~df.columns.isin(site_columns)]].rename({'siteid':'x'},axis=1).set_index(['time','x']).to_xarray()
+
+        # merge the time depenedent and time independent
+        out = xr.merge([dfx,dfps])
+
+        # reset x index and add siteid back to the xarray object
+        if ~pd.api.types.is_numeric_dtype(out.x):
+            siteid = out.x.values
+            out['x'] = range(len(siteid))
+            out['siteid'] = (('x'),siteid)
+
+        return out
+
 class observation:
     def __init__(self):
         """Short summary.
@@ -256,13 +284,14 @@ class analysis:
                     p.obj = paired_data.monet._df_to_da()
                     label = "{}_{}".format(p.obs,p.model)
                     self.paired[label] = p
+                    p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
 
     ### TODO: Create the plotting driver (most complicated one)
     #def plotting(self):
     def plotting(self):
-        """Short summary.
+        """This function will cycle through all the plots and control variables needed to make the plots necessary
 
         Returns
         -------
@@ -270,10 +299,59 @@ class analysis:
             Description of returned object.
 
         """
-        # Make plots for each pair
+        # Make the plots for each paired dataset
         for paired_label in self.paired:
             paired = self.paired[paired_label]
             mapping_table = self.models[paired.model].mapping[paired.obs]
+
+            # check what type of observation this is (pt_sfc.... etc)
+            obs_type = self.control_dict['obs'][paired.obs]['obs_type'].lower()
+
+            #get the plots kwarg from the obs
+            plots_yaml = self.control_dict['obs'][paired.obs]['plots']
+            # get the basename of the plots string
+            basename = plots_yaml['basename']
+
+            # first check if the plotting type is a point surface observation
+            if obs_type == 'pt_sfc':
+                # TODO: add new plot types here and below
+                known_plot_types = ['taylor','spatial_bias','timeseries','spatial_overlay']
+                # now we want to loop through each plot type
+                plot_types = [i.lower() for i in self.control_dict['obs'][paired.obs]['plots'].keys()]
+                # only loop over plot types that are in the pt_sfc
+                good_to_go = plot_types[[i in known_plot_types for i in plot_types]]
+
+                # loop over good_to_go plot types:
+                for plot_type in good_to_go:
+                    plot_type_dict = plot_types[plot_type]
+
+                    # first do domain plots
+                    if plot_type == 'talyor':
+                        _taylor_plot(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                    if plot_type == 'spatial_bias':
+                        _spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                    if plot_type == 'timeseries':
+                        _timeseries(paried, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                    if plot_type == 'spatial_overlay':
+                        _spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                    # TODO: Add additional plot types here
+
+                    if 'regulatory' in plot_type_dict:
+                        if plot_type_dict['regulatory']:
+                            if plot_type == 'talyor':
+                                _taylor_plot(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                            if plot_type == 'spatial_bias':
+                                _spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                            if plot_type == 'timeseries':
+                                _timeseries(paried, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                            if plot_type == 'spatial_overlay':
+                                _spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+
+
+
+
+            if 'epa_regions' in self.control_dict['obs'][paired.obs]['plots']:
+
             subset = self.control_dict['obs'][paired.obs]['plots']['epa_regions']
             reg = self.control_dict['obs'][paired.obs]['plots']['regulatory']
             df = paired.obj.to_dataframe()
@@ -290,4 +368,18 @@ class analysis:
                             taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table,region)
                     else:
                         taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table)
-                     
+    def _taylor_plot(paired, plot_dict=None):
+        # TODO: Create wrapper function for the taylor plots
+        a = 1
+
+    def _spatial_bias(paired):
+        # TODO: create wrapper for spatial bias
+        a = 1
+
+    def _timeseries(paired):
+        # TODO: create wrapper for timeseries
+        a = 1
+
+    def _spatial_overlay(paired):
+        # TODO: write wrapper for overlay plots
+        a = 1

@@ -10,6 +10,8 @@ model:
         PM25_TOT: "PM2.5"
         O3: "OZONE"
     projection: None
+    plots:
+      line_color: 'g' # can be color or hex color code (this will be carried over throughout all plots)
 obs:
   airnow:
       use_airnow: True
@@ -18,14 +20,29 @@ obs:
       radius_of_influence: 1e5
       plots:
           plots_basename: 'test1_%Y%m%d_'
-          epa_regions_names: ['R4','R9']
-          regulatory: True
-          taylor_diagram: True
-          taylor_diagram_scale: 1.5 
-          bias_plots: False
-          timeseries: False
-          giorgi_regional: False
-          epa_regions: False
+          plot_dpi: 100
+          taylor:
+            epa_regions_names: ['R4','R9']
+            epa_regions: False # domain avarage only
+            regulatory: True # compute regulatory functions as well as regular functions
+            taylor_diagram_scale: 1.5
+            fig_height: 10
+            fig_width: 8
+          spatial_bias:
+            epa_region_names: ['R4','R9']
+            map_proj: 'proj=lcc' # proj4 projection string for cartopy map creation.  If not listed default to PlateCarree
+          timeseries:
+            fig_height: 5
+            fig_width: 10
+            epa_regions_names: ['R4','R9']
+            epa_regions: False # domain avarage only
+          spatial_overlay:
+            epa_regions_names: ['R4','R9']
+            epa_regions: False
+            cmap: 'viridis' # should come up with regulartory style colormap for MONET-Analysis
+            map_proj: 'proj=lcc' # proj4 projection string for cartopy map creation.  If not listed default to PlateCarree
+          # giorgi_regional: False
+          # epa_regions: False
       stats:
           rmse: True
           mse: True
