@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+
+###############################################################
+# < next few lines under version control, D O  N O T  E D I T >
+# $Date: 2018-03-29 10:12:00 -0400 (Thu, 29 Mar 2018) $
+# $Revision: 100014 $
+# $Author: Barry.Baker@noaa.gov $
+# $Id: nemsio2nc4.py 100014 2018-03-29 14:12:00Z Barry.Baker@noaa.gov $
+###############################################################
+
+#Original scripts by Patrick Campbell. Adapted to MONET-analysis by Rebecca Schwantes and Barry Baker
+
+import os
+import monetio as mio
+import monet as monet
+import seaborn as sns
+from monet.util.tools import calc_8hr_rolling_max, calc_24hr_ave
+import xarray as xr
+import pandas as pd
+import numpy as np
+import cartopy.crs as ccrs
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+# from util import write_ncf
+
+def make_24hr_regulatory(df, col=None):
+    """ Make 24-hour averages """
+    return calc_24hr_ave(df, col)
+
+
+def make_8hr_regulatory(df, col=None):
+    """ Make 8-hour rolling average daily """
+    return calc_8hr_rolling_max(df, col, window=8)
+    
+def make_taylor_plot(df, model_var, obs_var , outname, obs_label, model_label, plot_dict=None, region=None,
+                     epa_regulatory=False,time_avg=False):
+    #If region is true query for only that specific region
+    if region != None:
+        df.query('epa_region == ' + '"' + region + '"', inplace=True)
+    if time_avg == False:
+        for t in df.time.unique():
+            date = pd.Timestamp(t)
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            print('Creating Plot:', obs_var, 'at time:', date)
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            odf = df.loc[df.time == date, ['time', 'latitude', 'longitude', obs_var, model_var]]
+                #add the time at the end of the file
+            out_name = "{}.{}".format(outname, date)
+            if ~odf.empty:
+                make_taylor_diagram(odf, col1=obs_var, col2=model_var, label1=obs_label, label2=model_label, 
+                                        savename=out_name, plot_dict=plot_dict)
+    # make total period taylor plot
+    else:
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print('Creating Plot:', obs_var, 'for whole time period')
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        make_taylor_diagram(df, col1=obs_var, col2=model_var, label1=obs_label, label2=model_label,
+                            savename=outname, plot_dict=plot_dict)             
+
+def make_taylor_diagram(df, col1, col2, label1, label2, savename, plot_dict=None):
+    #If we want to add fig_height and fig_width we will need to change plots.py in MONET itself.
+    if plot_dict != None: #If specifiy ploting commands use them  
+        dia = monet.plots.plots.taylordiagram(df, col1=col1, col2=col2, label1=label1, label2=label2,
+                                                  scale=plot_dict['taylor_diagram_scale'])
+    else: #Else use defaults
+        dia = monet.plots.plots.taylordiagram(df, col1=col1, col2=col2, label1=label1, label2=label2)
+    plt.legend(loc=(0.8, 0.8))
+    name = "{}.png".format(savename)
+    monet.plots.savefig(name, bbox_inches='tight', dpi=100, loc=3, decorate=False)
+    return dia
+#Because this returns dia if we want you could update this to plot more than one model on a graph.
+
+def make_spatial_bias(paired, plot_dict=None, region=None, epa_regulatory=False):
+    # TODO: create wrapper for spatial bias
+    a = 1
+
+def make_timeseries(paired, plot_dict=None, region=None, epa_regulatory=False):
+    # TODO: create wrapper for timeseries
+    a = 1
+
+def make_spatial_overlay(paired, plot_dict=None, region=None, epa_regulatory=False):
+    # TODO: write wrapper for overlay plots
+        a = 1
+    

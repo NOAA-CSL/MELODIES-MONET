@@ -4,6 +4,10 @@ import monet as m
 import os
 import xarray as xr
 import pandas as pd
+import numpy as np
+import datetime
+from monet.util.tools import get_relhum
+from plots import surfplots as splot
 # from util import write_ncf
 
 class pair:
@@ -203,7 +207,7 @@ class analysis:
 
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
-        self.end_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
+        self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
 
     def open_models(self):
         """Opens all models and creates model instances for monet-analysis
@@ -303,83 +307,122 @@ class analysis:
         for paired_label in self.paired:
             paired = self.paired[paired_label]
             mapping_table = self.models[paired.model].mapping[paired.obs]
-
+            sub_map = {mapping_table[i]: i for i in mapping_table} 
+            #I reorder this as all the species in the plots are based on obs species as the key
+            
             # check what type of observation this is (pt_sfc.... etc)
             obs_type = self.control_dict['obs'][paired.obs]['obs_type'].lower()
 
             #get the plots kwarg from the obs
             plots_yaml = self.control_dict['obs'][paired.obs]['plots']
             # get the basename of the plots string
-            basename = plots_yaml['basename']
+            basename = plots_yaml['plots_basename']
 
             # first check if the plotting type is a point surface observation
             if obs_type == 'pt_sfc':
                 # TODO: add new plot types here and below
                 known_plot_types = ['taylor','spatial_bias','timeseries','spatial_overlay']
                 # now we want to loop through each plot type
-                plot_types = [i.lower() for i in self.control_dict['obs'][paired.obs]['plots'].keys()]
+                plot_types = [i.lower() for i in self.control_dict['obs'][paired.obs]['plots']['plot_types'].keys()]
                 # only loop over plot types that are in the pt_sfc
-                good_to_go = plot_types[[i in known_plot_types for i in plot_types]]
-
+                good_to_go = list(set(known_plot_types) & set(plot_types))
+                print('Will loop good_to_go')
                 # loop over good_to_go plot types:
                 for plot_type in good_to_go:
-                    plot_type_dict = plot_types[plot_type]
-
-                    # first do domain plots
-                    if plot_type == 'talyor':
-                        _taylor_plot(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
-                    if plot_type == 'spatial_bias':
-                        _spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
-                    if plot_type == 'timeseries':
-                        _timeseries(paried, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
-                    if plot_type == 'spatial_overlay':
-                        _spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                    print(plot_type)
+                    plot_type_dict = self.control_dict['obs'][paired.obs]['plots']['plot_types'][plot_type]
+                    #Loop over species here and apply unit corrections for each observational type.
+                    species = sub_map.keys()
+                    #create the df
+                    df = paired.obj.to_dataframe()
+                    df_replace = df.replace(-1.0, np.nan)  # Replace all exact -1.0 values with nan, 
+                    #need to confirm this with Barry, do -1.0 values always reflect nan's in MONET? 
+                    #Or is this new to compressed format of obs? Maybe something to set for each observations?
+                    for sp in species:
+                        print(sp)
+                        df_drop = df_replace.dropna(subset=[sp, sub_map.get(sp)])  # Drops all rows with obs species = NaN
+                        #For each observations apply corrections for units here, but eventually should make units universal when bring in obs and model output.
+                        if paired.obs == 'airnow':
+                            if sp == 'WS':
+                                df_drop.loc[:, 'WS'] = df_drop.loc[:, 'WS'] * 0.514  # convert obs knots-->m/s
+                                df_drop.query('WS > 0.2', inplace=True
+                                         )  # Filter out calm WS obs (< 0.2 m/s), should not be trusted--creates artificially larger postive  model bias
+                            elif sp == 'BARPR':
+                                df_drop.loc[:, 'PRSFC'] = df_drop.loc[:, 'PRSFC'] * 0.01  # convert model Pascals-->millibars
+                            elif sp == 'PRECIP':
+                                df_drop.loc[:, 'PRECIP'] = df_drop.loc[:, 'PRECIP'] * 0.1  # convert obs mm-->cm
+                            elif sp == 'TEMP':
+                                df_drop.loc[:, 'TEMP2'] = df_drop.loc[:, 'TEMP2'] - 273.16  # convert model K-->C
+                            elif sp == 'RHUM':
+                            # convert model mixing ratio to relative humidity
+                                df_drop.loc[:, 'Q2'] = get_relhum(df_drop.loc[:, 'TEMP2'], df_drop.loc[:, 'PRSFC'],
+                                                                  df_drop.loc[:, 'Q2'])
+                            # df2.rename(index=str,columns={"Q2": "RH_mod"},inplace=True)
+                            elif sp == 'CO':
+                                df_drop.loc[:, 'CO'] = df_drop.loc[:, 'CO'] * 1000.0  # convert obs ppm-->ppb
+#figure out the start dates and output name
+                        #If applicable, select start and end time. 
+                        if self.start_time != None and self.end_time != None:
+                            dfnew = df_drop.loc[self.start_time:self.end_time]
+                            startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
+                            enddatename = str(datetime.datetime.strftime(self.end_time, '%Y-%m-%d_%H'))
+                            outname = "{}.{}.{}.{}.{}".format(basename, paired_label, sp, startdatename, enddatename)
+                            if sp == 'PM2.5':
+                                outname = outname.replace('PM2.5', 'PM2P5')
+                        else:
+                            dfnew = df_drop
+                            outname = "{}.{}.{}".format(basename, paired_label, sp)
+                            if sp == 'PM2.5':
+                                outname = outname.replace('PM2.5', 'PM2P5')
+                        print(outname)
+                        # first do domain plots
+                        if plot_type == 'taylor':
+                            print('entered taylor plt')
+                            if self.start_time != None and self.end_time != None:
+                                splot.make_taylor_plot(dfnew, sub_map.get(sp), sp , outname, paired.obs, paired.model,
+                                             plot_dict=plot_type_dict, region=None, epa_regulatory=False, time_avg=True)
+                            else: #If model analysis times are not provided plot each hour of the output rather than an average.
+                                splot.make_taylor_plot(dfnew, sub_map.get(sp), sp , outname,
+                                             plot_dict=plot_type_dict, region=None, epa_regulatory=False, time_avg=False)
+                        if plot_type == 'spatial_bias':
+                            splot.make_spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                        if plot_type == 'timeseries':
+                            splot.make_timeseries(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
+                        if plot_type == 'spatial_overlay':
+                            splot.make_spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=False)
                     # TODO: Add additional plot types here
 
-                    if 'regulatory' in plot_type_dict:
-                        if plot_type_dict['regulatory']:
-                            if plot_type == 'talyor':
-                                _taylor_plot(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
-                            if plot_type == 'spatial_bias':
-                                _spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
-                            if plot_type == 'timeseries':
-                                _timeseries(paried, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
-                            if plot_type == 'spatial_overlay':
-                                _spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                    #if 'regulatory' in plot_type_dict:
+                    #    # Converts OZONE, PM10, or PM2.5 dataframe to NAAQS regulatory values
+                    #    if jj == 'OZONE' and reg is True:
+                    #        df2 = make_8hr_regulatory(df_drop, [jj, sub_map.get(jj)]).rename(
+                    #            index=str, columns={jj + '_y': jj, sub_map.get(jj) + '_y': sub_map.get(jj)}
+                    #        )
+                    #    elif jj == 'PM2.5' and reg is True:
+                    #        df2 = make_24hr_regulatory(df_drop, [jj, sub_map.get(jj)]).rename(
+                    #              index=str, columns={jj + '_y': jj, sub_map.get(jj) + '_y': sub_map.get(jj)}
+                    #          )
+                    #    elif jj == 'PM10' and reg is True:
+                    #        df2 = make_24hr_regulatory(df_drop, [jj, sub_map.get(jj)]).rename(
+                    #            index=str, columns={jj + '_y': jj, sub_map.get(jj) + '_y': sub_map.get(jj)}
+                    #        )
+                    #    else:
+                    #        df2 = df_drop
+                        #add reg to output name
+                    #    outname = "{}.{}".format(outname, 'reg')
+                    #    
+                    #    if plot_type_dict['regulatory']:
+                    #        if plot_type == 'talyor':
+                    #            _taylor_plot(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                    #        if plot_type == 'spatial_bias':
+                    #            _spatial_bias(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                    #        if plot_type == 'timeseries':
+                    #            _timeseries(paried, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
+                    #       if plot_type == 'spatial_overlay':
+                    #            _spatial_overlay(paired, plot_dict=plot_type_dict, region=None, epa_regulatory=True)
 
 
 
 
-            if 'epa_regions' in self.control_dict['obs'][paired.obs]['plots']:
-
-            subset = self.control_dict['obs'][paired.obs]['plots']['epa_regions']
-            reg = self.control_dict['obs'][paired.obs]['plots']['regulatory']
-            df = paired.obj.to_dataframe()
-            regions = self.control_dict['obs'][paired.obs]['plots']['epa_regions_names']
-            out_name = paired_label + '_' + self.control_dict['obs'][paired.obs]['plots']['plots_basename']
-            #For each model species in the mapping table make plots.
-            # if pt_sfc (surface point network or monitor)
-            if self.control_dict['obs'][paired.obs]['obs_type'].lower() == 'pt_sfc':
-                if self.control_dict['obs'][paired.obs]['plots']['taylor_diagram'] == True:
-                    scale_ty = self.control_dict['obs'][paired.obs]['plots']['taylor_diagram_scale']
-                    import taylor_plots as taylor
-                    if subset == True:
-                        for region in regions:
-                            taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table,region)
-                    else:
-                        taylor.make_taylor_plots(df,out_name,subset,self.start_time,self.end_time,reg,scale_ty,mapping_table)
-    def _taylor_plot(paired, plot_dict=None):
-        # TODO: Create wrapper function for the taylor plots
-        a = 1
-
-    def _spatial_bias(paired):
-        # TODO: create wrapper for spatial bias
-        a = 1
-
-    def _timeseries(paired):
-        # TODO: create wrapper for timeseries
-        a = 1
-
-    def _spatial_overlay(paired):
-        # TODO: write wrapper for overlay plots
-        a = 1
+            #if 'epa_regions' in self.control_dict['obs'][paired.obs]['plots']:
+            #    a = 1
