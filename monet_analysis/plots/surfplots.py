@@ -21,6 +21,7 @@ import numpy as np
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+sns.set_context('paper')
 
 # from util import write_ncf
 
@@ -32,7 +33,7 @@ def make_24hr_regulatory(df, col=None):
 def make_8hr_regulatory(df, col=None):
     """ Make 8-hour rolling average daily """
     return calc_8hr_rolling_max(df, col, window=8)
-    
+
 def make_taylor_plot(df, model_var, obs_var , outname, obs_label, model_label, plot_dict=None, region=None,
                      epa_regulatory=False,time_avg=False):
     #If region is true query for only that specific region
@@ -48,7 +49,7 @@ def make_taylor_plot(df, model_var, obs_var , outname, obs_label, model_label, p
                 #add the time at the end of the file
             out_name = "{}.{}".format(outname, date)
             if ~odf.empty:
-                make_taylor_diagram(odf, col1=obs_var, col2=model_var, label1=obs_label, label2=model_label, 
+                make_taylor_diagram(odf, col1=obs_var, col2=model_var, label1=obs_label, label2=model_label,
                                         savename=out_name, plot_dict=plot_dict)
     # make total period taylor plot
     else:
@@ -56,11 +57,11 @@ def make_taylor_plot(df, model_var, obs_var , outname, obs_label, model_label, p
         print('Creating Plot:', obs_var, 'for whole time period')
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         make_taylor_diagram(df, col1=obs_var, col2=model_var, label1=obs_label, label2=model_label,
-                            savename=outname, plot_dict=plot_dict)             
+                            savename=outname, plot_dict=plot_dict)
 
 def make_taylor_diagram(df, col1, col2, label1, label2, savename, plot_dict=None):
     #If we want to add fig_height and fig_width we will need to change plots.py in MONET itself.
-    if plot_dict != None: #If specifiy ploting commands use them  
+    if plot_dict != None: #If specifiy ploting commands use them
         dia = monet.plots.plots.taylordiagram(df, col1=col1, col2=col2, label1=label1, label2=label2,
                                                   scale=plot_dict['taylor_diagram_scale'])
     else: #Else use defaults
@@ -71,15 +72,46 @@ def make_taylor_diagram(df, col1, col2, label1, label2, savename, plot_dict=None
     return dia
 #Because this returns dia if we want you could update this to plot more than one model on a graph.
 
-def make_spatial_bias(paired, plot_dict=None, region=None, epa_regulatory=False):
+def make_spatial_bias(paired, plot_dict=None):
     # TODO: create wrapper for spatial bias
     a = 1
 
-def make_timeseries(paired, plot_dict=None, region=None, epa_regulatory=False):
-    # TODO: create wrapper for timeseries
-    a = 1
+def make_timeseries(df, column=None, label=None, plot_dict=None):
+    """Creates the MONET-Analysis time series plot.
 
-def make_spatial_overlay(paired, plot_dict=None, region=None, epa_regulatory=False):
+    Parameters
+    ----------
+    df : type
+        Description of parameter `df`.
+    label : type
+        Description of parameter `label`.
+    plot_dict : type
+        Description of parameter `plot_dict`.
+
+    Returns
+    -------
+    type
+        Description of returned object.
+
+    """
+    # assume that 'time' is in the DataFrame
+    if plot_dict is None: # assume that no plot has been created
+        figsize=(10,6)
+        default_dict = dict(color='k',linewidth=1.2, linestyle='-',marker='x')
+        if label is not None:
+            default_dict['label'] = label
+        # create the figure
+        f,ax = plt.subplots(figsize=figsize)
+        # plot the line
+
+        ax = df.plot(x='time',y=column, default_dict**)
+    elif 'ax' in plot_dict:
+        # this means that an axis handle already exists and use it to plot onto
+        ax = df.plot(x='time',y=column,default_dict**)
+
+    return ax
+    
+
+def make_spatial_overlay(paired, plot_dict=None):
     # TODO: write wrapper for overlay plots
         a = 1
-    

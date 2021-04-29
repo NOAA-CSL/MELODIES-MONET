@@ -1,54 +1,66 @@
 analysis:
     start_time: '2019-08-18'
     end_time: '2019-08-20'
+    plot_grp1:
+      plot_type: timeseries
+      figure_size: (12,6)
 model:
-  cmaq_v1:
-    files: cmaq_files_*.nc
+  cmaq_v1: # model label
+    files: /Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
+    variables:
+      CO:
+        unit_scale: 1000.0
+        unit_scale_method: '*'
     mapping:
-      aeronet:
-        aod550: aod_550nm
       airnow:
         PM25_TOT: "pm2.5"
         O3: "o3"
     projection: None
-  rapchem_v2.15:
-    files: rapchem_files_*.nc
-    mod_type: rapchem
-    mapping:
-      aeronet:
-        aod: aod_550nm
+    figure_kwargs:
+      color: 'dodgerblue'
+      marker: 'x'
+      linestyle: '-.'
 obs:
-  aeronet:
-      use_aeronet: True
-      filename: aeronet_cmaq_combined_file.nc
-      obs_type: pt_sfc
-      start_time: '2018'
-      radius_of_influence: 1e5
-      plots:
-          plots_basename: 'aeronet_cmaq_%Y%m%d_'
-          taylor_diagram: True
-          bias_plots: False
-          timeseries: True
-          giorgi_regional: False
-          epa_regions: True
-      stats:
-          rmse: True
-          mse: True
-          ioa: True
-  airnow:
+  airnow: # obs label
       use_airnow: True
-      filename: aeronet_cmaq_combined_file.nc
+      filename: test5.nc
       obs_type: pt_sfc
       radius_of_influence: 1e5
-      plots:
-          plots_basename: 'aeronet_cmaq_%Y%m%d_'
-          taylor_diagram: True
-          bias_plots: False
-          timeseries: True
-          giorgi_regional: False
-          epa_regions: True
-      stats:
-          rmse: True
-          mse: True
-          ioa: True
+      variables:
+        PM25:
+          unit_scale: 1
+          unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+          obs_limit: 1 # set all values less than this value to NaN
+        OZONE:
+          unit_scale: 1
+          unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+          obs_limit: 1 # set all values less than this value to NaN
+        WS:
+          unit_scale: 0.514  # convert obs knots-->m/s
+          unit_scale_method: '*'
+          obs_limit: 0.2 # m/s
+        PRSFC:
+          unit_scale: 0.01  # convert model Pascals-->millibars
+          unit_scale_method: '*'
+        PRECIP:
+          unit_scale: 0.1  # convert obs mm-->cm
+          unit_scale_method: '*'
+        TEMP:
+          unit_scale: 273.16
+          unit_scale_method: '-'
+        O3:
+          obs_limit: 0.5 # ppbv
+        NO2:
+          obs_limit: 1 # ppbv
+plots:
+  plot_grp1:
+    type: 'timeseries' # plot type
+    figure_kwargs:
+      figsize: (10,5) # figure size if multiple plots
+    regions: True # all includes full domain and each region, domain is only the full domain, or specify a specific region
+    data: ['airnow_cmaq_v1'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+stats:
+    rmse: True
+    mse: True
+    ioa: True
