@@ -76,7 +76,7 @@ def make_spatial_bias(paired, plot_dict=None):
     # TODO: create wrapper for spatial bias
     a = 1
 
-def make_timeseries(df, column=None, label=None, plot_dict=None):
+def make_timeseries(df, column=None, label=None, ax=None, plot_dict=None, fig_dict=None):
     """Creates the MONET-Analysis time series plot.
 
     Parameters
@@ -96,19 +96,22 @@ def make_timeseries(df, column=None, label=None, plot_dict=None):
     """
     # assume that 'time' is in the DataFrame
     if plot_dict is None: # assume that no plot has been created
-        figsize=(10,6)
         default_dict = dict(color='k',linewidth=1.2, linestyle='-',marker='x')
         if label is not None:
             default_dict['label'] = label
         # create the figure
-        f,ax = plt.subplots(figsize=figsize)
+        if fig_dict is not None:
+            f,ax = plt.subplots(**fig_dict)    
+        else: 
+            f,ax = plt.subplots(figsize=(10,6))
         # plot the line
-
-        ax = df.plot(x='time',y=column, default_dict**)
-    elif 'ax' in plot_dict:
+        ax = df.plot(ax=ax,x='time_local',y=column, **default_dict)
+        ax.set_ylabel = column
+    elif 'ax' != None:
         # this means that an axis handle already exists and use it to plot onto
-        ax = df.plot(x='time',y=column,default_dict**)
-
+        if label is not None:
+            plot_dict['label'] = label
+        ax = df.plot(ax=ax, x='time_local',y=column, **plot_dict)
     return ax
     
 

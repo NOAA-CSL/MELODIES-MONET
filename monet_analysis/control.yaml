@@ -6,21 +6,37 @@ analysis:
       figure_size: (12,6)
 model:
   cmaq_v1: # model label
-    files: /Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
+    files: /scratch1/BMC/stela/rhs/CMAQ/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
     variables:
       CO:
         unit_scale: 1000.0
         unit_scale_method: '*'
-    mapping:
+    mapping: #model species name : obs species name
       airnow:
-        PM25_TOT: "pm2.5"
-        O3: "o3"
+        PM25_TOT: "PM2.5"
+        O3: "OZONE"
     projection: None
     figure_kwargs:
       color: 'dodgerblue'
       marker: 'x'
       linestyle: '-.'
+  cmaq_v2: # model label
+    files: /scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
+    mod_type: 'cmaq'
+    variables:
+      CO:
+        unit_scale: 1000.0
+        unit_scale_method: '*'
+    mapping: #model species name : obs species name
+      airnow:
+        PM25_TOT: "PM2.5"
+        O3: "OZONE"
+    projection: None
+    figure_kwargs:
+      color: 'red'
+      marker: 'o'
+      linestyle: '--' 
 obs:
   airnow: # obs label
       use_airnow: True
@@ -57,9 +73,9 @@ plots:
   plot_grp1:
     type: 'timeseries' # plot type
     figure_kwargs:
-      figsize: (10,5) # figure size if multiple plots
+      figsize: (12,6) # figure size if multiple plots
     regions: True # all includes full domain and each region, domain is only the full domain, or specify a specific region
-    data: ['airnow_cmaq_v1'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_v1','airnow_cmaq_v2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 stats:
     rmse: True
     mse: True

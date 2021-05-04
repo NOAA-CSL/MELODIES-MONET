@@ -355,8 +355,9 @@ class analysis:
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
-                    # convert this to pandas dataframe
-                    obs.obs_to_df()
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obs_to_df()
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=1e6, suffix=mod.label)
                     # print(paired_data)
@@ -389,7 +390,7 @@ class analysis:
         from plots import surfplots as splots
 
         # first get the plotting dictionary from the yaml file
-        plot_dict = self.control_dict['plotting']
+        plot_dict = self.control_dict['plots']
 
         # now we are going to loop through each plot_group (note we can have multiple plot groups)
         # a plot group can have
@@ -406,12 +407,14 @@ class analysis:
             current_obsvar = None
 
             # first get the observational obs labels
-            pair1 = self.paired[list(an.paired.keys())[0]]
+            pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
 
             # loop through obs variables
             for obsvar in obs_vars:
-                for p_index, p in enumerate(pair_labels):
+                for p_index, p_label in enumerate(pair_labels):
+                    #Only save plot at the end.
+                    p = self.paired[p_label]
                     # find the pair model label that matches the obs var
                     index = p.obs_vars.index(obsvar)
                     modvar = p.model_vars[index]
@@ -419,13 +422,12 @@ class analysis:
                     if plot_type.lower() == 'timeseries':
                         pairdf = p.obj.to_dataframe().reset_index(drop=True).dropna(subset=[modvar])
                         if p_index == 0:
-                            ax = splots.timeseries(pairdf, column=obsvar, label=p.obs)
-                            if p.model_obj.figure_kwargs is not None:
-                                ax = splots.timeseries(pairdf, column=modvar, label=p.model, ax=ax, **p.model_obj.figure_kwargs)
-                            else:
-                                ax = splots.timeseries(pairdf, column=modvar, label=p.model, ax=ax)
-                        else:
-                            if p.model_obj.figure_kwargs is not None:
-                                ax = splots.timeseries(pairdf, column=modvar, label=p.model, ax=ax, **p.model_obj.figure_kwargs)
-                            else:
-                                ax = splots.timeseries(pairdf, column=modvar, label=p.model, ax=ax)
+                            #Then first plot the observations.
+                            ax = splots.make_timeseries(pairdf, column=obsvar, label=p.obs,fig_dict = grp_dict['figure_kwargs'])
+                        if p.model_obj.figure_kwargs is not None:
+                            ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, 
+                                                            plot_dict=p.model_obj.figure_kwargs)
+                        else: 
+                            #Specify a default here.
+                            ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, 
+                                                            plot_dict=dict(color='r',linewidth=1.2, linestyle=':',marker='*'))
