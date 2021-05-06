@@ -108,8 +108,6 @@ class observation:
                 elif extension in ['.ict', '.icarrt']:
                     self.obj = mio.icarrt.add_data(self.file)
                 self.mask_and_scale()  # mask and scale values from the control values
-                if 'epa_region' in self.obj.data_vars:
-                    self.obj = self.obj.rename({'epa_region': 'REGION_LABEL'})
         except ValueError:
             print('something happened opening file')
 
@@ -133,8 +131,12 @@ class observation:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if 'obs_limit' in d:
-                        self.obj[v].data = self.obj[v].where(self.obj[v] >= d['obs_limit'])
+                    if 'obs_min' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] >= d['obs_min'])
+                    if 'obs_max' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
+                    if 'nan_value' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
 
     def obs_to_df(self):
         """Short summary.
@@ -321,10 +323,10 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.file = self.control_dict['obs'][obs]['filename']
+                o.file = self.control_dict['obs'][obs]['filename']     
+                if 'variables' in self.control_dict['obs'][obs].keys():
+                    o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
-                if 'variables' in self.control_dict['obs'][obs]:
-                    self.variable_dict = self.control_dict['obs'][obs]['variables']
                 self.obs[o.label] = o
 
     def pair_data(self):
@@ -391,7 +393,9 @@ class analysis:
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
-
+        #Calculate any items that do not need to recalculate each loop.
+        startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
+        enddatename = str(datetime.datetime.strftime(self.end_time, '%Y-%m-%d_%H'))
         # now we are going to loop through each plot_group (note we can have multiple plot groups)
         # a plot group can have
         #     1) a singular plot type
@@ -418,12 +422,26 @@ class analysis:
                     # find the pair model label that matches the obs var
                     index = p.obs_vars.index(obsvar)
                     modvar = p.model_vars[index]
-
+                    #convert to dataframe 
+                    pairdf_all = p.obj.to_dataframe()
+                    #Select only the analysis time window.
+                    pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
+                    domain_type = grp_dict['domain_type']
+                    outname = "{}.{}.{}.{}.{}.{}.{}".format(grp,plot_type,p_label, obsvar, 
+                                                            startdatename, enddatename, domain_type)
+                    print(domain_type)
+                    #Query selected points.
+                    if domain_type != 'all':
+                        domain_name = grp_dict['domain_name']
+                        print(domain_name)
+                        outname = "{}.{}".format(outname,domain_name)
+                        pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
+                    
                     if plot_type.lower() == 'timeseries':
-                        pairdf = p.obj.to_dataframe().reset_index(drop=True).dropna(subset=[modvar])
+                        pairdf = pairdf_all.reset_index(drop=True).dropna(subset=[modvar])
                         if p_index == 0:
                             #Then first plot the observations.
-                            ax = splots.make_timeseries(pairdf, column=obsvar, label=p.obs,fig_dict = grp_dict['figure_kwargs'])
+                            ax = splots.make_timeseries(pairdf, column=obsvar, label=p.obs, fig_dict=grp_dict['figure_kwargs'])
                         if p.model_obj.figure_kwargs is not None:
                             ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, 
                                                             plot_dict=p.model_obj.figure_kwargs)
@@ -431,3 +449,4 @@ class analysis:
                             #Specify a default here.
                             ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, 
                                                             plot_dict=dict(color='r',linewidth=1.2, linestyle=':',marker='*'))
+                m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=True)

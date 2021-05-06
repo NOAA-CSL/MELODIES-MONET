@@ -1,12 +1,11 @@
 analysis:
-    start_time: '2019-08-18'
-    end_time: '2019-08-20'
-    plot_grp1:
-      plot_type: timeseries
-      figure_size: (12,6)
+  start_time: '2019-08-18' #UTC
+  end_time: '2019-08-19' #UTC
 model:
   cmaq_v1: # model label
-    files: /scratch1/BMC/stela/rhs/CMAQ/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
+    files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_OPER/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf
+        #/scratch1/BMC/stela/rhs/CMAQ/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf 
+        #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
     variables:
       CO:
@@ -22,7 +21,9 @@ model:
       marker: 'x'
       linestyle: '-.'
   cmaq_v2: # model label
-    files: /scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
+    files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_EXPT/0818/aqm.20190818.t12z.aconc-pm25_48.ncf
+        #/scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf
+        #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
     variables:
       CO:
@@ -39,44 +40,45 @@ model:
       linestyle: '--' 
 obs:
   airnow: # obs label
-      use_airnow: True
-      filename: test5.nc
-      obs_type: pt_sfc
-      radius_of_influence: 1e5
-      variables:
-        PM25:
-          unit_scale: 1
-          unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-          obs_limit: 1 # set all values less than this value to NaN
-        OZONE:
-          unit_scale: 1
-          unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-          obs_limit: 1 # set all values less than this value to NaN
-        WS:
-          unit_scale: 0.514  # convert obs knots-->m/s
-          unit_scale_method: '*'
-          obs_limit: 0.2 # m/s
-        PRSFC:
-          unit_scale: 0.01  # convert model Pascals-->millibars
-          unit_scale_method: '*'
-        PRECIP:
-          unit_scale: 0.1  # convert obs mm-->cm
-          unit_scale_method: '*'
-        TEMP:
-          unit_scale: 273.16
-          unit_scale_method: '-'
-        O3:
-          obs_limit: 0.5 # ppbv
-        NO2:
-          obs_limit: 1 # ppbv
+    use_airnow: True
+    filename: test5.nc
+    obs_type: pt_sfc
+    radius_of_influence: 1e5
+    variables: 
+      PM2.5:
+        unit_scale: 1
+        unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        #obs_min: 0 # set all values less than this value to NaN
+        #obs_max: 100 # set all values greater than this value to NaN
+        nan_value: -1.0 # Set this value to NaN
+      OZONE:
+        unit_scale: 1
+        unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0 # Set this value to NaN
+      WS:
+        unit_scale: 0.514  # convert obs knots-->m/s
+        unit_scale_method: '*'
+        obs_min: 0.2 # m/s
+      PRSFC:
+        unit_scale: 0.01  # convert model Pascals-->millibars
+        unit_scale_method: '*'
+      PRECIP:
+        unit_scale: 0.1  # convert obs mm-->cm
+        unit_scale_method: '*'
+      TEMP:
+        unit_scale: 273.16
+        unit_scale_method: '-'
+      NO2:
+        obs_max: 1 # ppbv
 plots:
   plot_grp1:
     type: 'timeseries' # plot type
     figure_kwargs:
-      figsize: (12,6) # figure size if multiple plots
-    regions: True # all includes full domain and each region, domain is only the full domain, or specify a specific region
+      figsize: [12,6] # figure size if multiple plots
+    domain_type: 'epa_region' #options: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: 'R4' #Specify the domain name. If domain_type = all domain_name is not used.
     data: ['airnow_cmaq_v1','airnow_cmaq_v2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 stats:
-    rmse: True
-    mse: True
-    ioa: True
+  rmse: True
+  mse: True
+  ioa: True
