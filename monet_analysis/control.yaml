@@ -1,13 +1,17 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. Not sure making 24 hourly plots is useful and if you need an hourly plot to diagnose bugs, you can restrict the analysis window.
 analysis:
-  start_time: '2019-08-18' #UTC
-  end_time: '2019-08-19' #UTC
+  start_time: '2019-08-19' #UTC
+  end_time: '2019-08-20' #UTC
 model:
   cmaq_v1: # model label
     files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_OPER/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf
         #/scratch1/BMC/stela/rhs/CMAQ/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf 
         #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
-    variables:
+    variables: #Opt
       CO:
         unit_scale: 1000.0
         unit_scale_method: '*'
@@ -16,16 +20,16 @@ model:
         PM25_TOT: "PM2.5"
         O3: "OZONE"
     projection: None
-    figure_kwargs:
+    plot_kwargs: #Opt 
       color: 'dodgerblue'
-      marker: 'x'
+      marker: '+'
       linestyle: '-.'
   cmaq_v2: # model label
     files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_EXPT/0818/aqm.20190818.t12z.aconc-pm25_48.ncf
         #/scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf
         #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
-    variables:
+    variables: #Opt
       CO:
         unit_scale: 1000.0
         unit_scale_method: '*'
@@ -34,8 +38,8 @@ model:
         PM25_TOT: "PM2.5"
         O3: "OZONE"
     projection: None
-    figure_kwargs:
-      color: 'red'
+    plot_kwargs: #Opt
+      color: 'm'
       marker: 'o'
       linestyle: '--' 
 obs:
@@ -44,17 +48,19 @@ obs:
     filename: test5.nc
     obs_type: pt_sfc
     radius_of_influence: 1e5
-    variables: 
+    variables: #Opt 
       PM2.5:
         unit_scale: 1
         unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         #obs_min: 0 # set all values less than this value to NaN
         #obs_max: 100 # set all values greater than this value to NaN
         nan_value: -1.0 # Set this value to NaN
+        ylabel_plot: 'PM2.5 (ug/m3)' #Optional to set ylabel so can include units and/or instr etc.
       OZONE:
         unit_scale: 1
         unit_scale_method: '*' # Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         nan_value: -1.0 # Set this value to NaN
+        ylabel_plot: 'Ozone (ppbv)' 
       WS:
         unit_scale: 0.514  # convert obs knots-->m/s
         unit_scale_method: '*'
@@ -73,12 +79,51 @@ obs:
 plots:
   plot_grp1:
     type: 'timeseries' # plot type
-    figure_kwargs:
+    figure_kwargs: #Opt to define figure options
       figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 18.
     domain_type: 'epa_region' #options: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: 'R4' #Specify the domain name. If domain_type = all domain_name is not used.
     data: ['airnow_cmaq_v1','airnow_cmaq_v2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' or 'time_local'
+      ts_avg_window: 'H' # Options: null for no averaging or list pandas resample rule (e.g., 'H', 'D')
+  plot_grp2:
+    type: 'taylor' # plot type
+    figure_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: 'epa_region' #options: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: 'R4' #Specify the domain name. If domain_type = all domain_name is not used.
+    data: ['airnow_cmaq_v1','airnow_cmaq_v2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ty_scale: 2.0 #Opt
+  plot_grp3:
+    type: 'spatial_bias' # plot type
+    figure_kwargs: #Opt to define figure options
+      figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: 'epa_region' #options: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: 'R4' #Specify the domain name. If domain_type = all domain_name is not used.
+    data: ['airnow_cmaq_v1','airnow_cmaq_v2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
 stats:
   rmse: True
   mse: True
-  ioa: True
+  ioa: True 
+
