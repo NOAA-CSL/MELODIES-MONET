@@ -431,7 +431,9 @@ class analysis:
                     if domain_type != 'all':
                         domain_name = grp_dict['domain_name']
                         outname = "{}.{}".format(outname,domain_name)
-                        pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True) 
+                        pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
+                    else:
+                        domain_name = None
                     #Drop NaNs
                     if grp_dict['data_proc']['rem_obs_nan'] == True:
                         #I removed drop=True in reset_index in order to keep 'time' as a column.
@@ -500,8 +502,9 @@ class analysis:
                             outname = "{}.{}".format(outname,p_label)
                             splots.make_spatial_bias(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
                                                      label_m=p.model, ylabel = use_ylabel, outname=outname,
+                                                     domain_type=domain_type, domain_name=domain_name,
                                                      fig_dict=fig_dict, text_dict=text_dict)
                         
                 #For plots where only save at end of the p_label loop save plot. For the other plots save within loop.
                 if plot_type.lower() == 'timeseries' or plot_type.lower() == 'taylor':
-                    m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=True)
+                    m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)

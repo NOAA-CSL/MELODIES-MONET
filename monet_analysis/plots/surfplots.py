@@ -24,6 +24,9 @@ import matplotlib.pyplot as plt
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
+from matplotlib.colors import ListedColormap
+from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
+import math
 
 # from util import write_ncf
 
@@ -53,60 +56,71 @@ def new_color_map():
                            bottom(np.linspace(0, 1, 128))))
     return ListedColormap(newcolors, name='OrangeBlue')
 
-def get_df_region(obj, region):
-    from monet.util.tools import get_epa_region_df as get_epa
-    if region.lower() == 'domain':
-        obj['EPA_ACRO'] = 'domain'
-        return obj
-    else:
-        obj = get_epa(region)
-        return obj.loc[obj.EPA_ACRO == region.upper()]
-
 def make_spatial_bias(df, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, outname = 'plot', vmin=None, vmax=None, 
-                      fig_dict=None, text_dict=None, map_dict=None):
+                      label_m=None, ylabel = None, outname = 'plot', 
+                      domain_type=None, domain_name=None,
+                      vmin=None, vmax=None, 
+                      fig_dict=None, text_dict=None):
     """Creates the MONET-Analysis spatial bias plot."""
     #Need to add possibility of including map_kwargs into yaml file for now use default.
     #Also need to add possibility of val_min and val_max this has to be in the obs though because dependent on species.
-    def_map = dict(states=True)
-    if map_dict is not None:
-        map_kwargs = {**def_map, **map_dict}
+    def_map = dict(states=True,figsize=[10, 5])
+    if fig_dict is not None:
+        map_kwargs = {**def_map, **fig_dict}
     else:
         map_kwargs = def_map
   
     #set default text size
-    def_text = dict(fontsize=14)
+    def_text = dict(fontsize=20)
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+        
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = column_o
     
-    cmap = new_color_map()
     #Take the mean for each siteid
     df_mean=df.groupby(['siteid'],as_index=False).mean()
     
     ax = monet.plots.sp_scatter_bias(
-        df, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vmax,val_min=vmin,
-                    cmap=cmap, edgecolor='k',linewidth=.8)
-    #date = pd.Timestamp(date)
-    #dt = date - initial_datetime
-    #dtstr = str(dt.days * 24 + dt.seconds // 3600).zfill(3)
-    #plt.title(date.strftime('time=%Y/%m/%d %H:00 | CMAQ - AIRNOW '))
-        
-    #if region == 'domain':
-    latmin= 25.0
-    lonmin=-130.0
-    latmax= 55.0
-    lonmax=-55.0
-    #else:
-    # from monet.util.tools import get_epa_region_bounds as get_epa_bounds    
-    # latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=region)
-   
+        df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vmax,val_min=vmin,
+                    cmap=new_color_map(), edgecolor='k',linewidth=.8)
+    
+    #Need to adjust this so does not default to CONUS 
+    if domain_type == 'all':
+        latmin= 25.0
+        lonmin=-130.0
+        latmax= 55.0
+        lonmax=-55.0
+        plt.title(label_m + ' - ' + label_o,**text_kwargs)
+    elif domain_type == 'epa_region' and domain_name is not None:
+        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
+        plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,**text_kwargs)
+    else:
+        latmin= math.floor(min(df.latitude))
+        lonmin= math.floor(min(df.longitude))
+        latmax= math.ceil(max(df.latitude))
+        lonmax= math.ceil(max(df.longitude))
+        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,**text_kwargs)
+       
     plt.xlim([lonmin,lonmax])
-    plt.ylim([latmin,latmax]) 
-  
-    plt.tight_layout(pad=0)
-    monet.plots.savefig(outname + '.png', bbox_inches='tight', dpi=200, decorate=True)
+    plt.ylim([latmin,latmax])
+    
+    #Update colorbar
+    f = plt.gcf()
+    model_ax = f.get_axes()[0]
+    cax = f.get_axes()[1]
+    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+    position_m = model_ax.get_position()
+    position_c = cax.get_position()
+    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
+    cax.set_ylabel(ylabel,**text_kwargs)
+    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
+    
+    #plt.tight_layout(pad=0)
+    monet.plots.savefig(outname + '.png', bbox_inches='tight', dpi=200, decorate=False)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     plot_dict=None, fig_dict=None, text_dict=None):

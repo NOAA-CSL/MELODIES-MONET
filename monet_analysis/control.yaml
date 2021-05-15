@@ -110,8 +110,9 @@ plots:
       ty_scale: 2.0 #Opt
   plot_grp3:
     type: 'spatial_bias' # plot type
-    figure_kwargs: #Opt to define figure options
-      figsize: [12,6] # figure size if multiple plots
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: True
+      figsize: [10, 5] # figure size 
     default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
       linewidth: 2.0
       markersize: 10.
