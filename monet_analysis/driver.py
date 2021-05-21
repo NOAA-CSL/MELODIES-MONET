@@ -120,6 +120,14 @@ class observation:
             for v in vars:
                 if v in self.variable_dict:
                     d = self.variable_dict[v]
+                    #Apply removal of min, max, and nan on the units in the obs file first.
+                    if 'obs_min' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] >= d['obs_min'])
+                    if 'obs_max' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
+                    if 'nan_value' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+                    #Then apply a correction if needed for the units.
                     if 'unit_scale' in d:
                         scale = d['unit_scale']
                     else:
@@ -132,13 +140,7 @@ class observation:
                         elif d['unit_scale_method'] == '+':
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
-                            self.obj[v].data += -1 * scale
-                    if 'obs_min' in d:
-                        self.obj[v].data = self.obj[v].where(self.obj[v] >= d['obs_min'])
-                    if 'obs_max' in d:
-                        self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
-                    if 'nan_value' in d:
-                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+                            self.obj[v].data += -1 * scale 
 
     def obs_to_df(self):
         """Short summary.
@@ -202,10 +204,11 @@ class model:
             else:
                 self.obj = mio.cmaq.open_dataset(self.files[0])
         elif 'wrfchem' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.wrfchem.open_mfdataset(self.files)
-            else:
-                self.obj = mio.wrfchem.open_dataset(self.files)
+            from new_models import wrfchem as wrfchem #Eventually add to monet itself.
+            self.obj = wrfchem.open_mfdataset(self.files)
+        elif 'rapchem' in self.model.lower():
+            from new_models import rapchem as rapchem #Eventually add to monet itself.
+            self.obj = rapchem.open_mfdataset(self.files)
         elif 'rrfs' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.rrfs_cmaq.open_mfdataset(self.files)
@@ -412,99 +415,227 @@ class analysis:
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
-
+                        
             # loop through obs variables
             for obsvar in obs_vars:
-                for p_index, p_label in enumerate(pair_labels):
-                    p = self.paired[p_label]
-                    # find the pair model label that matches the obs var
-                    index = p.obs_vars.index(obsvar)
-                    modvar = p.model_vars[index]
-                    #convert to dataframe 
-                    pairdf_all = p.obj.to_dataframe()
-                    #Select only the analysis time window.
-                    pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
-                    domain_type = grp_dict['domain_type']
-                    outname = "{}.{}.{}.{}.{}.{}".format(grp,plot_type, obsvar, 
-                                                            startdatename, enddatename, domain_type)
-                    #Query selected points if applicable
-                    if domain_type != 'all':
-                        domain_name = grp_dict['domain_name']
-                        outname = "{}.{}".format(outname,domain_name)
-                        pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
-                    else:
-                        domain_name = None
-                    #Drop NaNs
-                    if grp_dict['data_proc']['rem_obs_nan'] == True:
-                        #I removed drop=True in reset_index in order to keep 'time' as a column.
-                        pairdf = pairdf_all.reset_index().dropna(subset=[modvar,obsvar])
-                    else:
-                        pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                    #Define figure,plot,and text kwargs and combine if needed.
-                    #If duplicative: Model kwargs > default kwargs and 
-                    #yaml figure and text kwargs > defaults in ploting routines
-                    if 'default_plot_kwargs' in grp_dict.keys():
-                        if p.model_obj.plot_kwargs is not None:
-                            plot_dict = {**grp_dict['default_plot_kwargs'], **p.model_obj.plot_kwargs}
+                #Loop also over the domain types. So can easily create several overview and zoomed in plots.
+                domain_types = grp_dict['domain_type']
+                domain_names = grp_dict['domain_name']
+                for domain in range(len(domain_types)):
+                    domain_type = domain_types[domain]
+                    domain_name = domain_names[domain]
+                    #Then loop through each of the pairs to add to the plot.
+                    for p_index, p_label in enumerate(pair_labels):
+                        p = self.paired[p_label]
+                        # find the pair model label that matches the obs var
+                        index = p.obs_vars.index(obsvar)
+                        modvar = p.model_vars[index]
+                        #Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
+                        if obsvar == modvar:
+                            modvar = modvar + '_new'
+                        #convert to dataframe 
+                        pairdf_all = p.obj.to_dataframe()
+                    
+                        #Select only the analysis time window.
+                        pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
+                    
+                        #Determine the default plotting colors.
+                        if 'default_plot_kwargs' in grp_dict.keys():
+                            if p.model_obj.plot_kwargs is not None:
+                                plot_dict = {**grp_dict['default_plot_kwargs'], **p.model_obj.plot_kwargs}
+                            else:
+                                plot_dict = {**grp_dict['default_plot_kwargs'], **splots.calc_default_colors(p_index)}
+                            obs_dict = grp_dict['default_plot_kwargs']
                         else:
-                            plot_dict = {**grp_dict['default_plot_kwargs'], **splots.calc_default_colors(p_index)}
-                        obs_dict = grp_dict['default_plot_kwargs']
-                    else:
-                        if p.model_obj.plot_kwargs is not None:
-                            plot_dict = p.model_obj.plot_kwargs
+                            if p.model_obj.plot_kwargs is not None:
+                                plot_dict = p.model_obj.plot_kwargs
+                            else:
+                                plot_dict = splots.calc_default_colors(p_index)
+                            obs_dict = None
+                        
+                        #Determine figure_kwargs and text_kwargs
+                        if 'fig_kwargs' in grp_dict.keys():
+                            fig_dict=grp_dict['fig_kwargs']
                         else:
-                            plot_dict = splots.calc_default_colors(p_index)
-                        obs_dict = None
-                    #Determine figure_kwargs and text_kwargs
-                    if 'figure_kwargs' in grp_dict.keys():
-                        fig_dict=grp_dict['figure_kwargs']
-                    else:
-                        fig_dict=None
-                    if 'text_kwargs' in grp_dict.keys():
-                        text_dict=grp_dict['text_kwargs']
-                    else:
-                        text_dict=None
-                    #Specify ylabel if noted in yaml file.
-                    if p.obs_obj.variable_dict is not None and 'ylabel_plot' in p.obs_obj.variable_dict[obsvar].keys():
-                        use_ylabel = p.obs_obj.variable_dict[obsvar]['ylabel_plot']
-                    else:
-                        use_ylabel = None
-                    #Types of plots
-                    if plot_type.lower() == 'timeseries':
-                        #Select time to use as index.
-                        pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                        a_w = grp_dict['data_proc']['ts_avg_window']
-                        if p_index == 0:
-                            #First plot the observations.
-                            ax = splots.make_timeseries(pairdf, column=obsvar, label=p.obs, avg_window=a_w, 
-                                                        ylabel = use_ylabel, plot_dict=obs_dict, fig_dict=fig_dict,
-                                                        text_dict=text_dict)
-                        #For all p_index plot the model.
-                        ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, avg_window=a_w,
-                                                    ylabel = use_ylabel, plot_dict=plot_dict, text_dict=text_dict)
-                    elif plot_type.lower() == 'taylor':
-                        if 'ty_scale' in grp_dict['data_proc'].keys():
-                            ty_scale=grp_dict['data_proc']['ty_scale']
+                            fig_dict=None
+                        if 'text_kwargs' in grp_dict.keys():
+                            text_dict=grp_dict['text_kwargs']
                         else:
-                            ty_scale=None
-                        if p_index == 0: 
-                            #Plot initial obs/model
-                            dia = splots.make_taylor(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
-                                                     label_m=p.model, ylabel = use_ylabel, ty_scale=ty_scale,
-                                                     plot_dict=plot_dict, fig_dict=fig_dict, text_dict=text_dict)
+                            text_dict=None
+                        
+                        #Read in some plotting specifications stored with observations.
+                        if p.obs_obj.variable_dict is not None:
+                            if obsvar in p.obs_obj.variable_dict.keys():
+                                obs_plot_dict = p.obs_obj.variable_dict[obsvar]
+                            else:
+                                obs_plot_dict = {}
                         else:
-                            #For the rest, plot on top of dia
-                            dia = splots.make_taylor(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
-                                                     label_m=p.model, dia = dia, ylabel = use_ylabel, 
-                                                     ty_scale=ty_scale, plot_dict=plot_dict, text_dict=text_dict)
-                    elif plot_type.lower() == 'spatial_bias':
+                            obs_plot_dict = {}
+                        
+                        #Specify ylabel if noted in yaml file.
+                        if 'ylabel_plot' in obs_plot_dict.keys():
+                            use_ylabel = obs_plot_dict['ylabel_plot']
+                        else: 
+                            use_ylabel = None    
+                        
+                        #Determine if set axis values or use defaults                    
+                        if grp_dict['data_proc']['set_axis'] == True:
+                            if obs_plot_dict: #Is not null
+                                set_yaxis = True
+                            else:
+                                print('Warning: variables dict for ' + obsvar + ' not provided, so defaults used')
+                                set_yaxis = False
+                        else:
+                            set_yaxis = False
+                            
+                        #Determine outname        
+                        outname = "{}.{}.{}.{}.{}.{}.{}".format(grp,plot_type, obsvar, 
+                                                             startdatename, enddatename, domain_type, domain_name)
+                        #Query selected points if applicable
+                        if domain_type != 'all':
+                            pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
+                        #Drop NaNs
+                        if grp_dict['data_proc']['rem_obs_nan'] == True:
+                            #I removed drop=True in reset_index in order to keep 'time' as a column.
+                            pairdf = pairdf_all.reset_index().dropna(subset=[modvar,obsvar])
+                        else:
+                            pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
+                        #Define figure,plot,and text kwargs and combine if needed.
+                        #If duplicative: Model kwargs > default kwargs and 
+                        #yaml figure and text kwargs > defaults in ploting routines
+                        #Types of plots
+                        if plot_type.lower() == 'timeseries':
+                            if set_yaxis == True:
+                                if all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + 
+                                          ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None 
+                            #Select time to use as index.
+                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            a_w = grp_dict['data_proc']['ts_avg_window']
+                            if p_index == 0:
+                                #First plot the observations.
+                                ax = splots.make_timeseries(pairdf, column=obsvar, label=p.obs, avg_window=a_w, 
+                                                            ylabel = use_ylabel, vmin = vmin, vmax = vmax,
+                                                            domain_type=domain_type, domain_name=domain_name,
+                                                            plot_dict=obs_dict, fig_dict=fig_dict,
+                                                            text_dict=text_dict)
+                            #For all p_index plot the model.
+                            ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, avg_window=a_w,
+                                                        domain_type=domain_type, domain_name=domain_name,
+                                                        ylabel = use_ylabel, vmin = vmin, vmax = vmax, 
+                                                        plot_dict=plot_dict, text_dict=text_dict)
+                            #At the end save the plot.
+                            if p_index == len(pair_labels)-1:
+                                m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)
+                        if plot_type.lower() == 'boxplot':
+                            if set_yaxis == True:
+                                if all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + 
+                                          ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None 
+                            #First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=obsvar, 
+                                                                             label=p.obs, plot_dict=obs_dict)
+                            #Then add the models to this dataarray.
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=modvar, label=p.model, 
+                                                                         plot_dict=plot_dict, comb_bx = comb_bx, 
+                                                                         label_bx = label_bx)
+                            #For the last p_index make the plot.
+                            if p_index == len(pair_labels)-1:
+                                splots.make_boxplot(comb_bx, label_bx, ylabel = use_ylabel, vmin = vmin, 
+                                                    vmax = vmax, outname=outname,
+                                                    domain_type=domain_type, domain_name=domain_name,
+                                                    plot_dict=obs_dict, fig_dict=fig_dict,
+                                                    text_dict=text_dict)
+                        elif plot_type.lower() == 'taylor':
+                            if set_yaxis == True:
+                                if 'ty_scale' in obs_plot_dict.keys():
+                                    ty_scale = obs_plot_dict['ty_scale']
+                                else:
+                                    print('Warning: ty_scale not specified for ' + obsvar + 
+                                          ', so default used.')
+                                    ty_scale = 1.5 #Use default
+                            else:
+                                ty_scale = 1.5 #Use default
+                            if p_index == 0: 
+                                #Plot initial obs/model
+                                dia = splots.make_taylor(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
+                                                         label_m=p.model, ylabel = use_ylabel, ty_scale=ty_scale,
+                                                         domain_type=domain_type, domain_name=domain_name,
+                                                         plot_dict=plot_dict, fig_dict=fig_dict, text_dict=text_dict)
+                            else:
+                                #For the rest, plot on top of dia
+                                dia = splots.make_taylor(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
+                                                         label_m=p.model, dia = dia, ylabel = use_ylabel, 
+                                                         ty_scale=ty_scale, 
+                                                         domain_type=domain_type, domain_name=domain_name,
+                                                         plot_dict=plot_dict, text_dict=text_dict)
+                            #At the end save the plot.
+                            if p_index == len(pair_labels)-1:
+                                m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)
+                        elif plot_type.lower() == 'spatial_bias':
+                            if set_yaxis == True:
+                                if 'vdiff_plot' in obs_plot_dict.keys():
+                                    vdiff = obs_plot_dict['vdiff_plot']
+                                else:
+                                    print('Warning: ydiff_plot not specified for ' + obsvar + ', so default used.')
+                                    vdiff = None
+                            else:
+                                vdiff = None
                             #p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname,p_label)
                             splots.make_spatial_bias(pairdf, column_o=obsvar, label_o=p.obs, column_m=modvar, 
-                                                     label_m=p.model, ylabel = use_ylabel, outname=outname,
+                                                     label_m=p.model, ylabel = use_ylabel,
+                                                     vdiff = vdiff, outname=outname,
                                                      domain_type=domain_type, domain_name=domain_name,
                                                      fig_dict=fig_dict, text_dict=text_dict)
-                        
-                #For plots where only save at end of the p_label loop save plot. For the other plots save within loop.
-                if plot_type.lower() == 'timeseries' or plot_type.lower() == 'taylor':
-                    m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)
+                        elif plot_type.lower() == 'spatial_overlay':
+                            if set_yaxis == True:
+                                if all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot','nlevels_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                    nlevels = obs_plot_dict['nlevels_plot']
+                                elif all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                    nlevels = None
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + 
+                                          ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                                    nlevels = None
+                            else:
+                                vmin = None
+                                vmax = None
+                                nlevels = None
+                            #Create model slice and select time window for spatial plots
+                            vmodel = p.model_obj.obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                            #Determine proj to use for spatial plots
+                            proj = splots.map_projection(p.model_obj)
+                            #p_label needs to be added to the outname for this plot
+                            outname = "{}.{}".format(outname,p_label)
+                            #For just the spatial overlay plot, you do not use the model data from the pair file
+                            #So get the variable name again since pairing one could be _new.
+                            splots.make_spatial_overlay(pairdf, vmodel, column_o=obsvar, label_o=p.obs,
+                                                        column_m=p.model_vars[index], 
+                                                        label_m=p.model, ylabel = use_ylabel, vmin = vmin, 
+                                                        vmax = vmax, nlevels = nlevels, proj = proj, outname=outname,
+                                                        domain_type=domain_type, domain_name=domain_name,
+                                                        fig_dict=fig_dict, text_dict=text_dict)
