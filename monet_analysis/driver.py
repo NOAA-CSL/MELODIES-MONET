@@ -165,6 +165,7 @@ class model:
 
         """
         self.model = None
+        self.radius_of_influence = None
         self.file_str = None
         self.files = None
         self.label = None
@@ -297,6 +298,10 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class intance
+                if 'radius_of_influence' in self.control_dict['model'][mod].keys():
+                    m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
+                else:
+                    m.radius_of_influence = 1e6
                 m.label = mod
                 # create file string (note this can include hot strings)
                 m.file_str = self.control_dict['model'][mod]['files']
@@ -366,7 +371,8 @@ class analysis:
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()
                     # now combine obs with
-                    paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=1e6, suffix=mod.label)
+                    paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence,
+                                                                suffix=mod.label)
                     # print(paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
@@ -396,6 +402,7 @@ class analysis:
 
         """
         from plots import surfplots as splots
+        from new_models import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -424,21 +431,24 @@ class analysis:
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
+                    
                     #Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
                         p = self.paired[p_label]
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
+                        
                         #Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+                        
                         #convert to dataframe 
                         pairdf_all = p.obj.to_dataframe()
-                    
+                        
                         #Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
-                    
+                        
                         #Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
                             if p.model_obj.plot_kwargs is not None:
@@ -491,18 +501,18 @@ class analysis:
                         #Determine outname        
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp,plot_type, obsvar, 
                                                              startdatename, enddatename, domain_type, domain_name)
+                        
                         #Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
+                        
                         #Drop NaNs
                         if grp_dict['data_proc']['rem_obs_nan'] == True:
                             #I removed drop=True in reset_index in order to keep 'time' as a column.
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar,obsvar])
                         else:
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        #Define figure,plot,and text kwargs and combine if needed.
-                        #If duplicative: Model kwargs > default kwargs and 
-                        #yaml figure and text kwargs > defaults in ploting routines
+                        
                         #Types of plots
                         if plot_type.lower() == 'timeseries':
                             if set_yaxis == True:
@@ -529,12 +539,13 @@ class analysis:
                                                             text_dict=text_dict)
                             #For all p_index plot the model.
                             ax = splots.make_timeseries(pairdf, column=modvar, label=p.model, ax=ax, avg_window=a_w,
-                                                        domain_type=domain_type, domain_name=domain_name,
                                                         ylabel = use_ylabel, vmin = vmin, vmax = vmax, 
+                                                        domain_type=domain_type, domain_name=domain_name,
                                                         plot_dict=plot_dict, text_dict=text_dict)
                             #At the end save the plot.
                             if p_index == len(pair_labels)-1:
-                                m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)
+                                code_m_new.savefig(outname + '.png',loc=2, height=120, decorate=True, 
+                                                   bbox_inches='tight', dpi=200)
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
@@ -588,13 +599,14 @@ class analysis:
                                                          plot_dict=plot_dict, text_dict=text_dict)
                             #At the end save the plot.
                             if p_index == len(pair_labels)-1:
-                                m.plots.savefig(outname + '.png', dpi=100, loc=4, decorate=False)
+                                code_m_new.savefig(outname + '.png',loc=2, height=70, decorate=True, 
+                                                   bbox_inches='tight', dpi=200)
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
                                     vdiff = obs_plot_dict['vdiff_plot']
                                 else:
-                                    print('Warning: ydiff_plot not specified for ' + obsvar + ', so default used.')
+                                    print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
                                     vdiff = None
                             else:
                                 vdiff = None

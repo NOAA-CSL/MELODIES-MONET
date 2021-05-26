@@ -1,7 +1,7 @@
 # General Description:  
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
 # Opt: Specifying the variable or variable group is optional
-# For now all plots except time series average over the analysis window. Not sure making 24 hourly plots is useful and if you need an hourly plot to diagnose bugs, you can restrict the analysis window.
+# For now all plots except time series average over the analysis window. 
 # Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
   start_time: '2019-08-19-00:00:00' #UTC
@@ -12,13 +12,14 @@ model:
         #/scratch1/BMC/stela/rhs/CMAQ/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf 
         #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
+    radius_of_influence: 12000 #meters
     #variables: #Opt
     #  CO:
     #    unit_scale: 1000.0
     #    unit_scale_method: '*'
     mapping: #model species name : obs species name
-      airnow:
-        CO: CO
+      airnow: 
+        CO: CO #The mapping tables need to contain the same species for all models.
         'NO': 'NO'
         NO2: NO2
         PM25_TOT: "PM2.5"
@@ -33,6 +34,7 @@ model:
         #/scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf
         #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'cmaq'
+    radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       airnow:
         CO: CO
@@ -50,6 +52,7 @@ model:
         #/scratch1/BMC/stela/rhs/CMAQ/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf
         #/Volumes/Garratt/owlets/aqm.t12z.aconc-sfc.ncf
     mod_type: 'wrfchem'
+    radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       airnow:
         co: CO
@@ -67,7 +70,6 @@ obs:
     use_airnow: True
     filename: test5.nc
     obs_type: pt_sfc
-    radius_of_influence: 1e5
     variables: #Opt 
       PM2.5:
         unit_scale: 1
@@ -146,10 +148,10 @@ plots:
     domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_wrfchem_v4.0'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
-      rem_obs_nan: False # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
-      set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
