@@ -42,7 +42,8 @@ def open_mfdataset(fname,
     for files in fname:
         wrflist.append(Dataset(files))
     
-    var_list = ['o3','no','no2','so2','co','so4aj','so4ai','nh4aj','nh4ai','no3aj','no3ai',
+    var_list = ['o3','no','no2','so2','co','PM2_5_DRY',
+               'so4aj','so4ai','nh4aj','nh4ai','no3aj','no3ai',
                'naaj','naai','claj','clai','poa0j','poa0i','poa1j',
                'poa1i','poa2j','poa2i','poa3j','poa3i','asoa0j','asoa0i','asoa1j',
                'asoa1i','asoa2j','asoa2i','asoa3j','asoa3i','bsoa1j','bsoa1i',
@@ -243,7 +244,7 @@ def _predefined_mapping_tables(dset):
     """
     to_airnow = {
         'OZONE': 'o3',
-        'PM2.5': 'PM25_calc',
+        'PM2.5': 'PM2_5_DRY',
         'CO': 'CO',
         'NOX': 'NOx',
         'SO2': 'SO2',
