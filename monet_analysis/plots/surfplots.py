@@ -77,10 +77,37 @@ def map_projection(f):
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
 
+def generate_map_wo_download(map_kwargs): 
+    map_kwargs2 = map_kwargs.copy()
+    map_kwargs2['coastlines'] = False
+    map_kwargs2['countries'] = False
+    map_kwargs2['states'] = False
+    map_kwargs2['natural_earth'] = False
+    ax = monet.plots.draw_map(**map_kwargs2)
+        
+    #Then read in the coastlines for all plots and states if selected.
+    from cartopy.io.shapereader import Reader
+    from cartopy.feature import ShapelyFeature
+    coast_shp = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                             'data/Cartopy/ne_10m_coastline/ne_10m_coastline.shp'))
+    coast_reader = Reader(coast_shp)
+    coast = ShapelyFeature(coast_reader.geometries(), map_kwargs['crs'])
+    ax.add_feature(coast, linewidth=0.8, edgecolor='black', facecolor='none')
+        
+    if 'states' in map_kwargs.keys():
+        if map_kwargs['states'] == True:
+            state_shp = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), '..',
+                             'data/Cartopy/ne_10m_admin_1_states_provinces_lines/ne_10m_admin_1_states_provinces_lines.shp'))
+            states_reader = Reader(state_shp)
+            states = ShapelyFeature(states_reader.geometries(), map_kwargs['crs'])
+            ax.add_feature(states,linewidth=0.5, edgecolor="black", facecolor='none')
+    return ax
+
 def make_spatial_bias(df, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vdiff=None,
                       outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None):
+                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None,dmaps=True):
         
     """Creates the MONET-Analysis spatial bias plot."""
     def_map = dict(states=True,figsize=[10, 5])
@@ -88,6 +115,10 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
         map_kwargs = {**def_map, **fig_dict}
     else:
         map_kwargs = def_map
+        
+    #If not specified use the PlateCarree projection
+    if 'crs' not in map_kwargs:
+        map_kwargs['crs'] = ccrs.PlateCarree()
   
     #set default text size
     def_text = dict(fontsize=20)
@@ -103,11 +134,19 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     #Take the mean for each siteid
     df_mean=df.groupby(['siteid'],as_index=False).mean()
     
-    #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
-    #and then uses -1*val_max value for the minimum.
-    ax = monet.plots.sp_scatter_bias(
-        df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-                    cmap=new_color_map(), edgecolor='k',linewidth=.8)
+    if dmaps == False:
+        #Cannot have cartopy download the maps, so need to first create map manually
+        ax = generate_map_wo_download(map_kwargs)      
+        ax = monet.plots.sp_scatter_bias(
+            df_mean, ax = ax, col1=column_o, col2=column_m,val_max=vdiff,
+            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+    
+    else:    
+        #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
+        #and then uses -1*val_max value for the minimum.
+        ax = monet.plots.sp_scatter_bias(
+            df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
+            cmap=new_color_map(), edgecolor='k',linewidth=.8)
     
     if domain_type == 'all':
         latmin= 25.0
@@ -265,7 +304,7 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None):
+                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None,dmaps=True):
         
     """Creates the MONET-Analysis spatial overlay plot."""
     def_map = dict(states=True,figsize=[15, 8])
@@ -331,7 +370,18 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
     
-    #I add extend='both' here because the colorbar is setup to plot the values outside the range with the first and last color
+    if dmaps == False:
+        #Cannot have cartopy download the maps, so need to first create map manually
+        #ax = generate_map_wo_download(map_kwargs)      
+        #For this one the ax needs to be added as input to quick_contourf in monet.
+        #For now just update map_kwargs to not have states or coastlines = true.
+        #But once add this to MONET we can do the same as the spatial bias plot.
+        map_kwargs['coastlines'] = False
+        map_kwargs['countries'] = False
+        map_kwargs['states'] = False
+        map_kwargs['natural_earth'] = False
+        
+    #I add extend='both' here because the colorbar is setup to plot the values outside the range
     ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
                                 robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
     
