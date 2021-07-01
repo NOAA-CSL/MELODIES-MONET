@@ -42,8 +42,8 @@ def open_mfdataset(fname,
     for files in fname:
         wrflist.append(Dataset(files))
     
-    var_list = ['o3','no','no2','so2','co','PM2_5_DRY',
-               'pres','tk']
+    var_list = ['o3','no','no2','so2','co','PM2_5_DRY']
+               #'pres','tk']
    
     var_wrf_list = []
     for var in var_list:
