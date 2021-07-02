@@ -199,17 +199,24 @@ class model:
 
         """
         self.glob_files()
+        #Calculate species to input into MONET, so works for all mechanisms in wrfchem
+        #I want to expand this for the other models too when add aircraft data.
+        list_input_var = []
+        for obs_map in self.mapping:
+            list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) 
+                                                       - set(list_input_var))
         if 'cmaq' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.cmaq.open_mfdataset(self.files)
             else:
                 self.obj = mio.cmaq.open_dataset(self.files[0])
+        elif 'wrfchem_nopt' in self.model.lower():
+            #For wrfchem output that does not contain variables to calculate pressure and temperature
+            from new_models import wrfchem_auto as wrfchem #Eventually add to monet itself.
+            self.obj = wrfchem.open_mfdataset(self.files,var_list=list_input_var,vert=False)
         elif 'wrfchem' in self.model.lower():
-            from new_models import wrfchem as wrfchem #Eventually add to monet itself.
-            self.obj = wrfchem.open_mfdataset(self.files)
-        elif 'rapchem' in self.model.lower():
-            from new_models import rapchem as rapchem #Eventually add to monet itself.
-            self.obj = rapchem.open_mfdataset(self.files)
+            from new_models import wrfchem_auto as wrfchem #Eventually add to monet itself.
+            self.obj = wrfchem.open_mfdataset(self.files,var_list=list_input_var,vert=True)
         elif 'rrfs' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.rrfs_cmaq.open_mfdataset(self.files)

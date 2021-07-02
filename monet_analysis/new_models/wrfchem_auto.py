@@ -18,6 +18,8 @@ def open_mfdataset(fname,
                    earth_radius=6370000,
                    convert_to_ppb=True,
                    drop_duplicates=False,
+                   var_list = ['o3'],
+                   vert = True,
                    **kwargs):
     """Method to open RAP-chem netcdf files.
 
@@ -42,8 +44,11 @@ def open_mfdataset(fname,
     for files in fname:
         wrflist.append(Dataset(files))
     
-    var_list = ['o3','no','no2','so2','co','PM2_5_DRY']
-               #'pres','tk']
+    if vert == True:
+        #Add some additional defaults needed for aircraft analysis
+        #Turn this on also if need to convert aerosols 
+        var_list.append('pres')
+        var_list.append('tk')
    
     var_wrf_list = []
     for var in var_list:
@@ -54,9 +59,6 @@ def open_mfdataset(fname,
         var_wrf_list.append(var_wrf)
 
     dset = xr.merge(var_wrf_list)
-  
-    #sum nox
-    dset = add_lazy_nox(dset)
 
     #Add global attributes needed
     a_truelat1 = extract_global_attrs(wrflist[0],'TRUELAT1')    
@@ -84,14 +86,6 @@ def open_mfdataset(fname,
         dset[i] = dset[i].assign_attrs(a_cen_lon)
     #convert to monet format
     dset = _dataset_to_monet(dset)
-
-    #Time is already in correct format but need to rename
-    dset = dset.rename({'Time': 'time'})
-    dset = dset.rename(dict(bottom_top='z'))
-    grid = ioapi_grid_from_dataset_wrf(dset, earth_radius=earth_radius)
-    dset = dset.assign_attrs({'proj4_srs': grid})
-    for i in dset.variables:
-        dset[i] = dset[i].assign_attrs({'proj4_srs': grid})
     
     # convert all gas species to ppbv
     if convert_to_ppb:
@@ -107,10 +101,22 @@ def open_mfdataset(fname,
                 # ug/kg -> ug/m3 using dry air density
                 dset[i] = dset[i]*dset['pressure']/dset['temp']/287.05535 
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
-
+    grid = ioapi_grid_from_dataset_wrf(dset, earth_radius=earth_radius)
+    dset = dset.assign_attrs({'proj4_srs': grid})
+    for i in dset.variables:
+        dset[i] = dset[i].assign_attrs({'proj4_srs': grid})
+        
     #assign mapping table for airnow
     dset = _predefined_mapping_tables(dset)
-    return dset 
+        
+    #Time is already in correct format but need to rename
+    dset = dset.rename({'Time': 'time'})
+    if 'bottom_top' in dset.dims:
+        dset2 = dset.rename(dict(bottom_top='z'))
+    else:
+        dset2 = dset.expand_dims('z',axis=3).copy()
+
+    return dset2 
 
 def ioapi_grid_from_dataset_wrf(ds, earth_radius=6370000):
     """SGet the IOAPI projection out of the file into proj4.
@@ -171,48 +177,6 @@ def _get_keys(d):
     keys = Series([i for i in d.data_vars.keys()])
     return keys
 
-
-def add_lazy_pm25(d):
-    """Short summary.
-    #Note this is set up for RAP-chem mechanism edit this for your version WRF-chem mechanism.
-
-    Parameters
-    ----------
-    d : type
-        Description of parameter `d`.
-
-    Returns
-    -------
-    type
-        Description of returned object.
-
-    """
-    keys = _get_keys(d)
-    allvars = Series(['so4aj','so4ai','nh4aj','nh4ai','no3aj','no3ai','naaj','naai',
-        'claj','clai','poa0j','poa0i','poa1j','poa1i','poa2j','poa2i','poa3j','poa3i','asoa0j','asoa0i',
-        'asoa1j','asoa1i','asoa2j','asoa2i','asoa3j','asoa3i','bsoa1j','bsoa1i','bsoa2j','bsoa2i',
-        'bsoa3j','bsoa3i','ecj','eci','p25j','p25i'])
-    index = allvars.isin(keys)
-    #RHS add extra check that if not all variables in output you do not print PM2.5
-    if can_do(index) and all(index):
-        newkeys = allvars.loc[index]
-        d['PM25_calc'] = add_multiple_lazy(d, newkeys)
-        d['PM25_calc'] = d['PM25_calc'].assign_attrs({
-            'units': 'ug/kg-dryair','name': 'PM2.5_calc','long_name': 'PM2.5_calc_monet'})
-    return d
-
-def add_lazy_nox(d):
-    keys = _get_keys(d)
-    allvars = Series(['no', 'no2'])
-    index = allvars.isin(keys)
-    #RHS add extra check that if not all variables do not print
-    if can_do(index) and all(index):
-        newkeys = allvars.loc[index]
-        d['NOx'] = add_multiple_lazy(d, newkeys)
-        d['NOx'] = d['NOx'].assign_attrs({'units': 'ppmv','name': 'NOx', 'long_name': 'NOx'})
-    return d
-
-
 def add_multiple_lazy(dset, variables, weights=None):
     from numpy import ones
     if weights is None:
@@ -240,11 +204,10 @@ def _predefined_mapping_tables(dset):
     to_airnow = {
         'OZONE': 'o3',
         'PM2.5': 'PM2_5_DRY',
-        'CO': 'CO',
-        'NOX': 'NOx',
-        'SO2': 'SO2',
-        'NO': 'NO',
-        'NO2': 'NO2',
+        'CO': 'co',
+        'SO2': 'so2',
+        'NO': 'no',
+        'NO2': 'no2',
     }
     dset = dset.assign_attrs({'mapping_tables_to_airnow': to_airnow})
     return dset
