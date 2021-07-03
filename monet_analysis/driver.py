@@ -403,7 +403,7 @@ class analysis:
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
-        """This function will cycle through all the plots and control variables needed to make the plots necessary
+        """This function will cycle through all the plots and control variables needed to make the plots
 
         Returns
         -------
@@ -662,3 +662,111 @@ class analysis:
                                                         vmax = vmax, nlevels = nlevels, proj = proj, outname=outname,
                                                         domain_type=domain_type, domain_name=domain_name,
                                                         fig_dict=fig_dict, text_dict=text_dict,dmaps=dmaps)
+    def stats(self):
+        """This function will cycle through all the plots and control variables needed to make the plots
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
+        from plots import proc_stats as proc_stats
+        from new_models import code_to_move_to_monet as code_m_new
+
+        # first get the stats dictionary from the yaml file
+        stat_dict = self.control_dict['stats']
+        #Calculate general items
+        startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
+        enddatename = str(datetime.datetime.strftime(self.end_time, '%Y-%m-%d_%H'))
+        stat_list = stat_dict['stat_list']
+        #Determine stat_grp full name
+        stat_fullname_ns = proc_stats.produce_stat_dict(stat_list=stat_list,spaces=False)
+        stat_fullname_s = proc_stats.produce_stat_dict(stat_list=stat_list,spaces=True)
+        pair_labels = stat_dict['data']     
+        
+        #Then loop over all the observations
+        # first get the observational obs labels
+        pair1 = self.paired[list(self.paired.keys())[0]]
+        obs_vars = pair1.obs_vars
+        for obsvar in obs_vars:
+            
+            #Next loop over all of the domains.
+            #Loop also over the domain types. So can easily create several overview and zoomed in plots.
+            domain_types = stat_dict['domain_type']
+            domain_names = stat_dict['domain_name']
+            for domain in range(len(domain_types)):
+                domain_type = domain_types[domain]
+                domain_name = domain_names[domain]
+                
+                #The tables and text files will be output at this step in loop.
+                #Create an empty pandas dataarray.
+                #Determine outname        
+                outname = "{}.{}.{}.{}.{}.{}".format('stats',obsvar, domain_type, domain_name,
+                                                             startdatename, enddatename)
+                df_o_d = pd.DataFrame()
+                
+                #Set the index to be the stat variables.
+                df_o_d['Stat_ID'] = stat_list
+                df_o_d['Stat_FullName'] = stat_fullname_ns
+                
+                #Finally Loop through each of the pairs
+                for p_label in pair_labels:
+                    p = self.paired[p_label]
+                    #Create an empty list to store the stat_var
+                    p_stat_list = []
+                    
+                    #Loop through each of the stats
+                    for stat_grp in stat_list:
+                    
+                        # find the pair model label that matches the obs var
+                        index = p.obs_vars.index(obsvar)
+                        modvar = p.model_vars[index]
+                        
+                        #Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
+                        if obsvar == modvar:
+                            modvar = modvar + '_new'
+                        
+                        #convert to dataframe 
+                        pairdf_all = p.obj.to_dataframe()
+                        
+                        #Select only the analysis time window.
+                        pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
+                        
+                        #Determine the default plotting colors.
+                        #Maybe add a way to change the table here.
+                        
+                        #Query selected points if applicable
+                        if domain_type != 'all':
+                            pairdf_all.query(domain_type+' == '+'"'+domain_name+'"',inplace=True)
+                        
+                        #Drop NaNs for model and observations in all cases.
+                        pairdf = pairdf_all.reset_index().dropna(subset=[modvar,obsvar])
+                        
+                        #Create empty list for all dom
+                        #Calculate statistic and append to list
+                        if obsvar == 'WD': #Use seperate calculations for WD
+                            p_stat_list.append(proc_stats.calc(pairdf,stat=stat_grp,
+                                                               obsvar=obsvar,modvar=modvar,wind=True))
+                        else:
+                            p_stat_list.append(proc_stats.calc(pairdf,stat=stat_grp,
+                                                               obsvar=obsvar,modvar=modvar,wind=False))
+                        
+                    #Save the stat to a dataarray
+                    df_o_d[p_label] = p_stat_list
+                    
+                #Save the pandas dataframe to a txt file
+                df_o_d.to_csv(path_or_buf = outname + '.csv',index=False)
+                
+                if stat_dict['output_table'] == True:
+                    #Output as a table graphic too.
+                    #Change to use the name with full spaces.
+                    df_o_d['Stat_FullName'] = stat_fullname_s
+                    
+                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']))
+                    
+               
+                        
+                        
+                        
+                        
