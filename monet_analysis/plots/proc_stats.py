@@ -27,6 +27,7 @@ import pandas as pd
 import numpy as np
 from numpy import sqrt
 import matplotlib.pyplot as plt
+from new_models import code_to_move_to_monet as code_m_new
 
 def produce_stat_dict(stat_list,spaces=False):
     #If spaces = True, leave spaces in string.
@@ -65,7 +66,7 @@ def produce_stat_dict(stat_list,spaces=False):
                       'NMdnPB' : 'Normalized Median Peak Bias (%)',
                       'NMPE' : 'Normalized Mean Peak Error (%)',
                       'NMdnPE' : 'Normalized Median Peak Error (%)',
-                      'R2' : 'Coefficient of Determination',
+                      'R2' : 'Coefficient of Determination (R2)',
                       'RMSE' : 'Root Mean Square Error',
                       'd1' : 'Modified Index of Agreement',
                       'E1' : 'Modified Coefficient of Efficiency',
@@ -79,7 +80,8 @@ def produce_stat_dict(stat_list,spaces=False):
             stat_fullname_list.append(dict_stats_def[stat_id].replace(" ", "_"))
         else:
             stat_fullname_list.append(dict_stats_def[stat_id])
-        
+    #Note if you try to add a stat not in this list there will be an error in MELODIES-MONET, 
+    #which is intended. If you want to add a new stat, please add the full name to the dictionary above.
     return stat_fullname_list
 
 #Once redue the regulatory calculations. Use these from the surfplots. Or add these to a util script.
@@ -94,14 +96,19 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
         value = STDO(obs,mod,axis=None)
     elif stat == 'STDP':
         value = STDP(obs,mod,axis=None)
+    #This looks wrong. Don't use for now. Will look into it.
     elif stat == 'MNB':
         value = MNB(obs,mod,axis=None)
+    #MNE is erroring will look into soon. 
+    #Need to figure out how this differs from NME?
     elif stat == 'MNE':
         value = MNE(obs,mod,axis=None)
     elif stat == 'MdnNB':
         value = MdnNB(obs,mod,axis=None)
+    #MdnNE is also not working. Will look into this soon.
     elif stat == 'MdnNE':
         value = MdnNE(obs,mod,axis=None)
+    #NMdnGE is also not working. Will look into this soon.
     elif stat == 'NMdnGE':
         value = NMdnGE(obs,mod,axis=None)
     elif stat == 'NO':
@@ -141,11 +148,13 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
         value = NMdnB(obs,mod,axis=None)
     elif stat == 'FB':
         value = FB(obs,mod,axis=None)
+    #ME also not working, will look into this soon.
     elif stat == 'ME':
         if wind == True:
             value = WDME_m(obs,mod,axis=None)
         else:
             value = ME(obs,mod,axis=None)
+    #MdnE also not working, will look into this soon.
     elif stat == 'MdnE':
         if wind == True:
             value = WDMdnE(obs,mod,axis=None)
@@ -153,10 +162,15 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
             value = MdnE(obs,mod,axis=None)
     elif stat == 'NME':
         value = NME_m(obs,mod,axis=None)
+    #NMdnE also not working, will look into this soon.
+    #Likely need all of these to be converted to _m versions?
     elif stat == 'NMdnE':
         value = NMdnE(obs,mod,axis=None)
+    #FE also not working.
     elif stat == 'FE':
         value = FE(obs,mod,axis=None)
+    #For all peak stats, need to figure out what paxis is and add this
+    #For now, these probably will not work.
     elif stat == 'MNPB':
         value = MNPB(obs,mod,axis=None)    
     elif stat == 'MdnNPB':
@@ -173,6 +187,7 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
         value = NMPE(obs,mod,axis=None)
     elif stat == 'NMdnPE':
         value = NMdnPE(obs,mod,axis=None)
+    #This ends the paxis types that I need to test more.
     elif stat == 'R2':
         value = R2(obs,mod,axis=None)
     elif stat == 'RMSE':
@@ -180,8 +195,10 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
             value = WDRMSE_m(obs,mod,axis=None)
         else:
             value = RMSE(obs,mod,axis=None)
+    #Also does not work.
     elif stat == 'd1':
         value = d1(obs,mod,axis=None)
+    #Also does not work.
     elif stat == 'E1':
         value = E1(obs,mod,axis=None)
     elif stat == 'IOA':
@@ -194,34 +211,45 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
             value = WDAC(obs,mod,axis=None)
         else:
             value = AC(obs,mod,axis=None)
+    #In order to use HSS and ETS, need to specify min/max value.
+    #Need to look into this one too.
     elif stat == 'HSS':
         value = HSS(obs,mod,axis=None)
     elif stat == 'ETS':
         value = ETS(obs,mod,axis=None)
     else:
         print('Stat not found')
-        value = -999
+        value = np.nan
             
-    return round(value,4)
+    return value
 
-def create_table(df):
+def create_table(df,outname='plot',title='stats',out_table_kwargs=None):
+    
+    #Define defaults if not provided:
+    out_table_def = dict(fontsize=16.,xscale=1.2,yscale=1.2,figsize=[10,6],edges='open')
+    if out_table_kwargs is not None:
+        table_kwargs = {**out_table_def, **out_table_kwargs}
+    else:
+        table_kwargs = out_table_def
+        
     #Create a table graphic
-    fig, ax = plt.subplots(figsize=(12,2))
+    fig, ax = plt.subplots(figsize=table_kwargs['figsize'])
     ax.axis('off')
     ax.axis('tight')
     
     rows=df['Stat_FullName'].values.tolist()
-    cols=df.columns
     
     df = df.drop(columns=['Stat_FullName'])
     
-    t=ax.table(cellText=df.values, rowLabels=rows, colLabels=df.columns,loc='center',edges='open')
+    t=ax.table(cellText=df.values, rowLabels=rows,
+               colLabels=df.columns,loc='center',edges=table_kwargs['edges'])
     t.auto_set_font_size(False) 
-    t.set_fontsize(20)
-    t.scale(1.5, 1.5)
+    t.set_fontsize(table_kwargs['fontsize'])
+    t.scale(table_kwargs['xscale'], table_kwargs['yscale'])
     fig.tight_layout()
-    plt.title('Add Title')
-    plt.savefig('table.png')
+    plt.title(title,fontsize=table_kwargs['fontsize']*1.1,fontweight='bold')
+    code_m_new.savefig(outname + '.png',loc=1, height=70, decorate=True, 
+                                                   bbox_inches='tight', dpi=200)
 
     return
 

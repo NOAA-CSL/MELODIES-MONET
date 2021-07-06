@@ -269,6 +269,7 @@ class analysis:
         self.start_time = None
         self.end_time = None
         self.download_maps = True #Default to True
+        self.output_dir = None
 
     def read_control(self, control=None):
         """Reads the yaml control file.  If not set assumes control file is control.yaml
@@ -297,6 +298,8 @@ class analysis:
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'download_maps' in self.control_dict['analysis'].keys():
             self.download_maps = self.control_dict['analysis']['download_maps']
+        if 'output_dir' in self.control_dict['analysis'].keys():
+            self.output_dir = self.control_dict['analysis']['output_dir']    
 
     def open_models(self):
         """Opens all models and creates model instances for monet-analysis"""
@@ -509,9 +512,12 @@ class analysis:
                         else:
                             set_yaxis = False
                             
-                        #Determine outname        
+                        #Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp,plot_type, obsvar, 
                                                              startdatename, enddatename, domain_type, domain_name)
+                        if self.output_dir is not None:
+                            outname = self.output_dir + '/' + outname #Extra / just in case.
+                            
                         
                         #Query selected points if applicable
                         if domain_type != 'all':
@@ -663,16 +669,15 @@ class analysis:
                                                         domain_type=domain_type, domain_name=domain_name,
                                                         fig_dict=fig_dict, text_dict=text_dict,dmaps=dmaps)
     def stats(self):
-        """This function will cycle through all the plots and control variables needed to make the plots
+        """This function will cycle through all the stat variables needed to calculate the stats
 
         Returns
         -------
         type
-            Description of returned object.
+            Returns .csv file and .png file with stats
 
         """
         from plots import proc_stats as proc_stats
-        from new_models import code_to_move_to_monet as code_m_new
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
@@ -683,16 +688,30 @@ class analysis:
         #Determine stat_grp full name
         stat_fullname_ns = proc_stats.produce_stat_dict(stat_list=stat_list,spaces=False)
         stat_fullname_s = proc_stats.produce_stat_dict(stat_list=stat_list,spaces=True)
-        pair_labels = stat_dict['data']     
+        pair_labels = stat_dict['data']   
+        
+        #Determine rounding
+        if 'round_output' in stat_dict.keys():
+            round_output = stat_dict['round_output']
+        else: 
+            round_output = 3
         
         #Then loop over all the observations
         # first get the observational obs labels
-        pair1 = self.paired[list(self.paired.keys())[0]]
+        pair1 = self.paired[list(self.paired.keys())[0]]       
         obs_vars = pair1.obs_vars
         for obsvar in obs_vars:
+            #Read in some plotting specifications stored with observations.
+            if pair1.obs_obj.variable_dict is not None:
+                if obsvar in pair1.obs_obj.variable_dict.keys():
+                    obs_plot_dict = pair1.obs_obj.variable_dict[obsvar]
+                else:
+                    obs_plot_dict = {}
+            else:
+                obs_plot_dict = {}
             
             #Next loop over all of the domains.
-            #Loop also over the domain types. So can easily create several overview and zoomed in plots.
+            #Loop also over the domain types.
             domain_types = stat_dict['domain_type']
             domain_names = stat_dict['domain_name']
             for domain in range(len(domain_types)):
@@ -701,12 +720,20 @@ class analysis:
                 
                 #The tables and text files will be output at this step in loop.
                 #Create an empty pandas dataarray.
+                df_o_d = pd.DataFrame()
                 #Determine outname        
                 outname = "{}.{}.{}.{}.{}.{}".format('stats',obsvar, domain_type, domain_name,
                                                              startdatename, enddatename)
-                df_o_d = pd.DataFrame()
-                
-                #Set the index to be the stat variables.
+                if self.output_dir is not None:
+                    outname = self.output_dir + '/' + outname #Extra / just in case.
+                    
+                #Determine plotting kwargs
+                if 'output_table_kwargs' in stat_dict.keys():
+                    out_table_kwargs = stat_dict['output_table_kwargs']
+                else: 
+                    out_table_kwargs = None
+                               
+                #Add Stat ID and FullName to pandas dictionary.
                 df_o_d['Stat_ID'] = stat_list
                 df_o_d['Stat_FullName'] = stat_fullname_ns
                 
@@ -715,6 +742,12 @@ class analysis:
                     p = self.paired[p_label]
                     #Create an empty list to store the stat_var
                     p_stat_list = []
+                    
+                    #Specify title for stat plots.
+                    if 'ylabel_plot' in obs_plot_dict.keys():
+                        title = obs_plot_dict['ylabel_plot'] + ': ' + domain_type + ' ' + domain_name
+                    else: 
+                        title = obsvar + ': ' + domain_type + ' ' + domain_name
                     
                     #Loop through each of the stats
                     for stat_grp in stat_list:
@@ -732,9 +765,6 @@ class analysis:
                         
                         #Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time:self.end_time]
-                        
-                        #Determine the default plotting colors.
-                        #Maybe add a way to change the table here.
                         
                         #Query selected points if applicable
                         if domain_type != 'all':
@@ -756,6 +786,8 @@ class analysis:
                     df_o_d[p_label] = p_stat_list
                     
                 #Save the pandas dataframe to a txt file
+                #Save rounded output
+                df_o_d = df_o_d.round(round_output)
                 df_o_d.to_csv(path_or_buf = outname + '.csv',index=False)
                 
                 if stat_dict['output_table'] == True:
@@ -763,7 +795,8 @@ class analysis:
                     #Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
                     
-                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']))
+                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']),outname=outname,
+                                            title=title,out_table_kwargs=out_table_kwargs)
                     
                
                         
