@@ -6,12 +6,11 @@
 analysis:
   start_time: '2019-08-15-00:00:00' #UTC
   end_time: '2019-08-17-00:00:00' #UTC
-  output_dir: /wrk/d2/rschwantes/plots/test_cmaq/0815/ #Opt if not specified plots stored in code directory.
-  download_maps: True #If off-line or on machine with download restrictions like hera set to False.
+  output_dir: /scratch2/BMC/csd-wca/rhs/MONET/test_plots/0815/ #Opt if not specified plots stored in code directory.
 model:
   cmaq_oper: # model label
-    files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_OPER/gpfs_prod_aqm/0815/aqm.t12z.aconc_sfc.ncf
-    #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_oper/gpfs_prod_aqm/0818/aqm.t12z.aconc_sfc.ncf #Examples on Hera.
+    #files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_OPER/gpfs_prod_aqm/0815/aqm.t12z.aconc_sfc.ncf
+    files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_oper/gpfs_prod_aqm/0815/aqm.t12z.aconc_sfc.ncf #Examples on Hera.
     mod_type: 'cmaq'
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     #variables: #Opt
@@ -31,8 +30,8 @@ model:
       marker: '+'
       linestyle: '-.'
   cmaq_expt: # model label
-    files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_EXPT/0815/aqm.20190815.t12z.aconc-pm25.ncf
-    #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0818/aqm.20190818.t12z.aconc-pm25.ncf
+    #files: /wrk/d2/rschwantes/cmaq/surface/CMAQ_EXPT/0815/aqm.20190815.t12z.aconc-pm25.ncf
+    files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0815/aqm.20190815.t12z.aconc-pm25.ncf
     mod_type: 'cmaq'
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
@@ -190,12 +189,12 @@ plots:
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
-  stat_list: ['STDO', 'STDP', 'MdnNB', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'NME', 'R2', 'RMSE', 'IOA', 'AC'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
+  stat_list: ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1','E1', 'IOA', 'AC'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
   #Full calc list ['STDO', 'STDP', 'MdnNB', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'NME', 'R2', 'RMSE', 'IOA', 'AC']
   round_output: 2 #Opt, defaults to rounding to 3rd decimal place.
   output_table: True #Always outputs a .txt file. Optional to also output as a table.
-  output_table_kwargs: #Opt For all spatial plots, specify map_kwargs here too.
-    figsize: [8, 7] # figure size 
+  output_table_kwargs: #Opt 
+    figsize: [7, 8] # figure size 
     fontsize: 12.
     xscale: 1.1
     yscale: 1.1

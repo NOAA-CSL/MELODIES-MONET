@@ -296,8 +296,6 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        if 'download_maps' in self.control_dict['analysis'].keys():
-            self.download_maps = self.control_dict['analysis']['download_maps']
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = self.control_dict['analysis']['output_dir']    
 
@@ -422,7 +420,6 @@ class analysis:
         #Calculate any items that do not need to recalculate each loop.
         startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
         enddatename = str(datetime.datetime.strftime(self.end_time, '%Y-%m-%d_%H'))
-        dmaps = self.download_maps
         # now we are going to loop through each plot_group (note we can have multiple plot groups)
         # a plot group can have
         #     1) a singular plot type
@@ -633,7 +630,7 @@ class analysis:
                                                      label_m=p.model, ylabel = use_ylabel,
                                                      vdiff = vdiff, outname=outname,
                                                      domain_type=domain_type, domain_name=domain_name,
-                                                     fig_dict=fig_dict, text_dict=text_dict,dmaps=dmaps)
+                                                     fig_dict=fig_dict, text_dict=text_dict)
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all (k in obs_plot_dict for k in ('vmin_plot','vmax_plot','nlevels_plot')):
@@ -667,7 +664,7 @@ class analysis:
                                                         label_m=p.model, ylabel = use_ylabel, vmin = vmin, 
                                                         vmax = vmax, nlevels = nlevels, proj = proj, outname=outname,
                                                         domain_type=domain_type, domain_name=domain_name,
-                                                        fig_dict=fig_dict, text_dict=text_dict,dmaps=dmaps)
+                                                        fig_dict=fig_dict, text_dict=text_dict)
     def stats(self):
         """This function will cycle through all the stat variables needed to calculate the stats
 
