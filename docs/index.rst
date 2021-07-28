@@ -38,17 +38,27 @@ MELODIES-MONET has not yet been released, please contact the development team pr
 to using the plots for publication.
 
 .. toctree::
+   :hidden:
    :maxdepth: 4
-   :caption: Getting Started
+   :caption: Background and Setup
 
-   introduction
-   description
-   installation
-   getting-started
-   supported-datasets
-   viewing-output
-   under-development
-   contributing
+   background/introduction
+   background/description
+   background/installation
+   background/getting-started
+   background/supported-datasets
+   background/viewing-output
+   background/under-development
+   background/contributing
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 4
+   :caption: Capabilities
+
+   examples/regional_ts
+
 
 Get in touch
 ------------
