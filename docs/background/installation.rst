@@ -1,5 +1,5 @@
 Installation/Requirements
-============
+=========================
 
 Required dependencies
 ---------------------
@@ -56,3 +56,4 @@ or you can manually download it from GitHub and install it using the setup.py::
 
       - `Python 3 Statement <http://www.python3statement.org/>`__
       - `Tips on porting to Python 3 <https://docs.python.org/3/howto/pyporting.html>`__
+
