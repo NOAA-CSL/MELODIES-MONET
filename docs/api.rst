@@ -1,11 +1,8 @@
-
 Get in touch
 ------------
 
-Ask questions, suggest features or view source code `on GitHub`_.
-
-If an issue arrises please post on the `GitHub` issues.
-
+- Ask questions, suggest features or view source code `on GitHub`_.
+- If an issue arrises please post on the `GitHub` issues.
 
 API
 ---
@@ -17,8 +14,7 @@ API
 .. toctree::
     :maxdepth: 4
 
-    source/modules
-    source/monetio
+    source/melodies_monet
 
 
-.. _on GitHub: https://github.com/noaa-oar-arl/monetio
+.. _on GitHub: https://github.com/NOAA-CSL/MELODIES-MONET
