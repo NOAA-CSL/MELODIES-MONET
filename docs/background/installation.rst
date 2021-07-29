@@ -17,43 +17,36 @@ For parallel computing
 
 - `dask.array <http://dask.pydata.org>`__ (0.9.0 or later): required for
 
-Instructions
-------------
+Conda YAML files
+~~~~~~~~~~~~~~~~
+Examples of conda configuration yaml files that include a record of all the dependencies are available via the GitHub:
 
-monetio itself is a pure Python package, but some of it's dependencies may not be.
-The simplest way to install MONET is to install it from the channel bbakernoaa::
+- `MELODIES-MONET conda yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop_plots/monet_analysis/data/python_env_ymls>`__
 
-    $ conda install -c bbakernoaa monetio
+General Instructions
+--------------------
 
-This will install all of the dependencies needed by monetio along with monetio itself.
+MELODIES-MONET itself is a pure Python package, but some of it's dependencies may not be.
+First, set up a conda environment with all the dependencies, including MONET and MONETIO::
 
-If you choose to install it manually you can install the dependencies we recommend using the the following command::
+    $ conda create --name monet_py36 python=3.6
+    $ conda activate monet_py36
+    $ conda install netcdf4
+    $ conda install -y -c conda-forge wrf-python
+    $ conda install -y -c conda-forge jupyter
+    $ conda install -y -c conda-forge monet
+    $ conda install -y -c conda-forge monetio
 
-    $ conda config --add channels conda-forge
-    $ conda install xarray dask netCDF4 numpy pandas s3fs
+Then, fork the MELODIES-MONET package to your own GitHub and clone the repository to the location you will be using the plotting package.
 
-We recommend using the community maintained `conda-forge <https://conda-forge.github.io/>`_ channel
-if you need difficult\-to\-build dependencies such as cartopy, pynio or PseudoNetCDF::
 
-    $ conda install -c conda-forge xarray pandas matplotlib seaborn cartopy pseudonetcdf
+.. [1] For instructions for specific machine environments see Appendix:
 
-To install MONET currently you must install with pip.  This can be done directly
-from the github page::
+      - `NCAR cheyenne <../tutorial/machine-specific-install.html#NCAR-HPC-cheyenne>`__
 
-    $ pip install git+https://github.com/noaa-oar-arl/monetio.git
-
-or you can manually download it from GitHub and install it using the setup.py::
-
-    $ git clone https://github.com/noaa-oar-arl/MONET.git
-    $ cd MONET
-    $ pip install setup.py
-
-.. [1] MONET plans to drop support for python 2.7 sometime in 2019. This
-   means that new releases of xarray published after this date will only be
-   installable on python 3+ environments, but older versions of xarray will
-   always be available to python 2.7 users. For more information see the
-   following references:
+.. [2] For more information see the following references:
 
       - `Python 3 Statement <http://www.python3statement.org/>`__
       - `Tips on porting to Python 3 <https://docs.python.org/3/howto/pyporting.html>`__
+
 

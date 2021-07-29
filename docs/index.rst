@@ -35,7 +35,7 @@ information on MONET and MONETIO github repositories please refer to:
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Background and Setup
+   :caption: Background & Setup
 
    background/introduction
    background/description
@@ -50,16 +50,17 @@ information on MONET and MONETIO github repositories please refer to:
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Capabilities
+   :caption: Capabilities & Examples
 
    examples/regional_ts
 
 
 
-.. _on GitHub: https://github.com/NOAA-CSL/MELODIES-MONET
-
 .. toctree::
-   :maxdepth: 10
+   :maxdepth: 1
    :caption: Help & Reference
 
    api
+   tutorial/machine-specific-install
+
+
