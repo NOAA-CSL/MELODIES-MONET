@@ -27,9 +27,9 @@ class Mock(MagicMock):
 sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
-project = u'melodies-monet'
-copyright = u'2018, Barry Baker'
-author = u'Barry Baker'
+project = u'MELODIES-MONET'
+copyright = u'2021, NCAR/UCAR, NOAA'
+author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
 version = u''
@@ -158,14 +158,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'melodies-monet.tex', u'melodies-monet Documentation', u'Barry Baker', 'manual'),
+    (master_doc, 'melodies-monet.tex', u'MELODIES-MONET Documentation', u'Rebecca Schwantes (NOAA) \\and Barry Baker (NOAA) \\and Louisa Emmons (NCAR) \\and Rebecca Buchholz (NCAR)', 'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'melodies-monet', u'melodies-monet Documentation', [author], 1)]
+man_pages = [(master_doc, 'melodies-monet', u'MELODIES-MONET Documentation', [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -173,7 +173,7 @@ man_pages = [(master_doc, 'melodies-monet', u'melodies-monet Documentation', [au
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'melodies-monet', u'melodies-monet Documentation', author, 'melodies-monet', 'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'melodies-monet', u'melodies-monet Documentation', author, 'melodies-monet', 'Analysis tool for atmopsheric chemistry modeling.', 'Miscellaneous'),
 ]
 
 # -- Extension configuration -------------------------------------------------

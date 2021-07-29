@@ -20,27 +20,22 @@ information on MONET and MONETIO github repositories please refer to:
 - https://monet-arl.readthedocs.io
 - https://monetio.readthedocs.io
 
-References
-^^^^^^^^^^
 
-If you use MELODIES-MONET, please use the following citations:
+.. note::
+   If you use MELODIES-MONET, please use the following citations:
 
-Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation
-Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric
-Transport Models.” Atmosphere 8, no. 11: 210
+   - Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models.” Atmosphere 8, no. 11: 210
 
-TBD - An NCAR Technote?
+   - TBD - An NCAR Technote?
 
-What's New
-^^^^^^^^^^
 
-MELODIES-MONET has not yet been released, please contact the development team prior
-to using the plots for publication.
+.. warning::
+   MELODIES-MONET has not yet been released, please contact the development team prior to using the plots for publication.
 
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Background and Setup
+   :caption: Background & Setup
 
    background/introduction
    background/description
@@ -55,21 +50,17 @@ to using the plots for publication.
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Capabilities
+   :caption: Capabilities & Examples
 
    examples/regional_ts
 
 
-Get in touch
-------------
-
-- Ask questions, suggest features or view source code `on GitHub`_.
-- If an issue arrises please post on the `GitHub` issues.
-
-.. _on GitHub: https://github.com/NOAA-CSL/MELODIES-MONET
 
 .. toctree::
-   :maxdepth: 10
+   :maxdepth: 1
    :caption: Help & Reference
 
    api
+   tutorial/machine-specific-install
+
+
