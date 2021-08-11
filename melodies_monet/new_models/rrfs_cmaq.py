@@ -11,7 +11,7 @@ def can_do(index):
     else:
         return False
 
-def open_mfdataset(fname, earth_radius=6370000, convert_to_ppb=True, drop_duplicates=False, **kwargs):
+def open_mfdataset(fname, convert_to_ppb=True, mech='cb6r3_ae6_aq' , **kwargs):
     """Method to open RFFS-CMAQ dyn* netcdf files.
 
     Parameters
@@ -48,14 +48,15 @@ def open_mfdataset(fname, earth_radius=6370000, convert_to_ppb=True, drop_duplic
     dset = dset.sortby('z', ascending=False)
     dset = dset.sortby('z_i', ascending=False)
     
-    #Note these pressure and altitude calcs have to go after resorting.
+    #Note this altitude calcs needs to always go after resorting.
     dset['geohgt_m'] = _calc_hgt(dset)
     
     #Set coordinates
-    dset = dset.reset_index(['x','y','z','z_i'])
+    dset = dset.reset_index(['x','y','z','z_i'],drop=True) #For now drop z_i no variables use it. 
     dset = dset.reset_coords()
     dset = dset.set_coords(['latitude','longitude','pres_pa','geohgt_m'])
-    #time is already set as a coordinate correctly.
+    dset['latitude'] = dset['latitude'].isel(time=0)
+    dset['longitude'] = dset['longitude'].isel(time=0)
     
     #Need to adjust units before summing for aerosols
     # convert all gas species to ppbv
@@ -73,20 +74,24 @@ def open_mfdataset(fname, earth_radius=6370000, convert_to_ppb=True, drop_duplic
                 # ug/kg -> ug/m3 using dry air density
                 dset[i] = dset[i]*dset['pres_pa']/dset['temperature_k']/287.05535
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
-                
+    
+    #Get dictionary of summed species for the mechanism of choice.
+    dict_sum = dict_species_sums(mech=mech)
+    
     # add lazy diagnostic variables
-    dset = add_lazy_pm25(dset)
-    dset = add_lazy_pm10(dset)
-    dset = add_lazy_pm_course(dset)
-    dset = add_lazy_clf(dset)
-    dset = add_lazy_naf(dset)
-    #dset = add_lazy_caf(dset) Leave out for now. Missing a variable and need to check.
-    dset = add_lazy_noy(dset)
-    dset = add_lazy_nox(dset)
-    dset = add_lazy_no3f(dset)
-    dset = add_lazy_nh4f(dset)
-    dset = add_lazy_so4f(dset)
-
+    dset = add_lazy_pm25(dset,dict_sum)
+    dset = add_lazy_pm10(dset,dict_sum)
+    dset = add_lazy_noy_g(dset,dict_sum)
+    dset = add_lazy_noy_a(dset,dict_sum)
+    dset = add_lazy_nox(dset,dict_sum)
+    dset = add_lazy_cl_pm25(dset,dict_sum)
+    dset = add_lazy_ec_pm25(dset,dict_sum)
+    dset = add_lazy_ca_pm25(dset,dict_sum)
+    dset = add_lazy_na_pm25(dset,dict_sum)
+    dset = add_lazy_nh4_pm25(dset,dict_sum)
+    dset = add_lazy_no3_pm25(dset,dict_sum)
+    dset = add_lazy_so4_pm25(dset,dict_sum)
+    dset = add_lazy_om_pm25(dset,dict_sum)
     # Change the times to pandas format
     dset['time'] = dset.indexes['time'].to_datetimeindex(unsafe=True)
     #Turn off warning for now. This is just because the model is in julian time
@@ -98,7 +103,7 @@ def _get_keys(d):
     return keys
 
 
-def add_lazy_pm25(d):
+def add_lazy_pm25(d,dict_sum):
     """Short summary.
 
     Parameters
@@ -113,139 +118,57 @@ def add_lazy_pm25(d):
 
     """
     keys = _get_keys(d)
-    allvars = Series(concatenate([aitken, accumulation, coarse]))
-    weights = Series(concatenate([np.ones(len(aitken)),
-                                  np.ones(len(accumulation)),
-                                  np.full(len(coarse),0.2)]))
-    
-    if 'PM25_TOT' in keys.to_list():
-        d['PM25'] = d['PM25_TOT']
-    else:
-        index = allvars.isin(keys)
-        if can_do(index):
-            newkeys = allvars.loc[index]
-            newweights = weights.loc[index]
-            d['PM25_calc'] = add_multiple_lazy(d, newkeys, weights=newweights)
-            d['PM25_calc'] = d['PM25_calc'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5', 'long_name': 'PM2.5 calculated by MONET'})
-    return d
-
-
-def add_lazy_pm10(d):
-    keys = _get_keys(d)
-    allvars = Series(concatenate([aitken, accumulation, coarse]))
-    if 'PMC_TOT' in keys.to_list():
-        d['PM10'] = d['PMC_TOT']
-    else:
-        index = allvars.isin(keys)
-        if can_do(index):
-            newkeys = allvars.loc[index]
-            d['PM10_calc'] = add_multiple_lazy(d, newkeys)
-            d['PM10_calc'] = d['PM10_calc'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM10', 'long_name': 'Particulate Matter < 10 microns'})
-    return d
-
-
-def add_lazy_pm_course(d):
-    keys = _get_keys(d)
-    allvars = Series(coarse)
+    allvars = Series(concatenate([dict_sum['aitken'], dict_sum['accumulation'], dict_sum['coarse']]))
+    weights = Series(concatenate([np.ones(len(dict_sum['aitken'])),
+                                  np.ones(len(dict_sum['accumulation'])),
+                                  np.full(len(dict_sum['coarse']),0.2)]))
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['PM_COURSE'] = add_multiple_lazy(d, newkeys)
-        d['PM_COURSE'] = d['PM_COURSE'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM_COURSE', 'long_name': 'Course Mode Particulate Matter'})
+        newweights = weights.loc[index]
+        d['PM25'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['PM25'] = d['PM25'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5', 
+                                            'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20%'})
     return d
 
 
-def add_lazy_clf(d):
+def add_lazy_pm10(d,dict_sum):
     keys = _get_keys(d)
-    allvars = Series(['acli', 'aclj', 'aclk'])
-    weights = Series([1, 1, 0.2])
+    allvars = Series(concatenate([dict_sum['aitken'], dict_sum['accumulation'], dict_sum['coarse']]))
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['CLf'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['CLf'] = d['CLf'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'CLf', 'long_name': 'Fine Mode particulate Cl'})
+        d['PM10'] = add_multiple_lazy(d, newkeys)
+        d['PM10'] = d['PM10'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM10', 
+                                            'long_name': 'Particulate Matter < 10 microns'})
     return d
-
-
-def add_lazy_caf(d): #Missing ACAI leave out for now.
+                      
+def add_lazy_noy_g(d,dict_sum):
     keys = _get_keys(d)
-    allvars = Series(['ACAI', 'ACAJ', 'ASEACAT', 'ASOIL', 'ACORS'])
-    weights = Series([1, 1, 0.2 * 32.0 / 1000.0, 0.2 * 83.8 / 1000.0, 0.2 * 56.2 / 1000.0])
+    allvars = Series(dict_sum['noy_gas'])
+    weights = Series(dict_sum['noy_gas_weight'])
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['CAf'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['CAf'] = d['CAf'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'CAf', 'long_name': 'Fine Mode particulate CA'})
-    return d
+        newweights = weights.loc[index]
+        d['NOy_g'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['NOy_g'] = d['NOy_g'].assign_attrs({'name': 'NOy_g', 'long_name': 'NOy gases'})
+    return d                      
 
-
-def add_lazy_naf(d):
+def add_lazy_noy_a(d,dict_sum):
     keys = _get_keys(d)
-    allvars = Series(['anai', 'anaj', 'aseacat', 'asoil', 'acors'])
-    weights = Series([1, 1, 0.2 * 837.3 / 1000.0, 0.2 * 62.6 / 1000.0, 0.2 * 2.3 / 1000.0])
+    allvars = Series(dict_sum['noy_aer'])
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['NAf'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['NAf'] = d['NAf'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'NAf', 'long_name': 'NAf'})
+        d['NOy_a'] = add_multiple_lazy(d, newkeys)
+        d['NOy_a'] = d['NOy_a'].assign_attrs({'units': '$\mu g m^{-3}$','name': 'NOy_a', 
+                                              'long_name': 'NOy aerosol'})
     return d
-
-
-def add_lazy_so4f(d):
+                      
+def add_lazy_nox(d,dict_sum):
     keys = _get_keys(d)
-    allvars = Series(['aso4i', 'aso4j', 'aso4k'])
-    weights = Series([1.0, 1.0, 0.2])
-    index = allvars.isin(keys)
-    if can_do(index):
-        newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['SO4f'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['SO4f'] = d['SO4f'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'SO4f', 'long_name': 'SO4f'})
-    return d
-
-
-def add_lazy_nh4f(d):
-    keys = _get_keys(d)
-    allvars = Series(['anh4i', 'anh4j', 'anh4k'])
-    weights = Series([1.0, 1.0, 0.2])
-    index = allvars.isin(keys)
-    if can_do(index):
-        newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['NH4f'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['NH4f'] = d['NH4f'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'NH4f', 'long_name': 'NH4f'})
-    return d
-
-
-def add_lazy_no3f(d):
-    keys = _get_keys(d)
-    allvars = Series(['ano3i', 'ano3j', 'ano3k'])
-    weights = Series([1.0, 1.0, 0.2])
-    index = allvars.isin(keys)
-    if can_do(index):
-        newkeys = allvars.loc[index]
-        neww = weights.loc[index]
-        d['NO3f'] = add_multiple_lazy(d, newkeys, weights=neww)
-        d['NO3f'] = d['NO3f'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'NO3f', 'long_name': 'NO3f'})
-    return d
-
-
-def add_lazy_noy(d):
-    keys = _get_keys(d)
-    allvars = Series(noy_gas)
-    index = allvars.isin(keys)
-    if can_do(index):
-        newkeys = allvars.loc[index]
-        d['NOy'] = add_multiple_lazy(d, newkeys)
-        d['NOy'] = d['NOy'].assign_attrs({'name': 'NOy', 'long_name': 'NOy'})
-    return d
-
-def add_lazy_nox(d):
-    keys = _get_keys(d)
-    allvars = Series(['no', 'no2'])
+    allvars = Series(dict_sum['nox'])
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
@@ -253,7 +176,109 @@ def add_lazy_nox(d):
         d['NOx'] = d['NOx'].assign_attrs({'name': 'NOx', 'long_name': 'NOx'})
     return d
 
+def add_lazy_cl_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_cl'])
+    weights = Series(dict_sum['pm25_cl_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_cl'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_cl'] = d['pm25_cl'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_cl', 
+                                                  'long_name': 'PM2.5 CL assuming coarse mode 20%'})
+    return d
 
+def add_lazy_ec_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_ec'])
+    weights = Series(dict_sum['pm25_ec_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_ec'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_ec'] = d['pm25_ec'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_ec', 
+                                                  'long_name': 'PM2.5 EC assuming coarse mode 20%'})
+    return d
+
+def add_lazy_ca_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_ca'])
+    weights = Series(dict_sum['pm25_ca_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_ca'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_ca'] = d['pm25_ca'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_ca', 
+                                                  'long_name': 'PM2.5 CA assuming coarse mode 20%'})
+    return d
+
+
+def add_lazy_na_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_na'])
+    weights = Series(dict_sum['pm25_na_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_na'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_na'] = d['pm25_na'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_na', 
+                                                  'long_name': 'PM2.5 NA assuming coarse mode 20%'})
+    return d
+
+def add_lazy_nh4_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_nh4'])
+    weights = Series(dict_sum['pm25_nh4_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_nh4'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_nh4'] = d['pm25_nh4'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_nh4', 
+                                                  'long_name': 'PM2.5 NH4 assuming coarse mode 20%'})
+    return d
+
+def add_lazy_no3_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_no3'])
+    weights = Series(dict_sum['pm25_no3_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_no3'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_no3'] = d['pm25_no3'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_no3', 
+                                                  'long_name': 'PM2.5 NO3 assuming coarse mode 20%'})
+    return d
+
+def add_lazy_so4_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_so4'])
+    weights = Series(dict_sum['pm25_so4_weight'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        neww = weights.loc[index]
+        d['pm25_so4'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_so4'] = d['pm25_so4'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_so4', 
+                                                  'long_name': 'PM2.5 SO4 assuming coarse mode 20%'})
+    return d
+
+def add_lazy_om_pm25(d,dict_sum):
+    keys = _get_keys(d)
+    allvars = Series(dict_sum['pm25_om'])
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        d['pm25_om'] = add_multiple_lazy(d, newkeys)
+        d['pm25_om'] = d['pm25_om'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_om', 
+                                                  'long_name': 'PM2.5 OM'})
+    return d
+                       
 def add_multiple_lazy(dset, variables, weights=None):
     from numpy import ones
 
@@ -282,71 +307,25 @@ def _predefined_mapping_tables(dset):
     to_nadp = {}
     to_aqs = {
         'OZONE': ['o3'],
-        'PM2.5': ['PM25_calc'],
+        'PM2.5': ['PM25'],
         'CO': ['co'],
         'NOY': ['NOy'],
         'NOX': ['NOx'],
         'SO2': ['so2'],
         'NO': ['no'],
         'NO2': ['no2'],
-        'SO4f': ['SO4f'],
-        'PM10': ['PM10_calc'],
-        'NO3f': ['NO3f'],
-        'ECf': ['ECf'],
-        'OCf': ['OCf'],
-        'ETHANE': ['eth'],
-        'BENZENE': ['benzene'],
-        'TOLUENE': ['tol'],
-        'ISOPRENE': ['isop'],
-        'O-XYLENE': ['XYL'], #maybe xylmn?
-        'WS': ['WSPD10'], #Need to update
-        'TEMP': ['temperature_k'],
-        'WD': ['WDIR10'], #Need to update
-        'NAf': ['NAf'],
-        'MGf': ['AMGJ'],
-        'TIf': ['ATIJ'],
-        'SIf': ['ASIJ'],
-        'Kf': ['Kf'],
-        'CAf': ['CAf'], #Not calc now.
-        'NH4f': ['NH4f'],
-        'FEf': ['AFEJ'],
-        'ALf': ['AALJ'],
-        'MNf': ['AMNJ'],
     }
     to_airnow = {
         'OZONE': ['o3'],
-        'PM2.5': ['PM25_calc'],
+        'PM2.5': ['PM25'],
         'CO': ['co'],
         'NOY': ['NOy'],
         'NOX': ['NOx'],
         'SO2': ['so2'],
         'NO': ['no'],
         'NO2': ['no2'],
-        'SO4f': ['SO4f'],
-        'PM10': ['PM10_calc'],
-        'NO3f': ['NO3f'],
-        'ECf': ['ECf'],
-        'OCf': ['OCf'],
-        'ETHANE': ['eth'],
-        'BENZENE': ['benzene'],
-        'TOLUENE': ['tol'],
-        'ISOPRENE': ['isop'],
-        'O-XYLENE': ['XYL'], #Need to fix
-        'WS': ['WSPD10'], #Need to fix
-        'TEMP': ['temperature_k'],
-        'WD': ['WDIR10'], #Need to find.
-        'NAf': ['NAf'],
-        'MGf': ['AMGJ'],
-        'TIf': ['ATIJ'],
-        'SIf': ['ASIJ'],
-        'Kf': ['Kf'],
-        'CAf': ['CAf'],
-        'NH4f': ['NH4f'],
-        'FEf': ['AFEJ'],
-        'ALf': ['AALJ'],
-        'MNf': ['AMNJ'],
     }
-    to_crn = {'SUR_TEMP': ['TEMPG'], 'T_HR_AVG': ['TEMP2'], 'SOLARAD': ['RGRND'], 'SOIL_MOISTURE_5': ['SOIM1'], 'SOIL_MOISTURE_10': ['SOIM2']} #Need to look into.
+    to_crn = {} 
     to_aeronet = {}
     to_cems = {}
     mapping_tables = {
@@ -361,90 +340,55 @@ def _predefined_mapping_tables(dset):
     dset = dset.assign_attrs({'mapping_tables': mapping_tables})
     return dset
 
+#For the different mechanisms, just update these arrays as needed. 
 
-# Arrays for different gasses and pm groupings
-accumulation = array(
-    [
-        'aalj',
-        'aalk1j',
-        'aalk2j',
-        'abnz1j',
-        'abnz2j',
-        'abnz3j',
-        'acaj',
-        'aclj',
-        'aecj',
-        'afej',
-        'aiso1j',
-        'aiso2j',
-        'aiso3j',
-        'akj',
-        'amgj',
-        'amnj',
-        'anaj',
-        'anh4j',
-        'ano3j',
-        'aolgaj',
-        'aolgbj',
-        'aorgcj',
-        'aothrj',
-        'apah1j',
-        'apah2j',
-        'apah3j',
-        'asij',
-        'aso4j',
-        'asqtj',
-        'atij',
-        'atol1j',
-        'atol2j',
-        'atol3j',
-        'atrp1j',
-        'atrp2j',
-        'axyl1j',
-        'axyl2j',
-        'axyl3j',
-    ] #Had to remove 'APNCOMJ','APOCJ', 'AORGAJ','AORGPAJ','AORGBJ',double check this list?
-)
-aitken = array(['acli', 'aeci', 'anai', 'anh4i', 'ano3i', 'aothri', 'aso4i']) #Had to remove 'APNCOMI','APOCI','AORGAI','AORGPAI', and 'AORGBI' double check this?
-coarse = array(['aclk', 'acors', 'anh4k', 'ano3k', 'aseacat', 'aso4k', 'asoil'])
-noy_gas = array(['no', 'no2', 'no3', 'n2o5', 'hono', 'hno3', 'pan', 'panx', 'pna', 'intr', 'ntr1', 'ntr2', 'cron', 'opan']) #RHS updated to include 3 NTR's. Need to compare and make sure have all of them. Removed CRN2, CRNO, and CRPX. Not in output are they in mech?
-pec = array(['aeci', 'aecj'])
-pso4 = array(['aso4i', 'aso4j'])
-pno3 = array(['ano3i', 'ano3j'])
-pnh4 = array(['anh4i', 'anh4j'])
-pcl = array(['acli', 'aclj'])
-poc = array(
-    [
-        'aothri',
-        'atol1j',
-        'atol2j',
-        'atol3j',
-        'atrp1j',
-        'atrp2j',
-        'axyl1j',
-        'axyl2j',
-        'axyl3j',
-        'aolgaj',
-        'aolgbj',
-        'aorgcj',
-        'aothrj',
-        'apah1j',
-        'apah2j',
-        'apah3j',
-        'asqtj',
-        'aiso1j',
-        'aiso2j',
-        'aiso3j',
-        'aalk1j',
-        'aalk2j',
-        'abnz1j',
-        'abnz2j',
-        'abnz3j',
-    ] #Had to remove some. Double check this later? 'APNCOMI','APOCI','AORGAI','AORGPAI','AORGBI',
-        #'AORGAJ','AORGPAJ','AORGBJ','APNCOMJ','APOCJ', 'AORGAI','AORGAJ','AORGPAI','AORGPAJ',
-        #'AORGBI','AORGBJ',
-)
-minerals = array(['aalj', 'acaj', 'afej', 'akj', 'amgj', 'amnj', 'anaj', 'atij', 'asij'])
+def dict_species_sums(mech):
+    if mech == 'cb6r3_ae6_aq':
+        sum_dict = {}
+        # Arrays for different gasses and pm groupings
+        sum_dict.update({'accumulation': ['aso4j', 'ano3j', 'anh4j', 'anaj', 'aclj', 'aecj', 'aothrj',
+                                                'afej', 'asij', 'atij', 'acaj', 'amgj', 'amnj', 'aalj', 
+                                                'akj', 'alvpo1j', 'asvpo1j', 'asvpo2j', 'asvpo3j', 'aivpo1j',
+                                                'axyl1j', 'axyl2j', 'axyl3j', 'atol1j', 'atol2j', 'atol3j',
+                                                'abnz1j', 'abnz2j', 'abnz3j', 'aiso1j', 'aiso2j', 'aiso3j',
+                                                'atrp1j', 'atrp2j', 'asqtj', 'aalk1j', 'aalk2j', 'apah1j',
+                                                'apah2j', 'apah3j', 'aorgcj', 'aolgbj', 'aolgaj', 'alvoo1j',
+                                                'alvoo2j','asvoo1j','asvoo2j','asvoo3j','apcsoj']}) 
+        sum_dict.update({'aitken' : ['aso4i','ano3i','anh4i','anai','acli', 'aeci','aothri',
+                                          'alvpo1i','asvpo1i','asvpo2i','alvoo1i','alvoo2i','asvoo1i','asvoo2i']})
+        sum_dict.update({'coarse' : ['asoil','acors', 'aseacat', 'aclk', 'aso4k', 'ano3k', 'anh4k']})
+        sum_dict.update({'noy_gas' : ['no', 'no2', 'no3', 'n2o5', 'hono', 'hno3', 'pna',
+                         'cron', 'clno2', 'pan', 'panx','opan', 'ntr1', 'ntr2','intr']}) 
+        sum_dict.update({'noy_gas_weight' : [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]})
+        sum_dict.update({'noy_aer' : ['ano3i', 'ano3j', 'ano3k']}) #Need to confirm here if there is a size cutoff for noy obs?
+        sum_dict.update({'nox' : ['no', 'no2']})              
+        sum_dict.update({'pm25_cl' : ['acli', 'aclj','aclk']})
+        sum_dict.update({'pm25_cl_weight' : [1, 1, 0.2]})
+        sum_dict.update({'pm25_ec' : ['aeci', 'aecj']})
+        sum_dict.update({'pm25_ec_weight' : [1, 1]})
+        sum_dict.update({'pm25_na' : ['anai', 'anaj','aseacat', 'asoil', 'acors']})
+        sum_dict.update({'pm25_na_weight' : [1, 1, 0.2 * 0.8373, 0.2 * 0.0626, 0.2 * 0.0023]})
+        sum_dict.update({'pm25_ca' : ['acaj','aseacat', 'asoil', 'acors']})
+        sum_dict.update({'pm25_ca_weight' : [1, 0.2 * 0.0320, 0.2 * 0.0838, 0.2 * 0.0562]})              
+        sum_dict.update({'pm25_nh4' : ['anh4i', 'anh4j','anh4k']})
+        sum_dict.update({'pm25_nh4_weight' : [1, 1, 0.2]})
+        sum_dict.update({'pm25_no3' : ['ano3i', 'ano3j','ano3k']})
+        sum_dict.update({'pm25_no3_weight' : [1, 1, 0.2]})
+        sum_dict.update({'pm25_so4' : ['aso4i', 'aso4j','aso4k']})
+        sum_dict.update({'pm25_so4_weight' : [1, 1, 0.2]})
+        sum_dict.update({'pm25_om' : ['alvpo1i','asvpo1i','asvpo2i','alvoo1i','alvoo2i','asvoo1i','asvoo2i',
+                                            'alvpo1j', 'asvpo1j', 'asvpo2j', 'asvpo3j', 'aivpo1j',
+                                            'axyl1j', 'axyl2j', 'axyl3j', 'atol1j', 'atol2j', 'atol3j',
+                                            'abnz1j', 'abnz2j', 'abnz3j', 'aiso1j', 'aiso2j', 'aiso3j',
+                                            'atrp1j', 'atrp2j', 'asqtj', 'aalk1j', 'aalk2j', 'apah1j',
+                                            'apah2j', 'apah3j', 'aorgcj', 'aolgbj', 'aolgaj', 'alvoo1j',
+                                            'alvoo2j','asvoo1j','asvoo2j','asvoo3j','apcsoj']})              
+
+    else:
+        raise NotImplementedError('Mechanism not supported, update rrfs_cmaq.py file in MONETIO')
+    
+    return sum_dict
+        
 
 def _calc_hgt(f):
     """Calculates the geopotential height in m from the variables hgtsfc and delz.

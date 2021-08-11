@@ -24,8 +24,6 @@ class pair:
         self.radius_of_influence = 1e6
         self.obs = None
         self.model = None
-        self.model_obj = None
-        self.obs_obj = None
         self.model_vars = None
         self.obs_vars = None
         self.filename = None
@@ -219,10 +217,9 @@ class model:
 
             self.obj = wrfchem.open_mfdataset(self.files, var_list=list_input_var, vert=True)
         elif 'rrfs' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.rrfs_cmaq.open_mfdataset(self.files)
-            else:
-                self.obj = mio.rrfs_cmaq.open_dataset(self.files)
+            from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.
+            
+            self.obj = rrfs_cmaq.open_mfdataset(self.files)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.fv3chem.open_mfdataset(self.files)
@@ -387,6 +384,10 @@ class analysis:
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()
+                    #Check if z dim is larger than 1. If so select, the first level as all models read through 
+                    #MONETIO will be reordered such that the first level is the level nearest to the surface.
+                    if model_obj.sizes['z'] > 1: #Assume only provide surface values
+                        model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
@@ -394,8 +395,6 @@ class analysis:
                     p = pair()
                     p.obs = obs.label
                     p.model = mod.label
-                    p.model_obj = mod
-                    p.obs_obj = obs
                     p.model_vars = keys
                     p.obs_vars = obs_vars
                     p.filename = '{}_{}.nc'.format(p.obs, p.model)
@@ -467,14 +466,14 @@ class analysis:
 
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
-                            if p.model_obj.plot_kwargs is not None:
-                                plot_dict = {**grp_dict['default_plot_kwargs'], **p.model_obj.plot_kwargs}
+                            if self.models[p.model].plot_kwargs is not None:
+                                plot_dict = {**grp_dict['default_plot_kwargs'], **self.models[p.model].plot_kwargs}
                             else:
                                 plot_dict = {**grp_dict['default_plot_kwargs'], **splots.calc_default_colors(p_index)}
                             obs_dict = grp_dict['default_plot_kwargs']
                         else:
-                            if p.model_obj.plot_kwargs is not None:
-                                plot_dict = p.model_obj.plot_kwargs
+                            if self.models[p.model].plot_kwargs is not None:
+                                plot_dict = self.models[p.model].plot_kwargs
                             else:
                                 plot_dict = splots.calc_default_colors(p_index)
                             obs_dict = None
@@ -490,9 +489,9 @@ class analysis:
                             text_dict = None
 
                         # Read in some plotting specifications stored with observations.
-                        if p.obs_obj.variable_dict is not None:
-                            if obsvar in p.obs_obj.variable_dict.keys():
-                                obs_plot_dict = p.obs_obj.variable_dict[obsvar]
+                        if self.obs[p.obs].variable_dict is not None:
+                            if obsvar in self.obs[p.obs].variable_dict.keys():
+                                obs_plot_dict = self.obs[p.obs].variable_dict[obsvar]
                             else:
                                 obs_plot_dict = {}
                         else:
@@ -702,10 +701,16 @@ class analysis:
                                 vmin = None
                                 vmax = None
                                 nlevels = None
+                            #Check if z dim is larger than 1. If so select, the first level as all models read through 
+                            #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
-                            vmodel = p.model_obj.obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                            if self.models[p.model].obj.sizes['z'] > 1: #Assume only provide surface values
+                                vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
+                                    dict(time=slice(self.start_time, self.end_time))] 
+                            else:
+                                vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             # Determine proj to use for spatial plots
-                            proj = splots.map_projection(p.model_obj)
+                            proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             # For just the spatial overlay plot, you do not use the model data from the pair file
@@ -763,9 +768,9 @@ class analysis:
         obs_vars = pair1.obs_vars
         for obsvar in obs_vars:
             # Read in some plotting specifications stored with observations.
-            if pair1.obs_obj.variable_dict is not None:
-                if obsvar in pair1.obs_obj.variable_dict.keys():
-                    obs_plot_dict = pair1.obs_obj.variable_dict[obsvar]
+            if self.obs[pair1.obs].variable_dict is not None:
+                if obsvar in self.obs[pair1.obs].variable_dict.keys():
+                    obs_plot_dict = self.obs[pair1.obs].variable_dict[obsvar]
                 else:
                     obs_plot_dict = {}
             else:

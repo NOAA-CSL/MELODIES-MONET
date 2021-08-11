@@ -73,7 +73,10 @@ def map_projection(f):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     #Need to add the projections you want to use for the other models here.        
-    else:
+    elif f.model.lower() == 'rrfs':
+        proj = ccrs.LambertConformal(
+            central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
+    else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
 
