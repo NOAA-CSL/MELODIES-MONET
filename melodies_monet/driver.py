@@ -164,8 +164,13 @@ class model:
         """
         self.model = None
         self.radius_of_influence = None
+        self.mod_kwargs = {}
         self.file_str = None
         self.files = None
+        self.file_vert_str = None
+        self.files_vert = None
+        self.file_ht_str = None
+        self.files_ht = None
         self.label = None
         self.obj = None
         self.mapping = None
@@ -186,6 +191,11 @@ class model:
 
         print(self.file_str)
         self.files = sort(glob(self.file_str))
+        
+        if self.file_vert_str is not None:
+            self.files_vert = sort(glob(self.file_vert_str))
+        if self.file_ht_str is not None:
+            self.files_ht = sort(glob(self.file_ht_str))
 
     def open_model_files(self):
         """Short summary.
@@ -202,34 +212,33 @@ class model:
         list_input_var = []
         for obs_map in self.mapping:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+        #Only certain models need this option for speeding up i/o.
         if 'cmaq' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.cmaq.open_mfdataset(self.files)
-            else:
-                self.obj = mio.cmaq.open_dataset(self.files[0])
-        elif 'wrfchem_nopt' in self.model.lower():
-            # For wrfchem output that does not contain variables to calculate pressure and temperature
-            from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
-
-            self.obj = wrfchem.open_mfdataset(self.files, var_list=list_input_var, vert=False)
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.files_vert is not None:
+                self.mod_kwargs.update({'fname_vert' : self.files_vert})
+            if self.files_ht is not None:
+                self.mod_kwargs.update({'fname_ht' : self.files_ht})
+            from new_models import cmaq as cmaq  # Eventually add to monet itself.
+            self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
+            self.mod_kwargs.update({'var_list' : list_input_var})
             from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
-
-            self.obj = wrfchem.open_mfdataset(self.files, var_list=list_input_var, vert=True)
+            self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
-            from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.
-            
-            self.obj = rrfs_cmaq.open_mfdataset(self.files)
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
+            self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
-                self.obj = mio.fv3chem.open_mfdataset(self.files)
+                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = mio.fv3chem.open_dataset(self.files)
+                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         else:
             if len(self.files) > 1:
-                self.obj = xr.open_mfdataset(self.files)
+                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = xr.open_dataset(self.files[0])
+                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
 
     def mask_and_scale(self):
@@ -316,9 +325,15 @@ class analysis:
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                if 'mod_kwargs' in self.control_dict['model'][mod].keys():
+                    m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
                 # create file string (note this can include hot strings)
                 m.file_str = self.control_dict['model'][mod]['files']
+                if 'files_vert' in self.control_dict['model'][mod].keys():
+                    m.file_vert_str = self.control_dict['model'][mod]['files_vert']
+                if 'files_ht' in self.control_dict['model'][mod].keys():
+                    m.file_ht_str = self.control_dict['model'][mod]['files_ht']
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict

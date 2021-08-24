@@ -11,7 +11,12 @@ def can_do(index):
     else:
         return False
 
-def open_mfdataset(fname, convert_to_ppb=True, mech='cb6r3_ae6_aq' , **kwargs):
+def open_mfdataset(fname, 
+                   convert_to_ppb=True, 
+                   mech='cb6r3_ae6_aq',
+                   var_list = ['o3'],
+                   **kwargs):
+    #Like WRF-chem add var list that just determines whether to calculate sums or not to speed this up.
     """Method to open RFFS-CMAQ dyn* netcdf files.
 
     Parameters
@@ -49,12 +54,12 @@ def open_mfdataset(fname, convert_to_ppb=True, mech='cb6r3_ae6_aq' , **kwargs):
     dset = dset.sortby('z_i', ascending=False)
     
     #Note this altitude calcs needs to always go after resorting.
-    dset['geohgt_m'] = _calc_hgt(dset)
+    dset['hgtmsl_m'] = _calc_hgt(dset)
     
     #Set coordinates
     dset = dset.reset_index(['x','y','z','z_i'],drop=True) #For now drop z_i no variables use it. 
     dset = dset.reset_coords()
-    dset = dset.set_coords(['latitude','longitude','pres_pa','geohgt_m'])
+    dset = dset.set_coords(['latitude','longitude','pres_pa','hgtmsl_m'])
     dset['latitude'] = dset['latitude'].isel(time=0)
     dset['longitude'] = dset['longitude'].isel(time=0)
     
@@ -68,7 +73,7 @@ def open_mfdataset(fname, convert_to_ppb=True, mech='cb6r3_ae6_aq' , **kwargs):
                     dset[i].attrs['units'] = 'ppbV'
 
     # convert 'ug/kg to ug/m3'
-    for i in dset.variables:
+    #for i in dset.variables:
         if 'units' in dset[i].attrs:
             if 'ug/kg' in dset[i].attrs['units']:
                 # ug/kg -> ug/m3 using dry air density
@@ -79,19 +84,33 @@ def open_mfdataset(fname, convert_to_ppb=True, mech='cb6r3_ae6_aq' , **kwargs):
     dict_sum = dict_species_sums(mech=mech)
     
     # add lazy diagnostic variables
-    dset = add_lazy_pm25(dset,dict_sum)
-    dset = add_lazy_pm10(dset,dict_sum)
-    dset = add_lazy_noy_g(dset,dict_sum)
-    dset = add_lazy_noy_a(dset,dict_sum)
-    dset = add_lazy_nox(dset,dict_sum)
-    dset = add_lazy_cl_pm25(dset,dict_sum)
-    dset = add_lazy_ec_pm25(dset,dict_sum)
-    dset = add_lazy_ca_pm25(dset,dict_sum)
-    dset = add_lazy_na_pm25(dset,dict_sum)
-    dset = add_lazy_nh4_pm25(dset,dict_sum)
-    dset = add_lazy_no3_pm25(dset,dict_sum)
-    dset = add_lazy_so4_pm25(dset,dict_sum)
-    dset = add_lazy_om_pm25(dset,dict_sum)
+    # Note that because there are so many species to sum. Summing the aerosols is slowing down the code.
+    if 'PM25' in var_list:
+        dset = add_lazy_pm25(dset,dict_sum)
+    if 'PM10' in var_list:    
+        dset = add_lazy_pm10(dset,dict_sum)
+    if 'noy_gas' in var_list:
+        dset = add_lazy_noy_g(dset,dict_sum)
+    if 'noy_aer' in var_list:
+        dset = add_lazy_noy_a(dset,dict_sum)
+    if 'nox' in var_list:
+        dset = add_lazy_nox(dset,dict_sum)
+    if 'pm25_cl' in var_list:
+        dset = add_lazy_cl_pm25(dset,dict_sum)
+    if 'pm25_ec' in var_list:
+        dset = add_lazy_ec_pm25(dset,dict_sum)
+    if 'pm25_ca' in var_list:
+        dset = add_lazy_ca_pm25(dset,dict_sum)
+    if 'pm25_na' in var_list:
+        dset = add_lazy_na_pm25(dset,dict_sum)
+    if 'pm25_nh4' in var_list:
+        dset = add_lazy_nh4_pm25(dset,dict_sum)
+    if 'pm25_no3' in var_list:
+        dset = add_lazy_no3_pm25(dset,dict_sum)
+    if 'pm25_so4' in var_list:
+        dset = add_lazy_so4_pm25(dset,dict_sum)
+    if 'pm25_om' in var_list:
+        dset = add_lazy_om_pm25(dset,dict_sum)
     # Change the times to pandas format
     dset['time'] = dset.indexes['time'].to_datetimeindex(unsafe=True)
     #Turn off warning for now. This is just because the model is in julian time
@@ -151,8 +170,8 @@ def add_lazy_noy_g(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         newweights = weights.loc[index]
-        d['NOy_g'] = add_multiple_lazy(d, newkeys, weights=newweights)
-        d['NOy_g'] = d['NOy_g'].assign_attrs({'name': 'NOy_g', 'long_name': 'NOy gases'})
+        d['noy_gas'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['noy_gas'] = d['noy_gas'].assign_attrs({'name': 'noy_gas', 'long_name': 'NOy gases'})
     return d                      
 
 def add_lazy_noy_a(d,dict_sum):
@@ -161,8 +180,8 @@ def add_lazy_noy_a(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['NOy_a'] = add_multiple_lazy(d, newkeys)
-        d['NOy_a'] = d['NOy_a'].assign_attrs({'units': '$\mu g m^{-3}$','name': 'NOy_a', 
+        d['noy_aer'] = add_multiple_lazy(d, newkeys)
+        d['noy_aer'] = d['noy_aer'].assign_attrs({'units': '$\mu g m^{-3}$','name': 'noy_aer', 
                                               'long_name': 'NOy aerosol'})
     return d
                       
@@ -172,8 +191,8 @@ def add_lazy_nox(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['NOx'] = add_multiple_lazy(d, newkeys)
-        d['NOx'] = d['NOx'].assign_attrs({'name': 'NOx', 'long_name': 'NOx'})
+        d['nox'] = add_multiple_lazy(d, newkeys)
+        d['nox'] = d['nox'].assign_attrs({'name': 'nox', 'long_name': 'nox'})
     return d
 
 def add_lazy_cl_pm25(d,dict_sum):
@@ -402,12 +421,14 @@ def _calc_hgt(f):
     xr.DataArray
         Geoptential height with varialbes, coordinates and variable attributes.
     """
-    sfc = f.hgtsfc
-    dz = f.delz
-    z = dz + sfc
-    z = z.rolling(z=len(f.z), min_periods=1).sum()
-    z.name = 'geohgt'
-    z.attrs['long_name'] = 'Geopotential Height'
+    sfc = f.hgtsfc.load()
+    dz = f.delz.load()*-1. #These are negative in RRFS-CMAQ, but you resorted and are adding from the surface, so make them positive.
+    dz_2 = f.delz.load()*-0.5
+    dz[:,0,:,:] = dz[:,0,:,:] + sfc #Add the surface altitude to the first model level only
+    z = dz.rolling(z=len(f.z), min_periods=1).sum()
+    z = z - dz_2 #To re-calculate midpoint instead of top. Maybe eventually do something more complicated?
+    z.name = 'hgtmsl'
+    z.attrs['long_name'] = 'Height_msl'
     z.attrs['units'] = 'm'
     return z
 
@@ -431,7 +452,7 @@ def _calc_pressure(dset):
         Description of returned object.
     """
     pres = dset.dpres.copy().load() #Have to load into memory here so can assign levels.
-    srfpres = dset.pressfc.copy()
+    srfpres = dset.pressfc.copy().load()
     for k in range(len(dset.z)):
         pres_2 = dset.ak[k+1] + srfpres * dset.bk[k+1]
         pres_1 = dset.ak[k] + srfpres * dset.bk[k]

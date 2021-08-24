@@ -8,35 +8,19 @@ analysis:
   end_time: '2019-08-02-12:00:00' #UTC
   output_dir: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/processed/Aug_2021/0801/ #Opt if not specified plots stored in code directory.
 model:
-  cmaq_oper: # model label
-    files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_oper/gpfs_prod_aqm/0801/aqm.t12z.aconc_sfc.ncf #Examples on Hera.
-    mod_type: 'cmaq'
-    radius_of_influence: 18000 #meters: horizontal resolution * 1.5
-    #variables: #Opt
-    #  CO:
-    #    unit_scale: 1000.0
-    #    unit_scale_method: '*'
-    mapping: #model species name : obs species name
-      airnow: 
-        CO: 'CO' #The mapping tables need to contain the same species for all models.
-        'NO': 'NO'
-        NO2: 'NO2'
-        PM25_TOT: 'PM2.5'
-        O3: 'OZONE'
-    projection: None
-    plot_kwargs: #Opt 
-      color: 'dodgerblue'
-      marker: '+'
-      linestyle: '-.'
   cmaq_expt: # model label
     files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
+    #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0801/aqm.t12z.conc.ncf
+    #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_ht like below:
+    #files_vert: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0801/aqm.t12z.metcro3d.ncf #Opt
+    #files_ht: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0801/aqm.t12z.grdcro2d.ncf
     mod_type: 'cmaq'
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow:
-        CO: 'CO'
-        NO2: 'NO2'
-        'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        #CO: 'CO'
+        #NO2: 'NO2'
+        #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         O3: 'OZONE'
     projection: None
@@ -47,12 +31,14 @@ model:
   rrfs_25km: # model label
     files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/rrfs-cmaq/cases-1a6a7181/2019080112/dynf*.nc
     mod_type: 'rrfs'
+    mod_kwargs:
+      mech: 'cb6r3_ae6_aq'
     radius_of_influence: 37500 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow:
-        co: 'CO'
-        no2: 'NO2'
-        'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        #co: 'CO'
+        #no2: 'NO2'
+        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25: 'PM2.5'
         o3: 'OZONE'
     projection: None
@@ -60,6 +46,24 @@ model:
       color: 'purple'
       marker: 'x'
       linestyle: '--'
+  wrfchem_v4.2: # model label
+    files: /scratch2/BMC/csd-wca/rhs/wrfchem/covidaqs/firex/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/Output/0801/*
+    mod_type: 'wrfchem'
+    mod_kwargs: #For WRF-chem only, can add vert: False, if missing P,T variables, but not all conversions will work. Default vert: True.  
+      mech: 'racm_esrl_vcp'
+    radius_of_influence: 12000 #meters
+    mapping: #model species name : obs species name
+      airnow:
+        #co: CO
+        #no2: NO2
+        #'no': 'NO'
+        PM2_5_DRY: "PM2.5"
+        o3: "OZONE"
+    projection: None
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: '^'
+      linestyle: ':' 
 obs:
   airnow: # obs label
     use_airnow: True
@@ -141,7 +145,7 @@ plots:
       fontsize: 18.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
@@ -158,7 +162,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
@@ -171,7 +175,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
@@ -184,7 +188,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -196,7 +200,7 @@ plots:
       fontsize: 20.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -215,5 +219,5 @@ stats:
     edges: 'horizontal'
   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-  data: ['airnow_cmaq_oper','airnow_cmaq_expt','airnow_rrfs_25km'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+  data: ['airnow_cmaq_expt','airnow_rrfs_25km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 
