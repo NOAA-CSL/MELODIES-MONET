@@ -43,25 +43,29 @@ def open_mfdataset(fname,
     dset = dset.rename({'grid_yt': 'y','grid_xt': 'x','pfull': 'z',
                         'phalf': 'z_i', #Interface pressure levels
                         'lon': 'longitude','lat': 'latitude',
-                        'tmp': 'temperature_k'}) #standard temperature (kelvin)
+                        'tmp': 'temperature_k', #standard temperature (kelvin)
+                        'pressfc': 'surfpres_pa','dpres': 'dp_pa', #Change names so standard surfpres_pa and dp_pa
+                        'hgtsfc': 'surfalt_m','delz':'dz_m'}) #Optional, but when available include altitude info
 
     #Calculate pressure. This has to go before sorting because ak and bk 
     #are not sorted as they are in attributes
-    dset['pres_pa'] = _calc_pressure(dset)
+    dset['pres_pa_mid'] = _calc_pressure(dset)
 
     #Adjust pressure levels for all models such that the surface is first.
     dset = dset.sortby('z', ascending=False)
     dset = dset.sortby('z_i', ascending=False)
     
     #Note this altitude calcs needs to always go after resorting.
-    dset['hgtmsl_m'] = _calc_hgt(dset)
+    #Altitude calculations are all optional, but for each model add values that are easy to calculate.
+    dset['alt_msl_m_full'] = _calc_hgt(dset)
+    dset['dz_m'] = dset['dz_m']*-1. #Change to positive values.
     
     #Set coordinates
     dset = dset.reset_index(['x','y','z','z_i'],drop=True) #For now drop z_i no variables use it. 
-    dset = dset.reset_coords()
-    dset = dset.set_coords(['latitude','longitude','pres_pa','hgtmsl_m'])
     dset['latitude'] = dset['latitude'].isel(time=0)
     dset['longitude'] = dset['longitude'].isel(time=0)
+    dset = dset.reset_coords()
+    dset = dset.set_coords(['latitude','longitude'])  
     
     #Need to adjust units before summing for aerosols
     # convert all gas species to ppbv
@@ -77,7 +81,7 @@ def open_mfdataset(fname,
         if 'units' in dset[i].attrs:
             if 'ug/kg' in dset[i].attrs['units']:
                 # ug/kg -> ug/m3 using dry air density
-                dset[i] = dset[i]*dset['pres_pa']/dset['temperature_k']/287.05535
+                dset[i] = dset[i]*dset['pres_pa_mid']/dset['temperature_k']/287.05535
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
     
     #Get dictionary of summed species for the mechanism of choice.
@@ -412,6 +416,7 @@ def dict_species_sums(mech):
 def _calc_hgt(f):
     """Calculates the geopotential height in m from the variables hgtsfc and delz.
     Note: To use this function the delz value needs to go from surface to TOA in vertical.
+    Because we are adding the height of each grid box these are really grid top values
     Parameters
     ----------
     f : xarray.DataSet
@@ -421,20 +426,18 @@ def _calc_hgt(f):
     xr.DataArray
         Geoptential height with varialbes, coordinates and variable attributes.
     """
-    sfc = f.hgtsfc.load()
-    dz = f.delz.load()*-1. #These are negative in RRFS-CMAQ, but you resorted and are adding from the surface, so make them positive.
-    dz_2 = f.delz.load()*-0.5
+    sfc = f.surfalt_m.load()
+    dz = f.dz_m.load()*-1. #These are negative in RRFS-CMAQ, but you resorted and are adding from the surface, so make them positive.
     dz[:,0,:,:] = dz[:,0,:,:] + sfc #Add the surface altitude to the first model level only
     z = dz.rolling(z=len(f.z), min_periods=1).sum()
-    z = z - dz_2 #To re-calculate midpoint instead of top. Maybe eventually do something more complicated?
-    z.name = 'hgtmsl'
-    z.attrs['long_name'] = 'Height_msl'
+    z.name = 'alt_msl_m_full'
+    z.attrs['long_name'] = 'Altitude MSL Full Layer in Meters'
     z.attrs['units'] = 'm'
     return z
 
 
 def _calc_pressure(dset):
-    """Calculate the pressure in pa form presss and ak and bk constants.
+    """Calculate the pressure in pa from presss and ak and bk constants.
     
     Interface pressures are calculated by:
     phalf(k) = a(k) + surfpres * b(k)
@@ -451,14 +454,14 @@ def _calc_pressure(dset):
     xarray.DataArray
         Description of returned object.
     """
-    pres = dset.dpres.copy().load() #Have to load into memory here so can assign levels.
-    srfpres = dset.pressfc.copy().load()
+    pres = dset.dp_pa.copy().load() #Have to load into memory here so can assign levels.
+    srfpres = dset.surfpres_pa.copy().load()
     for k in range(len(dset.z)):
         pres_2 = dset.ak[k+1] + srfpres * dset.bk[k+1]
         pres_1 = dset.ak[k] + srfpres * dset.bk[k]
         pres[:,k,:,:] = (pres_2-pres_1)/np.log(pres_2/pres_1)
     
-    pres.name = 'pres_pa'
+    pres.name = 'pres_pa_mid'
     pres.attrs['units'] = 'pa'
-    pres.attrs['long_name'] = 'Mid Layer Pressure'
+    pres.attrs['long_name'] = 'Pressure Mid Layer in Pa'
     return pres

@@ -20,7 +20,7 @@ def open_mfdataset(fname,
                    mech='cb6r3_ae6_aq',
                    var_list = ['O3'],
                    fname_vert=None,
-                   fname_ht=None,
+                   fname_surf=None,
                    **kwargs):
     """Method to open CMAQ IOAPI netcdf files.
 
@@ -98,14 +98,16 @@ def open_mfdataset(fname,
         dset = dset.merge(dset_vert)
         #Rename variables 
         dset = dset.rename({'TA':'temperature_k',
-                            'PRES':'pres_pa'})
-        #Set vertical dimensions
-        dset = dset.set_coords(['pres_pa'])
-    if fname_ht is not None:
-        dset_ht = xr.open_mfdataset(fname_ht, concat_dim='TSTEP', **kwargs)
-        terrain = dset_ht['HT'].isel(TSTEP=0).squeeze() #This is not changing in time, so take first value.
-        dset['hgtmsl_m'] = dset['ZH'] + terrain
-        dset = dset.set_coords(['hgtmsl_m'])
+                            'PRES':'pres_pa_mid',
+                            'PRES-F_lvl':'pres_pa_full',
+                            'ZH':'alt_agl_m_mid',
+                            'ZF':'alt_agl_m_full'})
+    if fname_surf is not None:
+        dset_surf = xr.open_mfdataset(fname_surf, concat_dim='TSTEP', **kwargs)
+        dset_surf = _get_times(dset_surf, drop_duplicates=drop_duplicates)
+        dset_surf = dset_surf.drop(labels='TFLAG').squeeze()
+        dset = dset.merge(dset_surf)
+        dset = dset.rename({'PRSFC':'surfpres_pa'})
         
     # get Predefined mapping tables for observations
     # d set = _predefined_mapping_tables(dset)

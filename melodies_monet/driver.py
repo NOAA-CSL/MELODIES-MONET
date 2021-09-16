@@ -169,8 +169,8 @@ class model:
         self.files = None
         self.file_vert_str = None
         self.files_vert = None
-        self.file_ht_str = None
-        self.files_ht = None
+        self.file_surf_str = None
+        self.files_surf = None
         self.label = None
         self.obj = None
         self.mapping = None
@@ -194,8 +194,8 @@ class model:
         
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
-        if self.file_ht_str is not None:
-            self.files_ht = sort(glob(self.file_ht_str))
+        if self.file_surf_str is not None:
+            self.files_surf = sort(glob(self.file_surf_str))
 
     def open_model_files(self):
         """Short summary.
@@ -217,8 +217,8 @@ class model:
             self.mod_kwargs.update({'var_list' : list_input_var})
             if self.files_vert is not None:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
-            if self.files_ht is not None:
-                self.mod_kwargs.update({'fname_ht' : self.files_ht})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_surf' : self.files_surf})
             from new_models import cmaq as cmaq  # Eventually add to monet itself.
             self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
@@ -332,8 +332,8 @@ class analysis:
                 m.file_str = self.control_dict['model'][mod]['files']
                 if 'files_vert' in self.control_dict['model'][mod].keys():
                     m.file_vert_str = self.control_dict['model'][mod]['files_vert']
-                if 'files_ht' in self.control_dict['model'][mod].keys():
-                    m.file_ht_str = self.control_dict['model'][mod]['files_ht']
+                if 'files_surf' in self.control_dict['model'][mod].keys():
+                    m.file_surf_str = self.control_dict['model'][mod]['files_surf']
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
@@ -401,7 +401,7 @@ class analysis:
                         obs.obs_to_df()
                     #Check if z dim is larger than 1. If so select, the first level as all models read through 
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
-                    if model_obj.sizes['z'] > 1: #Assume only provide surface values
+                    if model_obj.sizes['z'] > 1: 
                         model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)

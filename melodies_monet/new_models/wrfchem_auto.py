@@ -61,12 +61,21 @@ def open_mfdataset(fname,
         var_list.append('pres')
         var_list.append('height')
         var_list.append('tk')
+        var_list.append('ter')
+        var_list.append('height_agl')
+        var_list.append('PSFC')
+        #need to calculate surface pressure and dp and optionally dz here. 
+        #Meng or Jian since you need this for satellite info, I'll have you add these here.
    
     var_wrf_list = []
     for var in var_list:
         if var == 'pres': #Insert special versions.
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='Pa')
         elif var == 'height':
+            var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m')
+        elif var == 'ter':
+            var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m')
+        elif var == 'height_agl':
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m') 
         else:
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False)
@@ -99,6 +108,11 @@ def open_mfdataset(fname,
         dset[i] = dset[i].assign_attrs(a_cen_lat)
         dset[i] = dset[i].assign_attrs(a_cen_lon)
     
+    #Convert names to standards used in MONET
+    dset = dset.rename({'Time': 'time','south_north':'y',
+                        'west_east':'x','XLONG':'longitude',
+                        'XLAT':'latitude'})
+        
     # convert all gas species to ppbv
     if convert_to_ppb:
         for i in dset.variables:
@@ -145,18 +159,20 @@ def open_mfdataset(fname,
     if 'pm25_om' in list_calc_sum:
         dset = add_lazy_om_pm25(dset,dict_sum)
 
-    #Time is already in correct format but need to rename
-    dset = dset.rename({'Time': 'time','south_north':'y',
-                        'west_east':'x','XLONG':'longitude',
-                        'XLAT':'latitude','pressure':'pres_pa',
-                        'temp':'temperature_k','height':'hgtmsl_m'})
     dset = dset.reset_index(['XTIME','datetime'],drop=True)
-    if 'bottom_top' in dset.dims:
-        dset2 = dset.rename(dict(bottom_top='z'))
+    if vert == True:
+        #Reset more variables
+        dset = dset.rename({'bottom_top': 'z','temp':'temperature_k',
+                            'height':'alt_msl_m_mid','height_agl':'alt_agl_m_mid',
+                            'PSFC': 'surfpres_pa','pressure': 'pres_pa_mid',
+                            'terrain': 'surfalt_m'}) #
+        dset2 = dset
     else:
+        #Expand into z coordinate so that format is consistent.
         dset2 = dset.expand_dims('z',axis=3).copy()
+    
     dset2 = dset2.reset_coords()
-    dset2 = dset2.set_coords(['latitude','longitude','pres_pa','hgtmsl_m'])
+    dset2 = dset2.set_coords(['latitude','longitude'])
     
     return dset2 
 
