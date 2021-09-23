@@ -11,7 +11,7 @@ model:
   cmaq_expt: # model label
     #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
     files: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.conc.ncf
-    #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_ht like below:
+    #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
     files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
     files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
     mod_type: 'cmaq'

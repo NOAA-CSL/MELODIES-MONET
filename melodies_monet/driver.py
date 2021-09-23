@@ -719,7 +719,7 @@ class analysis:
                             #Check if z dim is larger than 1. If so select, the first level as all models read through 
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
-                            if self.models[p.model].obj.sizes['z'] > 1: #Assume only provide surface values
+                            if self.models[p.model].obj.sizes['z'] > 1: #Select only surface values.
                                 vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
                                     dict(time=slice(self.start_time, self.end_time))] 
                             else:

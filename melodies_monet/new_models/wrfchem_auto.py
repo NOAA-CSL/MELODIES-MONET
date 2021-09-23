@@ -61,7 +61,6 @@ def open_mfdataset(fname,
         var_list.append('pres')
         var_list.append('height')
         var_list.append('tk')
-        var_list.append('ter')
         var_list.append('height_agl')
         var_list.append('PSFC')
         #need to calculate surface pressure and dp and optionally dz here. 
@@ -72,8 +71,6 @@ def open_mfdataset(fname,
         if var == 'pres': #Insert special versions.
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='Pa')
         elif var == 'height':
-            var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m')
-        elif var == 'ter':
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m')
         elif var == 'height_agl':
             var_wrf = getvar(wrflist,var,timeidx=ALL_TIMES,method='cat',squeeze=False,units='m') 
@@ -164,8 +161,7 @@ def open_mfdataset(fname,
         #Reset more variables
         dset = dset.rename({'bottom_top': 'z','temp':'temperature_k',
                             'height':'alt_msl_m_mid','height_agl':'alt_agl_m_mid',
-                            'PSFC': 'surfpres_pa','pressure': 'pres_pa_mid',
-                            'terrain': 'surfalt_m'}) #
+                            'PSFC': 'surfpres_pa','pressure': 'pres_pa_mid'}) #
         dset2 = dset
     else:
         #Expand into z coordinate so that format is consistent.
