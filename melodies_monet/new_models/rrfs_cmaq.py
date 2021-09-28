@@ -15,6 +15,7 @@ def open_mfdataset(fname,
                    convert_to_ppb=True, 
                    mech='cb6r3_ae6_aq',
                    var_list = ['o3'],
+                   fname_pm25=None,
                    **kwargs):
     #Like WRF-chem add var list that just determines whether to calculate sums or not to speed this up.
     """Method to open RFFS-CMAQ dyn* netcdf files.
@@ -39,6 +40,16 @@ def open_mfdataset(fname,
     # open the dataset using xarray
     dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)
     
+    if fname_pm25 is not None:
+        #Add the processed pm2.5 species.
+        dset_pm25 = xr.open_mfdataset(fname_pm25, concat_dim='time', **kwargs)
+        dset_pm25 = dset_pm25.drop(labels=['lat','lon','pfull']) #Drop duplicate variables so can merge. 
+        #Slight differences in pfull value between the files, but I assume that these still represent the
+        #same pressure levels from the model dynf* files.
+        #Attributes are formated differently in pm25 file so remove attributes and use those from dynf* files.
+        dset_pm25.attrs = {}
+        dset = dset.merge(dset_pm25)
+        
     #Standardize some variable names
     dset = dset.rename({'grid_yt': 'y','grid_xt': 'x','pfull': 'z',
                         'phalf': 'z_i', #Interface pressure levels
@@ -91,6 +102,8 @@ def open_mfdataset(fname,
     # Note that because there are so many species to sum. Summing the aerosols is slowing down the code.
     if 'PM25' in var_list:
         dset = add_lazy_pm25(dset,dict_sum)
+    if 'PM25_wopc' in var_list:
+        dset = add_lazy_pm25_wopc(dset,dict_sum)
     if 'PM10' in var_list:    
         dset = add_lazy_pm10(dset,dict_sum)
     if 'noy_gas' in var_list:
@@ -125,7 +138,6 @@ def _get_keys(d):
     keys = Series([i for i in d.data_vars.keys()])
     return keys
 
-
 def add_lazy_pm25(d,dict_sum):
     """Short summary.
 
@@ -154,6 +166,33 @@ def add_lazy_pm25(d,dict_sum):
                                             'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20%'})
     return d
 
+def add_lazy_pm25_wopc(d,dict_sum):
+    """Short summary.
+
+    Parameters
+    ----------
+    d : type
+        Description of parameter `d`.
+
+    Returns
+    -------
+    type
+        Description of returned object.
+
+    """
+    keys = _get_keys(d)
+    allvars = Series(concatenate([dict_sum['aitken'], dict_sum['accumulation_wopc'], dict_sum['coarse']]))
+    weights = Series(concatenate([np.ones(len(dict_sum['aitken'])),
+                                  np.ones(len(dict_sum['accumulation_wopc'])),
+                                  np.full(len(dict_sum['coarse']),0.2)]))
+    index = allvars.isin(keys)
+    if can_do(index):
+        newkeys = allvars.loc[index]
+        newweights = weights.loc[index]
+        d['PM25_wopc'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['PM25_wopc'] = d['PM25_wopc'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5_wopc', 
+                                            'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20% excluding apcsoj'})
+    return d
 
 def add_lazy_pm10(d,dict_sum):
     keys = _get_keys(d)
@@ -376,7 +415,15 @@ def dict_species_sums(mech):
                                                 'abnz1j', 'abnz2j', 'abnz3j', 'aiso1j', 'aiso2j', 'aiso3j',
                                                 'atrp1j', 'atrp2j', 'asqtj', 'aalk1j', 'aalk2j', 'apah1j',
                                                 'apah2j', 'apah3j', 'aorgcj', 'aolgbj', 'aolgaj', 'alvoo1j',
-                                                'alvoo2j','asvoo1j','asvoo2j','asvoo3j','apcsoj']}) 
+                                                'alvoo2j','asvoo1j','asvoo2j','asvoo3j','apcsoj']})
+        sum_dict.update({'accumulation_wopc': ['aso4j', 'ano3j', 'anh4j', 'anaj', 'aclj', 'aecj', 'aothrj',
+                                                'afej', 'asij', 'atij', 'acaj', 'amgj', 'amnj', 'aalj', 
+                                                'akj', 'alvpo1j', 'asvpo1j', 'asvpo2j', 'asvpo3j', 'aivpo1j',
+                                                'axyl1j', 'axyl2j', 'axyl3j', 'atol1j', 'atol2j', 'atol3j',
+                                                'abnz1j', 'abnz2j', 'abnz3j', 'aiso1j', 'aiso2j', 'aiso3j',
+                                                'atrp1j', 'atrp2j', 'asqtj', 'aalk1j', 'aalk2j', 'apah1j',
+                                                'apah2j', 'apah3j', 'aorgcj', 'aolgbj', 'aolgaj', 'alvoo1j',
+                                                'alvoo2j','asvoo1j','asvoo2j','asvoo3j']})
         sum_dict.update({'aitken' : ['aso4i','ano3i','anh4i','anai','acli', 'aeci','aothri',
                                           'alvpo1i','asvpo1i','asvpo2i','alvoo1i','alvoo2i','asvoo1i','asvoo2i']})
         sum_dict.update({'coarse' : ['asoil','acors', 'aseacat', 'aclk', 'aso4k', 'ano3k', 'anh4k']})

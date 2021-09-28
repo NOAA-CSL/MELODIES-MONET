@@ -171,6 +171,8 @@ class model:
         self.files_vert = None
         self.file_surf_str = None
         self.files_surf = None
+        self.file_pm25_str = None
+        self.files_pm25 = None
         self.label = None
         self.obj = None
         self.mapping = None
@@ -196,6 +198,8 @@ class model:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
             self.files_surf = sort(glob(self.file_surf_str))
+        if self.file_pm25_str is not None:
+            self.files_pm25 = sort(glob(self.file_pm25_str))
 
     def open_model_files(self):
         """Short summary.
@@ -226,6 +230,8 @@ class model:
             from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
             self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
+            if self.files_pm25 is not None:
+                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
             from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
             self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
@@ -334,6 +340,8 @@ class analysis:
                     m.file_vert_str = self.control_dict['model'][mod]['files_vert']
                 if 'files_surf' in self.control_dict['model'][mod].keys():
                     m.file_surf_str = self.control_dict['model'][mod]['files_surf']
+                if 'files_pm25' in self.control_dict['model'][mod].keys():
+                    m.file_pm25_str = self.control_dict['model'][mod]['files_pm25']
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict

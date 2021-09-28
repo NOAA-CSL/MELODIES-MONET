@@ -21,6 +21,7 @@ def open_mfdataset(fname,
                    var_list = ['O3'],
                    fname_vert=None,
                    fname_surf=None,
+                   concatenate_forecasts=False,
                    **kwargs):
     """Method to open CMAQ IOAPI netcdf files.
 
@@ -40,9 +41,22 @@ def open_mfdataset(fname,
 
 
     """
-
-    # open the dataset using xarray
-    dset = xr.open_mfdataset(fname, concat_dim='TSTEP', **kwargs)
+    #For CMAQ, times are not in file to concatenate on for different forecast periods,
+    #so need to read in one file at a time, calc times, and then merge together.
+    if concatenate_forecasts == True:
+        dset_list = []
+        for file in fname:
+            # open the dataset using xarray
+            dset = xr.open_mfdataset(file, concat_dim='TSTEP', **kwargs)
+            # get the times
+            dset = _get_times(dset, drop_duplicates=drop_duplicates)
+            dset_list.append(dset)
+        dset = xr.concat(dset_list,'time')  
+    else:
+        # open the dataset using xarray
+        dset = xr.open_mfdataset(fname, concat_dim='TSTEP', **kwargs)
+        # get the times
+        dset = _get_times(dset, drop_duplicates=drop_duplicates)
         
     # add lazy diagnostic variables
     if 'PM25' in var_list:
@@ -81,9 +95,6 @@ def open_mfdataset(fname,
             dset[i].attrs[j] = dset[i].attrs[j].strip()
         # dset[i] = dset[i].assign_attrs({'area': area_def})
     # dset = dset.assign_attrs(area=area_def)
-
-    # get the times
-    dset = _get_times(dset, drop_duplicates=drop_duplicates)
 
     # get the lat lon
     dset = _get_latlon(dset, area_def)
