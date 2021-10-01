@@ -3,9 +3,9 @@ shopt -s extglob
 #Script to link model files to a common directory for processing with MELODIES-MONET
 
 #Set new combined directory to link files into
-dir_combined=/home/rschwantes/MONET/processed_plots/CMAQ_RRFS_SURF/08/data/rrfs
+dir_combined=/scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08_all/data/rrfs
 #Set directory with raw model output data
-dir_data=/wrk/d2/rschwantes/MONET_test/RRFS_CMAQ/r131_v1
+dir_data=/scratch2/BMC/rcm1/rhs/fv3/regional/data/rrfs-cmaq/r131_v1
 #Set year (needs to be four digits e.g., 2019)
 year=2019
 #Set month (needs to be two digits e.g., 08 or 10)
@@ -14,7 +14,7 @@ month=08
 cd $dir_combined
 # Update this to include days you want to include with 0 if needed e.g., {01..10}
 # As you link, you need to rename the files to add year, month, day, so do not override. 
-for dir in {01..02} 
+for dir in {01..31}
 do
   for days in {01..24}
   do

@@ -83,9 +83,13 @@ def map_projection(f):
 def make_spatial_bias(df, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vdiff=None,
                       outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None):
+                      domain_type=None, domain_name=None, fig_dict=None, 
+                      text_dict=None,debug=False):
         
     """Creates the MONET-Analysis spatial bias plot."""
+    if debug == False:
+        plt.ioff()
+        
     def_map = dict(states=True,figsize=[10, 5])
     if fig_dict is not None:
         map_kwargs = {**def_map, **fig_dict}
@@ -148,13 +152,15 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=80, decorate=True, bbox_inches='tight', dpi=200)
+    code_m_new.savefig(outname + '.png',loc=4, height=150, decorate=True, bbox_inches='tight', dpi=200)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
                     domain_type=None, domain_name=None,
-                    plot_dict=None, fig_dict=None, text_dict=None):
+                    plot_dict=None, fig_dict=None, text_dict=None,debug=False):
     """Creates the MONET-Analysis time series plot."""
+    if debug == False:
+        plt.ioff()
     #First define items for all plots
     #set default text size
     def_text = dict(fontsize=14)
@@ -175,7 +181,7 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
     #Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None: 
         #First define the colors for the observations.
-        obs_dict = dict(color='k', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
+        obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=1.2, markersize=6.)
         if plot_dict is not None:
             #Whatever is not defined in the yaml file is filled in with the obs_dict here.
             plot_kwargs = {**obs_dict, **plot_dict}
@@ -206,6 +212,8 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
+    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
+              bbox_to_anchor=(1.0, 0.9), loc='center left')
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -213,12 +221,15 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
     
-def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model', dia=None, ylabel=None, ty_scale=1.5,
-                    domain_type=None, domain_name=None,
-                    plot_dict=None, fig_dict=None, text_dict=None):
+def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
+                dia=None, ylabel=None, ty_scale=1.5,
+                domain_type=None, domain_name=None,
+                plot_dict=None, fig_dict=None, text_dict=None,debug=False):
     """Creates the MONET-Analysis taylor plot."""
     #First define items for all plots
-    
+    if debug == False:
+        plt.ioff()
+        
     #set default text size
     def_text = dict(fontsize=14.0)
     if text_dict is not None:
@@ -251,7 +262,8 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
     contours = dia.add_contours(colors='0.5')
     plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
     plt.grid(alpha=.5)
-    plt.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
+    plt.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
+               bbox_to_anchor=(0.75, 0.93), loc='center left')
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             plt.title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -272,9 +284,13 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, text_dict=None):
+                      domain_type=None, domain_name=None, fig_dict=None, 
+                      text_dict=None,debug=False):
         
     """Creates the MONET-Analysis spatial overlay plot."""
+    if debug == False:
+        plt.ioff()
+        
     def_map = dict(states=True,figsize=[15, 8])
     if fig_dict is not None:
         map_kwargs = {**def_map, **fig_dict}
@@ -368,7 +384,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=80, decorate=True, bbox_inches='tight', dpi=200)
+    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
     return ax
     
 def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
@@ -394,10 +410,11 @@ def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = Non
     
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None):
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
     """Creates the MONET-Analysis box plot. """
-
+    if debug == False:
+        plt.ioff()
     #First define items for all plots
     #set default text size
     def_text = dict(fontsize=14)
@@ -452,5 +469,5 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ax.set_ylim(ymin = vmin, ymax = vmax)
     
     plt.tight_layout()
-    code_m_new.savefig(outname + '.png',loc=4, height=70, decorate=True, bbox_inches='tight', dpi=200)
+    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
     

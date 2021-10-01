@@ -44,7 +44,7 @@ def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
         # sys.argv[0])[-5] + 'data/MONET_logo.png'
         # print(os.path.basename(__file__))
         #logo = os.path.abspath(__file__)[:-17] + 'data/MONET-logo.png'
-        logo = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data/MONET-logo.png'))
+        logo = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data/melodies-monet_logo_1.png'))
         dc.add_logo(logo,height=height)
         if fname.split('.')[-1] == 'png':
             img.save(fname, "PNG")

@@ -288,6 +288,7 @@ class analysis:
         self.end_time = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.debug = False
 
     def read_control(self, control=None):
         """Reads the yaml control file.  If not set assumes control file is control.yaml
@@ -316,6 +317,7 @@ class analysis:
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = self.control_dict['analysis']['output_dir']
+        self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
         """Opens all models and creates model instances for monet-analysis"""
@@ -583,6 +585,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             # For all p_index plot the model.
                             ax = splots.make_timeseries(
@@ -598,10 +601,11 @@ class analysis:
                                 domain_name=domain_name,
                                 plot_dict=plot_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=120, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=200, decorate=True, bbox_inches='tight', dpi=200)
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -635,6 +639,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
@@ -660,6 +665,7 @@ class analysis:
                                     plot_dict=plot_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             else:
                                 # For the rest, plot on top of dia
@@ -676,10 +682,11 @@ class analysis:
                                     domain_name=domain_name,
                                     plot_dict=plot_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=50, decorate=True, bbox_inches='tight', dpi=200)
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
@@ -704,6 +711,7 @@ class analysis:
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
@@ -755,6 +763,7 @@ class analysis:
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
 
     def stats(self):
@@ -881,4 +890,9 @@ class analysis:
                     # Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
 
-                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']), outname=outname, title=title, out_table_kwargs=out_table_kwargs)
+                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']), 
+                                            outname=outname, 
+                                            title=title, 
+                                            out_table_kwargs=out_table_kwargs,
+                                            debug=self.debug
+                                           )

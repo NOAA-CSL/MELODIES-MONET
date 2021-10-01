@@ -14,8 +14,9 @@ def can_do(index):
 def open_mfdataset(fname, 
                    convert_to_ppb=True, 
                    mech='cb6r3_ae6_aq',
-                   var_list = ['o3'],
+                   var_list = None,
                    fname_pm25=None,
+                   surf_only=False,
                    **kwargs):
     #Like WRF-chem add var list that just determines whether to calculate sums or not to speed this up.
     """Method to open RFFS-CMAQ dyn* netcdf files.
@@ -37,8 +38,59 @@ def open_mfdataset(fname,
 
     """
 
-    # open the dataset using xarray
-    dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)
+    #Get dictionary of summed species for the mechanism of choice.
+    dict_sum = dict_species_sums(mech=mech)
+    
+    if var_list is not None:
+        #Read in only a subset of variables and only do calculations if needed.
+        list_calc_sum = [] 
+        for var_sum in ['PM25', 'PM25_wopc', 'PM10', 'noy_gas', 'noy_aer', 
+                        'nox', 'pm25_cl', 'pm25_ec', 'pm25_ca', 'pm25_na',
+                        'pm25_nh4', 'pm25_no3', 'pm25_so4', 'pm25_om']:
+            if var_sum in var_list:
+                if var_sum == 'PM25':
+                    var_list.extend(dict_sum['aitken'])
+                    var_list.extend(dict_sum['accumulation'])
+                    var_list.extend(dict_sum['coarse'])
+                elif var_sum == 'PM25_wopc':
+                    var_list.extend(dict_sum['aitken'])
+                    var_list.extend(dict_sum['accumulation_wopc'])
+                    var_list.extend(dict_sum['coarse'])
+                elif var_sum == 'PM10':
+                    var_list.extend(dict_sum['aitken'])
+                    var_list.extend(dict_sum['accumulation'])
+                    var_list.extend(dict_sum['coarse'])
+                else:
+                    var_list.extend(dict_sum[var_sum])
+                var_list.remove(var_sum)
+                list_calc_sum.append(var_sum)
+        #append the other needed species.
+        var_list.append('lat')
+        var_list.append('lon')
+        var_list.append('phalf')
+        var_list.append('tmp')
+        var_list.append('pressfc')
+        var_list.append('dpres')
+        var_list.append('hgtsfc')
+        var_list.append('delz')
+        
+        #Remove duplicates just in case:
+        var_list = list( dict.fromkeys(var_list) )
+        #If variables in pm25 files are included remove these as these are not in the main file
+        #And will be added later.
+        for pm25_var in ['PM25_TOT','PM25_TOT_NSOM','PM25_EC','PM25_NH4',
+                         'PM25_NO3','PM25_SO4','PM25_OC','PM25_OM']:
+            if pm25_var in var_list:
+                var_list.remove(pm25_var)
+    
+        # open the dataset using xarray
+        dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)[var_list]
+    else:
+        #Read in all variables and do all calculations.
+        dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)
+        list_calc_sum = ['PM25', 'PM25_wopc', 'PM10', 'noy_gas', 'noy_aer', 
+                        'nox', 'pm25_cl', 'pm25_ec', 'pm25_ca', 'pm25_na',
+                        'pm25_nh4', 'pm25_no3', 'pm25_so4', 'pm25_om']
     
     if fname_pm25 is not None:
         #Add the processed pm2.5 species.
@@ -78,6 +130,11 @@ def open_mfdataset(fname,
     dset = dset.reset_coords()
     dset = dset.set_coords(['latitude','longitude'])  
     
+    #These sums and units are quite expensive and memory intensive, 
+    #so add option to shrink dataset to just surface when needed
+    if surf_only == True:
+        dset=dset.isel(z=0).expand_dims('z',axis=1)
+        
     #Need to adjust units before summing for aerosols
     # convert all gas species to ppbv
     if convert_to_ppb:
@@ -88,45 +145,42 @@ def open_mfdataset(fname,
                     dset[i].attrs['units'] = 'ppbV'
 
     # convert 'ug/kg to ug/m3'
-    #for i in dset.variables:
+    for i in dset.variables:
         if 'units' in dset[i].attrs:
             if 'ug/kg' in dset[i].attrs['units']:
                 # ug/kg -> ug/m3 using dry air density
                 dset[i] = dset[i]*dset['pres_pa_mid']/dset['temperature_k']/287.05535
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
     
-    #Get dictionary of summed species for the mechanism of choice.
-    dict_sum = dict_species_sums(mech=mech)
-    
     # add lazy diagnostic variables
     # Note that because there are so many species to sum. Summing the aerosols is slowing down the code.
-    if 'PM25' in var_list:
+    if 'PM25' in list_calc_sum:
         dset = add_lazy_pm25(dset,dict_sum)
-    if 'PM25_wopc' in var_list:
+    if 'PM25_wopc' in list_calc_sum:
         dset = add_lazy_pm25_wopc(dset,dict_sum)
-    if 'PM10' in var_list:    
+    if 'PM10' in list_calc_sum:    
         dset = add_lazy_pm10(dset,dict_sum)
-    if 'noy_gas' in var_list:
+    if 'noy_gas' in list_calc_sum:
         dset = add_lazy_noy_g(dset,dict_sum)
-    if 'noy_aer' in var_list:
+    if 'noy_aer' in list_calc_sum:
         dset = add_lazy_noy_a(dset,dict_sum)
-    if 'nox' in var_list:
+    if 'nox' in list_calc_sum:
         dset = add_lazy_nox(dset,dict_sum)
-    if 'pm25_cl' in var_list:
+    if 'pm25_cl' in list_calc_sum:
         dset = add_lazy_cl_pm25(dset,dict_sum)
-    if 'pm25_ec' in var_list:
+    if 'pm25_ec' in list_calc_sum:
         dset = add_lazy_ec_pm25(dset,dict_sum)
-    if 'pm25_ca' in var_list:
+    if 'pm25_ca' in list_calc_sum:
         dset = add_lazy_ca_pm25(dset,dict_sum)
-    if 'pm25_na' in var_list:
+    if 'pm25_na' in list_calc_sum:
         dset = add_lazy_na_pm25(dset,dict_sum)
-    if 'pm25_nh4' in var_list:
+    if 'pm25_nh4' in list_calc_sum:
         dset = add_lazy_nh4_pm25(dset,dict_sum)
-    if 'pm25_no3' in var_list:
+    if 'pm25_no3' in list_calc_sum:
         dset = add_lazy_no3_pm25(dset,dict_sum)
-    if 'pm25_so4' in var_list:
+    if 'pm25_so4' in list_calc_sum:
         dset = add_lazy_so4_pm25(dset,dict_sum)
-    if 'pm25_om' in var_list:
+    if 'pm25_om' in list_calc_sum:
         dset = add_lazy_om_pm25(dset,dict_sum)
     # Change the times to pandas format
     dset['time'] = dset.indexes['time'].to_datetimeindex(unsafe=True)
@@ -161,7 +215,7 @@ def add_lazy_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         newweights = weights.loc[index]
-        d['PM25'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['PM25'] = add_multiple_lazy2(d, newkeys, weights=newweights)
         d['PM25'] = d['PM25'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5', 
                                             'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20%'})
     return d
@@ -189,7 +243,7 @@ def add_lazy_pm25_wopc(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         newweights = weights.loc[index]
-        d['PM25_wopc'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['PM25_wopc'] = add_multiple_lazy2(d, newkeys, weights=newweights)
         d['PM25_wopc'] = d['PM25_wopc'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5_wopc', 
                                             'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20% excluding apcsoj'})
     return d
@@ -200,7 +254,7 @@ def add_lazy_pm10(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['PM10'] = add_multiple_lazy(d, newkeys)
+        d['PM10'] = add_multiple_lazy2(d, newkeys)
         d['PM10'] = d['PM10'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM10', 
                                             'long_name': 'Particulate Matter < 10 microns'})
     return d
@@ -213,7 +267,7 @@ def add_lazy_noy_g(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         newweights = weights.loc[index]
-        d['noy_gas'] = add_multiple_lazy(d, newkeys, weights=newweights)
+        d['noy_gas'] = add_multiple_lazy2(d, newkeys, weights=newweights)
         d['noy_gas'] = d['noy_gas'].assign_attrs({'name': 'noy_gas', 'long_name': 'NOy gases'})
     return d                      
 
@@ -223,7 +277,7 @@ def add_lazy_noy_a(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['noy_aer'] = add_multiple_lazy(d, newkeys)
+        d['noy_aer'] = add_multiple_lazy2(d, newkeys)
         d['noy_aer'] = d['noy_aer'].assign_attrs({'units': '$\mu g m^{-3}$','name': 'noy_aer', 
                                               'long_name': 'NOy aerosol'})
     return d
@@ -234,7 +288,7 @@ def add_lazy_nox(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['nox'] = add_multiple_lazy(d, newkeys)
+        d['nox'] = add_multiple_lazy2(d, newkeys)
         d['nox'] = d['nox'].assign_attrs({'name': 'nox', 'long_name': 'nox'})
     return d
 
@@ -246,7 +300,7 @@ def add_lazy_cl_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_cl'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_cl'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_cl'] = d['pm25_cl'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_cl', 
                                                   'long_name': 'PM2.5 CL assuming coarse mode 20%'})
     return d
@@ -259,7 +313,7 @@ def add_lazy_ec_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_ec'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_ec'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_ec'] = d['pm25_ec'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_ec', 
                                                   'long_name': 'PM2.5 EC assuming coarse mode 20%'})
     return d
@@ -272,7 +326,7 @@ def add_lazy_ca_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_ca'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_ca'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_ca'] = d['pm25_ca'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_ca', 
                                                   'long_name': 'PM2.5 CA assuming coarse mode 20%'})
     return d
@@ -286,7 +340,7 @@ def add_lazy_na_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_na'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_na'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_na'] = d['pm25_na'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_na', 
                                                   'long_name': 'PM2.5 NA assuming coarse mode 20%'})
     return d
@@ -299,7 +353,7 @@ def add_lazy_nh4_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_nh4'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_nh4'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_nh4'] = d['pm25_nh4'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_nh4', 
                                                   'long_name': 'PM2.5 NH4 assuming coarse mode 20%'})
     return d
@@ -312,7 +366,7 @@ def add_lazy_no3_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_no3'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_no3'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_no3'] = d['pm25_no3'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_no3', 
                                                   'long_name': 'PM2.5 NO3 assuming coarse mode 20%'})
     return d
@@ -325,7 +379,7 @@ def add_lazy_so4_pm25(d,dict_sum):
     if can_do(index):
         newkeys = allvars.loc[index]
         neww = weights.loc[index]
-        d['pm25_so4'] = add_multiple_lazy(d, newkeys, weights=neww)
+        d['pm25_so4'] = add_multiple_lazy2(d, newkeys, weights=neww)
         d['pm25_so4'] = d['pm25_so4'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_so4', 
                                                   'long_name': 'PM2.5 SO4 assuming coarse mode 20%'})
     return d
@@ -336,7 +390,7 @@ def add_lazy_om_pm25(d,dict_sum):
     index = allvars.isin(keys)
     if can_do(index):
         newkeys = allvars.loc[index]
-        d['pm25_om'] = add_multiple_lazy(d, newkeys)
+        d['pm25_om'] = add_multiple_lazy2(d, newkeys)
         d['pm25_om'] = d['pm25_om'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'pm25_om', 
                                                   'long_name': 'PM2.5 OM'})
     return d
@@ -352,6 +406,16 @@ def add_multiple_lazy(dset, variables, weights=None):
     new = dset[variables[0]].copy() * weights[0]
     for i, j in zip(variables[1:], weights[1:]):
         new = new + dset[i] * j
+    return new
+
+def add_multiple_lazy2(dset, variables, weights=None):
+    
+    dset2 = dset[variables.values]
+    if weights is not None:
+        for i, j in zip(variables.values, weights.values):
+            dset2[i] = dset2[i] * j
+    
+    new = dset2.to_array().sum('variable')
     return new
 
 
