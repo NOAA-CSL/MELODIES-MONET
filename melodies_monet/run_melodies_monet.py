@@ -10,7 +10,7 @@ import os
 import dask
 an = driver.analysis()
 # -- Update the yaml file below
-an.control = 'control_cmaq-rrfs_surface-all.yaml'
+an.control = 'control_cmaq-rrfs_surface.yaml'
 an.read_control()
 # -- Lines below make a copy of the namelist in the plot directory for reference later
 cmd = 'cp ' + an.control + ' ' + an.control_dict['analysis']['output_dir']

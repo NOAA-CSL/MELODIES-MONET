@@ -5,13 +5,93 @@
 # Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
   start_time: '2019-08-01-12:00:00' #UTC
-  end_time: '2019-08-08-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/ #Opt if not specified plots stored in code directory.
+  end_time: '2019-08-11-12:00:00' #UTC
+  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/ #Opt if not specified plots stored in code directory.
   debug: False
 model:
+  rrfs_r131v1_all: # model label
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
+    mod_type: 'rrfs'
+    mod_kwargs:
+      mech: 'cb6r3_ae6_aq'
+      surf_only: True
+    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
+    mapping: #model species name : obs species name
+      airnow:
+        #co: 'CO'
+        #no2: 'NO2'
+        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        PM25: 'PM2.5'
+        #o3: 'OZONE'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'darkviolet'
+      marker: '^'
+      linestyle: '-'
+  rrfs_r131v1_wopc: # model label
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
+    mod_type: 'rrfs'
+    mod_kwargs:
+      mech: 'cb6r3_ae6_aq'
+      surf_only: True
+    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
+    mapping: #model species name : obs species name
+      airnow:
+        #co: 'CO'
+        #no2: 'NO2'
+        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        PM25_wopc: 'PM2.5'
+        #o3: 'OZONE'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'green'
+      marker: 'x'
+      linestyle: '-'
+  rrfs_r131v1_pm25: # model label
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
+    files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*pm25tot_f*.nc
+    mod_type: 'rrfs'
+    mod_kwargs:
+      mech: 'cb6r3_ae6_aq'
+      surf_only: True
+    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
+    mapping: #model species name : obs species name
+      airnow:
+        #co: 'CO'
+        #no2: 'NO2'
+        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        PM25_TOT: 'PM2.5'
+        #o3: 'OZONE'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: 'D'
+      linestyle: '-'
+  cmaq_oper: # model label
+    #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/cmaq_oper/*
+    #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
+    #files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
+    #files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
+    mod_type: 'cmaq'
+    mod_kwargs:
+      concatenate_forecasts: True #Set this to true if combining forecasts together for CMAQ only.
+    radius_of_influence: 18000 #meters: horizontal resolution * 1.5
+    mapping: #model species name : obs species name
+      airnow:
+        #CO: 'CO'
+        #NO2: 'NO2'
+        #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
+        PM25_TOT: 'PM2.5'
+        #O3: 'OZONE'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'goldenrod'
+      marker: 's'
+      linestyle: '-'
   cmaq_expt: # model label
     #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/data/cmaq/*
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/cmaq_expt/*
     #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
     #files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
     #files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
@@ -30,64 +110,6 @@ model:
     plot_kwargs: #Opt
       color: 'magenta'
       marker: 'o'
-      linestyle: '-'
-  rrfs_r131v1_all: # model label
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/data/rrfs/*dynf*.nc
-    mod_type: 'rrfs'
-    mod_kwargs:
-      mech: 'cb6r3_ae6_aq'
-      surf_only: True
-    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
-    mapping: #model species name : obs species name
-      airnow:
-        #co: 'CO'
-        #no2: 'NO2'
-        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
-        PM25: 'PM2.5'
-        #o3: 'OZONE'
-    projection: None
-    plot_kwargs: #Opt
-      color: 'purple'
-      marker: 's'
-      linestyle: '-'
-  rrfs_r131v1_wopc: # model label
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/data/rrfs/*dynf*.nc
-    mod_type: 'rrfs'
-    mod_kwargs:
-      mech: 'cb6r3_ae6_aq'
-      surf_only: True
-    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
-    mapping: #model species name : obs species name
-      airnow:
-        #co: 'CO'
-        #no2: 'NO2'
-        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
-        PM25_wopc: 'PM2.5'
-        #o3: 'OZONE'
-    projection: None
-    plot_kwargs: #Opt
-      color: 'goldenrod'
-      marker: 'd'
-      linestyle: '-'
-  rrfs_r131v1_pm25: # model label
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/data/rrfs/*dynf*.nc
-    files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surface_rrfs_r131_v1/08/data/rrfs/*pm25tot_f*.nc
-    mod_type: 'rrfs'
-    mod_kwargs:
-      mech: 'cb6r3_ae6_aq'
-      surf_only: True
-    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
-    mapping: #model species name : obs species name
-      airnow:
-        #co: 'CO'
-        #no2: 'NO2'
-        #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
-        PM25_TOT: 'PM2.5'
-        #o3: 'OZONE'
-    projection: None
-    plot_kwargs: #Opt
-      color: 'dodgerblue'
-      marker: 'x'
       linestyle: '-'
 obs:
   airnow: # obs label
@@ -170,7 +192,7 @@ plots:
       fontsize: 18.
     domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_expt','airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
@@ -186,7 +208,7 @@ plots:
       fontsize: 16.
     domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_expt','airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
@@ -199,7 +221,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_expt','airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
@@ -212,7 +234,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_expt','airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -224,7 +246,7 @@ plots:
       fontsize: 20.
     domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_expt','airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['airnow_rrfs_r131v1_all','airnow_rrfs_r131v1_wopc','airnow_rrfs_r131v1_pm25','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
