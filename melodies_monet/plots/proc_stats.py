@@ -178,8 +178,11 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
             
     return value
 
-def create_table(df,outname='plot',title='stats',out_table_kwargs=None):
+def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=False):
     
+    if debug == False:
+        plt.ioff()
+        
     #Define defaults if not provided:
     out_table_def = dict(fontsize=16.,xscale=1.2,yscale=1.2,figsize=[10,7],edges='open')
     if out_table_kwargs is not None:

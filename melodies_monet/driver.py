@@ -24,8 +24,6 @@ class pair:
         self.radius_of_influence = 1e6
         self.obs = None
         self.model = None
-        self.model_obj = None
-        self.obs_obj = None
         self.model_vars = None
         self.obs_vars = None
         self.filename = None
@@ -166,8 +164,15 @@ class model:
         """
         self.model = None
         self.radius_of_influence = None
+        self.mod_kwargs = {}
         self.file_str = None
         self.files = None
+        self.file_vert_str = None
+        self.files_vert = None
+        self.file_surf_str = None
+        self.files_surf = None
+        self.file_pm25_str = None
+        self.files_pm25 = None
         self.label = None
         self.obj = None
         self.mapping = None
@@ -188,6 +193,13 @@ class model:
 
         print(self.file_str)
         self.files = sort(glob(self.file_str))
+        
+        if self.file_vert_str is not None:
+            self.files_vert = sort(glob(self.file_vert_str))
+        if self.file_surf_str is not None:
+            self.files_surf = sort(glob(self.file_surf_str))
+        if self.file_pm25_str is not None:
+            self.files_pm25 = sort(glob(self.file_pm25_str))
 
     def open_model_files(self):
         """Short summary.
@@ -204,35 +216,35 @@ class model:
         list_input_var = []
         for obs_map in self.mapping:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+        #Only certain models need this option for speeding up i/o.
         if 'cmaq' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.cmaq.open_mfdataset(self.files)
-            else:
-                self.obj = mio.cmaq.open_dataset(self.files[0])
-        elif 'wrfchem_nopt' in self.model.lower():
-            # For wrfchem output that does not contain variables to calculate pressure and temperature
-            from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
-
-            self.obj = wrfchem.open_mfdataset(self.files, var_list=list_input_var, vert=False)
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.files_vert is not None:
+                self.mod_kwargs.update({'fname_vert' : self.files_vert})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_surf' : self.files_surf})
+            from new_models import cmaq as cmaq  # Eventually add to monet itself.
+            self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
+            self.mod_kwargs.update({'var_list' : list_input_var})
             from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
-
-            self.obj = wrfchem.open_mfdataset(self.files, var_list=list_input_var, vert=True)
+            self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.rrfs_cmaq.open_mfdataset(self.files)
-            else:
-                self.obj = mio.rrfs_cmaq.open_dataset(self.files)
+            if self.files_pm25 is not None:
+                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
+            self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
-                self.obj = mio.fv3chem.open_mfdataset(self.files)
+                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = mio.fv3chem.open_dataset(self.files)
+                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         else:
             if len(self.files) > 1:
-                self.obj = xr.open_mfdataset(self.files)
+                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = xr.open_dataset(self.files[0])
+                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
 
     def mask_and_scale(self):
@@ -276,6 +288,7 @@ class analysis:
         self.end_time = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.debug = False
 
     def read_control(self, control=None):
         """Reads the yaml control file.  If not set assumes control file is control.yaml
@@ -304,6 +317,7 @@ class analysis:
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = self.control_dict['analysis']['output_dir']
+        self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
         """Opens all models and creates model instances for monet-analysis"""
@@ -319,9 +333,17 @@ class analysis:
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                if 'mod_kwargs' in self.control_dict['model'][mod].keys():
+                    m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
                 # create file string (note this can include hot strings)
                 m.file_str = self.control_dict['model'][mod]['files']
+                if 'files_vert' in self.control_dict['model'][mod].keys():
+                    m.file_vert_str = self.control_dict['model'][mod]['files_vert']
+                if 'files_surf' in self.control_dict['model'][mod].keys():
+                    m.file_surf_str = self.control_dict['model'][mod]['files_surf']
+                if 'files_pm25' in self.control_dict['model'][mod].keys():
+                    m.file_pm25_str = self.control_dict['model'][mod]['files_pm25']
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
@@ -387,6 +409,10 @@ class analysis:
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()
+                    #Check if z dim is larger than 1. If so select, the first level as all models read through 
+                    #MONETIO will be reordered such that the first level is the level nearest to the surface.
+                    if model_obj.sizes['z'] > 1: 
+                        model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
@@ -394,8 +420,6 @@ class analysis:
                     p = pair()
                     p.obs = obs.label
                     p.model = mod.label
-                    p.model_obj = mod
-                    p.obs_obj = obs
                     p.model_vars = keys
                     p.obs_vars = obs_vars
                     p.filename = '{}_{}.nc'.format(p.obs, p.model)
@@ -467,14 +491,14 @@ class analysis:
 
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
-                            if p.model_obj.plot_kwargs is not None:
-                                plot_dict = {**grp_dict['default_plot_kwargs'], **p.model_obj.plot_kwargs}
+                            if self.models[p.model].plot_kwargs is not None:
+                                plot_dict = {**grp_dict['default_plot_kwargs'], **self.models[p.model].plot_kwargs}
                             else:
                                 plot_dict = {**grp_dict['default_plot_kwargs'], **splots.calc_default_colors(p_index)}
                             obs_dict = grp_dict['default_plot_kwargs']
                         else:
-                            if p.model_obj.plot_kwargs is not None:
-                                plot_dict = p.model_obj.plot_kwargs
+                            if self.models[p.model].plot_kwargs is not None:
+                                plot_dict = self.models[p.model].plot_kwargs
                             else:
                                 plot_dict = splots.calc_default_colors(p_index)
                             obs_dict = None
@@ -490,9 +514,9 @@ class analysis:
                             text_dict = None
 
                         # Read in some plotting specifications stored with observations.
-                        if p.obs_obj.variable_dict is not None:
-                            if obsvar in p.obs_obj.variable_dict.keys():
-                                obs_plot_dict = p.obs_obj.variable_dict[obsvar]
+                        if self.obs[p.obs].variable_dict is not None:
+                            if obsvar in self.obs[p.obs].variable_dict.keys():
+                                obs_plot_dict = self.obs[p.obs].variable_dict[obsvar]
                             else:
                                 obs_plot_dict = {}
                         else:
@@ -561,6 +585,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             # For all p_index plot the model.
                             ax = splots.make_timeseries(
@@ -576,10 +601,11 @@ class analysis:
                                 domain_name=domain_name,
                                 plot_dict=plot_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=120, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=200, decorate=True, bbox_inches='tight', dpi=200)
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -613,6 +639,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
@@ -638,6 +665,7 @@ class analysis:
                                     plot_dict=plot_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             else:
                                 # For the rest, plot on top of dia
@@ -654,10 +682,11 @@ class analysis:
                                     domain_name=domain_name,
                                     plot_dict=plot_dict,
                                     text_dict=text_dict,
+                                    debug=self.debug
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=50, decorate=True, bbox_inches='tight', dpi=200)
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
@@ -682,6 +711,7 @@ class analysis:
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
@@ -702,10 +732,16 @@ class analysis:
                                 vmin = None
                                 vmax = None
                                 nlevels = None
+                            #Check if z dim is larger than 1. If so select, the first level as all models read through 
+                            #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
-                            vmodel = p.model_obj.obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                            if self.models[p.model].obj.sizes['z'] > 1: #Select only surface values.
+                                vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
+                                    dict(time=slice(self.start_time, self.end_time))] 
+                            else:
+                                vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             # Determine proj to use for spatial plots
-                            proj = splots.map_projection(p.model_obj)
+                            proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             # For just the spatial overlay plot, you do not use the model data from the pair file
@@ -727,6 +763,7 @@ class analysis:
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
                                 text_dict=text_dict,
+                                debug=self.debug
                             )
 
     def stats(self):
@@ -763,9 +800,9 @@ class analysis:
         obs_vars = pair1.obs_vars
         for obsvar in obs_vars:
             # Read in some plotting specifications stored with observations.
-            if pair1.obs_obj.variable_dict is not None:
-                if obsvar in pair1.obs_obj.variable_dict.keys():
-                    obs_plot_dict = pair1.obs_obj.variable_dict[obsvar]
+            if self.obs[pair1.obs].variable_dict is not None:
+                if obsvar in self.obs[pair1.obs].variable_dict.keys():
+                    obs_plot_dict = self.obs[pair1.obs].variable_dict[obsvar]
                 else:
                     obs_plot_dict = {}
             else:
@@ -853,4 +890,9 @@ class analysis:
                     # Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
 
-                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']), outname=outname, title=title, out_table_kwargs=out_table_kwargs)
+                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']), 
+                                            outname=outname, 
+                                            title=title, 
+                                            out_table_kwargs=out_table_kwargs,
+                                            debug=self.debug
+                                           )
