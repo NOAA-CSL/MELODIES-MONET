@@ -5,13 +5,13 @@
 # Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
   start_time: '2019-08-01-12:00:00' #UTC
-  end_time: '2019-09-01-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/ #Opt if not specified plots stored in code directory.
-  debug: False
+  end_time: '2019-08-02-12:00:00' #UTC
+  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_test/ #Opt if not specified plots stored in code directory.
+  debug: True #Need to update this to True if you want plots to show up on jupyter notebook.
 model:
   rrfs_r131v1: # model label
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*dynf*.nc
-    files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*pm25tot_f*.nc
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*0801*dynf*.nc
+    files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*0801*pm25tot_f*.nc
     mod_type: 'rrfs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
@@ -31,7 +31,7 @@ model:
       linestyle: '-'
   cmaq_oper: # model label
     #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/cmaq_oper/*
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/cmaq_oper/*0801*
     #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
     #files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
     #files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
@@ -53,7 +53,7 @@ model:
       linestyle: '-'
   cmaq_expt: # model label
     #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
-    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/cmaq_expt/*
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/cmaq_expt/*0801*
     #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
     #files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
     #files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
@@ -152,8 +152,8 @@ plots:
       markersize: 2.
     text_kwargs: #Opt
       fontsize: 16.
-    domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_rrfs_r131v1','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
@@ -168,8 +168,8 @@ plots:
       markersize: 10.
     text_kwargs: #Opt
       fontsize: 16.
-    domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_rrfs_r131v1','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
@@ -206,8 +206,8 @@ plots:
       figsize: [8, 6] # figure size 
     text_kwargs: #Opt
       fontsize: 20.
-    domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_rrfs_r131v1','airnow_cmaq_expt','airnow_cmaq_oper'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
