@@ -152,7 +152,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=150, decorate=True, bbox_inches='tight', dpi=200)
+    code_m_new.savefig(outname + '.png',loc=4, height=120, decorate=True, bbox_inches='tight', dpi=200)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -384,7 +384,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
+    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
     return ax
     
 def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):

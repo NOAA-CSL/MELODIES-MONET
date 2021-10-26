@@ -605,7 +605,7 @@ class analysis:
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=200, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, bbox_inches='tight', dpi=200)
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -686,7 +686,7 @@ class analysis:
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=50, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, bbox_inches='tight', dpi=200)
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
