@@ -223,17 +223,17 @@ class model:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
             if self.files_surf is not None:
                 self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            from new_models import cmaq as cmaq  # Eventually add to monet itself.
+            from new_monetio import cmaq as cmaq  # Eventually add to monet itself.
             self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from new_models import wrfchem_auto as wrfchem  # Eventually add to monet itself.
+            from new_monetio import wrfchem as wrfchem  # Eventually add to monet itself.
             self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from new_models import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
+            from new_monetio import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
             self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
@@ -442,7 +442,7 @@ class analysis:
 
         """
         from plots import surfplots as splots
-        from new_models import code_to_move_to_monet as code_m_new
+        from new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -605,7 +605,7 @@ class analysis:
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=200, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, bbox_inches='tight', dpi=200)
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -686,7 +686,7 @@ class analysis:
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=50, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, bbox_inches='tight', dpi=200)
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
@@ -775,7 +775,7 @@ class analysis:
             Returns .csv file and .png file with stats
 
         """
-        from plots import proc_stats as proc_stats
+        from stats import proc_stats as proc_stats
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
