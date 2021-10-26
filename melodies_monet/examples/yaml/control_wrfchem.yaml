@@ -30,7 +30,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/data/AIRNOW_20190831_20190831.nc
+    filename: /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/data/AIRNOW_20190801_20190831.nc
     obs_type: pt_sfc
     variables: #Opt 
       PM2.5:
@@ -170,7 +170,7 @@ plots:
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
-  stat_list: ['MB', 'MdnB', 'NMB', 'NMdnB','R2', 'RMSE'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
+  stat_list: ['MB', 'MdnB','R2', 'RMSE'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
   #Full calc list ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1','E1', 'IOA', 'AC']
   round_output: 2 #Opt, defaults to rounding to 3rd decimal place.
   output_table: False #Always outputs a .txt file. Optional to also output as a table.

@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-08-02-12:00:00' #UTC
   end_time: '2019-08-03-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802 #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802_w_cmaq #Opt if not specified plots stored in code directory.
   debug: True
 model:
   cmaq_expt: # model label
@@ -68,7 +68,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/data/AIRNOW_20190831_20190831.nc
+    filename: /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/data/AIRNOW_20190801_20190831.nc
     obs_type: pt_sfc
     variables: #Opt 
       PM2.5:
