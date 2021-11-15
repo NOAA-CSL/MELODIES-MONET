@@ -124,7 +124,7 @@ class observation:
         try:
             
             if self.label == 'omps_limb':
-                from new_models import omps_limb
+                from new_monetio import omps_limb
                 self.obj = omps_limb.read_omps_limb(self.file)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
@@ -263,7 +263,7 @@ class model:
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         elif 'fv3raqms' in self.model.lower():
-            from new_models import fv3raqms as fv3raqms
+            from new_monetio import fv3raqms as fv3raqms
             
             if len(self.files) < 1:
                 self.obj = fv3raqms.open_dataset(self.files)
