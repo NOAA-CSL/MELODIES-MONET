@@ -168,10 +168,10 @@ class observation:
             Description of returned object.
 
         """
-        #try:
-        #    self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
-        #except KeyError:
-        self.obj = self.obj.to_dataframe().reset_index().drop(['x'], axis=1)
+        try:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
+        except KeyError:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x'], axis=1)
 
 class model:
     def __init__(self):
@@ -446,12 +446,11 @@ class analysis:
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
                     # MEB: altered to include try/except logic to take care of case when there is no z dimension to deal with.
                     #      this was necessary for aeronet/raqms case.
-                    #try:
-                    
-                    #     if model_obj.sizes['z'] > 1: 
-                    #        model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
-                    #except KeyError:
-                    #    pass
+                    try:
+                         if model_obj.sizes['z'] > 1: 
+                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
+                    except KeyError:
+                        pass
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
