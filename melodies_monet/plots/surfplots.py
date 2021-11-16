@@ -76,6 +76,8 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
+    elif f.model.lower() == 'fv3raqms':
+        proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
@@ -120,7 +122,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
         df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
         cmap=new_color_map(), edgecolor='k',linewidth=.8)
     
-    if domain_type == 'all':
+    if domain_type == 'all' and domain_name == 'CONUS':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -129,6 +131,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     elif domain_type == 'epa_region' and domain_name is not None:
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
+    
     else:
         latmin= math.floor(min(df.latitude))
         lonmin= math.floor(min(df.longitude))
@@ -315,7 +318,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
     
     #Determine the domain
-    if domain_type == 'all':
+    if domain_type == 'all' and domain_name == 'CONUS':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0

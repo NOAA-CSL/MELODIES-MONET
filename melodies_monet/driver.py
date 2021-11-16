@@ -83,7 +83,7 @@ class observation:
         self.label = None
         self.file = None
         self.obj = None
-        self.type = 'pt_src'
+        self.type = None
         self.variable_dict = None
 
     def open_obs(self):
@@ -110,7 +110,25 @@ class observation:
                 self.mask_and_scale()  # mask and scale values from the control values
         except ValueError:
             print('something happened opening file')
+    def open_sat_obs(self):
+        """Opens satellite data observations.
 
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
+        from glob import glob
+        
+        try:
+            
+            if self.label == 'omps_limb':
+                from new_monetio import omps_limb
+                self.obj = omps_limb.read_omps_limb(self.file)
+            else: print('file reader not implemented for {} observation'.format(self.label))
+        except ValueError:
+            print('something happened opening file')
     def mask_and_scale(self):
         """Mask and scale obs to convert units and set detection limits"""
         vars = self.obj.data_vars
@@ -142,6 +160,7 @@ class observation:
 
     def obs_to_df(self):
         """Short summary.
+        MEB: added try/except logic for aeronet/raqms where dropping y caused error.
 
         Returns
         -------
@@ -149,8 +168,10 @@ class observation:
             Description of returned object.
 
         """
-        self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
-
+        try:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
+        except KeyError:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x'], axis=1)
 
 class model:
     def __init__(self):
@@ -210,6 +231,7 @@ class model:
             Description of returned object.
 
         """
+        print(self.model.lower())
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -240,6 +262,13 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+        elif 'fv3raqms' in self.model.lower():
+            from new_monetio import fv3raqms as fv3raqms
+            
+            if len(self.files) < 1:
+                self.obj = fv3raqms.open_dataset(self.files)
+            else:
+                self.obj = fv3raqms.open_mfdataset(self.files)
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -375,7 +404,11 @@ class analysis:
                 o.file = self.control_dict['obs'][obs]['filename']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs()
+                if o.obs_type == 'pt_sfc':    
+                    o.open_obs()
+                elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc'\
+                                 , 'sat_grid_clm', 'sat_swath_prof']:
+                    o.open_sat_obs()
                 self.obs[o.label] = o
 
     def pair_data(self):
@@ -411,8 +444,13 @@ class analysis:
                         obs.obs_to_df()
                     #Check if z dim is larger than 1. If so select, the first level as all models read through 
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
-                    if model_obj.sizes['z'] > 1: 
-                        model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
+                    # MEB: altered to include try/except logic to take care of case when there is no z dimension to deal with.
+                    #      this was necessary for aeronet/raqms case.
+                    try:
+                         if model_obj.sizes['z'] > 1: 
+                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
+                    except KeyError:
+                        pass
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
@@ -429,7 +467,7 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
-
+                
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
