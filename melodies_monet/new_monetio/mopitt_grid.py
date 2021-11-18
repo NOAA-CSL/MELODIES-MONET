@@ -32,7 +32,7 @@ def getStartTime(filename):
    
     grp = inFile[structure]
     k = grp.attrs
-    startTimeBytes = k.get("StartTime",default="hello")
+    startTimeBytes = k.get("StartTime",default=None)
     startTime = pd.to_datetime(startTimeBytes[0], unit='s', origin='1993-01-01 00:00:00')
     #print("******************", startTime)
    
@@ -45,7 +45,7 @@ def getStartTime(filename):
     return startTime
 
 
-def loadAndExtractGridHDF(filename,varname):
+def loadAndExtractGriddedHDF(filename,varname):
     """Method to open MOPITT gridded hdf files.
     Masks data that is missing (turns into np.nan).
 
@@ -100,7 +100,7 @@ def loadAndExtractGridHDF(filename,varname):
     return ds_masked
 
 
-def readMOPITTvar(files, varname):
+def readMOPITTfiles(files, varname):
     """Loop through files to open the MOPITT level 3 data.
 
     Parameters
@@ -118,7 +118,7 @@ def readMOPITTvar(files, varname):
     
     for filename in filelist:
         print(filename)
-        data = loadAndExtractGridHDF(filename, varname)
+        data = loadAndExtractGriddedHDF(filename, varname)
         time = getStartTime(filename)
         data = data.expand_dims(axis=0, time=[time])
         if count == 0:

@@ -134,7 +134,7 @@ class observation:
             elif self.label == 'mopitt_l3':
                 from new_monetio import mopitt_grid
                 print('Reading MOPITT')
-                self.obj = mopitt_grid.readMOPITTvar(str(self.file), 'column')
+                self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
