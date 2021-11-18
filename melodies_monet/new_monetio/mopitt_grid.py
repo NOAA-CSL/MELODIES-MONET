@@ -67,19 +67,13 @@ def loadAndExtractGriddedHDF(filename,varname):
     alt_short = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/Pressure"][:]
     
     #LAT-LON variables
-    if varname=='column':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/RetrievedCOTotalColumnDay"][:]
-    elif varname=='apriori_col':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOTotalColumnDay"][:]
-    elif varname=='apriori_surf':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOSurfaceMixingRatioDay"][:]
-    elif varname=='pressure_surf':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/SurfacePressureDay"][:]
-    #LAT-LON-ALT variables    
-    elif varname=='ak_col':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/TotalColumnAveragingKernelDay"][:]
-    elif varname=='apriori_prof':
-        data_loaded = he5_load["/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOMixingRatioProfileDay"][:]
+    variable_dict = {'column': "/HDFEOS/GRIDS/MOP03/Data Fields/RetrievedCOTotalColumnDay",\
+                     'apriori_col': "/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOTotalColumnDay",\
+                     'apriori_surf': "/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOSurfaceMixingRatioDay",\
+                     'pressure_surf': "/HDFEOS/GRIDS/MOP03/Data Fields/SurfacePressureDay",\
+                     'ak_col': "/HDFEOS/GRIDS/MOP03/Data Fields/TotalColumnAveragingKernelDay",\
+                     'ak_prof': "/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOMixingRatioProfileDay" }
+    data_loaded = he5_load[variable_dict[varname]][:]
     
     #DEBEG
     #print(data_loaded.shape)
