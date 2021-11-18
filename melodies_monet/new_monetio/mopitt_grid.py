@@ -73,7 +73,11 @@ def loadAndExtractGriddedHDF(filename,varname):
                      'pressure_surf': "/HDFEOS/GRIDS/MOP03/Data Fields/SurfacePressureDay",\
                      'ak_col': "/HDFEOS/GRIDS/MOP03/Data Fields/TotalColumnAveragingKernelDay",\
                      'ak_prof': "/HDFEOS/GRIDS/MOP03/Data Fields/APrioriCOMixingRatioProfileDay" }
-    data_loaded = he5_load[variable_dict[varname]][:]
+    try:
+        data_loaded = he5_load[variable_dict[varname]][:]
+    except:
+        print("ERROR: Cannot load " + varname + " from " + filename)
+        return 0
     
     #DEBEG
     #print(data_loaded.shape)
