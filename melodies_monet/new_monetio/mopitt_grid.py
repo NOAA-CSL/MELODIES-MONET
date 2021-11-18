@@ -2,9 +2,7 @@
 import pandas as pd
 import xarray as xr
 import numpy as np
-import datetime
-from pathlib import Path                   # System agnostic paths
-import h5py                                # For loading he5 files
+import h5py
 import glob
 import os
 
@@ -48,9 +46,8 @@ def getStartTime(filename):
 
 
 def loadAndExtractGridHDF(filename,varname):
-    
     """Method to open MOPITT gridded hdf files.
-    Masks data that is missing (truns into np.nan).
+    Masks data that is missing (turns into np.nan).
 
     Parameters
     ----------
