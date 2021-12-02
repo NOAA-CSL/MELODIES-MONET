@@ -97,7 +97,7 @@ class observation:
         """
         from glob import glob
         from numpy import sort
-
+        
         try:
             if os.path.isfile(self.file):
                 _, extension = os.path.splitext(self.file)
@@ -110,25 +110,35 @@ class observation:
                 self.mask_and_scale()  # mask and scale values from the control values
         except ValueError:
             print('something happened opening file')
+            
     def open_sat_obs(self):
-        """Opens satellite data observations.
+        """Methods to opens satellite data observations. 
+        Uses in-house python code to open and load observations.
+        Alternatively may use the satpy reader.
 
         Returns
         -------
         type
-            Description of returned object.
-
+            Fills the object class associated with the equivalent label (self.label) with satellite observation
+            dataset read in from the associated file (self.file) by the satellite file reader
         """
         from glob import glob
         
+        #import sys
+        #sys. exit()  
+
         try:
-            
             if self.label == 'omps_limb':
                 from new_monetio import omps_limb
                 self.obj = omps_limb.read_omps_limb(self.file)
+            elif self.label == 'mopitt_l3':
+                from new_monetio import mopitt_grid
+                print('Reading MOPITT')
+                self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
+            
     def mask_and_scale(self):
         """Mask and scale obs to convert units and set detection limits"""
         vars = self.obj.data_vars
@@ -330,7 +340,7 @@ class analysis:
         Returns
         -------
         type
-            Description of returned object.
+            Reads the contents of the yaml control file into a dictionary associated with the analysis class.
 
         """
         import yaml
@@ -406,10 +416,11 @@ class analysis:
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 if o.obs_type == 'pt_sfc':    
                     o.open_obs()
-                elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc'\
-                                 , 'sat_grid_clm', 'sat_swath_prof']:
+                elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                                    'sat_grid_clm', 'sat_swath_prof']:
                     o.open_sat_obs()
                 self.obs[o.label] = o
+
 
     def pair_data(self):
         """Short summary.
