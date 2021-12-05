@@ -1,0 +1,10 @@
+analysis:
+  start_time: '2020-08-01'
+  end_time:   '2020-08-03'
+  debug: True
+
+obs:
+  modis_l2:
+    filename: $HOME/Data/MODIS/Terra/C61/2020/*/*
+    obs_type: sat_swath_clm
+    variables: None
