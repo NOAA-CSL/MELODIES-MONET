@@ -135,6 +135,10 @@ class observation:
                 from new_monetio import mopitt_grid
                 print('Reading MOPITT')
                 self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
+            elif self.label == 'modis_l2':
+                from new_monetio import modis_l2
+                print('Reading MODIS L2')
+                self.obj = modis_l2.read_mfdataset(self.file)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
