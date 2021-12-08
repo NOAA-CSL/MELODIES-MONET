@@ -9,6 +9,6 @@ obs:
     obs_type: sat_swath_clm
     variables:
       Optical_Depth_Land_And_Ocean:
-        unit_scale: 0.001
+        scale: 0.001
       Deep_Blue_Aerosol_Optical_Depth_550_Land:
-        unit_scale: 0.001
+        scale: 0.001

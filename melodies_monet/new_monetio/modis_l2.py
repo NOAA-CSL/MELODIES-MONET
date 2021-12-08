@@ -1,7 +1,11 @@
 import os
 import sys
+import logging
 from glob import glob
+
+import numpy as np
 import xarray as xr
+
 sys.path.append('../../new_monetio')
 from hdfio import hdf_open, hdf_close, hdf_read
 
@@ -12,8 +16,15 @@ def read_dataset(fname, variable_dict):
     __________
     fname : str
         Input file path.
+
+    Returns
+    _______
+    xarray.Dataset
     """
     print('reading ' + fname)
+
+    ds = xr.Dataset()
+
     f = hdf_open(fname)
     latitude = hdf_read(f, 'Latitude')
     longitude = hdf_read(f, 'Longitude')
@@ -21,10 +32,14 @@ def read_dataset(fname, variable_dict):
     for varname in variable_dict:
         print(varname)
         values = hdf_read(f, varname)
-        if 'unit_scale' in variable_dict[varname]:
-            values = variable_dict[varname]['unit_scale'] \
+        if 'scale' in variable_dict[varname]:
+            values = variable_dict[varname]['scale'] \
                 * values
+        values[values < 0] = np.nan
+        ds[varname] = xr.DataArray(values)
     hdf_close(f)
+
+    return ds
 
 
 def read_mfdataset(fnames, variable_dict):
@@ -51,4 +66,4 @@ def read_mfdataset(fnames, variable_dict):
     print(fnames)
     files = sorted(glob(fnames))
     for file in files:
-        read_dataset(file, variable_dict)
+        granule = read_dataset(file, variable_dict)
