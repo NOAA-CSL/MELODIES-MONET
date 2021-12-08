@@ -98,7 +98,7 @@ def hdf_write_field(fileid, fieldname, coordnames, data, fill=None):
     """
     logging.info('hdfio.hdf_write_field:' + fieldname)
     fieldid = fileid.create(
-        fieldname, hdftypes[str(data.dtype)] , data.shape)
+        fieldname, hdftypes[str(data.dtype)], data.shape)
     for i in range(len(coordnames)):
         dimid = fieldid.dim(i)
         dimid.setname(coordnames[i])

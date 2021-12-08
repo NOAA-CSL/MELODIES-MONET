@@ -15,6 +15,8 @@ def read_dataset(fname):
     """
     print('reading ' + fname)
     f = hdf_open(fname)
+    latitude = hdf_read(f, 'Latitude')
+    longitude = hdf_read(f, 'Longitude')
     hdf_close(f)
 
 
