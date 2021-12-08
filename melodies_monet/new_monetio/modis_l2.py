@@ -6,7 +6,7 @@ sys.path.append('../../new_monetio')
 from hdfio import hdf_open, hdf_close, hdf_read
 
 
-def read_dataset(fname):
+def read_dataset(fname, variable_dict):
     """
     Parameters
     __________
@@ -17,10 +17,13 @@ def read_dataset(fname):
     f = hdf_open(fname)
     latitude = hdf_read(f, 'Latitude')
     longitude = hdf_read(f, 'Longitude')
+    for varname in variable_dict:
+        print(varname)
+        values = hdf_read(f, varname)
     hdf_close(f)
 
 
-def read_mfdataset(fnames):
+def read_mfdataset(fnames, variable_dict):
     """
     Parameters
     __________
@@ -42,6 +45,6 @@ def read_mfdataset(fnames):
                 fnames = fnames.replace(subpath, envval)
 
     print(fnames)
-    files = glob(fnames)
+    files = sorted(glob(fnames))
     for file in files:
-        read_dataset(file)
+        read_dataset(file, variable_dict)
