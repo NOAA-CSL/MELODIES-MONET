@@ -1,11 +1,21 @@
 import os
+import sys
 from glob import glob
 import xarray as xr
-import h5py as h5
+sys.path.append('../../new_monetio')
+from hdfio import hdf_open, hdf_close, hdf_read
 
 
 def read_dataset(fname):
-    pass
+    """
+    Parameters
+    __________
+    fname : str
+        Input file path.
+    """
+    print('reading ' + fname)
+    f = hdf_open(fname)
+    hdf_close(f)
 
 
 def read_mfdataset(fnames):
@@ -32,4 +42,4 @@ def read_mfdataset(fnames):
     print(fnames)
     files = glob(fnames)
     for file in files:
-        print(file)
+        read_dataset(file)

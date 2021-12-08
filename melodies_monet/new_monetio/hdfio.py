@@ -4,6 +4,12 @@ import logging
 import numpy as np
 import pyhdf.SD as hdf
 
+
+hdftypes = {'int16': hdf.SDC.INT16, 'uint16': hdf.SDC.UINT16,
+            'int32': hdf.SDC.INT32, 'uint32': hdf.SDC.UINT32,
+            'float32': hdf.SDC.FLOAT32, 'float64': hdf.SDC.FLOAT64}
+
+
 def hdf_open(filename):
     """
     filename - file name
@@ -16,6 +22,7 @@ def hdf_open(filename):
         logging.error('hdfio.hdf_open:' + filename)
         sys.exit(1)
     return fileid
+
 
 def hdf_create(filename):
     """
@@ -31,11 +38,13 @@ def hdf_create(filename):
         sys.exit(1)
     return fileid
 
+
 def hdf_close(fileid):
     """
     fileid - file id
     """
     fileid.end()
+
 
 def hdf_list(fileid):
     """
@@ -51,6 +60,7 @@ def hdf_list(fileid):
             'hdfio.hdf_list:' + str(index) + ':' + dataset)
     return datasets, indices
 
+
 def hdf_read(fileid, varname):
     """
     fileid - file id
@@ -62,6 +72,7 @@ def hdf_read(fileid, varname):
     data = varid[:]
     return data
 
+
 def hdf_write_coord(fileid, coordname, data):
     """
     fileid - file id
@@ -69,15 +80,13 @@ def hdf_write_coord(fileid, coordname, data):
     data - coordinate array
     """
     logging.info('hdfio.hdf_write_coord:' + coordname)
-    hdftypes = {'int16' : hdf.SDC.INT16, 'uint16' : hdf.SDC.UINT16,
-        'int32' : hdf.SDC.INT32, 'uint32' : hdf.SDC.UINT32,
-        'float32' : hdf.SDC.FLOAT32, 'float64' : hdf.SDC.FLOAT64}
     coordid = fileid.create(
-        coordname, hdftypes[str(data.dtype)] , data.shape)
+        coordname, hdftypes[str(data.dtype)], data.shape)
     dimid = coordid.dim(0)
     dimid.setname(coordname)
     coordid[:] = data
     coordid.endaccess()
+
 
 def hdf_write_field(fileid, fieldname, coordnames, data, fill=None):
     """
@@ -88,9 +97,6 @@ def hdf_write_field(fileid, fieldname, coordnames, data, fill=None):
     fill - fill value
     """
     logging.info('hdfio.hdf_write_field:' + fieldname)
-    hdftypes = {'int16' : hdf.SDC.INT16, 'uint16' : hdf.SDC.UINT16,
-        'int32' : hdf.SDC.INT32, 'uint32' : hdf.SDC.UINT32,
-        'float32' : hdf.SDC.FLOAT32, 'float64' : hdf.SDC.FLOAT64}
     fieldid = fileid.create(
         fieldname, hdftypes[str(data.dtype)] , data.shape)
     for i in range(len(coordnames)):
