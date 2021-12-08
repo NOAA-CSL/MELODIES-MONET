@@ -17,9 +17,13 @@ def read_dataset(fname, variable_dict):
     f = hdf_open(fname)
     latitude = hdf_read(f, 'Latitude')
     longitude = hdf_read(f, 'Longitude')
+    start_time = hdf_read(f, 'Scan_Start_Time')
     for varname in variable_dict:
         print(varname)
         values = hdf_read(f, varname)
+        if 'unit_scale' in variable_dict[varname]:
+            values = variable_dict[varname]['unit_scale'] \
+                * values
     hdf_close(f)
 
 
