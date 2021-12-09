@@ -84,6 +84,7 @@ class observation:
         self.file = None
         self.obj = None
         self.type = None
+        self.debug = None
         self.variable_dict = None
 
     def open_obs(self):
@@ -416,6 +417,8 @@ class analysis:
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
                 o.file = self.control_dict['obs'][obs]['filename']
+                if 'debug' in self.control_dict['obs'][obs].keys():
+                    o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 if o.obs_type == 'pt_sfc':    
