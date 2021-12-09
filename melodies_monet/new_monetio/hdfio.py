@@ -17,7 +17,7 @@ def hdf_open(filename):
     """
     try:
         fileid = hdf.SD(filename, hdf.SDC.READ)
-        logging.info('hdfio.hdf_open:' + filename)
+        logging.debug('hdfio.hdf_open:' + filename)
     except IOError:
         logging.error('hdfio.hdf_open:' + filename)
         sys.exit(1)
@@ -32,7 +32,7 @@ def hdf_create(filename):
     try:
         fileid = hdf.SD(filename,
             hdf.SDC.WRITE | hdf.SDC.CREATE | hdf.SDC.TRUNC)
-        logging.info('hdfio.hdf_create:' + filename)
+        logging.debug('hdfio.hdf_create:' + filename)
     except IOError:
         logging.error('hdfio.hdf_create:' + filename)
         sys.exit(1)
@@ -56,7 +56,7 @@ def hdf_list(fileid):
     for dataset in datasets:
         index = hdf.SD.nametoindex(fileid, dataset)
         indices.append(index)
-        logging.info(
+        logging.debug(
             'hdfio.hdf_list:' + str(index) + ':' + dataset)
     return datasets, indices
 
@@ -67,7 +67,7 @@ def hdf_read(fileid, varname):
     varname - variable name
     return data
     """
-    logging.info('hdfio.hdf_read:' + varname)
+    logging.debug('hdfio.hdf_read:' + varname)
     varid = fileid.select(varname)
     data = varid[:]
     return data
@@ -79,7 +79,7 @@ def hdf_write_coord(fileid, coordname, data):
     coordname - coordinate variable name
     data - coordinate array
     """
-    logging.info('hdfio.hdf_write_coord:' + coordname)
+    logging.debug('hdfio.hdf_write_coord:' + coordname)
     coordid = fileid.create(
         coordname, hdftypes[str(data.dtype)], data.shape)
     dimid = coordid.dim(0)
@@ -96,7 +96,7 @@ def hdf_write_field(fileid, fieldname, coordnames, data, fill=None):
     data - field array
     fill - fill value
     """
-    logging.info('hdfio.hdf_write_field:' + fieldname)
+    logging.debug('hdfio.hdf_write_field:' + fieldname)
     fieldid = fileid.create(
         fieldname, hdftypes[str(data.dtype)], data.shape)
     for i in range(len(coordnames)):

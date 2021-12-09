@@ -42,7 +42,7 @@ def read_dataset(fname, variable_dict):
     return ds
 
 
-def read_mfdataset(fnames, variable_dict):
+def read_mfdataset(fnames, variable_dict, debug=False):
     """
     Parameters
     __________
@@ -53,6 +53,12 @@ def read_mfdataset(fnames, variable_dict):
     _______
     xarray.Dataset
     """
+    if debug:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.INFO
+    logging.basicConfig(stream=sys.stdout, level=logging_level)
+
     for subpath in fnames.split('/'):
         if '$' in subpath:
             envvar = subpath.replace('$', '')

@@ -139,7 +139,8 @@ class observation:
             elif self.label == 'modis_l2':
                 from new_monetio import modis_l2
                 print('Reading MODIS L2')
-                self.obj = modis_l2.read_mfdataset(self.file, self.variable_dict)
+                self.obj = modis_l2.read_mfdataset(
+                    self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
