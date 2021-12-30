@@ -6,7 +6,7 @@ from glob import glob
 import numpy as np
 import xarray as xr
 
-sys.path.append('../../new_monetio')
+sys.path.append('../../util')
 from hdfio import hdf_open, hdf_close, hdf_read
 
 
