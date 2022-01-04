@@ -47,6 +47,3 @@ code-set to complete their desired analysis.
   The structure and function of MONET and MONET I/O, and MELODIES-MONET interaction. 
   Adapted and updated from Figure 1 in Baker and Pan (2017).
 
-What's New
-----------
-

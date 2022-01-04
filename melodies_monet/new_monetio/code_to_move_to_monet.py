@@ -1,7 +1,7 @@
 #These are functions in MONET that we are working on updating and then will move over to MONET.
 
 def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
-    """save figure and add the MONET logo .
+    """Save figure and add the MELODIES-MONET logo.
     Parameters
     ----------
     fname : str
@@ -9,13 +9,13 @@ def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
     loc : int
         the location for the monet logo.
     decorate : bool
-        Description of parameter `decorate`.
+        Include logo on plot (True) or not (False)
     **kwargs : dict
         kwargs for the matplotlib.pyplot.savefig function.
     Returns
     -------
-    type
-        Description of returned object.
+    plots
+        Saved plots optionally with MELODIES-MONET logo included
     """
     import io
     import os
@@ -44,7 +44,7 @@ def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
         # sys.argv[0])[-5] + 'data/MONET_logo.png'
         # print(os.path.basename(__file__))
         #logo = os.path.abspath(__file__)[:-17] + 'data/MONET-logo.png'
-        logo = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data/MM_logo_concept.png'))
+        logo = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data/MM_logo.png'))
         dc.add_logo(logo,height=height)
         if fname.split('.')[-1] == 'png':
             img.save(fname, "PNG")

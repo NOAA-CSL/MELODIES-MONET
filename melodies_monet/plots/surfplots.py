@@ -1,14 +1,4 @@
-#!/usr/bin/env python
-
-###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date: 2018-03-29 10:12:00 -0400 (Thu, 29 Mar 2018) $
-# $Revision: 100014 $
-# $Author: Barry.Baker@noaa.gov $
-# $Id: nemsio2nc4.py 100014 2018-03-29 14:12:00Z Barry.Baker@noaa.gov $
-###############################################################
-
-#Original scripts by Patrick Campbell. Adapted to MONET-analysis by Rebecca Schwantes and Barry Baker
+#Code to create plots for surface observations
 
 import os
 import monetio as mio
@@ -32,16 +22,56 @@ from new_monetio import code_to_move_to_monet as code_m_new
 # from util import write_ncf
 
 def make_24hr_regulatory(df, col=None):
-    """ Make 24-hour averages """
+    """Calculates 24-hour averages
+    
+    Parameters
+    ----------
+    df : dataframe
+        Model/obs pair of hourly data
+    col : str
+        Column label of observation variable to apply the calculation 
+    Returns
+    -------
+    dataframe
+        dataframe with applied calculation
+        
+    """
     return calc_24hr_ave(df, col)
 
 
 def make_8hr_regulatory(df, col=None):
-    """ Make 8-hour rolling average daily """
+    """Calculates 8-hour rolling average daily
+    
+    Parameters
+    ----------
+    df : dataframe
+        Model/obs pair of hourly data
+    col : str
+        Column label of observation variable to apply the calculation 
+    Returns
+    -------
+    dataframe
+        dataframe with applied calculation
+        
+    """
     return calc_8hr_rolling_max(df, col, window=8)
 
 def calc_default_colors(p_index):
-    """ Use default colors """
+    """List of default colors, lines, and markers to use if user does not 
+    specify them in the input yaml file.
+    
+    Parameters
+    ----------
+    p_index : integer
+        Number of pairs in analysis class
+    
+    Returns
+    -------
+    list
+        List of dictionaries containing default colors, lines, and 
+        markers to use for plotting for the number of pairs in analysis class
+        
+    """
     x = [dict(color='b', linestyle='--',marker='x'),
          dict(color='g', linestyle='-.',marker='o'),
          dict(color='r', linestyle=':',marker='v'),
@@ -51,6 +81,14 @@ def calc_default_colors(p_index):
     return x[p_index % 5]
 
 def new_color_map():
+    """Creates new color map for difference plots
+    
+    Returns
+    -------
+    colormap
+        Orange and blue color map
+        
+    """
     top = mpl.cm.get_cmap('Blues_r', 128)
     bottom = mpl.cm.get_cmap('Oranges', 128)
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
@@ -58,6 +96,19 @@ def new_color_map():
     return ListedColormap(newcolors, name='OrangeBlue')
 
 def map_projection(f):
+    """Defines map projection. This needs updating to make it more generic.
+    
+    Parameters
+    ----------
+    f : class
+        model class
+        
+    Returns
+    -------
+    cartopy projection 
+        projection to be used by cartopy in plotting
+        
+    """
     import cartopy.crs as ccrs
     if f.model.lower() == 'cmaq':
         proj = ccrs.LambertConformal(
@@ -86,7 +137,44 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
-    """Creates the MONET-Analysis spatial bias plot."""
+    """Creates surface spatial bias plot. 
+    
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data to plot
+    column_o : str
+        Column label of observation variable to plot
+    label_o : str
+        Name of observation variable to use in plot title 
+    column_m : str
+        Column label of model variable to plot
+    label_m : str
+        Name of model variable to use in plot title
+    ylabel : str
+        Title of colorbar axis
+    vdiff : real number
+        Min and max value to use on colorbar axis
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    plot 
+        surface bias plot
+        
+    """
     if debug == False:
         plt.ioff()
         
@@ -158,7 +246,49 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
                     vmin = None, vmax = None,
                     domain_type=None, domain_name=None,
                     plot_dict=None, fig_dict=None, text_dict=None,debug=False):
-    """Creates the MONET-Analysis time series plot."""
+    """Creates timeseries plot. 
+    
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data to plot
+    column : str
+        Column label of variable to plot
+    label : str
+        Name of variable to use in plot legend 
+    ax : ax
+        matplotlib ax from previous occurance so can overlay obs and model 
+        results on the same plot
+    avg_window : rule 
+        Pandas resampling rule (e.g., 'H', 'D')
+    ylabel : str
+        Title of y-axis
+    vmin : real number
+        Min value to use on y-axis
+    vmax : real number
+        Max value to use on y-axis
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)   
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    ax 
+        matplotlib ax such that driver.py can iterate to overlay multiple models on the 
+        same plot
+        
+    """
     if debug == False:
         plt.ioff()
     #First define items for all plots
@@ -225,7 +355,49 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
                 dia=None, ylabel=None, ty_scale=1.5,
                 domain_type=None, domain_name=None,
                 plot_dict=None, fig_dict=None, text_dict=None,debug=False):
-    """Creates the MONET-Analysis taylor plot."""
+    """Creates taylor plot. Note sometimes model values are off the scale 
+    on this plot. This will be fixed soon.
+    
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data to plot
+    column_o : str
+        Column label of observational variable to plot
+    label_o : str
+        Name of observational variable to use in plot legend
+    column_m : str
+        Column label of model variable to plot
+    label_m : str
+        Name of model variable to use in plot legend 
+    dia : dia
+        matplotlib ax from previous occurance so can overlay obs and model 
+        results on the same plot
+    ylabel : str
+        Title of x-axis
+    ty_scale : real
+        Scale to apply to taylor plot to control the plotting range
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)   
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    class 
+        Taylor diagram class defined in MONET
+        
+    """
     #First define items for all plots
     if debug == False:
         plt.ioff()
@@ -287,7 +459,52 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
-    """Creates the MONET-Analysis spatial overlay plot."""
+    """Creates spatial overlay plot. 
+    
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data to plot
+    vmodel: dataarray
+        slice of model data to plot
+    column_o : str
+        Column label of observation variable to plot
+    label_o : str
+        Name of observation variable to use in plot title 
+    column_m : str
+        Column label of model variable to plot
+    label_m : str
+        Name of model variable to use in plot title
+    ylabel : str
+        Title of colorbar axis
+    vmin : real number
+        Min value to use on colorbar axis
+    vmax : real number
+        Max value to use on colorbar axis
+    nlevels: integer
+        Number of levels used in colorbar axis
+    proj: cartopy projection
+        cartopy projection to use in plot
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    plot 
+        spatial overlay plot
+        
+    """
     if debug == False:
         plt.ioff()
         
@@ -388,6 +605,29 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     return ax
     
 def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+    """Combines data into acceptable format for box-plot
+    
+    Parameters
+    ----------
+    df : dataframe
+        Model/obs pair object
+    column : str
+        Column label of variable to plot
+    label : str
+        Name of variable to use in plot legend
+    comb_bx: dataframe
+        dataframe containing information to create box-plot from previous 
+        occurance so can overlay multiple model results on plot
+    label_bx: list
+        list of string labels to use in box-plot from previous occurance so 
+        can overlay multiple model results on plot
+    Returns
+    -------
+    dataframe, list
+        dataframe containing information to create box-plot
+        list of string labels to use in box-plot
+        
+    """
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = []
@@ -412,7 +652,44 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
-    """Creates the MONET-Analysis box plot. """
+    """Creates box-plot. 
+    
+    Parameters
+    ----------
+    comb_bx: dataframe
+        dataframe containing information to create box-plot from 
+        calculate_boxplot
+    label_bx: list
+        list of string labels to use in box-plot from calculate_boxplot
+    ylabel : str
+        Title of y-axis
+    vmin : real number
+        Min value to use on y-axis
+    vmax : real number
+        Max value to use on y-axis
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)   
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    plot 
+        box plot
+        
+    """
     if debug == False:
         plt.ioff()
     #First define items for all plots
@@ -424,7 +701,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = label_bx[0][column]
+        ylabel = label_bx[0]
     
     #Fix the order and palate colors
     order_box = []

@@ -15,28 +15,36 @@ def can_do(index):
         return False
 
 def open_mfdataset(fname,
-                   earth_radius=6370000,
                    convert_to_ppb=True,
                    mech = 'racm_esrl_vcp',
                    var_list = ['o3'],
-                   vert = True,
+                   surf_only=False,
                    **kwargs):
-    """Method to open RAP-chem netcdf files.
+    """Method to open WRF-chem and RAP-chem netcdf files.
 
     Parameters
     ----------
     fname : string or list
         fname is the path to the file or files.  It will accept hot keys in
         strings as well.
-    earth_radius : float
-        The earth radius used for the map projection
     convert_to_ppb : boolean
         If true the units of the gas species will be converted to ppbV
-        and units of aerosols to ug m^-3
+    mech: str
+        Mechanism to be used for calculating sums. Supported mechanisms 
+        include: 'racm_esrl_vcp' and 'redhc'
+    var_list: list
+        List of variables to include in output. MELODIES-MONET only reads in 
+        variables need to plot in order to save on memory and simulation cost
+        especially for vertical data
+    surf_only: boolean
+        Whether to save only surface data to save on memory and computational 
+        cost (True) or not (False).
 
     Returns
     -------
     xarray.DataSet
+        WRF-Chem or RAP-Chem model dataset in standard format for use 
+        in MELODIES-MONET
 
 
     """
@@ -55,7 +63,7 @@ def open_mfdataset(fname,
     for files in fname:
         wrflist.append(Dataset(files))
     
-    if vert == True:
+    if surf_only == False:
         #Add some additional defaults needed for aircraft analysis
         #Turn this on also if need to convert aerosols 
         var_list.append('pres')
@@ -124,12 +132,6 @@ def open_mfdataset(fname,
                 # ug/kg -> ug/m3 using dry air density
                 dset[i] = dset[i]*dset['pressure']/dset['temp']/287.05535 
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
-    
-    #Calculate projection
-    grid = ioapi_grid_from_dataset_wrf(dset, earth_radius=earth_radius)
-    dset = dset.assign_attrs({'proj4_srs': grid})
-    for i in dset.variables:
-        dset[i] = dset[i].assign_attrs({'proj4_srs': grid})
         
     #assign mapping table for airnow
     dset = _predefined_mapping_tables(dset)
@@ -157,7 +159,7 @@ def open_mfdataset(fname,
         dset = add_lazy_om_pm25(dset,dict_sum)
 
     dset = dset.reset_index(['XTIME','datetime'],drop=True)
-    if vert == True:
+    if surf_only == False:
         #Reset more variables
         dset = dset.rename({'bottom_top': 'z','temp':'temperature_k',
                             'height':'alt_msl_m_mid','height_agl':'alt_agl_m_mid',
@@ -172,66 +174,37 @@ def open_mfdataset(fname,
     
     return dset2 
 
-def ioapi_grid_from_dataset_wrf(ds, earth_radius=6370000):
-    """SGet the IOAPI projection out of the file into proj4.
+def _get_keys(d):
+    """Calculates keys
+
     Parameters
     ----------
-    ds : type
-        Description of parameter `ds`.
-    earth_radius : type
-        Description of parameter `earth_radius`.
+    d : xarray.Dataset
+        WRF-Chem model data
+
     Returns
     -------
-    type
-        Description of returned object.
+    list
+        list of keys
+
     """
-
-    pargs = dict()
-    pargs['lat_1'] = ds.TRUELAT1
-    pargs['lat_2'] = ds.TRUELAT2
-    pargs['lat_0'] = ds.MOAD_CEN_LAT
-    pargs['lon_0'] = ds.STAND_LON
-    #pargs['center_lon'] = ds.XCENT
-    #pargs['x0'] = ds.XORIG
-    #pargs['y0'] = ds.YORIG
-    pargs['r'] = earth_radius
-    proj_id = ds.MAP_PROJ
-    if proj_id == 6:
-        # Cylindrical Equidistant -RAP
-        #Assign lat_ts = 0 as true lat are missing value in RAP-chem
-        p4 = '+proj=eqc +lat_ts=0' \
-             '+lat_0={lat_0} +lon_0={lon_0} ' \
-             '+x_0=0 +y_0=0 +datum=WGS84 +units=m +a={r} +b={r}'
-        p4 = p4.format(**pargs)
-    elif proj_id == 1:
-        # lambert - WRF
-        #Described here: https://fabienmaussion.info/2018/01/06/wrf-projection/
-        p4 = '+proj=lcc +lat_1={lat_1} +lat_2={lat_2} ' \
-             '+lat_0={lat_0} +lon_0={lon_0} ' \
-             '+x_0=0 +y_0=0 +datum=WGS84 +units=m +a={r} +b={r}'
-        p4 = p4.format(**pargs)    
-    #elif proj_id == 4:
-    #    # Polar stereo
-    #    p4 = '+proj=stere +lat_ts={lat_1} +lon_0={lon_0} +lat_0=90.0' \
-    #         '+x_0=0 +y_0=0 +a={r} +b={r}'
-    #    p4 = p4.format(**pargs)
-    #elif proj_id == 3:
-    #    # Mercator
-    #    p4 = '+proj=merc +lat_ts={lat_1} ' \
-    #         '+lon_0={center_lon} ' \
-    #         '+x_0={x0} +y_0={y0} +a={r} +b={r}'
-    #    p4 = p4.format(**pargs)
-    else:
-        raise NotImplementedError('IOAPI proj not implemented yet: '
-                                  '{}'.format(proj_id))
-    # area_def = _get_ioapi_pyresample_area_def(ds)
-    return p4  # , area_def
-
-def _get_keys(d):
     keys = Series([i for i in d.data_vars.keys()])
     return keys
 
 def add_lazy_noy_g(d,dict_sum):
+    """Calculates NOy gas
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NOy gas calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['noy_gas'])
     weights = Series(dict_sum['noy_gas_weight'])
@@ -244,6 +217,19 @@ def add_lazy_noy_g(d,dict_sum):
     return d                      
 
 def add_lazy_noy_a(d,dict_sum):
+    """Calculates NOy aerosol
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NOy aerosol calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['noy_aer'])
     index = allvars.isin(keys)
@@ -255,6 +241,19 @@ def add_lazy_noy_a(d,dict_sum):
     return d
                       
 def add_lazy_nox(d,dict_sum):
+    """Calculates NOx
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NOx calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['nox'])
     index = allvars.isin(keys)
@@ -265,6 +264,19 @@ def add_lazy_nox(d,dict_sum):
     return d
 
 def add_lazy_cl_pm25(d,dict_sum):
+    """Calculates CL
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new CL calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_cl'])
     weights = Series(dict_sum['pm25_cl_weight'])
@@ -278,6 +290,19 @@ def add_lazy_cl_pm25(d,dict_sum):
     return d
 
 def add_lazy_ec_pm25(d,dict_sum):
+    """Calculates EC
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new EC calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_ec'])
     weights = Series(dict_sum['pm25_ec_weight'])
@@ -291,6 +316,19 @@ def add_lazy_ec_pm25(d,dict_sum):
     return d
 
 def add_lazy_na_pm25(d,dict_sum):
+    """Calculates NA
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NA calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_na'])
     weights = Series(dict_sum['pm25_na_weight'])
@@ -304,6 +342,19 @@ def add_lazy_na_pm25(d,dict_sum):
     return d
 
 def add_lazy_nh4_pm25(d,dict_sum):
+    """Calculates NH4
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NH4 calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_nh4'])
     weights = Series(dict_sum['pm25_nh4_weight'])
@@ -317,6 +368,19 @@ def add_lazy_nh4_pm25(d,dict_sum):
     return d
 
 def add_lazy_no3_pm25(d,dict_sum):
+    """Calculates NO3 particulate
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new NO3 particulate calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_no3'])
     weights = Series(dict_sum['pm25_no3_weight'])
@@ -330,6 +394,19 @@ def add_lazy_no3_pm25(d,dict_sum):
     return d
 
 def add_lazy_so4_pm25(d,dict_sum):
+    """Calculates SO4
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new SO4 calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_so4'])
     weights = Series(dict_sum['pm25_so4_weight'])
@@ -343,6 +420,19 @@ def add_lazy_so4_pm25(d,dict_sum):
     return d
 
 def add_lazy_om_pm25(d,dict_sum):
+    """Calculates OM
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+
+    Returns
+    -------
+    xarray.Dataset
+        WRF-Chem model data including new OM calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_om'])
     index = allvars.isin(keys)
@@ -354,6 +444,23 @@ def add_lazy_om_pm25(d,dict_sum):
     return d
                        
 def add_multiple_lazy(dset, variables, weights=None):
+    """Sums variables
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        WRF-Chem model data
+    variables : series
+        series of variables
+    variables : series
+        series of weights to apply to each variable during the sum 
+
+    Returns
+    -------
+    xarray.Dataarray
+        Weighted sum of all specified variables
+
+    """
     from numpy import ones
 
     if weights is None:
@@ -374,7 +481,7 @@ def _predefined_mapping_tables(dset):
     Returns
     -------
     dictionary
-        A dictionary of to map to.
+        dictionary defining default mapping tables
 
     """
     to_airnow = {
@@ -390,6 +497,20 @@ def _predefined_mapping_tables(dset):
     return dset
 
 def dict_species_sums(mech):
+    """Predefined mapping tables for different observational parings used when
+        combining data.
+    
+    Parameters
+    ----------
+    mech : string
+        mechanism name
+        
+    Returns
+    -------
+    dictionary
+        dictionary defining the variables to sum based on the specified mechanism
+
+    """
     if mech == 'racm_esrl_vcp':
         sum_dict = {}
         # Arrays for different gasses and pm groupings

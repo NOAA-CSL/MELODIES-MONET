@@ -30,8 +30,23 @@ import matplotlib.pyplot as plt
 from new_monetio import code_to_move_to_monet as code_m_new
 
 def produce_stat_dict(stat_list,spaces=False):
-    #If spaces = True, leave spaces in string.
-    #If spaces = False, remove spaces in string.
+    """Select statistics. Only statistics listed in the default dictionary 
+    below are available.
+    
+    Parameters
+    ----------
+    stat_list : list of strings
+        List of statistic abbreviations specified in input yaml file
+    spaces : boolean
+        Whether to leave spaces in the string containing the full name (True) 
+        or remove spaces (False).
+        
+    Returns
+    -------
+    dictionary
+        dictionary of statistics including abbreviations and full name
+
+    """
     dict_stats_def = {'STDO' : 'Obs Standard Deviation', 
                       'STDP' : 'Mod Standard Deviation',
                       'MNB' : 'Mean Normalized Bias (%)',
@@ -78,7 +93,26 @@ def produce_stat_dict(stat_list,spaces=False):
 #Any stats not calculated in MONET will be added as a routine here.
 
 def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
+    """Calculate statistics
+    
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data
+    obsvar : str
+        Column label of observation variable
+    modvar : str
+        Column label of model variable
+    wind : boolean
+        If variable is wind MONET applies a special calculation to handle 
+        negative and positive values. If wind (True) if not wind (False).
+        
+    Returns
+    -------
+    real
+        statistical value
 
+    """
     obs = df[obsvar].values
     mod = df[modvar].values
    
@@ -179,7 +213,31 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
     return value
 
 def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=False):
+    """Calculates all of the specified statistics, save to csv file, and
+    optionally save to a figure visualizing the table. 
     
+    Parameters
+    ----------
+    df : dataframe
+        model/obs pair data
+    outname : str
+        file location and name of plot (do not include .png)
+    title : str
+        Title to include on the figure visualizing the table
+    out_table_kwargs : dictionary
+        Dictionary containing information to create the figure visualizing the 
+        table.
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+        
+    Returns
+    -------
+    csv file, plot
+        csv file and optional plot containing the statistical calculations 
+        specified in the input yaml file.
+
+    """
     if debug == False:
         plt.ioff()
         

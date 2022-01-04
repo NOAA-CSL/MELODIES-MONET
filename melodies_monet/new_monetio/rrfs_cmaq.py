@@ -25,17 +25,29 @@ def open_mfdataset(fname,
     ----------
     fname : string or list
         fname is the path to the file or files.  It will accept hot keys in
-        strings as well. This will work for 1 or multiple files.
-    earth_radius : float
-        The earth radius used for the map projection
+        strings as well.
     convert_to_ppb : boolean
         If true the units of the gas species will be converted to ppbV
+    mech: str
+        Mechanism to be used for calculating sums. Mechanisms supported: 
+        'cb6r3_ae6_aq'
+    var_list: list
+        List of variables to include in output. MELODIES-MONET only reads in 
+        variables need to plot in order to save on memory and simulation cost
+        especially for vertical data. If None, will read in all model data and 
+        calculate all sums.
+    fname_pm25: string or list
+        Optional path to the file or files for precalculated PM2.5 sums.  It 
+        will accept hot keys in strings as well.
+    surf_only: boolean
+        Whether to save only surface data to save on memory and computational 
+        cost (True) or not (False).
 
     Returns
     -------
     xarray.DataSet
-
-
+        RRFS-CMAQ model dataset in standard format for use in MELODIES-MONET
+        
     """
 
     #Get dictionary of summed species for the mechanism of choice.
@@ -156,8 +168,6 @@ def open_mfdataset(fname,
     # Note that because there are so many species to sum. Summing the aerosols is slowing down the code.
     if 'PM25' in list_calc_sum:
         dset = add_lazy_pm25(dset,dict_sum)
-    if 'PM25_wopc' in list_calc_sum:
-        dset = add_lazy_pm25_wopc(dset,dict_sum)
     if 'PM10' in list_calc_sum:    
         dset = add_lazy_pm10(dset,dict_sum)
     if 'noy_gas' in list_calc_sum:
@@ -189,21 +199,34 @@ def open_mfdataset(fname,
     return dset
 
 def _get_keys(d):
+    """Calculates keys
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    list
+        list of keys
+
+    """
     keys = Series([i for i in d.data_vars.keys()])
     return keys
 
 def add_lazy_pm25(d,dict_sum):
-    """Short summary.
+    """Calculates PM2.5 sum. 20% of coarse mode is included in PM2.5 sum.
 
     Parameters
     ----------
-    d : type
-        Description of parameter `d`.
+    d : xarray.Dataset
+        RRFS-CMAQ model data
 
     Returns
     -------
-    type
-        Description of returned object.
+    xarray.Dataset
+        RRFS-CMAQ model data including new PM2.5 calculation
 
     """
     keys = _get_keys(d)
@@ -220,35 +243,20 @@ def add_lazy_pm25(d,dict_sum):
                                             'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20%'})
     return d
 
-def add_lazy_pm25_wopc(d,dict_sum):
-    """Short summary.
+def add_lazy_pm10(d,dict_sum):
+    """Calculates PM10 sum.
 
     Parameters
     ----------
-    d : type
-        Description of parameter `d`.
+    d : xarray.Dataset
+        RRFS-CMAQ model data
 
     Returns
     -------
-    type
-        Description of returned object.
+    xarray.Dataset
+        RRFS-CMAQ model data including new PM10 calculation
 
     """
-    keys = _get_keys(d)
-    allvars = Series(concatenate([dict_sum['aitken'], dict_sum['accumulation_wopc'], dict_sum['coarse']]))
-    weights = Series(concatenate([np.ones(len(dict_sum['aitken'])),
-                                  np.ones(len(dict_sum['accumulation_wopc'])),
-                                  np.full(len(dict_sum['coarse']),0.2)]))
-    index = allvars.isin(keys)
-    if can_do(index):
-        newkeys = allvars.loc[index]
-        newweights = weights.loc[index]
-        d['PM25_wopc'] = add_multiple_lazy2(d, newkeys, weights=newweights)
-        d['PM25_wopc'] = d['PM25_wopc'].assign_attrs({'units': '$\mu g m^{-3}$', 'name': 'PM2.5_wopc', 
-                                            'long_name': 'PM2.5 calculated by MONET assuming coarse mode 20% excluding apcsoj'})
-    return d
-
-def add_lazy_pm10(d,dict_sum):
     keys = _get_keys(d)
     allvars = Series(concatenate([dict_sum['aitken'], dict_sum['accumulation'], dict_sum['coarse']]))
     index = allvars.isin(keys)
@@ -260,6 +268,19 @@ def add_lazy_pm10(d,dict_sum):
     return d
                       
 def add_lazy_noy_g(d,dict_sum):
+    """Calculates NOy gas
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NOy gas calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['noy_gas'])
     weights = Series(dict_sum['noy_gas_weight'])
@@ -272,6 +293,19 @@ def add_lazy_noy_g(d,dict_sum):
     return d                      
 
 def add_lazy_noy_a(d,dict_sum):
+    """Calculates NOy aerosol
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NOy aerosol calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['noy_aer'])
     index = allvars.isin(keys)
@@ -283,6 +317,19 @@ def add_lazy_noy_a(d,dict_sum):
     return d
                       
 def add_lazy_nox(d,dict_sum):
+    """Calculates NOx
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NOx calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['nox'])
     index = allvars.isin(keys)
@@ -293,6 +340,19 @@ def add_lazy_nox(d,dict_sum):
     return d
 
 def add_lazy_cl_pm25(d,dict_sum):
+    """Calculates sum of particulate Cl.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new CLf calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_cl'])
     weights = Series(dict_sum['pm25_cl_weight'])
@@ -306,6 +366,19 @@ def add_lazy_cl_pm25(d,dict_sum):
     return d
 
 def add_lazy_ec_pm25(d,dict_sum):
+    """Calculates sum of particulate EC.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new EC calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_ec'])
     weights = Series(dict_sum['pm25_ec_weight'])
@@ -319,6 +392,19 @@ def add_lazy_ec_pm25(d,dict_sum):
     return d
 
 def add_lazy_ca_pm25(d,dict_sum):
+    """Calculates sum of particulate CA.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new CA calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_ca'])
     weights = Series(dict_sum['pm25_ca_weight'])
@@ -333,6 +419,19 @@ def add_lazy_ca_pm25(d,dict_sum):
 
 
 def add_lazy_na_pm25(d,dict_sum):
+    """Calculates sum of particulate NA.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NA calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_na'])
     weights = Series(dict_sum['pm25_na_weight'])
@@ -346,6 +445,19 @@ def add_lazy_na_pm25(d,dict_sum):
     return d
 
 def add_lazy_nh4_pm25(d,dict_sum):
+    """Calculates sum of particulate NH4.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NH4 calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_nh4'])
     weights = Series(dict_sum['pm25_nh4_weight'])
@@ -359,6 +471,19 @@ def add_lazy_nh4_pm25(d,dict_sum):
     return d
 
 def add_lazy_no3_pm25(d,dict_sum):
+    """Calculates sum of particulate NO3.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new NO3 calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_no3'])
     weights = Series(dict_sum['pm25_no3_weight'])
@@ -372,6 +497,19 @@ def add_lazy_no3_pm25(d,dict_sum):
     return d
 
 def add_lazy_so4_pm25(d,dict_sum):
+    """Calculates sum of particulate SO4.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new SO4 calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_so4'])
     weights = Series(dict_sum['pm25_so4_weight'])
@@ -385,6 +523,19 @@ def add_lazy_so4_pm25(d,dict_sum):
     return d
 
 def add_lazy_om_pm25(d,dict_sum):
+    """Calculates sum of particulate OM.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+
+    Returns
+    -------
+    xarray.Dataset
+        RRFS-CMAQ model data including new OM calculation
+
+    """
     keys = _get_keys(d)
     allvars = Series(dict_sum['pm25_om'])
     index = allvars.isin(keys)
@@ -396,6 +547,23 @@ def add_lazy_om_pm25(d,dict_sum):
     return d
                        
 def add_multiple_lazy(dset, variables, weights=None):
+    """Sums variables
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+    variables : series
+        series of variables
+    variables : series
+        series of weights to apply to each variable during the sum 
+
+    Returns
+    -------
+    xarray.Dataarray
+        Weighted sum of all specified variables
+
+    """
     from numpy import ones
 
     if weights is None:
@@ -409,7 +577,24 @@ def add_multiple_lazy(dset, variables, weights=None):
     return new
 
 def add_multiple_lazy2(dset, variables, weights=None):
-    
+    """Sums variables. This is similar to add_multiple_lazy, but is a little 
+    faster.
+
+    Parameters
+    ----------
+    d : xarray.Dataset
+        RRFS-CMAQ model data
+    variables : series
+        series of variables
+    variables : series
+        series of weights to apply to each variable during the sum 
+
+    Returns
+    -------
+    xarray.Dataarray
+        Weighted sum of all specified variables
+
+    """
     dset2 = dset[variables.values]
     if weights is not None:
         for i, j in zip(variables.values, weights.values):
@@ -426,7 +611,7 @@ def _predefined_mapping_tables(dset):
     Returns
     -------
     dictionary
-        A dictionary of to map to.
+        dictionary defining default mapping tables
 
     """
     to_improve = {}
@@ -469,6 +654,20 @@ def _predefined_mapping_tables(dset):
 #For the different mechanisms, just update these arrays as needed. 
 
 def dict_species_sums(mech):
+    """Predefined mapping tables for different observational parings used when
+        combining data.
+    
+    Parameters
+    ----------
+    mech : string
+        mechanism name
+        
+    Returns
+    -------
+    dictionary
+        dictionary defining the variables to sum based on the specified mechanism
+
+    """
     if mech == 'cb6r3_ae6_aq':
         sum_dict = {}
         # Arrays for different gasses and pm groupings
@@ -525,17 +724,20 @@ def dict_species_sums(mech):
         
 
 def _calc_hgt(f):
-    """Calculates the geopotential height in m from the variables hgtsfc and delz.
-    Note: To use this function the delz value needs to go from surface to TOA in vertical.
-    Because we are adding the height of each grid box these are really grid top values
+    """Calculates the geopotential height in m from the variables hgtsfc and 
+    delz. Note: To use this function the delz value needs to go from surface 
+    to top of atmosphere in vertical. Because we are adding the height of 
+    each grid box these are really grid top values
+    
     Parameters
     ----------
-    f : xarray.DataSet
-        the NEMSIO opened object.  Can be lazily loaded.
+    f : xarray.Dataset
+        RRFS-CMAQ model data
+        
     Returns
     -------
     xr.DataArray
-        Geoptential height with varialbes, coordinates and variable attributes.
+        Geoptential height with attributes.
     """
     sfc = f.surfalt_m.load()
     dz = f.dz_m.load()*-1. #These are negative in RRFS-CMAQ, but you resorted and are adding from the surface, so make them positive.
@@ -548,7 +750,7 @@ def _calc_hgt(f):
 
 
 def _calc_pressure(dset):
-    """Calculate the pressure in pa from presss and ak and bk constants.
+    """Calculate the pressure in Pa from presss and ak and bk constants.
     
     Interface pressures are calculated by:
     phalf(k) = a(k) + surfpres * b(k)
@@ -558,12 +760,13 @@ def _calc_pressure(dset):
     
     Parameters
     ----------
-    dset : xarray.Dataset
-        nemsio dataset opened
+    f : xarray.Dataset
+        RRFS-CMAQ model data
+        
     Returns
     -------
-    xarray.DataArray
-        Description of returned object.
+    xr.DataArray
+        Mid layer pressure with attributes.
     """
     pres = dset.dp_pa.copy().load() #Have to load into memory here so can assign levels.
     srfpres = dset.surfpres_pa.copy().load()

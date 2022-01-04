@@ -19,15 +19,28 @@ For parallel computing
 
 Conda YAML files
 ~~~~~~~~~~~~~~~~
-Examples of conda configuration yaml files that include a record of all the dependencies are available via the GitHub:
+Examples of conda configuration environment.yaml files that include a record 
+of all the dependencies are available via the GitHub:
 
-- `MELODIES-MONET conda yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop_plots/monet_analysis/data/python_env_ymls>`__
+- `NCAR cheyenne environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+- `NOAA hera environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
 
 General Instructions
 --------------------
 
-MELODIES-MONET itself is a pure Python package, but some of it's dependencies may not be.
-First, set up a conda environment with all the dependencies, including MONET and MONETIO::
+Setting up MELODIES-MONET on HPC machines can be complicated. To help users 
+get started, instructions for specific HPC machine environments are in the 
+Appendix. If you are installing MELODIES-MONET on NCAR cheyenne or NOAA hera 
+follow these machine specific instructions instead.
+
+      - `NCAR cheyenne <../appendix/machine-specific-install.html#NCAR-HPC-cheyenne>`__
+      - `NOAA hera <../appendix/machine-specific-install.html#NOAA-HPC-hera>`__
+
+To install MELODIES-MONET on your laptop or on HPC machines in general follow 
+these instructions: 
+ 
+(a) Set up a conda environment with all the dependencies, including MONET and 
+MONETIO::
 
     $ conda create --name monet_py36 python=3.6
     $ conda activate monet_py36
@@ -37,16 +50,26 @@ First, set up a conda environment with all the dependencies, including MONET and
     $ conda install -y -c conda-forge monet
     $ conda install -y -c conda-forge monetio
 
-Then, fork the MELODIES-MONET package to your own GitHub and clone the repository to the location you will be using the plotting package.
+(b) Clone and link the latest versions of MONET and MONETIO from github to 
+your conda environment::
 
+    $ git clone git@github.com:noaa-oar-arl/monet.git
+    $ cd monet
+    $ git checkout develop
+    $ pip install -e .
+    
+    $ git clone git@github.com:noaa-oar-arl/monetio.git
+    $ cd monetio
+    $ git checkout development
+    $ pip install -e .
 
-.. [1] For instructions for specific machine environments see Appendix:
+\(c) Clone the MELODIES-MONET package::
 
-      - `NCAR cheyenne <../tutorial/machine-specific-install.html#NCAR-HPC-cheyenne>`__
-
-.. [2] For more information see the following references:
-
-      - `Python 3 Statement <http://www.python3statement.org/>`__
-      - `Tips on porting to Python 3 <https://docs.python.org/3/howto/pyporting.html>`__
+    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+    
+**Note to developers:** In order to incorporate updates to MELODIES-MONET, you 
+will need to fork the repository to your own Github account, make changes, and 
+submit a pull request. For details, see 
+`how to incorporate your development updates to MELODIES-MONET <../develop/update_code.html>`__
 
 
