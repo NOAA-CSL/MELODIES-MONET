@@ -6,7 +6,11 @@ Subpackages
 
 .. toctree::
 
+    melodies_monet.data
+    melodies_monet.examples
+    melodies_monet.new_monetio
     melodies_monet.plots
+    melodies_monet.stats
     melodies_monet.util
 
 Submodules

@@ -22,21 +22,21 @@ Conda YAML files
 Examples of conda configuration environment.yaml files that include a record 
 of all the dependencies are available via the GitHub:
 
-- `NCAR cheyenne environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
-- `NOAA hera environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
+- `NCAR Cheyenne environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+- `NOAA Hera environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
 
 General Instructions
 --------------------
 
-Setting up MELODIES-MONET on HPC machines can be complicated. To help users 
+Setting up MELODIES MONET on HPC machines can be complicated. To help users 
 get started, instructions for specific HPC machine environments are in the 
-Appendix. If you are installing MELODIES-MONET on NCAR cheyenne or NOAA hera 
+Appendix. If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera 
 follow these machine specific instructions instead.
 
-      - `NCAR cheyenne <../appendix/machine-specific-install.html#NCAR-HPC-cheyenne>`__
-      - `NOAA hera <../appendix/machine-specific-install.html#NOAA-HPC-hera>`__
+- `NCAR Cheyenne <../appendix/machine-specific-install.html#NCAR-HPC-cheyenne>`__
+- `NOAA Hera <../appendix/machine-specific-install.html#NOAA-HPC-hera>`__
 
-To install MELODIES-MONET on your laptop or on HPC machines in general follow 
+To install MELODIES MONET on your laptop or on HPC machines in general follow 
 these instructions: 
  
 (a) Set up a conda environment with all the dependencies, including MONET and 
@@ -63,13 +63,13 @@ your conda environment::
     $ git checkout development
     $ pip install -e .
 
-\(c) Clone the MELODIES-MONET package::
+\(c) Clone the MELODIES MONET package::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
     
-**Note to developers:** In order to incorporate updates to MELODIES-MONET, you 
+**Note to developers:** In order to incorporate updates to MELODIES MONET, you 
 will need to fork the repository to your own Github account, make changes, and 
 submit a pull request. For details, see 
-`how to incorporate your development updates to MELODIES-MONET <../develop/update_code.html>`__
+`How to incorporate updates to MELODIES MONET <../develop/developers_guide.html#How to incorporate updates to MELODIES MONET>`__
 
 
