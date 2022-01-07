@@ -84,6 +84,7 @@ class observation:
         self.file = None
         self.obj = None
         self.type = None
+        self.debug = None
         self.variable_dict = None
 
     def open_obs(self):
@@ -135,6 +136,11 @@ class observation:
                 from new_monetio import mopitt_grid
                 print('Reading MOPITT')
                 self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
+            elif self.label == 'modis_l2':
+                from new_monetio import modis_l2
+                print('Reading MODIS L2')
+                self.obj = modis_l2.read_mfdataset(
+                    self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
@@ -412,6 +418,8 @@ class analysis:
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
                 o.file = self.control_dict['obs'][obs]['filename']
+                if 'debug' in self.control_dict['obs'][obs].keys():
+                    o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 if o.obs_type == 'pt_sfc':    
