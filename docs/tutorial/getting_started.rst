@@ -6,7 +6,7 @@ The User Interface
 The main file users will need to update is the YAML input file. If you are 
 unfamiliar with the YAML format check out 
 `Chapter 2 of the YAML Specification Document <https://yaml.org/spec/1.1/#id857168>`__.
-MELODIES-MONET will read all user-specified information from this input YAML 
+MELODIES MONET will read all user-specified information from this input YAML 
 file. Users run MELODIES MONET by importing the driver script, creating an 
 analysis class, reading in the YAML input file, opening the models, opening 
 the observations, pairing the model and observations, creating the plots, and 
@@ -27,8 +27,9 @@ A single `driver file <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/m
 includes the core code that "drives" MELODIES MONET. The driver file 
 initializes several classes as shown in the schematic below. 
    * **Analysis class** - This class holds all information needed for the 
-     analysis including all information from the YAML input file, all model 
-     classes, all observation classes, and all pairing classes.
+     analysis including all information from the YAML input file, all instances
+     of the model class, all instances of the observation class, and all
+     instances of the pairing class.
    * **Model class** - This class holds all information related to a single 
      model dataset including the model label, type, mapping dictionary for how 
      to pair the model variables with observational variables, plotting 

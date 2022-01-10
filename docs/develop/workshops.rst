@@ -21,6 +21,7 @@ Past
 ^^^^
 
 **Results from 2020 user survey**
+
 A survey of the atmospheric chemistry community was conducted in Nov-Dec 2020 
 to identify existing model evaluation tools and to catalog desired features of 
 model-observation comparison software.  30 responses were received, with 80% 

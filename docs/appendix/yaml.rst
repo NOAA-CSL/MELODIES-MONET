@@ -18,14 +18,15 @@ General Rules
         - boxplot - calculated over entire analysis window
    * If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
      for that plot_grp will be set based on the values specified in the "obs" 
-     section for each "variable". If "set_axis" = False, then defaults will 
-     be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 
-     'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 
-     'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 
+     section for each "variable". If "set_axis" = False, then the automatic
+     scaling in Matplotlib will be used. 'vmin_plot' and 'vmax_plot' are needed
+     for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed
+     for 'spatial_bias' plots and 'ty_scale' is needed for 'taylor' plots. 
      'nlevels' or the number of levels used in the contour plot can also 
-     optionally be provided for spatial_overlay plot. If set_axis = True and 
-     the proper limits are not provided in the obs section, a warning will 
-     print, and the plot will be created using the default limits.
+     optionally be provided for 'spatial_overlay' plot. If set_axis = True and 
+     the proper limits are not provided in the 'obs' section, a warning will 
+     print, and the plot will be created using the automatic scaling in
+     Matplotlib.
 
 Analysis
 --------
@@ -184,6 +185,7 @@ Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The model type. Options are: 'timeseries', 'taylor', 'spatial_bias',
 'spatial_overlay', 'boxplot'
+
 **fig_kwargs:** This is optional to provide a dictionary with figure 
 characteristics to be read in by Matplotlib. 
 
@@ -222,7 +224,7 @@ where domain_type is equal to domain_name.
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
-(e.g., ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'])
+(e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
 
 **data_proc:** This section stores all of the data processing information.
 
@@ -253,7 +255,7 @@ name is 'WD'.
 
 **stat_list:** List of acronyms of statistics to calculate as defined in 
 `Supported Stats <../background/supported_stats.html>`__. (e.g., ['MB', 'MdnB', 
-'NMB', 'NMdnB','R2', 'RMSE']) A Dictionary of definitions is also included in 
+'NMB', 'NMdnB','R2', 'RMSE']). A dictionary of definitions is also included in 
 MELODIES-MONET/melodies_monet/stats/proc_stats.py. 
 
 **round_output:** This is optional. This is the integer provided to Pandas 
@@ -289,4 +291,4 @@ where domain_type is equal to domain_name.
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
-(e.g., ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'])
+(e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])

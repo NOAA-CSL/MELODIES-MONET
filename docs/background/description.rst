@@ -1,7 +1,7 @@
 Description
 ===========
 
-Aims of MELODIES-MONET
+Aims of MELODIES MONET
 ----------------------
 MELODIES MONET aims to help researchers systematically and reproducibly compare 
 global and regional atmospheric chemistry model output with measurements and/or 

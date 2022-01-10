@@ -142,7 +142,8 @@ are in the melodies_monet/examples/submit_jobs folder of the code on Github.
      incorporate into MELODIES MONET. Examples of bash scripts for doing this 
      are provided (link_files_*.sh). 
 
-   * Then you will need to copy and update the run_melodies_monet.py script. 
+   * Then you will need to copy and update the run_melodies_monet.py script.
+     
         - Update to include the path and file name for your input YAML file. 
         - This script defaults to running both the plotting and stats routines. 
           If you only want to perform one or the other, comment one of them out. 
@@ -150,7 +151,10 @@ are in the melodies_monet/examples/submit_jobs folder of the code on Github.
    * Then copy and edit the submit_hera.sh script. This is an example of how to 
      submit the job to the NOAA Hera machine. Edit this script to be appropriate 
      for your HPC machine. Note: you may need to use a larger memory node to run 
-     MELODIES MONET. 
+     MELODIES MONET.
+     
         - Update the location of your conda environment. 
         - Also update the location and name of your run_melodies_monet.py script.
+
+   * Submit the submit_hera.sh script (e.g., on NOAA hera: sbatch submit_hera.sh)	 
 

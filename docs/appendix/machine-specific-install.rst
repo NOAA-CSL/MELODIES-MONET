@@ -119,7 +119,8 @@ code, and **Step 3.** Create a conda environment with all required dependencies
 We will use the conda package manager system to create a contained Python 
 environment for running and developing MELODIES MONET. 
 
-#. **Download Anaconda/Miniconda:** Follow the instructions `on the RDHPCS wiki`_ 
+#. **Download Anaconda/Miniconda:** Follow the instructions
+   `on the RDHPCS wiki <https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation>`__
    to download and run anaconda/miniconda on Hera. Tips for success:
 
    * You will need a NOAA HPC account to access the RDHPCS wiki link above.
@@ -128,13 +129,15 @@ environment for running and developing MELODIES MONET.
      complete, the installer will ask to initialize in your .bashrc/cshrc - 
      Select yes or no.” 
 
-   * Both anaconda/miniconda will work well for MELODIES MONET. See 
-     `conda instructions'_ to determine, which is the best option for you.
+   * Both anaconda/miniconda will work well for MELODIES MONET. See
+     `conda instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda>`__
+     to determine, which is the best option for you.
 
    * Installing anaconda/miniconda on scratch is recommended due to the limited 
      space available on your home directory.
 
-   * Follow the `github ssh key instructions`_ to add an ssh key on hera.
+   * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
+     to add an ssh key on hera.
 
 #. **Clone the MELODIES MONET Github package**::
 
@@ -155,35 +158,32 @@ environment for running and developing MELODIES MONET.
    * Run the following, to create the environment. Note this takes 15-30 
      minutes, so be patient. ::
     
-    $ conda env create -f environment.yml
+      $ conda env create -f environment.yml
 
-   * Verify the new environment exists::
+   * Verify the new environment exists ::
     
-    $ conda env list 
+      $ conda env list 
 
-   * Activate the new environment:: 
+   * Activate the new environment :: 
     
-    $ conda activate py36_monet_def
+      $ conda activate py36_monet_def
 
    * To use the latest versions of MONET and MONETIO from Github. Clone and 
-     link them to your conda environment::
+     link them to your conda environment ::
    
-    $ git clone git@github.com:noaa-oar-arl/monet.git
-    $ cd monet
-    $ git checkout develop
-    $ pip install -e .
+      $ git clone git@github.com:noaa-oar-arl/monet.git
+      $ cd monet
+      $ git checkout develop
+      $ pip install -e .
     
-    $ git clone git@github.com:noaa-oar-arl/monetio.git
-    $ cd monetio
-    $ git checkout development
-    $ pip install -e .
+      $ git clone git@github.com:noaa-oar-arl/monetio.git
+      $ cd monetio
+      $ git checkout development
+      $ pip install -e .
 
-  * Link the required cartopy shapefiles for plotting::
-    $ cd MELODIES-MONET/python_env_ymls/hera
-    $ ./link_cartopy_files.sh
+   * Link the required cartopy shapefiles for plotting ::
+       
+      $ cd MELODIES-MONET/python_env_ymls/hera
+      $ ./link_cartopy_files.sh
 
 **You are ready to start developing MELODIES MONET!**
-
-.. _on the RDHPCS wiki: https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation
-.. _conda instructions: https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda
-.. _github ssh key instructions: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account

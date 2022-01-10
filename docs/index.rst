@@ -1,4 +1,4 @@
-MELODIES-MONET
+MELODIES MONET
 ==============
 
 **MELODIES MONET** is a joint project between NCAR and NOAA to develop a 
