@@ -55,8 +55,10 @@ def open_mfdataset(fname,
     
     if var_list is not None:
         #Read in only a subset of variables and only do calculations if needed.
-        list_calc_sum = [] 
-        for var_sum in ['PM25', 'PM25_wopc', 'PM10', 'noy_gas', 'noy_aer', 
+        var_list_orig = var_list.copy() #Keep track of the original list before changes.
+        list_calc_sum = []
+        list_remove_extra = [] #list of variables to remove after the sum to save in memory.
+        for var_sum in ['PM25', 'PM10', 'noy_gas', 'noy_aer', 
                         'nox', 'pm25_cl', 'pm25_ec', 'pm25_ca', 'pm25_na',
                         'pm25_nh4', 'pm25_no3', 'pm25_so4', 'pm25_om']:
             if var_sum in var_list:
@@ -64,16 +66,23 @@ def open_mfdataset(fname,
                     var_list.extend(dict_sum['aitken'])
                     var_list.extend(dict_sum['accumulation'])
                     var_list.extend(dict_sum['coarse'])
-                elif var_sum == 'PM25_wopc':
-                    var_list.extend(dict_sum['aitken'])
-                    var_list.extend(dict_sum['accumulation_wopc'])
-                    var_list.extend(dict_sum['coarse'])
+                    #Keep track to remove these later too
+                    list_remove_extra.extend(dict_sum['aitken'])
+                    list_remove_extra.extend(dict_sum['accumulation'])
+                    list_remove_extra.extend(dict_sum['coarse'])
                 elif var_sum == 'PM10':
                     var_list.extend(dict_sum['aitken'])
                     var_list.extend(dict_sum['accumulation'])
                     var_list.extend(dict_sum['coarse'])
+                    #Keep track to remove these later too
+                    list_remove_extra.extend(dict_sum['aitken'])
+                    list_remove_extra.extend(dict_sum['accumulation'])
+                    list_remove_extra.extend(dict_sum['coarse'])
                 else:
                     var_list.extend(dict_sum[var_sum])
+                    #Keep track to remove these later too
+                    list_remove_extra.extend(dict_sum[var_sum])
+                    
                 var_list.remove(var_sum)
                 list_calc_sum.append(var_sum)
         #append the other needed species.
@@ -88,6 +97,10 @@ def open_mfdataset(fname,
         
         #Remove duplicates just in case:
         var_list = list( dict.fromkeys(var_list) )
+        list_remove_extra = list( dict.fromkeys(list_remove_extra) )
+        #Select only those elements in list_remove_extra that are not in var_list_orig
+        list_remove_extra_only = list(set(list_remove_extra) - set(var_list_orig))
+        
         #If variables in pm25 files are included remove these as these are not in the main file
         #And will be added later.
         for pm25_var in ['PM25_TOT','PM25_TOT_NSOM','PM25_EC','PM25_NH4',
@@ -100,7 +113,7 @@ def open_mfdataset(fname,
     else:
         #Read in all variables and do all calculations.
         dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)
-        list_calc_sum = ['PM25', 'PM25_wopc', 'PM10', 'noy_gas', 'noy_aer', 
+        list_calc_sum = ['PM25', 'PM10', 'noy_gas', 'noy_aer', 
                         'nox', 'pm25_cl', 'pm25_ec', 'pm25_ca', 'pm25_na',
                         'pm25_nh4', 'pm25_no3', 'pm25_so4', 'pm25_om']
     
@@ -195,7 +208,14 @@ def open_mfdataset(fname,
     # Change the times to pandas format
     dset['time'] = dset.indexes['time'].to_datetimeindex(unsafe=True)
     #Turn off warning for now. This is just because the model is in julian time
-
+    
+    #Drop extra variables that were part of sum, but are not in original var_list 
+    #to save memory and computational time.
+    #This is only revevant if var_list is provided
+    if var_list is not None:
+        if bool(list_remove_extra_only): #confirm list not empty
+            dset = dset.drop_vars(list_remove_extra_only)
+    
     return dset
 
 def _get_keys(d):
