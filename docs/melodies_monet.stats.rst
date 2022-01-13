@@ -4,10 +4,10 @@ melodies_monet\.plots package
 Submodules
 ----------
 
-melodies_monet\.plots\.surfplots module
+melodies_monet\.stats\.proc_stats module
 ----------------------------------------
 
-.. automodule:: melodies_monet.plots.surfplots
+.. automodule:: melodies_monet.plots.proc_stat
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ melodies_monet\.plots\.surfplots module
 Module contents
 ---------------
 
-.. automodule:: melodies_monet.plots
+.. automodule:: melodies_monet.stats
     :members:
     :undoc-members:
     :show-inheritance:

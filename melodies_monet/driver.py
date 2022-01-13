@@ -12,13 +12,14 @@ import datetime
 
 class pair:
     def __init__(self):
-        """Short summary.
-
+        """Initializes the pair class. The pair class pairs model data 
+        directly with observational data along time and space 
+    
         Returns
         -------
-        type
-            Description of returned object.
-
+        class
+            Class with information and data from model/obs pair
+        
         """
         self.type = 'pt_sfc'
         self.radius_of_influence = 1e6
@@ -29,7 +30,18 @@ class pair:
         self.filename = None
 
     def fix_paired_xarray(self, dset=None):
-
+        """Reformat the xarray pair
+    
+        Parameters
+        ----------
+        dset : xarray object
+            xarray pair
+        Returns
+        -------
+        xarray object
+            reformated xarray pair
+        
+        """
         # first convert to dataframe
         df = dset.to_dataframe().reset_index(drop=True)
 
@@ -71,12 +83,12 @@ class pair:
 
 class observation:
     def __init__(self):
-        """Short summary.
+        """Initializes the observation class
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Class with information and data from observation dataset
 
         """
         self.obs = None
@@ -87,12 +99,13 @@ class observation:
         self.variable_dict = None
 
     def open_obs(self):
-        """Short summary.
+        """Opens the observational data, stores data in observation pair, and
+        applies mask and scaling 
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated observation class with data included
 
         """
         from glob import glob
@@ -112,7 +125,15 @@ class observation:
             print('something happened opening file')
 
     def mask_and_scale(self):
-        """Mask and scale obs to convert units and set detection limits"""
+        """Mask and scale observations including unit conversions and setting
+        detection limits
+        
+        Returns
+        -------
+        class
+            Updated observation class with mask and scaling applied
+
+        """
         vars = self.obj.data_vars
         if self.variable_dict is not None:
             for v in vars:
@@ -141,12 +162,12 @@ class observation:
                             self.obj[v].data += -1 * scale
 
     def obs_to_df(self):
-        """Short summary.
+        """Converts and reformats observation class object to dataframe
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated observation class object converted to a dataframe
 
         """
         self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
@@ -154,12 +175,12 @@ class observation:
 
 class model:
     def __init__(self):
-        """Short summary.
+        """Initializes the model class
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Class with information and data from model results
 
         """
         self.model = None
@@ -180,12 +201,13 @@ class model:
         self.plot_kwargs = None
 
     def glob_files(self):
-        """Short summary.
+        """Converts the model file location string read in by the yaml file
+        into a list of files containing all model data
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated model class with list of files containing all model data
 
         """
         from numpy import sort
@@ -202,12 +224,16 @@ class model:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
     def open_model_files(self):
-        """Short summary.
+        """Opens the model files, stores data in model class, and applies 
+        mask and scaling. Models supported are cmaq, wrfchem, rrfs, and 
+        gsdchem. If a model is not supported, MELODIES-MONET will try to open 
+        the model data using a generic reader. If you wish to include new 
+        models, add the new model option to this module.
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated model class with model data
 
         """
         self.glob_files()
@@ -248,7 +274,15 @@ class model:
         self.mask_and_scale()
 
     def mask_and_scale(self):
-        """Mask and scale obs to convert units and set detection limits"""
+        """Mask and scale observations including unit conversions and setting
+        detection limits
+        
+        Returns
+        -------
+        class
+            Updated observation class with mask and scaling applied
+
+        """
         vars = self.obj.data_vars
         if self.variable_dict is not None:
             for v in vars:
@@ -271,12 +305,16 @@ class model:
 
 class analysis:
     def __init__(self):
-        """Short summary.
+        """Initializes the analysis class. The analysis class is the highest
+        level class and stores all information about the analysis. It reads 
+        and stores information from the input yaml file and defines 
+        overarching analysis information like the start and end time, which 
+        models and observations to pair, etc.
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Class with information defining the analysis 
 
         """
         self.control = 'control.yaml'
@@ -291,17 +329,18 @@ class analysis:
         self.debug = False
 
     def read_control(self, control=None):
-        """Reads the yaml control file.  If not set assumes control file is control.yaml
+        """Reads the input yaml file.  If not set assumes control file 
+        is control.yaml
 
         Parameters
         ----------
-        control : type
-            Description of parameter `control`.
+        control : str
+            Input yaml file location and name
 
         Returns
         -------
         type
-            Description of returned object.
+            Updated analysis class with information from the input yaml file
 
         """
         import yaml
@@ -320,7 +359,15 @@ class analysis:
         self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
-        """Opens all models and creates model instances for monet-analysis"""
+        """Opens all models listed in input yaml file and creates a model 
+        class for each of them. 
+
+        Returns
+        -------
+        class
+            Updated analysis class including all model classes
+
+        """
         if 'model' in self.control_dict:
             # open each model
             for mod in self.control_dict['model']:
@@ -358,12 +405,13 @@ class analysis:
                 self.models[m.label] = m
 
     def open_obs(self):
-        """Short summary.
+        """Opens all observations listed in input yaml file and creates a 
+        observation class for each of them. 
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated analysis class including all observation classes
 
         """
         if 'obs' in self.control_dict:
@@ -379,12 +427,13 @@ class analysis:
                 self.obs[o.label] = o
 
     def pair_data(self):
-        """Short summary.
+        """Pairs all observations and models in the analysis class (i.e., 
+        listed in the input yaml file) together
 
         Returns
         -------
-        type
-            Description of returned object.
+        class
+            Updated analysis class including all model/obs pairs
 
         """
         pairs = {}
@@ -433,12 +482,17 @@ class analysis:
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
-        """This function will cycle through all the plots and control variables needed to make the plots
+        """Cycles through all the plotting groups (e.g., plot_grp1) listed in 
+        the input yaml file and creates the plots. This routine loops over all 
+        the domains, model/obs pairs specified in the plotting group for all 
+        the variables specified in the mapping dictionary listed in the 
+        model class.
 
         Returns
         -------
-        type
-            Description of returned object.
+        plots
+            Creates plots stored in the file location specified by output_dir
+            in the analysis section of the yaml file 
 
         """
         from plots import surfplots as splots
@@ -767,12 +821,15 @@ class analysis:
                             )
 
     def stats(self):
-        """This function will cycle through all the stat variables needed to calculate the stats
+        """Calculates statistics specified in input yaml file. This routine 
+        loops over all the domains, model/obs pairs for all the variables 
+        specified in the mapping dictionary listed in the model class.
 
         Returns
         -------
-        type
-            Returns .csv file and .png file with stats
+        csv files and optional figure
+            Creates a csv file storing the statistics and optionally a figure 
+            visualizing the table.
 
         """
         from stats import proc_stats as proc_stats

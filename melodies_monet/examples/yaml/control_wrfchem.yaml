@@ -12,7 +12,7 @@ model:
   wrfchem_v4.2: # model label
     files: /scratch2/BMC/rcm1/rhs/wrfchem/runs_firex/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/Output/0802/*
     mod_type: 'wrfchem'
-    mod_kwargs: #For WRF-chem only, can add vert: False, if missing P,T variables, but not all conversions will work. Default vert: True.  
+    mod_kwargs: 
       mech: 'racm_esrl_vcp'
     radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
