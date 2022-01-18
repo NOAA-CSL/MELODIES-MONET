@@ -27,6 +27,16 @@ def search_listinlist(array1, array2):
     return np.sort(np.int32(index1)), np.sort(np.int32(index2))
 
 
+def list_contains(list1, list2):
+    """Return True if any item in `list1` is also in `list2`."""
+    for m in list1:
+        for n in list2:
+            if n == m:
+                return True
+
+    return False
+
+
 def linregress(x, y):
     import statsmodels.api as sm
 
@@ -40,6 +50,7 @@ def linregress(x, y):
 
 
 def findclosest(list, value):
+    """Return (index, value) of the closest value in `list` to `value`."""
     a = min((abs(x - value), x, i) for i, x in enumerate(list))
     return a[2], a[1]
 
