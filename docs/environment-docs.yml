@@ -14,6 +14,6 @@ dependencies:
   #
   # Docs
   - jupyterlab
-  - sphinx >= 4
+  - sphinx=4.*
   - sphinx-autobuild
   - sphinx_rtd_theme
