@@ -1,6 +1,6 @@
-#This code uses MELODIES-MONET to read in a .yaml file 
-#and produces plots. For an interative script see 
-#jupyter notebooks in main directory.
+# This code uses MELODIES-MONET to read in a .yaml file 
+# and produces plots. For an interactive script see 
+# jupyter notebooks in main directory.
 
 #This is needed to tell matplotlib to use a non-interactive backend and avoid display errors.
 import matplotlib

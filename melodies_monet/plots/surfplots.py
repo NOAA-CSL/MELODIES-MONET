@@ -257,7 +257,7 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
     label : str
         Name of variable to use in plot legend 
     ax : ax
-        matplotlib ax from previous occurance so can overlay obs and model 
+        matplotlib ax from previous occurrence so can overlay obs and model 
         results on the same plot
     avg_window : rule 
         Pandas resampling rule (e.g., 'H', 'D')
@@ -371,7 +371,7 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
     label_m : str
         Name of model variable to use in plot legend 
     dia : dia
-        matplotlib ax from previous occurance so can overlay obs and model 
+        matplotlib ax from previous occurrence so can overlay obs and model 
         results on the same plot
     ylabel : str
         Title of x-axis
@@ -617,9 +617,9 @@ def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = Non
         Name of variable to use in plot legend
     comb_bx: dataframe
         dataframe containing information to create box-plot from previous 
-        occurance so can overlay multiple model results on plot
+        occurrence so can overlay multiple model results on plot
     label_bx: list
-        list of string labels to use in box-plot from previous occurance so 
+        list of string labels to use in box-plot from previous occurrence so 
         can overlay multiple model results on plot
     Returns
     -------

@@ -78,7 +78,7 @@ class pair:
         site_columns.remove('x')  # need to keep x to merge later
         dfx = df.loc[:, df.columns[~df.columns.isin(site_columns)]].rename({'siteid': 'x'}, axis=1).set_index(['time', 'x']).to_xarray()
 
-        # merge the time depenedent and time independent
+        # merge the time dependent and time independent
         out = xr.merge([dfx, dfps])
 
         # reset x index and add siteid back to the xarray object
@@ -384,7 +384,7 @@ class analysis:
                 m = model()
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
-                # set the model label in the dictionary and model class intance
+                # set the model label in the dictionary and model class instance
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -939,7 +939,7 @@ class analysis:
 
                         # Create empty list for all dom
                         # Calculate statistic and append to list
-                        if obsvar == 'WD':  # Use seperate calculations for WD
+                        if obsvar == 'WD':  # Use separate calculations for WD
                             p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=True))
                         else:
                             p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=False))

@@ -110,7 +110,7 @@ def open_mfdataset(fname,
         dset_pm25 = dset_pm25.drop(labels=['lat','lon','pfull']) #Drop duplicate variables so can merge. 
         #Slight differences in pfull value between the files, but I assume that these still represent the
         #same pressure levels from the model dynf* files.
-        #Attributes are formated differently in pm25 file so remove attributes and use those from dynf* files.
+        #Attributes are formatted differently in pm25 file so remove attributes and use those from dynf* files.
         dset_pm25.attrs = {}
         dset = dset.merge(dset_pm25)
         
@@ -750,7 +750,8 @@ def _calc_hgt(f):
 
 
 def _calc_pressure(dset):
-    """Calculate the pressure in Pa from presss and ak and bk constants.
+    """Calculate the mid-layer pressure in Pa from surface pressure
+    and ak and bk constants.
     
     Interface pressures are calculated by:
     phalf(k) = a(k) + surfpres * b(k)
@@ -760,13 +761,13 @@ def _calc_pressure(dset):
     
     Parameters
     ----------
-    f : xarray.Dataset
+    dset : xarray.Dataset
         RRFS-CMAQ model data
         
     Returns
     -------
-    xr.DataArray
-        Mid layer pressure with attributes.
+    xarray.DataArray
+        Mid-layer pressure with attributes.
     """
     pres = dset.dp_pa.copy().load() #Have to load into memory here so can assign levels.
     srfpres = dset.surfpres_pa.copy().load()
