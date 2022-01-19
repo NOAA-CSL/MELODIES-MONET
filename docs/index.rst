@@ -56,8 +56,7 @@ MONETIO Github repositories please refer to:
    tutorial/getting_started
    tutorial/downloading_obs
    tutorial/how_to_run
-   tutorial/yaml
-     
+
 .. toctree::
    :maxdepth: 1
    :caption: Contribute

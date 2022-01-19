@@ -4,29 +4,29 @@ Description of All YAML Options
 General Rules
 -------------
 
-   * Any key that is specific for a plot type will begin with one of the 
-     following descriptors:
-        - ts for Timeseries
-        - ty for Taylor
-   * When a key is optional it will be followed by #Opt 
-   * All plots use data over the entire analysis window from the "start_time" 
-     to the "end_time" specified in the "analysis" section. 
-        - timeseries - average over window provided by "ts_avg_window"
-        - taylor - calculated over entire analysis window
-        - spatial_bias - average over entire analysis window
-        - spatial_overlay - average over entire analysis window
-        - boxplot - calculated over entire analysis window
-   * If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
-     for that plot_grp will be set based on the values specified in the "obs" 
-     section for each "variable". If "set_axis" = False, then the automatic
-     scaling in Matplotlib will be used. 'vmin_plot' and 'vmax_plot' are needed
-     for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed
-     for 'spatial_bias' plots and 'ty_scale' is needed for 'taylor' plots. 
-     'nlevels' or the number of levels used in the contour plot can also 
-     optionally be provided for 'spatial_overlay' plot. If set_axis = True and 
-     the proper limits are not provided in the 'obs' section, a warning will 
-     print, and the plot will be created using the automatic scaling in
-     Matplotlib.
+* Any key that is specific for a plot type will begin with one of the 
+  following descriptors:
+  - ts for Timeseries
+  - ty for Taylor
+* When a key is optional it will be followed by #Opt 
+* All plots use data over the entire analysis window from the "start_time" 
+  to the "end_time" specified in the "analysis" section. 
+  - timeseries - average over window provided by "ts_avg_window"
+  - taylor - calculated over entire analysis window
+  - spatial_bias - average over entire analysis window
+  - spatial_overlay - average over entire analysis window
+  - boxplot - calculated over entire analysis window
+* If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
+  for that plot_grp will be set based on the values specified in the "obs" 
+  section for each "variable". If "set_axis" = False, then the automatic
+  scaling in Matplotlib will be used. 'vmin_plot' and 'vmax_plot' are needed
+  for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed
+  for 'spatial_bias' plots and 'ty_scale' is needed for 'taylor' plots. 
+  'nlevels' or the number of levels used in the contour plot can also 
+  optionally be provided for 'spatial_overlay' plot. If set_axis = True and 
+  the proper limits are not provided in the 'obs' section, a warning will 
+  print, and the plot will be created using the automatic scaling in
+  Matplotlib.
 
 Analysis
 --------
@@ -54,10 +54,10 @@ label. Then under each model label provide the following:
 **files:** The file directory location and name(s). Hotkeys are allowed.
 
 **files_vert:** This is for CMAQ only. If you want to calculate vertical info, 
-please provide location of *.metcro3d.ncf files here.
+please provide location of ``*.metcro3d.ncf`` files here.
 
 **files_surf:** This is for CMAQ only. If you want to calculate vertical info, 
-please provide location of *.metcro2d.ncf files here.
+please provide location of ``*.metcro2d.ncf`` files here.
 
 **mod_type:** The model type. Options are: 'cmaq', 'wrfchem', 'rrfs', 'gsdchem'. 
 If you specify another name, MELODIES MONET will try to read in the data using

@@ -1,14 +1,17 @@
 API
 ---
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
 
-.. toctree::
-    :maxdepth: 4
+.. .. toctree::
+..     :maxdepth: 4
 
-    source/melodies_monet
+..     melodies_monet
 
+.. autosummary::
+   :toctree: api/
 
+   melodies_monet
 

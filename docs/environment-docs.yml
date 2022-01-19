@@ -13,6 +13,6 @@ dependencies:
   #
   # Docs
   - jupyterlab
-  - sphinx
+  - sphinx >= 4
   - sphinx-autobuild
   - sphinx_rtd_theme
