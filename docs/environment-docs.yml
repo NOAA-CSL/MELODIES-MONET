@@ -9,6 +9,7 @@ dependencies:
   # melodies_monet deps
   - monet
   - monetio
+  - netcdf4
   - wrf-python
   #
   # Docs

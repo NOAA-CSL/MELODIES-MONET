@@ -17,7 +17,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from new_monetio import code_to_move_to_monet as code_m_new
+from ..new_monetio import code_to_move_to_monet as code_m_new
 
 # from util import write_ncf
 
