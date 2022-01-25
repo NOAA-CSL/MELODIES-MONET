@@ -19,6 +19,7 @@ def open_mfdataset(fname,
                    mech = 'racm_esrl_vcp',
                    var_list = ['o3'],
                    surf_only=False,
+                   surf_only_nc=False,
                    **kwargs):
     """Method to open WRF-chem and RAP-chem netcdf files.
 
@@ -39,6 +40,9 @@ def open_mfdataset(fname,
     surf_only: boolean
         Whether to save only surface data to save on memory and computational 
         cost (True) or not (False).
+    surf_only_nc: boolean
+        Whether input data has been subsampled to only contain surface data and 
+        not extra pressure & temperature info (True) or not (False).
 
     Returns
     -------
@@ -63,7 +67,7 @@ def open_mfdataset(fname,
     for files in fname:
         wrflist.append(Dataset(files))
     
-    if surf_only == False:
+    if surf_only_nc == False:
         #Add some additional defaults needed for aircraft analysis
         #Turn this on also if need to convert aerosols 
         var_list.append('pres')
@@ -117,13 +121,18 @@ def open_mfdataset(fname,
     dset = dset.rename({'Time': 'time','south_north':'y',
                         'west_east':'x','XLONG':'longitude',
                         'XLAT':'latitude'})
-        
+
+    #These sums and conversions are quite expensive and memory intensive,
+    #so add option to shrink dataset to just surface when needed
+    if surf_only_nc == False and surf_only == True:
+        dset=dset.isel(bottom_top=0).expand_dims('bottom_top',axis=1)
+    
     # convert all gas species to ppbv
     if convert_to_ppb:
         for i in dset.variables:
             if 'units' in dset[i].attrs:
                 if 'ppmv' in dset[i].attrs['units']:
-                    dset[i] *= 1000.
+                    dset[i] = dset[i]*1000.
                     dset[i].attrs['units'] = 'ppbV'
     # convert 'ug/kg-dryair -> ug/m3'
     for i in dset.variables:
@@ -132,7 +141,7 @@ def open_mfdataset(fname,
                 # ug/kg -> ug/m3 using dry air density
                 dset[i] = dset[i]*dset['pressure']/dset['temp']/287.05535 
                 dset[i].attrs['units'] = '$\mu g m^{-3}$'
-        
+    
     #assign mapping table for airnow
     dset = _predefined_mapping_tables(dset)
     
@@ -159,7 +168,7 @@ def open_mfdataset(fname,
         dset = add_lazy_om_pm25(dset,dict_sum)
 
     dset = dset.reset_index(['XTIME','datetime'],drop=True)
-    if surf_only == False:
+    if surf_only_nc == False:
         #Reset more variables
         dset = dset.rename({'bottom_top': 'z','temp':'temperature_k',
                             'height':'alt_msl_m_mid','height_agl':'alt_agl_m_mid',
