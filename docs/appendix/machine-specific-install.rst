@@ -149,7 +149,7 @@ environment for running and developing MELODIES MONET.
        running conda init?"
 
    * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
-     to add an ssh key on hera.
+     to add an ssh key on Hera.
 
 #. **Clone the MELODIES MONET Github package**::
 
