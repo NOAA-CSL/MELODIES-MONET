@@ -27,7 +27,7 @@ import pandas as pd
 import numpy as np
 from numpy import sqrt
 import matplotlib.pyplot as plt
-from new_monetio import code_to_move_to_monet as code_m_new
+from ..new_monetio import code_to_move_to_monet as code_m_new
 
 def produce_stat_dict(stat_list,spaces=False):
     """Select statistics. Only statistics listed in the default dictionary 

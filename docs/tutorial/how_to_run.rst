@@ -1,4 +1,4 @@
-How to run
+How To Run
 ==========
 
 These are instructions for how to update the examples on Github and run 
@@ -21,32 +21,36 @@ You will need to prepare an input YAML file to be read into MELODIES MONET.
 Example input YAML files to start from are provided in the 
 melodies_monet/examples/yaml folder of the code on Github. There are a number 
 of comments in these example input YAML files to get you started. The overall 
-structure is the following
-   * **analysis** - All input related to the analysis class
-   * **model** - All input for each instance of the model class. The variables
-     to be plotted are included in the model class in the "mapping" dictionary. 
-     The model variable names are first (i.e. keys) and the observation variable 
-     names are the second (i.e. values). Because the plots in MELODIES MONET 
-     will plot multiple models with one observation, the observation variables 
-     listed in the mapping dictionary must be consistent across all models. 
-     For example, if you want to plot the results of multiple model datasets 
-     against the AirNow observations for "OZONE" and "PM2.5", you must 
-     provide the model variable names for "OZONE" and "PM2.5" in the mapping 
-     dictionary for all models. Say if you only provide the model variable 
-     names for "OZONE" for one of the models, MELODIES MONET will error. 
-   * **obs** - All input for each instance of the observation class
-   * **plots** - All input for each plotting group. A plotting group consists 
-     of one plotting type. The plotting types are described in 
-     `Supported Plots <../background/supported_plots.html>`__. All model / 
-     observational pairs and domains specified for the plotting group will be 
-     included. You may include as many plotting groups as you like.
-   * **stats** - All input needed to calculate the statistics. The supported
-     statistics available in MELODIES MONET are described in 
-     `Supported Stats <../background/supported_stats.html>`__. All model / 
-     observational pairs and domains specified will be included. You may 
-     include as many statistics as you like. Note however that the calculation 
-     of the statistics is relatively slow right now. Optimizing this code is 
-     under development.
+structure is the following:
+
+* **analysis** -- All input related to the analysis class.
+
+* **model** -- All input for each instance of the model class. The variables
+  to be plotted are included in the model class in the "mapping" dictionary. 
+  The model variable names are first (i.e. keys) and the observation variable 
+  names are the second (i.e. values). Because the plots in MELODIES MONET 
+  will plot multiple models with one observation, the observation variables 
+  listed in the mapping dictionary must be consistent across all models. 
+  For example, if you want to plot the results of multiple model datasets 
+  against the AirNow observations for "OZONE" and "PM2.5", you must 
+  provide the model variable names for "OZONE" and "PM2.5" in the mapping 
+  dictionary for all models. Say if you only provide the model variable 
+  names for "OZONE" for one of the models, MELODIES MONET will error. 
+* **obs** -- All input for each instance of the observation class.
+
+* **plots** -- All input for each plotting group. A plotting group consists 
+  of one plotting type. The plotting types are described in 
+  `Supported Plots <../background/supported_plots.html>`__. All model / 
+  observational pairs and domains specified for the plotting group will be 
+  included. You may include as many plotting groups as you like.
+
+* **stats** -- All input needed to calculate the statistics. The supported
+  statistics available in MELODIES MONET are described in 
+  `Supported Stats <../background/supported_stats.html>`__. All model / 
+  observational pairs and domains specified will be included. You may 
+  include as many statistics as you like. Note however that the calculation 
+  of the statistics is relatively slow right now. Optimizing this code is 
+  under development.
 
 A detailed description of all the options in the input YAML file is provided 
 in the Appendix under `Description of All YAML Options <../appendix/yaml.html>`__.

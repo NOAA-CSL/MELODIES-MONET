@@ -2,6 +2,7 @@
 
 def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
     """Save figure and add the MELODIES-MONET logo.
+
     Parameters
     ----------
     fname : str
@@ -12,6 +13,7 @@ def savefig(fname, loc=1, decorate=True, height=50.0, **kwargs):
         Include logo on plot (True) or not (False)
     **kwargs : dict
         kwargs for the matplotlib.pyplot.savefig function.
+
     Returns
     -------
     plots
