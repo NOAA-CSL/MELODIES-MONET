@@ -19,7 +19,7 @@ For parallel computing
 
 Conda YAML files
 ~~~~~~~~~~~~~~~~
-Examples of conda configuration environment.yaml files that include a record 
+Examples of conda configuration environment.yml files that include a record
 of all the dependencies are available via the GitHub:
 
 - `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
