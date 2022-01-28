@@ -701,7 +701,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = label_bx[0]
+        ylabel = label_bx[0]['column']
     
     #Fix the order and palate colors
     order_box = []

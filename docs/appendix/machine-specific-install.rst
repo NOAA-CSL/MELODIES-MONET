@@ -52,7 +52,7 @@ need to uninstall miniconda and reinstall.
 dependencies.
 
 (a) Set up and activate CONDA environment specific to MELODIES-MONET. You can 
-    call this environment whatever you like, we suggest ‘monet_py36’::
+    call this environment whatever you like, we suggest ‘monet_py39’::
 
     $ conda create --name monet_py39 python=3.9
     $ conda activate monet_py39
