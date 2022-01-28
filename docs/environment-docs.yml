@@ -1,0 +1,19 @@
+# Conda environment for building the MELODIES-MONET docs
+name: melodies-monet-docs
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.8
+  #
+  # melodies_monet deps
+  - monet
+  - monetio
+  - netcdf4
+  - wrf-python
+  #
+  # Docs
+  - jupyterlab
+  - sphinx=4.*
+  - sphinx-autobuild
+  - sphinx_rtd_theme

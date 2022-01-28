@@ -26,26 +26,27 @@ How MELODIES MONET works
 A single `driver file <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/melodies_monet/driver.py>`__. 
 includes the core code that "drives" MELODIES MONET. The driver file 
 initializes several classes as shown in the schematic below. 
-   * **Analysis class** - This class holds all information needed for the 
-     analysis including all information from the YAML input file, all instances
-     of the model class, all instances of the observation class, and all
-     instances of the pairing class.
-   * **Model class** - This class holds all information related to a single 
-     model dataset including the model label, type, mapping dictionary for how 
-     to pair the model variables with observational variables, plotting 
-     information, and unit conversions as needed. The analysis class can hold 
-     multiple instances of the model class.
-   * **Observation class** - This class holds all information related to a 
-     single observational dataset including the observation label, type, 
-     plotting information, and unit conversions as needed. The analysis class can hold 
-     multiple instances of the observation class.
-   * **Pairing class** - This class holds all information related to a 
-     model/observational pair. In MELODIES MONET all models are paired with 
-     all observations listed in the input YAML file. Model results are 
-     directly paired in both time and space to the observational dataset for 
-     all variables listed in the mapping dictionary specified in the model 
-     class.
-   
+
+* **Analysis class** -- This class holds all information needed for the 
+  analysis including all information from the YAML input file, all instances
+  of the model class, all instances of the observation class, and all
+  instances of the pairing class.
+* **Model class** -- This class holds all information related to a single 
+  model dataset including the model label, type, mapping dictionary for how 
+  to pair the model variables with observational variables, plotting 
+  information, and unit conversions as needed. The analysis class can hold 
+  multiple instances of the model class.
+* **Observation class** -- This class holds all information related to a 
+  single observational dataset including the observation label, type, 
+  plotting information, and unit conversions as needed. The analysis class can hold 
+  multiple instances of the observation class.
+* **Pairing class** -- This class holds all information related to a 
+  model/observational pair. In MELODIES MONET all models are paired with 
+  all observations listed in the input YAML file. Model results are 
+  directly paired in both time and space to the observational dataset for 
+  all variables listed in the mapping dictionary specified in the model 
+  class.
+
 After all of the relevant information is incorporated into the analysis class,
 the plotting and stats routines in the driver can be called to generate the 
 plots and calculate statistics. The plotting and statistical routines will 

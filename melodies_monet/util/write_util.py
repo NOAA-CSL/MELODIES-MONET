@@ -3,7 +3,7 @@ from pandas.api.types import is_float_dtype
 
 
 def write_ncf(dset, output_name, title=''):
-    """Functin to write netcdf4 files with some compression for floats
+    """Function to write netcdf4 files with some compression for floats
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def compute_scale_and_offset(mn, mx, n, dtype=np.float32):
 
     """
     """
-    min is the minumum of the values
+    min is the minimum of the values
     max is the maximum of the values
     n is the integer bit length  (ie 32 for np.int32 or 16 for np.int16)
     """
@@ -67,7 +67,7 @@ def compute_scale_and_offset(mn, mx, n, dtype=np.float32):
 
 
 def pack_value(values, scale_factor, offset, dtype):
-    """Values to pack the array wtih scale factors from a float to integers
+    """Values to pack the array with scale factors from a float to integers
 
     Parameters
     ----------
@@ -90,7 +90,7 @@ def pack_value(values, scale_factor, offset, dtype):
 
 
 def get_min_max(da):
-    """function to return the maximum and minumum value
+    """Function to return the maximum and minimum value
 
     Parameters
     ----------
@@ -107,7 +107,7 @@ def get_min_max(da):
 
 
 def compress_variable(da):
-    """Functin to compress a variable from a float to integer and adds netcdf attributes for CF convention.
+    """Function to compress a variable from a float to integer and adds netcdf attributes for CF convention.
 
     Parameters
     ----------
