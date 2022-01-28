@@ -18,7 +18,7 @@ a variety of observations including surface, aircraft, and satellite data all
 within a common framework. MELODIES-MONET uses the functionality already 
 developed by MONETIO to read in multiple observational and model datasets and 
 MONET to do pairing/analysis/plotting. For more information on MONET and 
-MONETIO Github repositories please refer to:
+MONETIO please refer to:
  
 - https://monet-arl.readthedocs.io
 - https://monetio.readthedocs.io

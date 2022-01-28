@@ -97,7 +97,7 @@ dependencies.
     $ git checkout development
     $ pip install -e .
 
-**Step 3: Clone the MELODIES-MONET Github branch** ::
+**Step 3: Clone the MELODIES-MONET GitHub repository** ::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
@@ -151,19 +151,19 @@ environment for running and developing MELODIES MONET.
    * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
      to add an ssh key on Hera.
 
-#. **Clone the MELODIES MONET Github package**::
+#. **Clone the MELODIES MONET GitHub repository**::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
 #. **Create a conda environment with the required dependencies on Hera:** 
 
    * Follow either option 1 below by using an example ``environment.yml`` file from 
-     the MELODIES MONET package or follow option 2 below to set this up manually.
+     the MELODIES MONET repository or follow option 2 below to set this up manually.
      
      **Option 1: Use an example environment.yml file:**
 
        * Make a copy of the environment.yml file for Hera stored in the
-         MELODIES MONET Github repository 
+         MELODIES MONET GitHub repository
          (MELODIES_MONET/python_env_ymls/hera/environment.yml). If needed, 
          update the first line to change the default environment name. Also 
          update the last line to point to your own anaconda/miniconda directory 
@@ -203,7 +203,7 @@ environment for running and developing MELODIES MONET.
      package install it in your conda environment.
     
    * Once you have a working and activated conda environment, you will need to 
-     link the latest versions of MONET and MONETIO from Github. ::
+     link the latest versions of MONET and MONETIO from GitHub. ::
    
       $ git clone git@github.com:noaa-oar-arl/monet.git
       $ cd monet

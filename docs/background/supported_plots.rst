@@ -6,7 +6,7 @@ Model to Model Comparisons
 Under development. 
 
 See the `Spatial Verification <https://github.com/NOAA-CSL/MELODIES-MONET/projects/3>`_ 
-project on Github to learn about current and future development.
+project on GitHub to learn about current and future development.
 
 Model to Observations Comparisons
 ---------------------------------
@@ -46,18 +46,18 @@ Adding an option to plot regulatory metrics like MDA8 ozone is under
 development.
 
 See the `Expand Surface Observations <https://github.com/NOAA-CSL/MELODIES-MONET/projects/7>`_ 
-project on Github to learn about current and future development.
+project on GitHub to learn about current and future development.
 
 Aircraft Evaluation 
 ^^^^^^^^^^^^^^^^^^^
 Under development. 
 
 See the `Incorporate Aircraft Evaluation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/4>`_ 
-project on Github to learn about current and future development.
+project on GitHub to learn about current and future development.
 
 Satellite Evaluation 
 ^^^^^^^^^^^^^^^^^^^^
 Under development.
 
 See the `Incorporate Satellite Evaluation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/6>`_ 
-project on Github to learn about current and future development.
+project on GitHub to learn about current and future development.

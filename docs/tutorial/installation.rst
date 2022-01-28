@@ -69,7 +69,7 @@ your conda environment::
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
     
 **Note to developers:** In order to incorporate updates to MELODIES MONET, you 
-will need to fork the repository to your own Github account, make changes, and 
+will need to fork the repository to your own GitHub account, make changes, and 
 submit a pull request. For details, see 
 `How to incorporate updates to MELODIES MONET <../develop/developers_guide.html#How to incorporate updates to MELODIES MONET>`__
 

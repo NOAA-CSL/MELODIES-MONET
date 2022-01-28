@@ -65,7 +65,7 @@ xarray.open_mfdataset and xarray.open_dataset().
 
 **mod_kwargs**: This is an optional dictionary to include information to 
 provide to the model dataset reader scripts in MONETIO (temporarily in the 
-MELODIES-MONET/melodies_monet/new_monetio folder on Github). For example, you
+MELODIES-MONET/melodies_monet/new_monetio folder on GitHub). For example, you
 can provide mechanism information (e.g., mech: 'cb6r3_ae6_aq') or for some models, 
 in order to reduce processing time you can only pull in the surface data 
 (e.g., surf_only: True).
