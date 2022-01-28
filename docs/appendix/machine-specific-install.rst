@@ -160,9 +160,9 @@ environment for running and developing MELODIES MONET.
    * Follow either option 1 below by using an example ``environment.yml`` file from 
      the MELODIES MONET package or follow option 2 below to set this up manually.
      
-     **Option 1: Use an example environment.yaml file:**
+     **Option 1: Use an example environment.yml file:**
 
-       * Make a copy of the environment.yaml file for Hera stored in the 
+       * Make a copy of the environment.yml file for Hera stored in the
          MELODIES MONET Github repository 
          (MELODIES_MONET/python_env_ymls/hera/environment.yml). If needed, 
          update the first line to change the default environment name. Also 
@@ -175,11 +175,11 @@ environment for running and developing MELODIES MONET.
 
        * Verify the new environment exists ::
     
-          $ conda env list 
+          $ conda env list
 
        * Activate the new environment :: 
     
-          $ conda activate py36_monet_def
+          $ conda activate melodies-monet
      
      **Option 2: Manual method:** 
        
@@ -187,8 +187,8 @@ environment for running and developing MELODIES MONET.
         To overcome this challange, either use Option 1 or install some of the 
         larger packages first and then install MONET and MONETIO like the following: ::
    
-        $ conda create --name py39_monet_def python=3.9
-        $ conda activate py39_monet_def
+        $ conda create --name melodies-monet python=3.9
+        $ conda activate melodies-monet
         $ conda install -c conda-forge notebook
         $ conda install -c conda-forge jupyterlab
         $ conda install -c conda-forge netcdf4
