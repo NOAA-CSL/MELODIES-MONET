@@ -22,8 +22,8 @@ Conda YAML files
 Examples of conda configuration environment.yaml files that include a record 
 of all the dependencies are available via the GitHub:
 
-- `NCAR Cheyenne environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
-- `NOAA Hera environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
+- `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+- `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
 
 General Instructions
 --------------------
@@ -42,11 +42,12 @@ these instructions:
 (a) Set up a conda environment with all the dependencies, including MONET and 
 MONETIO::
 
-    $ conda create --name monet_py36 python=3.6
-    $ conda activate monet_py36
-    $ conda install netcdf4
+    $ conda create --name monet_py39 python=3.9
+    $ conda activate monet_py39
+    $ conda install -y -c conda-forge netcdf4
     $ conda install -y -c conda-forge wrf-python
-    $ conda install -y -c conda-forge jupyter
+    $ conda install -y -c conda-forge notebook
+    $ conda install -y -c conda-forge jupyterlab
     $ conda install -y -c conda-forge monet
     $ conda install -y -c conda-forge monetio
 

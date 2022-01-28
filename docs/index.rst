@@ -74,6 +74,14 @@ MONETIO Github repositories please refer to:
 
    examples/intro_examples
    examples/airnow_wrfchem
+   
+.. toctree::
+   :hidden:
+   :maxdepth: 4
+   :caption: Current Applications
+
+   applications/publications
+   applications/forecasts
 
 .. toctree::
    :hidden:

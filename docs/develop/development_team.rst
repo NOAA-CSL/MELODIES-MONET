@@ -4,18 +4,16 @@ Development Team
 MELODIES MONET development is a collaboration between NOAA Chemical Sciences 
 Laboratory (CSL), NOAA Air Resources Laboratory (ARL), NOAA Global Systems 
 Laboratory (GSL), and NCAR Atmospheric Chemistry Observations and Modeling 
-(ACOM). The representative leads for each organization are below.
-If you would like to help contribute to MELODIES MONET development, please 
-contact one of the representative leads.
+(ACOM) Laboratory. The representative leads for each organization are below.
 
-===============  =================  ==========================
-Organization     Representative     Contact Info
-===============  =================  ==========================
-NOAA CSL         Rebecca Schwantes  rebecca.schwantes@noaa.gov
-NOAA ARL         Barry Baker        barry.baker@noaa.gov 
-NOAA GSL         Jordan Schnell     jordan.schnell@noaa.gov   
-NCAR ACOM        Louisa Emmons      emmons@ucar.edu 
-===============  =================  ==========================
+===============  =============================  
+Organization     Representative(s)     
+===============  ============================= 
+NOAA CSL         Rebecca Schwantes  
+NOAA ARL         Barry Baker
+NOAA GSL         Jordan Schnell        
+NCAR ACOM        Louisa Emmons, David Fillmore        
+===============  =============================
 
 Development Team Members
 ------------------------
