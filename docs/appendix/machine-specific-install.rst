@@ -140,7 +140,7 @@ environment for running and developing MELODIES MONET.
      
      $ bash Miniconda3-latest-Linux-x86_64.sh
      
-     * Follow all prompts. Installing anaconda/miniconda on scratch is recommended 
+     * Follow all prompts. Installing Anaconda/Miniconda on scratch is recommended 
        due to the limited space available on your home directory. Make sure you 
        change the default location.
      
