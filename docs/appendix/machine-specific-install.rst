@@ -52,16 +52,16 @@ need to uninstall miniconda and reinstall.
 dependencies.
 
 (a) Set up and activate CONDA environment specific to MELODIES-MONET. You can 
-    call this environment whatever you like, we suggest ‘melodies-monet’::
+    call this environment whatever you like, we suggest 'melodies-monet'::
 
     $ conda create --name melodies-monet python=3.9
     $ conda activate melodies-monet
 
-    You should see ‘(melodies-monet)’ at the start of your terminal prompt.
+    You should see '(melodies-monet)' at the start of your terminal prompt.
 
 (b) Download the following packages step-by-step. Note they have sub-packages 
-    that will be downloaded. The ‘-y’ means you will not have to interactively 
-    choose ‘y’ to proceed with downloading packages::
+    that will be downloaded. The '-y' means you will not have to interactively
+    choose 'y' to proceed with downloading packages::
 
     $ conda install -y -c conda-forge netcdf4
     $ conda install -y -c conda-forge wrf-python
@@ -80,7 +80,7 @@ dependencies.
 (c) Once you set up the correct packages through conda, and while your conda 
     environment is still activated, get the most recent branches of MONET and 
     MONETIO using github, and link them with conda. This is done because MONET 
-    and MONETIO are still in active development. Create a ‘monet-base’ folder 
+    and MONETIO are still in active development. Create a 'monet-base' folder
     (e.g. in your work location on cheyenne).
 
     Set up and link MONET within monet-base::
