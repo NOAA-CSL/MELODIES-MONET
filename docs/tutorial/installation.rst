@@ -51,7 +51,7 @@ MONETIO::
     $ conda install -y -c conda-forge monet
     $ conda install -y -c conda-forge monetio
 
-(b) Clone and link the latest versions of MONET and MONETIO from github to 
+(b) Clone and link the latest versions of MONET and MONETIO from GitHub to
 your conda environment::
 
     $ git clone git@github.com:noaa-oar-arl/monet.git
@@ -61,7 +61,7 @@ your conda environment::
     
     $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
-    $ git checkout development
+    $ git checkout develop
     $ pip install -e .
 
 \(c) Clone the MELODIES MONET package::

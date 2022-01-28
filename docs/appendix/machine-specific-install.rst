@@ -79,7 +79,7 @@ dependencies.
 
 (c) Once you set up the correct packages through conda, and while your conda 
     environment is still activated, get the most recent branches of MONET and 
-    MONETIO using github, and link them with conda. This is done because MONET 
+    MONETIO using GitHub, and link them with conda. This is done because MONET
     and MONETIO are still in active development. Create a 'monet-base' folder
     (e.g. in your work location on cheyenne).
 
@@ -94,7 +94,7 @@ dependencies.
 
     $ git clone https://github.com/noaa-oar-arl/monetio.git
     $ cd monetio
-    $ git checkout development
+    $ git checkout develop
     $ pip install -e .
 
 **Step 3: Clone the MELODIES-MONET GitHub repository** ::
@@ -212,7 +212,7 @@ environment for running and developing MELODIES MONET.
     
       $ git clone git@github.com:noaa-oar-arl/monetio.git
       $ cd monetio
-      $ git checkout development
+      $ git checkout develop
       $ pip install -e .
 
    * Hera has download restrictions, so link the required cartopy shapefiles 
