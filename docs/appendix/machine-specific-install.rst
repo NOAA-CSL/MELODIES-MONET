@@ -157,7 +157,7 @@ environment for running and developing MELODIES MONET.
 
 #. **Create a conda environment with the required dependencies on Hera:** 
 
-   * Follow either option 1 below by using an example environment.yml file from 
+   * Follow either option 1 below by using an example ``environment.yml`` file from 
      the MELODIES MONET package or follow option 2 below to set this up manually.
      
      **Option 1: Use an example environment.yaml file:**
