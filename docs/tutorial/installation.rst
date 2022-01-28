@@ -42,8 +42,8 @@ these instructions:
 (a) Set up a conda environment with all the dependencies, including MONET and 
 MONETIO::
 
-    $ conda create --name monet_py39 python=3.9
-    $ conda activate monet_py39
+    $ conda create --name melodies-monet python=3.9
+    $ conda activate melodies-monet
     $ conda install -y -c conda-forge netcdf4
     $ conda install -y -c conda-forge wrf-python
     $ conda install -y -c conda-forge notebook

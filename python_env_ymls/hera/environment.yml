@@ -1,4 +1,4 @@
-name: py39_monet_def
+name: melodies-monet
 channels:
   - conda-forge
   - defaults
