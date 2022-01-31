@@ -9,11 +9,11 @@ analysis to produce hundreds of plots by submitting a bash script to your HPC
 machine. The basic commands in the jupyter notebook and bash script are exactly 
 the same and both similarly call an input YAML file.
 
-First, we describe how to :ref:`tutorial/how_to_run:Prepare An Input YAML File`.
-and we define the :ref:`tutorial/how_to_run:Basic Commands`.
+First, we describe how to `Prepare An Input YAML File`_.
+and we define the `Basic Commands`_.
 Then, we describe how to start from either a 
-the :ref:`tutorial/how_to_run:Jupyter Notebook` or
-the :ref:`tutorial/how_to_run:Bash Script` example.
+the `Jupyter Notebook`_ or
+the `Bash Script`_ example.
 
 Prepare an Input YAML File
 --------------------------
