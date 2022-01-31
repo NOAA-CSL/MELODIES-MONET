@@ -188,5 +188,8 @@ texinfo_documents = [
 # -- Extension configuration -------------------------------------------------
 
 linkcheck_ignore = [
-    "https://github.com/NOAA-CSL/MELODIES-MONET/.*",  # until repo is public
+    "https://github.com/NOAA-CSL/MELODIES-MONET.*",  # just until repo is public
+    # Auth required:
+    "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
+    "https://www2.cisl.ucar.edu/resources/conda-environments",
 ]
