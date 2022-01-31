@@ -11,7 +11,7 @@ file. Users run MELODIES MONET by importing the driver script, creating an
 analysis class, reading in the YAML input file, opening the models, opening 
 the observations, pairing the model and observations, creating the plots, and 
 calculating the statistics. The exact commands to run MELODIES MONET are 
-described in the `How to run <how_to_run.html>`__ section of this tutorial. 
+described in the :doc:`how_to_run` section of this tutorial.
 All model and observational datasets are read into MELODIES MONET into a 
 consistent format prior to analysis. The input YAML file allows users to 
 specify a mapping dictionary with how to pair model and observation variable 
@@ -65,9 +65,9 @@ we aim for the average user of MELODIES MONET to be able to easily understand
 the core code and contribute new components.
 
 To learn more about current capabilities and future development objectives
-see the `Supported Datasets <../background/supported_datasets.html>`__ , 
-`Supported Plots <../background/supported_plots.html>`__, and 
-`Supported Statistics <../background/supported_stats.html>`__ pages in the 
+see the :doc:`/background/supported_datasets` ,
+:doc:`/background/supported_plots`, and
+:doc:`/background/supported_stats` pages in the
 Background section of this guide.
 
 

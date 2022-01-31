@@ -9,11 +9,11 @@ analysis to produce hundreds of plots by submitting a bash script to your HPC
 machine. The basic commands in the jupyter notebook and bash script are exactly 
 the same and both similarly call an input YAML file.
 
-First, we describe how to `Prepare an Input YAML File <how_to_run.html#Prepare Input YAML File>`__.
-and we define the `Basic Commands <how_to_run.html#Basic Commands>`__. 
+First, we describe how to :ref:`tutorial/how_to_run:Prepare An Input YAML File`.
+and we define the :ref:`tutorial/how_to_run:Basic Commands`.
 Then, we describe how to start from either a 
-`Juputer Notebook <how_to_run.html#Jupyter Notebook>`__ or 
-`Bash Script <how_to_run.html#Bash Script>`__ example.
+the :ref:`tutorial/how_to_run:Jupyter Notebook` or
+the :ref:`tutorial/how_to_run:Bash Script` example.
 
 Prepare an Input YAML File
 --------------------------
@@ -40,20 +40,20 @@ structure is the following:
 
 * **plots** -- All input for each plotting group. A plotting group consists 
   of one plotting type. The plotting types are described in 
-  `Supported Plots <../background/supported_plots.html>`__. All model / 
+  :doc:`/background/supported_plots`. All model /
   observational pairs and domains specified for the plotting group will be 
   included. You may include as many plotting groups as you like.
 
 * **stats** -- All input needed to calculate the statistics. The supported
   statistics available in MELODIES MONET are described in 
-  `Supported Stats <../background/supported_stats.html>`__. All model / 
+  :doc:`/background/supported_stats`. All model /
   observational pairs and domains specified will be included. You may 
   include as many statistics as you like. Note however that the calculation 
   of the statistics is relatively slow right now. Optimizing this code is 
   under development.
 
 A detailed description of all the options in the input YAML file is provided 
-in the Appendix under `Description of All YAML Options <../appendix/yaml.html>`__.
+in the Appendix under :doc:`/appendix/yaml`.
 
 Basic Commands
 --------------
@@ -95,7 +95,7 @@ observation dataset, which includes information like the label, type, filenames,
 and file paths. MONET can automatically download observational data. For now, 
 MELODIES MONET will open preprocessed data because some HPC platforms have 
 download restrictions. We will work on automating this process further in the 
-future. See `Downloading Observations <downloading_obs.html>`__ to learn how to 
+future. See :doc:`downloading_obs` to learn how to
 preprocess the observational data for MELODIES MONET ::
 
      an.open_obs()

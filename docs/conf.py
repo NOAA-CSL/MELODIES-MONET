@@ -40,6 +40,7 @@ release = u''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autosectionlabel',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
@@ -193,3 +194,6 @@ linkcheck_ignore = [
     "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
     "https://www2.cisl.ucar.edu/resources/conda-environments",
 ]
+
+autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
