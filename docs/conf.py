@@ -186,3 +186,7 @@ texinfo_documents = [
 ]
 
 # -- Extension configuration -------------------------------------------------
+
+linkcheck_ignore = [
+    "https://github.com/NOAA-CSL/MELODIES-MONET/.*",  # until repo is public
+]
