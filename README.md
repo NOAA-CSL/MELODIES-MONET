@@ -1,3 +1,5 @@
+[![CI status](https://github.com/NOAA-CSL/MELODIES-MONET/actions/workflows/ci.yml/badge.svg)](https://github.com/NOAA-CSL/MELODIES-MONET/actions/workflows/ci.yml)
+
 These directories are model specific
 	cmaq
 	rapchem
