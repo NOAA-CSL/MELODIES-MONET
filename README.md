@@ -1,22 +1,14 @@
 [![CI status](https://github.com/NOAA-CSL/MELODIES-MONET/actions/workflows/ci.yml/badge.svg)](https://github.com/NOAA-CSL/MELODIES-MONET/actions/workflows/ci.yml)
 
-These directories are model specific
-- cmaq
-- rapchem
-- wrfchem
+MELODIES MONET is a joint project between NCAR and NOAA to develop a
+modular framework that integrates existing and future diverse atmospheric
+chemistry observational datasets with chemistry model results for the
+evaluation of air quality and atmospheric composition
 
-We are combining these to create one code for cmaq, fv3, wrfchem, and rapchem. 
-Also make it easy to add other models and mechanisms too
-- unified 
+## Documentation
 
-List of components needed in a namelist or to add to bash scripts
-- radius of influence (dependent on model resolution)
-- model (naming,projection,reading input)
-- output name
-- mapping table
+Read the Docs: ...
 
-Progress
-- Becky adapted some of Patrick's scripts to be more generalizable with the above components. 
-- Would other approaches like a namelist be better?
-- Becky wants adaptability for reading in multiple files to average over month time scale,
-  which is available with current bash scripts
+## License
+
+...
