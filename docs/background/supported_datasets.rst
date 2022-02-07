@@ -2,7 +2,7 @@ Supported Datasets
 ==================
 
 Supported Models and Observations are below. Please see 
-`Adding New Datasets <../develop/developers_guide.html#Adding New Datasets>`__  
+:ref:`develop/developers_guide:Adding New Datasets`
 in the Developer's Guide for advice on how to add new datasets to MELODIES 
 MONET.
 

@@ -33,8 +33,8 @@ get started, instructions for specific HPC machine environments are in the
 Appendix. If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera 
 follow these machine specific instructions instead.
 
-- `NCAR Cheyenne <../appendix/machine-specific-install.html#NCAR-HPC-cheyenne>`__
-- `NOAA Hera <../appendix/machine-specific-install.html#NOAA-HPC-hera>`__
+- :ref:`NCAR Cheyenne <appendix/machine-specific-install:NCAR HPC Cheyenne>`
+- :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
 
 To install MELODIES MONET on your laptop or on HPC machines in general follow 
 these instructions: 
@@ -66,6 +66,6 @@ your conda environment::
 **Note to developers:** In order to incorporate updates to MELODIES MONET, you 
 will need to fork the repository to your own GitHub account, make changes, and 
 submit a pull request. For details, see 
-`How to incorporate updates to MELODIES MONET <../develop/developers_guide.html#How to incorporate updates to MELODIES MONET>`__
+:ref:`develop/developers_guide:How to incorporate updates to MELODIES MONET`.
 
 
