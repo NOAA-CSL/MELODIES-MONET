@@ -44,12 +44,7 @@ MONETIO::
 
     $ conda create --name melodies-monet python=3.9
     $ conda activate melodies-monet
-    $ conda install -y -c conda-forge netcdf4
-    $ conda install -y -c conda-forge wrf-python
-    $ conda install -y -c conda-forge notebook
-    $ conda install -y -c conda-forge jupyterlab
-    $ conda install -y -c conda-forge monet
-    $ conda install -y -c conda-forge monetio
+    $ conda install -y -c conda-forge netcdf4 wrf-python jupyterlab monet monetio
 
 (b) Clone and link the latest versions of MONET and MONETIO from GitHub to
 your conda environment::
@@ -57,12 +52,12 @@ your conda environment::
     $ git clone git@github.com:noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
-    $ pip install -e .
+    $ pip install --no-deps --editable .
     
     $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
-    $ pip install -e .
+    $ pip install --no-deps --editable .
 
 \(c) Clone the MELODIES MONET package::
 

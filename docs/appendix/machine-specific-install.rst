@@ -59,16 +59,11 @@ dependencies.
 
     You should see '(melodies-monet)' at the start of your terminal prompt.
 
-(b) Download the following packages step-by-step. Note they have sub-packages 
+(b) Install the following packages to the environment. Note they have sub-packages 
     that will be downloaded. The '-y' means you will not have to interactively
     choose 'y' to proceed with downloading packages::
 
-    $ conda install -y -c conda-forge netcdf4
-    $ conda install -y -c conda-forge wrf-python
-    $ conda install -y -c conda-forge notebook
-    $ conda install -y -c conda-forge jupyterlab
-    $ conda install -y -c conda-forge monet
-    $ conda install -y -c conda-forge monetio
+    $ conda install -y -c conda-forge netcdf4 wrf-python jupyterlab monet monetio
 
     Some main packages that are downloaded with the monet install: *cartopy, 
     cython, dask, markupsafe, matplotlib-base, pandas, pydecorate, pyresample, 
@@ -88,14 +83,14 @@ dependencies.
     $ git clone https://github.com/noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
-    $ pip install -e .
+    $ pip install --no-deps --editable .
 
     Set up and link MONET IO within monet-base::
 
     $ git clone https://github.com/noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
-    $ pip install -e .
+    $ pip install --no-deps --editable .
 
 **Step 3: Clone the MELODIES-MONET GitHub repository** ::
 
@@ -182,14 +177,14 @@ environment for running and developing MELODIES MONET.
           $ conda activate melodies-monet
      
      **Option 2: Manual method:** 
-       
-      * Downloading a lot of dependent packages at once on Hera leads to stalling. 
+
+     .. important::
+        Downloading a lot of dependent packages at once on Hera leads to stalling.
         To overcome this challange, either use Option 1 or install some of the 
         larger packages first and then install MONET and MONETIO like the following: ::
    
         $ conda create --name melodies-monet python=3.9
         $ conda activate melodies-monet
-        $ conda install -c conda-forge notebook
         $ conda install -c conda-forge jupyterlab
         $ conda install -c conda-forge netcdf4
         $ conda install -c conda-forge wrf-python
@@ -208,12 +203,12 @@ environment for running and developing MELODIES MONET.
       $ git clone git@github.com:noaa-oar-arl/monet.git
       $ cd monet
       $ git checkout develop
-      $ pip install -e .
+      $ pip install --no-deps --editable .
     
       $ git clone git@github.com:noaa-oar-arl/monetio.git
       $ cd monetio
       $ git checkout develop
-      $ pip install -e .
+      $ pip install --no-deps --editable .
 
    * Hera has download restrictions, so link the required cartopy shapefiles 
      for plotting by running the following script ::
