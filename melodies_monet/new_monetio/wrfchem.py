@@ -40,7 +40,7 @@ def open_mfdataset(fname,
     surf_only: boolean
         Whether to save only surface data to save on memory and computational 
         cost (True) or not (False).
-    surf_only_nc: boolean
+    surf_only_nc : bool
         Whether input data has been subsampled to only contain surface data and 
         not extra pressure & temperature info (True) or not (False).
 
