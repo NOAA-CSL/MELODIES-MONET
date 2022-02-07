@@ -6,13 +6,13 @@ NCAR HPC Cheyenne
 
 Below is a specific recipe for how to set up all the necessary Python dependencies 
 on the NCAR HPC, Cheyenne/Casper. Note: these are developer-specific instructions. 
-There are three steps to complete before you can use and develop MELODIES-MONET 
+There are three steps to complete before you can use and develop MELODIES MONET 
 on Cheyenne/Casper: **Step 1.** Installing the conda package manager 
 Miniconda, **Step 2.** Creating a conda environment with all required dependencies, 
 and **Step 3.** Cloning MELODIES MONET code.
 
 We will use the conda package manager system to create a contained Python environment 
-for running and developing MELODIES-MONET. This creates a “stand-alone” instance 
+for running and developing MELODIES MONET. This creates a “stand-alone” instance 
 of interdependent packages that will not interfere with your access to the main 
 installation of Python on the system. These instructions should work for a bash 
 or tcsh shell.
@@ -51,7 +51,7 @@ need to uninstall miniconda and reinstall.
 **Step 2 Dependent Python Packages:** Set up a conda environment with required 
 dependencies.
 
-(a) Set up and activate CONDA environment specific to MELODIES-MONET. You can 
+(a) Set up and activate CONDA environment specific to MELODIES MONET. You can 
     call this environment whatever you like, we suggest 'melodies-monet'::
 
     $ conda create --name melodies-monet python=3.9
@@ -101,12 +101,12 @@ dependencies.
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
-    End step. At the end of working with MELODIES-MONET, deactivate the 
+    End step. At the end of working with MELODIES MONET, deactivate the 
     conda environment::
 
     $ conda deactivate
 
-**You are ready to start developing MELODIES-MONET!**
+**You are ready to start developing MELODIES MONET!**
 
 NOAA HPC Hera
 -------------

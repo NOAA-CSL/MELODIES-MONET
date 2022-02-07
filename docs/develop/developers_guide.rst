@@ -21,7 +21,7 @@ How to incorporate updates to MELODIES MONET
     $ git pull upstream master
     $ git push origin master
 
-(b) Navigate on cheyenne/casper to where you would like to keep the MELODIES-MONET code (e.g. in your work location) and clone your fork to cheyenne::
+(b) Navigate on cheyenne/casper to where you would like to keep the MELODIES MONET code (e.g. in your work location) and clone your fork to cheyenne::
 
     $ git clone https://github.com/$GitHubUsername/$ForkName.git
 
