@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  docs:
+    name: Check docs build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python (Conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.8"
+          channels: conda-forge,nodefaults
+          activate-environment: melodies-monet-docs
+          environment-file: docs/environment-docs.yml
+
+      - name: linkcheck
+        run: sphinx-build -b linkcheck docs docs/_build/linkcheck
+
+      - name: sphinx-build -W
+        run: sphinx-build -b html -W docs docs/_build/html

@@ -9,16 +9,27 @@ import datetime
 
 # from util import write_ncf
 
+__all__ = (
+    "pair",
+    "observation",
+    "model",
+    "analysis",
+)
+
 
 class pair:
-    def __init__(self):
-        """Short summary.
+    """The pair class.
 
+    The pair class pairs model data 
+    directly with observational data along time and space.
+    """
+    
+    def __init__(self):
+        """Initialize a :class:`pair` object.
+    
         Returns
         -------
-        type
-            Description of returned object.
-
+        pair
         """
         self.type = 'pt_sfc'
         self.radius_of_influence = 1e6
@@ -28,8 +39,18 @@ class pair:
         self.obs_vars = None
         self.filename = None
 
-    def fix_paired_xarray(self, dset=None):
-
+    def fix_paired_xarray(self, dset):
+        """Reformat the paired dataset.
+    
+        Parameters
+        ----------
+        dset : xarray.Dataset
+        
+        Returns
+        -------
+        xarray.Dataset
+            Reformatted paired dataset.
+        """
         # first convert to dataframe
         df = dset.to_dataframe().reset_index(drop=True)
 
@@ -57,7 +78,7 @@ class pair:
         site_columns.remove('x')  # need to keep x to merge later
         dfx = df.loc[:, df.columns[~df.columns.isin(site_columns)]].rename({'siteid': 'x'}, axis=1).set_index(['time', 'x']).to_xarray()
 
-        # merge the time depenedent and time independent
+        # merge the time dependent and time independent
         out = xr.merge([dfx, dfps])
 
         # reset x index and add siteid back to the xarray object
@@ -70,14 +91,17 @@ class pair:
 
 
 class observation:
+    """The observation class.
+    
+    A class with information and data from an observational dataset.
+    """
+
     def __init__(self):
-        """Short summary.
+        """Initialize an :class:`observation` object.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        observation
         """
         self.obs = None
         self.label = None
@@ -88,13 +112,12 @@ class observation:
         self.variable_dict = None
 
     def open_obs(self):
-        """Short summary.
+        """Open the observational data, store data in observation pair,
+        and apply mask and scaling.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
         from glob import glob
         from numpy import sort
@@ -146,7 +169,13 @@ class observation:
             print('something happened opening file')
             
     def mask_and_scale(self):
-        """Mask and scale obs to convert units and set detection limits"""
+        """Mask and scale observations, including unit conversions and setting
+        detection limits.
+        
+        Returns
+        -------
+        None
+        """
         vars = self.obj.data_vars
         if self.variable_dict is not None:
             for v in vars:
@@ -175,14 +204,11 @@ class observation:
                             self.obj[v].data += -1 * scale
 
     def obs_to_df(self):
-        """Short summary.
-        MEB: added try/except logic for aeronet/raqms where dropping y caused error.
+        """Convert and reformat observation object (:attr:`obj`) to dataframe.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
         try:
             self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
@@ -190,14 +216,17 @@ class observation:
             self.obj = self.obj.to_dataframe().reset_index().drop(['x'], axis=1)
 
 class model:
+    """The model class.
+    
+    A class with information and data from model results.
+    """    
+
     def __init__(self):
-        """Short summary.
+        """Initialize a :class:`model` object.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        model
         """
         self.model = None
         self.radius_of_influence = None
@@ -217,15 +246,14 @@ class model:
         self.plot_kwargs = None
 
     def glob_files(self):
-        """Short summary.
+        """Convert the model file location string read in by the yaml file
+        into a list of files containing all model data.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
-        from numpy import sort
+        from numpy import sort  # TODO: maybe use `sorted` for this
         from glob import glob
 
         print(self.file_str)
@@ -239,13 +267,17 @@ class model:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
     def open_model_files(self):
-        """Short summary.
+        """Open the model files, store data in :class:`model` instance attributes,
+        and apply mask and scaling.
+        
+        Models supported are cmaq, wrfchem, rrfs, and gsdchem.
+        If a model is not supported, MELODIES-MONET will try to open 
+        the model data using a generic reader. If you wish to include new 
+        models, add the new model option to this module.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
         print(self.model.lower())
         self.glob_files()
@@ -261,17 +293,17 @@ class model:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
             if self.files_surf is not None:
                 self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            from new_monetio import cmaq as cmaq  # Eventually add to monet itself.
+            from .new_monetio import cmaq as cmaq  # Eventually add to monet itself.
             self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from new_monetio import wrfchem as wrfchem  # Eventually add to monet itself.
+            from .new_monetio import wrfchem as wrfchem  # Eventually add to monet itself.
             self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from new_monetio import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
+            from .new_monetio import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
             self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
@@ -293,7 +325,13 @@ class model:
         self.mask_and_scale()
 
     def mask_and_scale(self):
-        """Mask and scale obs to convert units and set detection limits"""
+        """Mask and scale observations including unit conversions and setting
+        detection limits.
+
+        Returns
+        -------
+        None
+        """
         vars = self.obj.data_vars
         if self.variable_dict is not None:
             for v in vars:
@@ -315,20 +353,30 @@ class model:
 
 
 class analysis:
+    """The analysis class.
+    
+    The analysis class is the highest
+    level class and stores all information about the analysis. It reads 
+    and stores information from the input yaml file and defines 
+    overarching analysis information like the start and end time, which 
+    models and observations to pair, etc.
+    """
+
     def __init__(self):
-        """Short summary.
+        """Initialize the :class:`analysis` object.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        analysis
         """
         self.control = 'control.yaml'
         self.control_dict = None
         self.models = {}
+        """dict : Models, set by :meth:`open_models`."""
         self.obs = {}
+        """dict : Observations, set by :meth:`open_obs`."""
         self.paired = {}
+        """dict : Paired data, set by :meth:`pair_data`."""
         self.start_time = None
         self.end_time = None
         self.download_maps = True  # Default to True
@@ -336,18 +384,19 @@ class analysis:
         self.debug = False
 
     def read_control(self, control=None):
-        """Reads the yaml control file.  If not set assumes control file is control.yaml
+        """Read the input yaml file,
+        updating various :class:`analysis` instance attributes.
 
         Parameters
         ----------
-        control : type
-            Description of parameter `control`.
+        control : str
+            Input yaml file path.
+            If provided, :attr:`control` will be set to this value.
 
         Returns
         -------
         type
             Reads the contents of the yaml control file into a dictionary associated with the analysis class.
-
         """
         import yaml
 
@@ -365,7 +414,13 @@ class analysis:
         self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
-        """Opens all models and creates model instances for monet-analysis"""
+        """Open all models listed in the input yaml file and create a :class:`model` 
+        object for each of them, populating the :attr:`models` dict.
+
+        Returns
+        -------
+        None
+        """
         if 'model' in self.control_dict:
             # open each model
             for mod in self.control_dict['model']:
@@ -373,7 +428,7 @@ class analysis:
                 m = model()
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
-                # set the model label in the dictionary and model class intance
+                # set the model label in the dictionary and model class instance
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -403,13 +458,13 @@ class analysis:
                 self.models[m.label] = m
 
     def open_obs(self):
-        """Short summary.
+        """Open all observations listed in the input yaml file and create an 
+        :class:`observation` instance for each of them,
+        populating the :attr:`obs` dict.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
@@ -431,15 +486,15 @@ class analysis:
 
 
     def pair_data(self):
-        """Short summary.
+        """Pair all observations and models in the analysis class
+        (i.e., those listed in the input yaml file) together,
+        populating the :attr:`paired` dict.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
-        pairs = {}
+        pairs = {}  # TODO: unused
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -490,16 +545,23 @@ class analysis:
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
-        """This function will cycle through all the plots and control variables needed to make the plots
+        """Cycle through all the plotting groups (e.g., plot_grp1) listed in 
+        the input yaml file and create the plots.
+        
+        This routine loops over all the domains and
+        model/obs pairs specified in the plotting group (``.control_dict['plots']``)
+        for all the variables specified in the mapping dictionary listed in 
+        :attr:`paired`.
+
+        Creates plots stored in the file location specified by output_dir
+        in the analysis section of the yaml file.
 
         Returns
         -------
-        type
-            Description of returned object.
-
+        None
         """
         from plots import surfplots as splots
-        from new_monetio import code_to_move_to_monet as code_m_new
+        from .new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -824,13 +886,17 @@ class analysis:
                             )
 
     def stats(self):
-        """This function will cycle through all the stat variables needed to calculate the stats
+        """Calculate statistics specified in the input yaml file.
+        
+        This routine  loops over all the domains and model/obs pairs for all the variables 
+        specified in the mapping dictionary listed in :attr:`paired`.
+        
+        Creates a csv file storing the statistics and optionally a figure 
+        visualizing the table.
 
         Returns
         -------
-        type
-            Returns .csv file and .png file with stats
-
+        None
         """
         from stats import proc_stats as proc_stats
 
@@ -929,7 +995,7 @@ class analysis:
 
                         # Create empty list for all dom
                         # Calculate statistic and append to list
-                        if obsvar == 'WD':  # Use seperate calculations for WD
+                        if obsvar == 'WD':  # Use separate calculations for WD
                             p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=True))
                         else:
                             p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=False))
