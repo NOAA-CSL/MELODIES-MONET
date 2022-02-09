@@ -12,7 +12,7 @@ How to incorporate updates to MELODIES MONET
 --------------------------------------------
 
 
-(a) Fork the Github repository to your own Github account:
+(a) Fork the GitHub repository to your own GitHub account:
 
     https://github.com/NOAA-CSL/MELODIES-MONET
 
@@ -21,9 +21,9 @@ How to incorporate updates to MELODIES MONET
     $ git pull upstream master
     $ git push origin master
 
-(b) Navigate on cheyenne/casper to where you would like to keep the MELODIES-MONET code (e.g. in your work location) and clone your fork to cheyenne::
+(b) Navigate on cheyenne/casper to where you would like to keep the MELODIES MONET code (e.g. in your work location) and clone your fork to cheyenne::
 
-    $ git clone https://github.com/$GithubUsername/$ForkName.git
+    $ git clone https://github.com/$GitHubUsername/$ForkName.git
 
 (c) Checkout the develop_plots branch - you need to do this with the remote branch as well as create a local tracking branch::
 
@@ -44,7 +44,7 @@ to update the readthedocs user guide.
    * Add instructions.
    
 Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/2>`_ 
-project on Github to learn about current and future development.   
+project on GitHub to learn about current and future development.   
 
 Adding New Datasets
 -------------------

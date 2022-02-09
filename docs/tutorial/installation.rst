@@ -19,11 +19,11 @@ For parallel computing
 
 Conda YAML files
 ~~~~~~~~~~~~~~~~
-Examples of conda configuration environment.yaml files that include a record 
+Examples of conda configuration environment.yml files that include a record
 of all the dependencies are available via the GitHub:
 
-- `NCAR Cheyenne environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
-- `NOAA Hera environment.yaml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
+- `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+- `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
 
 General Instructions
 --------------------
@@ -42,33 +42,29 @@ these instructions:
 (a) Set up a conda environment with all the dependencies, including MONET and 
 MONETIO::
 
-    $ conda create --name monet_py36 python=3.6
-    $ conda activate monet_py36
-    $ conda install netcdf4
-    $ conda install -y -c conda-forge wrf-python
-    $ conda install -y -c conda-forge jupyter
-    $ conda install -y -c conda-forge monet
-    $ conda install -y -c conda-forge monetio
+    $ conda create --name melodies-monet python=3.9
+    $ conda activate melodies-monet
+    $ conda install -y -c conda-forge netcdf4 wrf-python jupyterlab monet monetio
 
-(b) Clone and link the latest versions of MONET and MONETIO from github to 
+(b) Clone and link the latest versions of MONET and MONETIO from GitHub to
 your conda environment::
 
     $ git clone git@github.com:noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
-    $ pip install -e .
+    $ pip install --no-deps --editable .
     
     $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
-    $ git checkout development
-    $ pip install -e .
+    $ git checkout develop
+    $ pip install --no-deps --editable .
 
 \(c) Clone the MELODIES MONET package::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
     
 **Note to developers:** In order to incorporate updates to MELODIES MONET, you 
-will need to fork the repository to your own Github account, make changes, and 
+will need to fork the repository to your own GitHub account, make changes, and 
 submit a pull request. For details, see 
 :ref:`develop/developers_guide:How to incorporate updates to MELODIES MONET`.
 

@@ -17,7 +17,7 @@ by NSF EarthCube that aims to address these concerns by developing a
 modular framework to compare model results and observations related to 
 atmospheric chemistry. It aims to facilitate the use of diverse 
 observational datasets in model evaluation. MELODIES combined with 
-NOAA’s MONET to leverage shared goals and development. MELODIES MONET 
+NOAA's MONET to leverage shared goals and development. MELODIES MONET
 consists of components to manipulate both observations and model output, 
 to allow for consistent quantitative comparisons with long-term and 
 field intensive observations.

@@ -561,9 +561,9 @@ class analysis:
                             obs_dict = grp_dict['default_plot_kwargs']
                         else:
                             if self.models[p.model].plot_kwargs is not None:
-                                plot_dict = self.models[p.model].plot_kwargs
+                                plot_dict = self.models[p.model].plot_kwargs.copy()
                             else:
-                                plot_dict = splots.calc_default_colors(p_index)
+                                plot_dict = splots.calc_default_colors(p_index).copy()
                             obs_dict = None
 
                         # Determine figure_kwargs and text_kwargs
@@ -579,7 +579,7 @@ class analysis:
                         # Read in some plotting specifications stored with observations.
                         if self.obs[p.obs].variable_dict is not None:
                             if obsvar in self.obs[p.obs].variable_dict.keys():
-                                obs_plot_dict = self.obs[p.obs].variable_dict[obsvar]
+                                obs_plot_dict = self.obs[p.obs].variable_dict[obsvar].copy()
                             else:
                                 obs_plot_dict = {}
                         else:
@@ -668,7 +668,9 @@ class analysis:
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, 
+                                                   bbox_inches='tight', dpi=200)
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -683,11 +685,12 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=obsvar, 
+                                                                             label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(
-                                pairdf, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx
-                            )
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=modvar, label=p.model,
+                                                                         plot_dict=plot_dict, comb_bx=comb_bx,
+                                                                         label_bx=label_bx)
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
                                 splots.make_boxplot(
@@ -704,6 +707,8 @@ class analysis:
                                     text_dict=text_dict,
                                     debug=self.debug
                                 )
+                                #Clear info for next plot.
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
@@ -749,7 +754,9 @@ class analysis:
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, bbox_inches='tight', dpi=200)
+                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, 
+                                                   bbox_inches='tight', dpi=200)
+                                del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
@@ -776,6 +783,7 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -828,6 +836,7 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
 
     def stats(self):
         """Calculate statistics specified in the input yaml file.

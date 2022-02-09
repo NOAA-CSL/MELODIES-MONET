@@ -1,7 +1,7 @@
 How To Run
 ==========
 
-These are instructions for how to update the examples on Github and run 
+These are instructions for how to update the examples on GitHub and run 
 MELODIES MONET both within a jupyter notebook or in a bash script submitted to 
 an HPC machine. It is highly recommended to start first running MELODIES 
 MONET in a jupyter notebook with a smaller dataset. Then you can expand on the 
@@ -19,7 +19,7 @@ Prepare an Input YAML File
 --------------------------
 You will need to prepare an input YAML file to be read into MELODIES MONET. 
 Example input YAML files to start from are provided in the 
-melodies_monet/examples/yaml folder of the code on Github. There are a number 
+melodies_monet/examples/yaml folder of the code on GitHub. There are a number 
 of comments in these example input YAML files to get you started. The overall 
 structure is the following:
 
@@ -123,7 +123,7 @@ Jupyter Notebook
 ----------------
 
 Jupyter notebook examples explaining how to run MELODIES MONET are in the 
-melodies_monet/examples/jupyter_notebooks folder of the code on Github. It is
+melodies_monet/examples/jupyter_notebooks folder of the code on GitHub. It is
 highly recommended for new and expert users to first use MELODIES MONET on a 
 subset of the analysis in jupyter notebook. The jupyter notebook examples 
 demonstrate how to print different pieces of the analysis class instance in 
@@ -137,7 +137,7 @@ Jupyter notebooks are great for quick analysis and ensuring you have set up the
 configuration properly, but if you want to perform the analysis for a longer 
 time period or create hundreds of plots submitting a bash script as a job on 
 your HPC computer is preferred. Bash script examples for running MELODIES MONET 
-are in the melodies_monet/examples/submit_jobs folder of the code on Github.
+are in the melodies_monet/examples/submit_jobs folder of the code on GitHub.
 
    * If you are using a model like WRF-Chem, CMAQ, or RRFS-CMAQ that is run in 
      forecasting mode and you want to combine model results across multiple 

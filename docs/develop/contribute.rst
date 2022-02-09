@@ -5,11 +5,11 @@ MELODIES MONET is a community driven project. It would not be possible without
 the contributions and support from you. 
 
 - Ask questions, suggest features, or view source code 
-  `on Github <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
+  `on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
 - If an issue arrises, please post on 
-  `on Github Issues <https://github.com/NOAA-CSL/MELODIES-MONET/issues>`__.
+  `on GitHub Issues <https://github.com/NOAA-CSL/MELODIES-MONET/issues>`__.
 - Please check out 
-  `Github Projects <https://github.com/NOAA-CSL/MELODIES-MONET/projects>`__ 
+  `GitHub Projects <https://github.com/NOAA-CSL/MELODIES-MONET/projects>`__ 
   to learn about current development plans.
 - Join an :ref:`Upcoming Workshop <develop/workshops:Upcoming>`
   or check out :ref:`Past Workshops <develop/workshops:Past>`.

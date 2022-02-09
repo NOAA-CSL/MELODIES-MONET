@@ -15,10 +15,10 @@ laboratory researchers, as well as graduate students and postdocs.
 
 The goal is to evaluate research, operational, and regulatory models against 
 a variety of observations including surface, aircraft, and satellite data all 
-within a common framework. MELODIES-MONET uses the functionality already 
+within a common framework. MELODIES MONET uses the functionality already 
 developed by MONETIO to read in multiple observational and model datasets and 
 MONET to do pairing/analysis/plotting. For more information on MONET and 
-MONETIO Github repositories please refer to:
+MONETIO please refer to:
  
 - https://monet-arl.readthedocs.io
 - https://monetio.readthedocs.io
@@ -30,7 +30,7 @@ MONETIO Github repositories please refer to:
    MELODIES MONET without consulting the development team.
    
 .. note::
-   Please cite the following to acknowledge use of MELODIES-MONET
+   Please cite the following to acknowledge use of MELODIES MONET
 
    - Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models.” Atmosphere 8, no. 11: 210
 
@@ -73,6 +73,14 @@ MONETIO Github repositories please refer to:
 
    examples/intro_examples
    examples/airnow_wrfchem
+   
+.. toctree::
+   :hidden:
+   :maxdepth: 4
+   :caption: Current Applications
+
+   applications/publications
+   applications/forecasts
 
 .. toctree::
    :hidden:
