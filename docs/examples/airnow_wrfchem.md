@@ -28,9 +28,9 @@ import sys; sys.path.append("../../")
 from melodies_monet import driver
 ```
 
-## Driver class
+## Analysis driver class
 
-Now lets create an instance of the analysis driver class, {class}`melodies_monet.driver.analysis`.
+Now, lets create an instance of the analysis driver class, {class}`melodies_monet.driver.analysis`.
 It consists of these main parts:
 * model instances
 * observation instances
