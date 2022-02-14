@@ -19,6 +19,8 @@ ozone and PM{subscript}`2.5`.
 
 Please download the WRF-Chem example model dataset from TBA.
 
+First, we import the {mod}`melodies_monet.driver` module.
+
 ```{code-cell} ipython3
 import sys; sys.path.append("../../")
 # ^ sys.path-hacking needed until the package is installable
@@ -35,15 +37,21 @@ It consists of these main parts:
 * a paired instance of both
 
 This will allow us to move things around the plotting function for
-spatial and overlays and more complex plots.
+spatial and overlays and more complex plots. (??)
 
 ```{code-cell} ipython3
 an = driver.analysis()
 ```
 
+Initially, most of our {class}`~melodies_monet.driver.analysis` object's attributes
+are set to ``None``, though some have meaningful defaults:
+```{code-cell} ipython3
+an
+```
+
 ## Control file
 
-Now we set the YAML control file and begin by reading the file.
+We set the YAML control file and begin by reading the file.
 
 ```{note}
 Check out the {doc}`/appendix/yaml` for info on how to create
@@ -58,7 +66,7 @@ an.read_control()
 an.control_dict
 ```
 
-````{admonition} Note: This is the file that was loaded.
+````{admonition} Note: This is the complete file that was loaded.
 :class: dropdown
 
 ```{literalinclude} control_wrfchem_mech-0905_2.yaml
@@ -66,6 +74,11 @@ an.control_dict
 :linenos:
 ```
 ````
+
+Now, some of our {class}`~melodies_monet.driver.analysis` object's attributes are populated:
+```{code-cell} ipython3
+an
+```
 
 ## Load the model data
 
@@ -76,6 +89,16 @@ that includes the
 * mapping information
 * file names (can be expressed using a glob expression)
 * xarray object
+
+````{admonition} Note: Relevant control file section.
+:class: dropdown
+
+```{literalinclude} control_wrfchem_mech-0905_2.yaml
+:caption:
+:linenos:
+:lines: 25-57
+```
+````
 
 ```{code-cell} ipython3
 an.open_models()
@@ -101,6 +124,16 @@ As with the model data, the driver will loop through the "observations" found in
 the `obs` section of the YAML file and create an instance of
 {class}`melodies_monet.driver.observation` for each.
 
+````{admonition} Note: Relevant control file section.
+:class: dropdown
+
+```{literalinclude} control_wrfchem_mech-0905_2.yaml
+:caption:
+:linenos:
+:lines: 59-100
+```
+````
+
 ```{code-cell} ipython3
 an.open_obs()
 ```
@@ -114,6 +147,9 @@ an.obs['airnow'].obj
 ```
 
 ## Pair model and observational data
+
+Now, we create a {class}`melodies_monet.driver.pair` for each model--obs pair
+using the {meth}`~melodies_monet.driver.analysis.pair_data` routine.
 
 ```{code-cell} ipython3
 :tags: [hide-output]
@@ -131,11 +167,38 @@ an.paired['airnow_RACM_ESRL']
 
 ## Plot
 
+The {meth}`~melodies_monet.driver.analysis.plotting` routine produces plots.
+
+````{admonition} Note: Relevant control file section.
+:class: dropdown
+
+```{literalinclude} control_wrfchem_mech-0905_2.yaml
+:caption:
+:linenos:
+:lines: 102-190
+```
+````
+
 ```{code-cell} ipython3
 an.plotting()
 ```
 
+The figures are saved in the directory specified by
+{attr}`~melodies_monet.driver.analysis.output_dir`.
+
 ## Statistics
+
+The {meth}`~melodies_monet.driver.analysis.stats` routine produces tables of statistics.
+
+````{admonition} Note: Relevant control file section.
+:class: dropdown
+
+```{literalinclude} control_wrfchem_mech-0905_2.yaml
+:caption:
+:linenos:
+:lines: 192-216
+```
+````
 
 ```{code-cell} ipython3
 an.stats()

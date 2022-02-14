@@ -39,18 +39,18 @@ class pair:
         self.obs_vars = None
         self.filename = None
 
-    # def __repr__(self):
-    #     return (
-    #         f"{type(self)}("
-    #         f"    type={self.type}",
-    #         f"    radius_of_influence={self.radius_of_influence}",
-    #         f"    obs={self.obs}",
-    #         f"    model={self.model}",
-    #         f"    model_vars={self.model_vars}",
-    #         f"    obs_vars={self.obs_vars}",
-    #         f"    filename={self.filename}",
-    #         ")"
-    #     )
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    type={self.type!r},\n"
+            f"    radius_of_influence={self.radius_of_influence!r},\n"
+            f"    obs={self.obs!r},\n"
+            f"    model={self.model!r},\n"
+            f"    model_vars={self.model_vars!r},\n"
+            f"    obs_vars={self.obs_vars!r},\n"
+            f"    filename={self.filename!r},\n"
+            ")"
+        )
 
     def fix_paired_xarray(self, dset):
         """Reformat the paired dataset.
@@ -123,6 +123,18 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
         self.variable_dict = None
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    obs={self.obs!r},\n"
+            f"    label={self.label!r},\n"
+            f"    file={self.file!r},\n"
+            f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    type={self.type!r},\n"
+            f"    variable_dict={self.variable_dict!r},\n"
+            ")"
+        )
 
     def open_obs(self):
         """Open the observational data, store data in observation pair,
@@ -222,6 +234,21 @@ class model:
         self.mapping = None
         self.variable_dict = None
         self.plot_kwargs = None
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    model={self.model!r},\n"
+            f"    radius_of_influence={self.radius_of_influence!r},\n"
+            f"    mod_kwargs={self.mod_kwargs!r},\n"
+            f"    file_str={self.file_str!r},\n"
+            f"    label={self.label!r},\n"
+            f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    mapping={self.mapping!r},\n"
+            f"    label={self.label!r},\n"
+            "    ...\n"
+            ")"
+        )
 
     def glob_files(self):
         """Convert the model file location string read in by the yaml file
@@ -352,6 +379,22 @@ class analysis:
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    control={self.control!r},\n"
+            f"    control_dict={repr(self.control_dict) if self.control_dict is None else '...'},\n"
+            f"    models={self.models!r},\n"
+            f"    obs={self.obs!r},\n"
+            f"    paired={self.paired!r},\n"
+            f"    start_time={self.start_time!r},\n"
+            f"    end_time={self.end_time!r},\n"
+            f"    download_maps={self.download_maps!r},\n"
+            f"    output_dir={self.output_dir!r},\n"
+            f"    debug={self.debug!r},\n"
+            ")"
+        )
 
     def read_control(self, control=None):
         """Read the input yaml file,
