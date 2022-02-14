@@ -142,6 +142,6 @@ an.stats()
 ```
 
 The stats routine has produced six files, one of which is:
-```{literalinclude} output/stats.OZONE.all.CONUS.2019-09-05_06.2019-09-06_06.csv
+```{literalinclude} output/airnow_wrfchem/stats.OZONE.all.CONUS.2019-09-05_06.2019-09-06_06.csv
 :caption:
 ```

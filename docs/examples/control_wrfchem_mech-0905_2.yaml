@@ -17,19 +17,20 @@
 analysis:
   start_time: "2019-09-05-06:00:00" # UTC
   end_time: "2019-09-06-06:00:00" # UTC
-  output_dir: ./output  # relative to the program using this control file
+  output_dir: ./output/airnow_wrfchem  # relative to the program using this control file
   # ^ optional; if not specified, plots are stored in code directory (??)
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
 
 model:
   RACM_ESRL: # model label
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl/wrfout_d01_*
+    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl2/wrfout_d01_*
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
       # For WRF-chem only, can add `vert: False` if missing P,T variables,
       # but not all conversions will work. Default `vert: True`.
+      # TODO: try it (`surf_only_nc: True`)
     radius_of_influence: 12000 # meters
     mapping: # model species name : obs species name
       airnow: # specifically for the obs labeled 'airnow'
@@ -39,12 +40,12 @@ model:
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
     projection: None
-    plot_kwargs: #Opt
+    plot_kwargs: # optional
       color: "magenta"
       marker: "s"
       linestyle: "-"
   RACM_ESRL_VCP: # model label
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl_vcp/wrfout_d01_*
+    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl_vcp2/wrfout_d01_*
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"

@@ -10,7 +10,6 @@ docs/build/
 docs/api/
 
 docs/examples/**/*.ipynb
-docs/examples/output/
 
 
 # GitHub default gitignore for Python below:
