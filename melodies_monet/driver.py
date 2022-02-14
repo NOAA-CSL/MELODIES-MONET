@@ -39,6 +39,19 @@ class pair:
         self.obs_vars = None
         self.filename = None
 
+    # def __repr__(self):
+    #     return (
+    #         f"{type(self)}("
+    #         f"    type={self.type}",
+    #         f"    radius_of_influence={self.radius_of_influence}",
+    #         f"    obs={self.obs}",
+    #         f"    model={self.model}",
+    #         f"    model_vars={self.model_vars}",
+    #         f"    obs_vars={self.obs_vars}",
+    #         f"    filename={self.filename}",
+    #         ")"
+    #     )
+
     def fix_paired_xarray(self, dset):
         """Reformat the paired dataset.
     

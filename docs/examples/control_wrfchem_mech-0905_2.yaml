@@ -24,19 +24,14 @@ analysis:
 
 model:
   RACM_ESRL: # model label
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl2/wrfout_d01_*
+    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl3/wrfout_d01_*
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
-      # For WRF-chem only, can add `vert: False` if missing P,T variables,
-      # but not all conversions will work. Default `vert: True`.
-      # TODO: try it (`surf_only_nc: True`)
+      surf_only_nc: True  # specify that we have only one vertical level; WRF-Chem specific
     radius_of_influence: 12000 # meters
-    mapping: # model species name : obs species name
+    mapping: # of _model_ species name to _obs_ species name
       airnow: # specifically for the obs labeled 'airnow'
-        # co: CO
-        # no2: NO2
-        # 'no': 'NO'
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
     projection: None
@@ -44,21 +39,19 @@ model:
       color: "magenta"
       marker: "s"
       linestyle: "-"
-  RACM_ESRL_VCP: # model label
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl_vcp2/wrfout_d01_*
+  RACM_ESRL_VCP:
+    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl_vcp3/wrfout_d01_*
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
-    radius_of_influence: 12000 # meters
-    mapping: # of model species name to obs species name
+      surf_only_nc: True
+    radius_of_influence: 12000
+    mapping:
       airnow:
-        # co: CO
-        # no2: NO2
-        # 'no': 'NO'
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
     projection: None
-    plot_kwargs: # optional
+    plot_kwargs:
       color: "gold"
       marker: "o"
       linestyle: "-"
@@ -77,6 +70,7 @@ obs:
         nan_value: -1.0
         # ^ optional; When loading data, set this value to NaN
         ylabel_plot: "Ozone (ppbv)"
+        # optional; set ylabel in order to include units and/or other info
         vmin_plot: 15.0
         # ^ optional; Min for y-axis during plotting.
         #   To apply to a plot, change restrict_yaxis = True.
@@ -99,8 +93,7 @@ obs:
         # Note: The obs_min, obs_max, and nan_values are set to NaN first
         # and then the unit conversion is applied.
         ylabel_plot: "PM2.5 (ug/m3)"
-        # optional; set ylabel in order to include units and/or other info
-        ty_scale: 2.0 # optional
+        ty_scale: 2.0 # optional; `ty_` indicates for Taylor diagram plot
         vmin_plot: 0.0
         vmax_plot: 22.0
         vdiff_plot: 15.0
@@ -131,7 +124,7 @@ plots:
       rem_obs_nan: True
       # ^ True: Remove all points where model or obs variable is NaN.
       #   False: Remove only points where model variable is NaN.
-      ts_select_time: "time_local"
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
       # ^ Time used for avg and plotting
       #   Options: 'time' for UTC or 'time_local'
       ts_avg_window: "H"
@@ -148,8 +141,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["CONUS", "CA", "R9"]
+    domain_type: ["all"]
+    domain_name: ["CONUS"]
     data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
     data_proc:
       rem_obs_nan: True
@@ -162,8 +155,8 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["CONUS", "CA", "R9"]
+    domain_type: ["all",]
+    domain_name: ["CONUS"]
     data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
     data_proc:
       rem_obs_nan: True
@@ -176,8 +169,8 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["CONUS", "CA", "R9"]
+    domain_type: ["all", "epa_region"]
+    domain_name: ["CONUS", "R9"]
     data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
     data_proc:
       rem_obs_nan: True
@@ -189,8 +182,8 @@ plots:
       figsize: [8, 6]
     text_kwargs:
       fontsize: 20.
-    domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["CONUS", "CA", "R9"]
+    domain_type: ["all"]
+    domain_name: ["CONUS"]
     data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
     data_proc:
       rem_obs_nan: True
@@ -211,13 +204,13 @@ stats:
   round_output: 2 # optional; defaults to rounding to 3rd decimal place
   output_table: False
   # ^ Always outputs a .txt file.
-  #   Optional to also output as a CSV(?) table.
+  #   Optional to also output a Matplotlib figure table (image).
   output_table_kwargs: # optional
     figsize: [7, 3]
     fontsize: 12.
     xscale: 1.4
     yscale: 1.4
     edges: "horizontal"
-  domain_type: ["all", "state_name", "epa_region"]
-  domain_name: ["CONUS", "CA", "R9"]
+  domain_type: ["all"]
+  domain_name: ["CONUS"]
   data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]

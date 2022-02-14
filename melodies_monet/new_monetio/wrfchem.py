@@ -175,8 +175,11 @@ def open_mfdataset(fname,
                             'PSFC': 'surfpres_pa','pressure': 'pres_pa_mid'}) #
         dset2 = dset
     else:
-        #Expand into z coordinate so that format is consistent.
-        dset2 = dset.expand_dims('z',axis=3).copy()
+        # Expand into z coordinate so that format is consistent.
+        if 'bottom_top' in dset.dims:
+            dset2 = dset.rename({'bottom_top': 'z'})
+        else:
+            dset2 = dset.expand_dims('z',axis=3).copy()
     
     dset2 = dset2.reset_coords()
     dset2 = dset2.set_coords(['latitude','longitude'])

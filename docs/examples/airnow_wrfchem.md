@@ -14,8 +14,8 @@ kernelspec:
 # Evaluate AirNow and WRF-Chem
 
 Our first example will demonstrate the basics available in MELODIES MONET to 
-compare WRF-Chem model results against AirNow surface observations for ozone, 
-carbon monoxide, nitrogen oxide, nitrogen dioxide, and PM{subscript}`2.5`.
+compare WRF-Chem model results against AirNow surface observations for
+ozone and PM{subscript}`2.5`.
 
 Please download the WRF-Chem example model dataset from TBA.
 
@@ -141,7 +141,8 @@ an.plotting()
 an.stats()
 ```
 
-The stats routine has produced six files, one of which is:
+The stats routine has produced two files (one for each data variable).
+This is one of them:
 ```{literalinclude} output/airnow_wrfchem/stats.OZONE.all.CONUS.2019-09-05_06.2019-09-06_06.csv
 :caption:
 ```
