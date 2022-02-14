@@ -6,3 +6,10 @@ and ease of MELODIES MONET. We will upload several short model dataset to a
 public archive for users to download to support these examples cases. 
 
 This is under development.
+
+
+
+Execution statistics
+--------------------
+
+.. nb-exec-table::

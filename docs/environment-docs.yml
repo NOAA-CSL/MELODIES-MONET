@@ -13,7 +13,9 @@ dependencies:
   - wrf-python
   #
   # Docs
-  - jupyterlab
+  - jupyterlab=3.*
+  - jupytext
+  - myst-nb
   - sphinx=4.*
   - sphinx-autobuild
   - sphinx_rtd_theme
