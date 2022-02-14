@@ -183,8 +183,10 @@ The {meth}`~melodies_monet.driver.analysis.plotting` routine produces plots.
 an.plotting()
 ```
 
-The figures are saved in the directory specified by
-{attr}`~melodies_monet.driver.analysis.output_dir`.
+The figures are saved in the directory specified by the
+{class}`~melodies_monet.driver.analysis` instance's
+{attr}`~melodies_monet.driver.analysis.output_dir`
+attribute.
 
 ## Statistics
 
