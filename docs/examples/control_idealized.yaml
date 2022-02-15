@@ -1,0 +1,28 @@
+analysis:
+  start_time: "2019-09-09"
+  end_time: "2019-09-11"
+  debug: True
+
+model:
+  test_model:
+    files: test_model.nc
+    mod_type: random
+    variables:
+      A:
+        units: "Units of A"
+        unit_scale: 1
+        unit_scale_method: "*"
+      B:
+        units: "Units of B"
+        unit_scale: 1
+        unit_scale_method: "*"
+    mapping:
+      test_obs:
+        A: "A_obs"
+        B: "B_obs"
+    projection: None
+
+obs:
+  test:
+    filename: test_obs.nc
+    obs_type: pt_sfc
