@@ -6,6 +6,27 @@ This whole page is under development.
 Description of Branches
 -----------------------
 
+There are several permanent repository branches
+for specific development tracks.
+
+main
+____
+
+develop
+_______
+
+develop_plots
+_____________
+
+develop_aircraft
+________________
+
+develop_satellite
+_________________
+
+develop_testsuite
+_________________
+
 
 
 How to incorporate updates to MELODIES MONET
