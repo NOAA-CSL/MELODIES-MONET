@@ -6,14 +6,19 @@ This whole page is under development.
 Description of Branches
 -----------------------
 
-There are several permanent repository branches
+There are several primary repository branches
 for specific development tracks.
 
 main
 ____
+This is the stable release branch.
+It is updated from develop and tagged prior to each release.
+The melodies-monet conda package is created from main.
 
 develop
 _______
+This is the parent development branch in which
+to consolidate the various development tracks.
 
 develop_plots
 _____________
