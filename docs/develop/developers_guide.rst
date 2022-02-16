@@ -12,13 +12,21 @@ for specific development tracks.
 main
 ____
 This is the stable release branch.
-It is updated from develop and tagged prior to each release.
-The melodies-monet conda package is created from main.
+It is updated from the *develop* branch
+and tagged prior to each release.
+The melodies-monet conda package is created from *main*.
 
 develop
 _______
 This is the parent development branch in which
 to consolidate the various development tracks.
+General practice, when working within the central repository,
+is to create a working branch, branched from *develop*,
+with a naming convention such as *develop_topic*.
+The *develop_topic* branches are merged back to *develop*
+via pull requests.
+Forks of the central repository should follow the same
+branching conventions.
 
 develop_plots
 _____________
