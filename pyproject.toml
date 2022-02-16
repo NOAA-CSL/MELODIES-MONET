@@ -6,6 +6,6 @@ build-backend = "setuptools.build_meta"
 line-length = 100
 
 [tool.isort]
-known_first_party = "monetio"
+known_first_party = "melodies_monet"
 profile = "black"
 line_length = 100
