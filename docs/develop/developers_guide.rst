@@ -18,7 +18,7 @@ The melodies-monet conda package is created from *main*.
 
 develop
 _______
-This is the parent development branch in which
+This is the parent branch in which
 to consolidate the various development tracks.
 General practice, when working within the central repository,
 is to create a working branch, branched from *develop*,
