@@ -1,8 +1,6 @@
 Developer's Guide
 =================
 
-This whole page is under development.
-
 Description of Branches
 -----------------------
 
@@ -30,16 +28,28 @@ branching conventions.
 
 develop_plots
 _____________
+The *develop_plots* branch is used for generic plotting
+features that are common across various datasets and models.
 
 develop_aircraft
 ________________
+The *develop_aircraft* branch is the place
+for adding new features related to aircraft observations.
 
 develop_satellite
 _________________
+The *develop_satellite* branch is intended
+for adding support for reading and processing
+satellite observations.
+This includes both gridded satellite data products
+and swath or geostationary disk data products.
+Sub-branches are sometimes created off of *develop_satellite*,
+such as *develop_satellite_swath*.
 
 develop_testsuite
 _________________
-
+The *develop_testsuite* branch holds modules
+under development for unit tests and regression tests.
 
 
 How to incorporate updates to MELODIES MONET
@@ -50,12 +60,16 @@ How to incorporate updates to MELODIES MONET
 
     https://github.com/NOAA-CSL/MELODIES-MONET
 
-    Note: you can pull updates from the main NOAA repository by using the “Fetch upstream” button on your fork. Alternatively::
+    Note: you can pull updates from the main NOAA repository
+    by using the “Fetch Upstream” button on your fork.
+    Alternatively::
 
     $ git pull upstream master
     $ git push origin master
 
-(b) Navigate on cheyenne/casper to where you would like to keep the MELODIES MONET code (e.g. in your work location) and clone your fork to cheyenne::
+(b) Navigate on your working machine
+to where you would like to keep the MELODIES-MONET code
+(e.g. in your work location) and clone your fork::
 
     $ git clone https://github.com/$GitHubUsername/$ForkName.git
 
