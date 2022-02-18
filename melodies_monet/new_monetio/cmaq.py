@@ -48,7 +48,7 @@ def open_mfdataset(fname,
     fname_surf: string
         Path to the metcro2d file in CMAQ. This file is needed to calculate 
         vertical metrics of grid.
-    concatentate_forecasts: boolean
+    concatenate_forecasts: boolean
         Whether you need to concatenate_forecasts (True) or not (False). Time 
         in the default CMAQ model data are not in a format to facilitate 
         concatenation by xarray.
@@ -64,16 +64,16 @@ def open_mfdataset(fname,
     #so need to read in one file at a time, calc times, and then merge together.
     if concatenate_forecasts == True:
         dset_list = []
-        for file in fname:
+        for file_n in fname:
             # open the dataset using xarray
-            dset = xr.open_mfdataset(file, concat_dim='TSTEP', **kwargs)
+            dset = xr.open_mfdataset(file_n, **kwargs)
             # get the times
             dset = _get_times(dset, drop_duplicates=drop_duplicates)
             dset_list.append(dset)
         dset = xr.concat(dset_list,'time')  
     else:
         # open the dataset using xarray
-        dset = xr.open_mfdataset(fname, concat_dim='TSTEP', **kwargs)
+        dset = xr.open_mfdataset(fname, **kwargs)
         # get the times
         dset = _get_times(dset, drop_duplicates=drop_duplicates)
         
@@ -122,7 +122,7 @@ def open_mfdataset(fname,
     dset = dset.drop(labels='TFLAG')
     
     if fname_vert is not None:
-        dset_vert = xr.open_mfdataset(fname_vert, concat_dim='TSTEP', **kwargs)
+        dset_vert = xr.open_mfdataset(fname_vert, **kwargs)
         dset_vert = _get_times(dset_vert, drop_duplicates=drop_duplicates)
         dset_vert = dset_vert.drop(labels='TFLAG')
         dset = dset.merge(dset_vert)
@@ -133,7 +133,7 @@ def open_mfdataset(fname,
                             'ZH':'alt_agl_m_mid',
                             'ZF':'alt_agl_m_full'})
     if fname_surf is not None:
-        dset_surf = xr.open_mfdataset(fname_surf, concat_dim='TSTEP', **kwargs)
+        dset_surf = xr.open_mfdataset(fname_surf, **kwargs)
         dset_surf = _get_times(dset_surf, drop_duplicates=drop_duplicates)
         dset_surf = dset_surf.drop(labels='TFLAG').squeeze()
         dset = dset.merge(dset_surf)
