@@ -65,7 +65,8 @@ MONETIO please refer to:
    develop/workshops
    develop/development_team
    develop/developers_guide
-     
+   develop/datasets
+
 .. toctree::
    :hidden:
    :maxdepth: 4
