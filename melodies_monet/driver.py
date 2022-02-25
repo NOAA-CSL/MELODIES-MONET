@@ -275,7 +275,7 @@ class model:
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         elif 'cesm_fv' in self.model.lower():
-            from new_monetio import read_cesm_fv
+            from .new_monetio import read_cesm_fv
             print('**** Reading CESM model output...')
             self.obj = read_cesm_fv.open_mfdataset(self.files)
         else:
@@ -511,8 +511,8 @@ class analysis:
         -------
         None
         """
-        from plots import surfplots as splots
-        from new_monetio import code_to_move_to_monet as code_m_new
+        from .plots import surfplots as splots
+        from .new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
