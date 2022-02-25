@@ -7,8 +7,8 @@
 #-------------------------------------------------------------------
 # Universal comparison variables
 analysis:
-  start_time: '2019-08-01-00:00:00' #UTC
-  end_time: '2019-08-31-00:00:00' #UTC
+  start_time: '2019-09-01-00:00:00' #UTC
+  end_time: '2019-09-30-00:00:00' #UTC
   output_dir: /glade/work/buchholz/melodies-monet/output
   download_maps: False #If off-line or on machine with download restrictions like hera set to False.
   debug: False
@@ -17,7 +17,7 @@ analysis:
 # Model definitions
 model:
   cam-chem: # model label to be shown on plots
-    files: /glade/work/buchholz/CAM_chem_output/melodies_input/CAM_chem_merra2_FCSD_1deg_QFED_USA_2019.nc
+    files: /glade/work/buchholz/CAM_chem_output/melodies_input/CAM_chem_merra2_FCSD_1deg_QFED_world_201909.nc
     mod_type: 'cesm_fv' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, rrfs, gsdchem
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
@@ -38,7 +38,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /glade/work/buchholz/melodies-monet/melodies_monet/data/AIRNOW_20190801_20190831.nc
+    filename: /glade/work/buchholz/melodies-monet/melodies_monet/data/AIRNOW_20190901_20190930.nc
     obs_type: pt_sfc
     variables: #Opt 
       PM2.5:
@@ -141,16 +141,4 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
-
-
-#-----------------------------------------------------------------------------
-stats:
-  #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
-  #Wind direction has special calculations for AirNow if obs name is 'WD'
-  stat_list: ['R2','MB','RMSE'] #List stat to calculate below. Dictionary of definitions included in plots/proc_stats.py
-  #Full calc list ['STDO', 'STDP', 'MNB', 'MNE', 'MdnNB', 'MdnNE', 'NMdnGE','NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME', 'MdnE', 'NME', 'NMdnE', 'FE', 'MNPB', 'MdnNPB', 'MNPE', 'MdnNPE', 'NMPB', 'NMdnPB', 'NMPE', 'NMdnPE', 'R2', 'RMSE', 'd1', 'E1', 'IOA', 'AC', 'HSS', 'ETS'] 
-  output_table: False #Always outputs a .txt file. Optional to also output as a table.
-  domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
-  data: ['airnow_cam-chem'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 

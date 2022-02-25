@@ -41,16 +41,21 @@ def open_mfdataset(fname,
     # open the dataset using xarray
     try:
         if netcdf:
-            dset_load = xr.open_mfdataset(fname, combine='by_coords', concat_dim='time', **kwargs)
+            dset_load = xr.open_mfdataset(fname, combine='nested', concat_dim='time', **kwargs)
         else:
             raise ValueError
-    except ValueError:
+    except:
         print('''File format not recognized. Note that files should be in netcdf
                 format. Do not mix and match file types.''')
-    
+            
     #############################
     # Process the loaded data
-    dset = dset_load.get(var_list).squeeze(drop=True)
+    #extract variables of choice
+    dset = dset_load.get(var_list)
+    #rename altitude variable to z for monet use
+    dset = dset.rename({'lev':'z'})
+    #re-order so surface is associated with the first vertical index
+    dset = dset.sortby('z',ascending=False)
     
     #############################
     

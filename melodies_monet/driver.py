@@ -511,8 +511,8 @@ class analysis:
         -------
         None
         """
-        from .plots import surfplots as splots
-        from .new_monetio import code_to_move_to_monet as code_m_new
+        from plots import surfplots as splots
+        from new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
