@@ -10,7 +10,7 @@ machine. The basic commands in the jupyter notebook and bash script are exactly
 the same and both similarly call an input YAML file.
 
 First, we describe how to `Prepare An Input YAML File`_.
-and we define the `Basic Commands`_.
+Second, we define the `Basic Commands`_ to run MELODIES MONET.
 Then, we describe how to start from either a 
 the `Jupyter Notebook`_ or
 the `Bash Script`_ example.
@@ -58,13 +58,11 @@ in the Appendix under :doc:`/appendix/yaml`.
 Basic Commands
 --------------
 
-First, you will import the driver.py file in the melodies_monet directory. 
-You will need to update the path below based on where you are storing either
-your jupyter notebook or bash script. ::
+First, you will import the MELODIES MONET driver. You will need to update the path
+below to point to the location of your MELODIES-MONET GitHub repository. ::
 
-    import sys
-    sys.path.append('../../')
-    import driver
+    import sys; sys.path.append("../../../")
+    from melodies_monet import driver
 
 Then you will create an instance of the python driver analysis class. The 
 analysis class consists of 4 main parts; information read in by the input YAML 
