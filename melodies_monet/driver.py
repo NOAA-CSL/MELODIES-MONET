@@ -504,8 +504,7 @@ class analysis:
         -------
         None
         """
-        from .plots import surfplots as splots
-        from .new_monetio import code_to_move_to_monet as code_m_new
+        from .plots import surfplots as splots, savefig
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -668,8 +667,7 @@ class analysis:
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, 
-                                                   bbox_inches='tight', dpi=200)
+                                savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
@@ -754,8 +752,7 @@ class analysis:
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, 
-                                                   bbox_inches='tight', dpi=200)
+                                savefig(outname + '.png', logo_height=70)
                                 del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
