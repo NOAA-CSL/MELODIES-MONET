@@ -40,7 +40,7 @@ model:
       marker: "s"
       linestyle: "-"
   RACM_ESRL_VCP:
-    files: example:wrfchem:racm_esrl
+    files: example:wrfchem:racm_esrl_vcp
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"

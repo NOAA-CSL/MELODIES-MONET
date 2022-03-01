@@ -154,8 +154,10 @@ class observation:
         else:
             files = sort(glob(self.file))
 
+        assert len(files) >= 1, "need at least one"
+
+        _, extension = os.path.splitext(files[0])
         try:
-            _, extension = os.path.splitext(self.file)
             if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
                 if len(files) > 1:
                     self.obj = xr.open_mfdataset(files)
@@ -164,9 +166,13 @@ class observation:
             elif extension in ['.ict', '.icarrt']:
                 assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
                 self.obj = mio.icarrt.add_data(files[0])
-            self.mask_and_scale()  # mask and scale values from the control values
+            else:
+                raise ValueError(f'extension {extension!r} currently unsupported')
         except Exception as e:
             print('something happened opening file:', e)
+            return
+
+        self.mask_and_scale()  # mask and scale values from the control values
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
