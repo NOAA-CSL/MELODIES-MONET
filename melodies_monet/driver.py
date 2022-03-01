@@ -475,7 +475,7 @@ class analysis:
                         if model_obj.sizes['z'] > 1:
                             model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
                     except KeyError:
-                        pass
+                        print("Key Error, no dimension named 'z'. MONET requires an altitude dimension named 'z'")
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
@@ -821,8 +821,7 @@ class analysis:
                                 else:
                                     vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             except:
-                                print("Key Error, no dimension named 'z', just taking the model field")
-                                vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                                print("Key Error, no dimension named 'z'. MONET requires an altitude dimension named 'z'")
                                 
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])

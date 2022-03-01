@@ -8,7 +8,7 @@
 # Universal comparison variables
 analysis:
   start_time: '2019-09-01-00:00:00' #UTC
-  end_time: '2019-09-30-00:00:00' #UTC
+  end_time: '2019-09-09-00:00:00' #UTC
   output_dir: /glade/work/buchholz/melodies-monet/output
   download_maps: False #If off-line or on machine with download restrictions like hera set to False.
   debug: False
@@ -17,7 +17,7 @@ analysis:
 # Model definitions
 model:
   cam-chem: # model label to be shown on plots
-    files: /glade/work/buchholz/CAM_chem_output/melodies_input/CAM_chem_merra2_FCSD_1deg_QFED_world_201909.nc
+    files: /glade/work/buchholz/CAM_chem_output/melodies_input/CAM_chem_merra2_FCSD_1deg_QFED_world_201909-01-09_small_sfc.nc
     mod_type: 'cesm_fv' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, rrfs, gsdchem
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
