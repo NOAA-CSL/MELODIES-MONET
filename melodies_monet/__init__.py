@@ -1,7 +1,7 @@
 """
 MELODIES MONET
 """
-from . import driver, new_monetio, plots, stats, util
+from . import driver, new_monetio, plots, stats, util, tutorial
 
 __all__ = (
     "driver",
@@ -9,4 +9,5 @@ __all__ = (
     "plots",
     "stats",
     "util",
+    "tutorial",
 )
