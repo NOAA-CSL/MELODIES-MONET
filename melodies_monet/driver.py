@@ -473,9 +473,10 @@ class analysis:
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
                     try:
                         if model_obj.sizes['z'] > 1:
-                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
-                    except KeyError:
-                        print("Key Error, no dimension named 'z'. MONET requires an altitude dimension named 'z'")
+                            # Select only the surface values to pair with obs.
+                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1)
+                    except KeyError as e:
+                        raise Exception("MONET requires an altitude dimension named 'z'") from e
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
