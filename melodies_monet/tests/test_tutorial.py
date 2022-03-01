@@ -12,4 +12,7 @@ else:
 
 @pytest.mark.xfail(not has_pooch, reason="no pooch")
 def test_fetch_example():
-    ...
+    tutorial.fetch_example("wrfchem")
+
+    cache_dir = pooch.os_cache("pooch")
+    assert any("wrfout_d01_tutorial" in p.name for p in cache_dir.glob("*"))

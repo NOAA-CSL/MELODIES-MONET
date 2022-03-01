@@ -12,6 +12,9 @@ dependencies:
   - netcdf4
   - wrf-python
   #
+  # Extras
+  - pooch
+  #
   # Docs
   - jupyterlab=3.*
   - jupytext
