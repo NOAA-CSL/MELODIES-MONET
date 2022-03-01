@@ -24,7 +24,7 @@ analysis:
 
 model:
   RACM_ESRL: # model label
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl3/wrfout_d01_*
+    files: example:wrfchem:racm_esrl
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
@@ -40,7 +40,7 @@ model:
       marker: "s"
       linestyle: "-"
   RACM_ESRL_VCP:
-    files: M:/ftpshare.al.noaa.gov/example_model_data/wrfchem_example/racm_esrl_vcp3/wrfout_d01_*
+    files: example:wrfchem:racm_esrl
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
@@ -59,7 +59,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: ../../melodies_monet/data/AIRNOW_20190901_20190930.nc
+    filename: example:airnow:2019-09
     obs_type: pt_sfc
     variables: # optional
       OZONE:

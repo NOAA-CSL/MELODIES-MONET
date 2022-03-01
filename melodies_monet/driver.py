@@ -146,19 +146,27 @@ class observation:
         """
         from glob import glob
         from numpy import sort
+        from . import tutorial
+
+        if self.file.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+            files = [tutorial.fetch_example(example_id)]
+        else:
+            files = sort(glob(self.file))
 
         try:
-            if os.path.isfile(self.file):
-                _, extension = os.path.splitext(self.file)
-                if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
-                    if len(glob(self.file)) > 1:
-                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                    self.obj = xr.open_dataset(self.file)
-                elif extension in ['.ict', '.icarrt']:
-                    self.obj = mio.icarrt.add_data(self.file)
-                self.mask_and_scale()  # mask and scale values from the control values
-        except ValueError:
-            print('something happened opening file')
+            _, extension = os.path.splitext(self.file)
+            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                if len(files) > 1:
+                    self.obj = xr.open_mfdataset(files)
+                else:
+                    self.obj = xr.open_dataset(files[0])
+            elif extension in ['.ict', '.icarrt']:
+                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                self.obj = mio.icarrt.add_data(files[0])
+            self.mask_and_scale()  # mask and scale values from the control values
+        except Exception as e:
+            print('something happened opening file:', e)
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -260,9 +268,14 @@ class model:
         """
         from numpy import sort  # TODO: maybe use `sorted` for this
         from glob import glob
+        from . import tutorial
 
         print(self.file_str)
-        self.files = sort(glob(self.file_str))
+        if self.file_str.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
+            self.files = [tutorial.fetch_example(example_id)]
+        else:
+            self.files = sort(glob(self.file_str))
         
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
