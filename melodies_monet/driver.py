@@ -817,8 +817,8 @@ class analysis:
                                         dict(time=slice(self.start_time, self.end_time))] 
                                 else:
                                     vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
-                            except:
-                                print("Key Error, no dimension named 'z'. MONET requires an altitude dimension named 'z'")
+                            except KeyError as e:
+                                raise Exception("MONET requires an altitude dimension named 'z'") from e
                                 
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
