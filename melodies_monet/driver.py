@@ -333,6 +333,10 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+        elif 'cesm_fv' in self.model.lower():
+            from .new_monetio import read_cesm_fv
+            print('**** Reading CESM model output...')
+            self.obj = read_cesm_fv.open_mfdataset(self.files)
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -542,8 +546,12 @@ class analysis:
                         obs.obs_to_df()
                     #Check if z dim is larger than 1. If so select, the first level as all models read through 
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
-                    if model_obj.sizes['z'] > 1: 
-                        model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
+                    try:
+                        if model_obj.sizes['z'] > 1:
+                            # Select only the surface values to pair with obs.
+                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1)
+                    except KeyError as e:
+                        raise Exception("MONET requires an altitude dimension named 'z'") from e
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     # print(paired_data)
@@ -579,8 +587,7 @@ class analysis:
         -------
         None
         """
-        from .plots import surfplots as splots
-        from .new_monetio import code_to_move_to_monet as code_m_new
+        from .plots import surfplots as splots, savefig
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -743,8 +750,7 @@ class analysis:
                             )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=150, decorate=True, 
-                                                   bbox_inches='tight', dpi=200)
+                                savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
@@ -829,8 +835,7 @@ class analysis:
                                 )
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                code_m_new.savefig(outname + '.png', loc=2, height=70, decorate=True, 
-                                                   bbox_inches='tight', dpi=200)
+                                savefig(outname + '.png', logo_height=70)
                                 del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
@@ -881,11 +886,16 @@ class analysis:
                             #Check if z dim is larger than 1. If so select, the first level as all models read through 
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
-                            if self.models[p.model].obj.sizes['z'] > 1: #Select only surface values.
-                                vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
-                                    dict(time=slice(self.start_time, self.end_time))] 
-                            else:
-                                vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                            try:
+                                self.models[p.model].obj.sizes['z']
+                                if self.models[p.model].obj.sizes['z'] > 1: #Select only surface values.
+                                    vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
+                                        dict(time=slice(self.start_time, self.end_time))] 
+                                else:
+                                    vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
+                            except KeyError as e:
+                                raise Exception("MONET requires an altitude dimension named 'z'") from e
+                                
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot

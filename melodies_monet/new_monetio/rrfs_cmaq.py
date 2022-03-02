@@ -109,17 +109,17 @@ def open_mfdataset(fname,
                 var_list.remove(pm25_var)
     
         # open the dataset using xarray
-        dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)[var_list]
+        dset = xr.open_mfdataset(fname, concat_dim='time', combine='nested', **kwargs)[var_list]
     else:
         #Read in all variables and do all calculations.
-        dset = xr.open_mfdataset(fname, concat_dim='time', **kwargs)
+        dset = xr.open_mfdataset(fname, concat_dim='time', combine='nested', **kwargs)
         list_calc_sum = ['PM25', 'PM10', 'noy_gas', 'noy_aer', 
                         'nox', 'pm25_cl', 'pm25_ec', 'pm25_ca', 'pm25_na',
                         'pm25_nh4', 'pm25_no3', 'pm25_so4', 'pm25_om']
     
     if fname_pm25 is not None:
         #Add the processed pm2.5 species.
-        dset_pm25 = xr.open_mfdataset(fname_pm25, concat_dim='time', **kwargs)
+        dset_pm25 = xr.open_mfdataset(fname_pm25, concat_dim='time', combine='nested', **kwargs)
         dset_pm25 = dset_pm25.drop(labels=['lat','lon','pfull']) #Drop duplicate variables so can merge. 
         #Slight differences in pfull value between the files, but I assume that these still represent the
         #same pressure levels from the model dynf* files.
