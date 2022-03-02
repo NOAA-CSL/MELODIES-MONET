@@ -257,18 +257,17 @@ class model:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
             if self.files_surf is not None:
                 self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            from .new_monetio import cmaq as cmaq  # Eventually add to monet itself.
-            self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
+            if len(self.files) > 1:
+                self.mod_kwargs.update({'concatenate_forecasts' : True})
+            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from .new_monetio import wrfchem as wrfchem  # Eventually add to monet itself.
-            self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
+            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from .new_monetio import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
-            self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
+            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
