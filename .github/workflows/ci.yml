@@ -44,6 +44,14 @@ jobs:
 
       - name: pytest
         run: python -m pytest melodies_monet
+      
+      - name: Run docs/examples notebooks as scripts
+        run: |
+          cd docs/examples
+          for f in *.ipynb; do
+            jupytext --to py $f -o t.py
+            python t.py
+          done
 
   docs:
     name: Check docs build
