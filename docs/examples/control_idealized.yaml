@@ -1,6 +1,7 @@
 analysis:
-  start_time: "2019-09-09"
-  end_time: "2019-09-11"
+  start_time: "2019-09-09 00:00"
+  end_time: "2019-09-10 00:00"
+  output_dir: ./output/idealized
   debug: True
 
 model:
@@ -23,6 +24,26 @@ model:
     projection: None
 
 obs:
-  test:
+  test_obs:
+    # use_airnow: True
     filename: test_obs.nc
     obs_type: pt_sfc
+
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    # fig_kwargs: #Opt to define figure options
+    #   figsize: [12,6] # figure size if multiple plots
+    # default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+    #   linewidth: 2.0
+    #   markersize: 10.
+    # text_kwargs: #Opt
+    #   fontsize: 18.
+    domain_type: ['all', 'epa_region']  # required
+    domain_name: ['CONUS', 'R1']  # required
+    data: ['test_obs_test_model']  # required
+    # data_proc:
+    #   rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+    #   ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+    #   ts_avg_window: 'D' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+    #   set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
