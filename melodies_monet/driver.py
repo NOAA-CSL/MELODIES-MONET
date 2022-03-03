@@ -629,7 +629,7 @@ class analysis:
                             modvar = modvar + '_new'
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe()
+                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
@@ -1019,7 +1019,7 @@ class analysis:
                             modvar = modvar + '_new'
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe()
+                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]

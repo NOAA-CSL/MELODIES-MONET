@@ -21,7 +21,7 @@ model:
       test_obs:
         A: "A_obs"
         B: "B_obs"
-    projection: None
+    projection: None  # unused
 
 obs:
   test_obs:
@@ -32,18 +32,26 @@ obs:
 plots:
   plot_grp1:
     type: 'timeseries'
-    # fig_kwargs: #Opt to define figure options
-    #   figsize: [12,6] # figure size if multiple plots
-    # default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
-    #   linewidth: 2.0
-    #   markersize: 10.
-    # text_kwargs: #Opt
-    #   fontsize: 18.
-    domain_type: ['all', 'epa_region']  # required
-    domain_name: ['CONUS', 'R1']  # required
+    default_plot_kwargs:  # required (with at least one key)
+      linewidth: 2.0
+    domain_type: ['all']  # required
+    domain_name: ['CONUS']  # required
     data: ['test_obs_test_model']  # required
-    # data_proc:
-    #   rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-    #   ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-    #   ts_avg_window: 'D' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
-    #   set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+    data_proc:  # These four seem to be required for time series
+      rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time'  # 'time' for UTC or 'time_local'
+      ts_avg_window: '3H'  # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      # ^ TODO: null setting seems not working
+      set_axis: False  # If True, add vmin_plot and vmax_plot for each variable in obs.
+
+  plot_grp2:
+    type: 'spatial_overlay'
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+    domain_type: ['all']  # required
+    domain_name: ['CONUS']  # required
+    data: ['test_obs_test_model']  # required
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
