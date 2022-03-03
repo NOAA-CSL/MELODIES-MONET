@@ -1,0 +1,5 @@
+Stat_ID,Stat_FullName,airnow_RACM_ESRL,airnow_RACM_ESRL_VCP
+MB,Mean_Bias,3.93,3.23
+MdnB,Median_Bias,3.86,3.27
+R2,Coefficient_of_Determination_(R2),0.56,0.54
+RMSE,Root_Mean_Square_Error,11.64,11.59
