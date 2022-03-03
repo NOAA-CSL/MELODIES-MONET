@@ -73,6 +73,7 @@ MONETIO please refer to:
 
    examples/intro_examples
    examples/airnow_wrfchem
+   examples/camchem
    
 .. toctree::
    :hidden:

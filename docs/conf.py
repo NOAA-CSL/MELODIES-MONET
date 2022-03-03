@@ -70,7 +70,7 @@ napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
 execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
-
+jupyter_execute_notebooks = "cache"  # to speed build when working on other things
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -94,7 +94,10 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints', 'examples/*.ipynb']
+exclude_patterns = [
+    u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
+    'examples/idealized.ipynb',
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
