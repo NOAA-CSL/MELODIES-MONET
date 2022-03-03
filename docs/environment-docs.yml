@@ -16,6 +16,7 @@ dependencies:
   - pooch
   #
   # Docs
+  - ipykernel=6.7.*
   - jupyterlab=3.*
   - jupytext
   - myst-nb
