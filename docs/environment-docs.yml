@@ -21,4 +21,5 @@ dependencies:
   - myst-nb
   - sphinx=4.*
   - sphinx-autobuild
+  - sphinx-design
   - sphinx_rtd_theme

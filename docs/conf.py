@@ -46,6 +46,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
     'myst_nb',
+    'sphinx_design',
 ]
 
 extlinks = {
@@ -71,6 +72,8 @@ napoleon_preprocess_types = True
 
 execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
 jupyter_execute_notebooks = "cache"  # to speed build when working on other things
+
+myst_enable_extensions = ["colon_fence"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
