@@ -49,7 +49,7 @@ jobs:
         run: |
           cd docs/examples
           for f in *.ipynb; do
-            if [ "$f" != 'airnow_wrfchem.ipynb' ]; then
+            if [ "$f" == 'idealized.ipynb' ]; then
               jupytext --to py $f -o t.py
               python t.py
             fi
