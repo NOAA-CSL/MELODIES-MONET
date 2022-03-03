@@ -71,6 +71,7 @@ napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
 execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
+jupyter_execute_notebooks = "auto"  # don't execute if all cells have output (default)
 # jupyter_execute_notebooks = "cache"  # to speed build when working on other things
 
 myst_enable_extensions = ["colon_fence"]
