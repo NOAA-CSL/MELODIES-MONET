@@ -16,11 +16,11 @@ dependencies:
   - pooch
   #
   # Docs
-  - ipykernel=6.7.*
+  - ipykernel
   - jupyterlab=3.*
   - jupytext
   - myst-nb
-  - nbclient=0.5.10
+  - nbclient
   - sphinx=4.*
   - sphinx-autobuild
   - sphinx-design
