@@ -20,6 +20,7 @@ dependencies:
   - jupyterlab=3.*
   - jupytext
   - myst-nb
+  - nbclient=0.5.10
   - sphinx=4.*
   - sphinx-autobuild
   - sphinx-design
