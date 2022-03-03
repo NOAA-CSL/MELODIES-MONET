@@ -30,6 +30,12 @@ _examples = {
             "example_observation_data/surface/AIRNOW_20190701_20190731.nc",
             "sha256:67da806bcdca90289147254a3fa63a746b8a63ef973a497d0b47c789d48291c2",
         )
+    },
+    "camchem": {
+        "fv": (
+            "example_model_data/cesmfv_example/CAM_chem_merra2_FCSD_1deg_QFED_world_201909-01-09_small_sfc.nc",
+            "sha256:b1efe4475796c5a507466c84a101efeb18ff142ddc40a21d0c4691527e7378c4",
+        ),
     }
 }
 """Files to fetch for a certain example, paths relative to the FTP site."""
