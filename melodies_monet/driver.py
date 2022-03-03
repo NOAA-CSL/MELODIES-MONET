@@ -281,6 +281,15 @@ class model:
             print('**** Reading CESM FV model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        # CAM-chem-SE grid or MUSICAv0
+        elif 'cesm_se' in self.model.lower(): 
+            from .new_monetio import read_cesm_se
+            self.mod_kwargs.update({'var_list' : list_input_var})            
+            self.mod_kwargs.update({'scrip_file' : self.scrip_file})
+            print('**** Reading CESM SE model output...')
+            self.obj = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+            #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+            #self.obj.monet.scrip = self.obj_scrip
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
@@ -417,6 +426,14 @@ class analysis:
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
+                    
+                # unstructured grid check
+                if m.model in ['cesm_se']:
+                    if 'scrip_file' in self.control_dict['model'][mod].keys():
+                        m.scrip_file = self.control_dict['model'][mod]['scrip_file']
+                    else:
+                        raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
+                        
                 # open the model
                 m.open_model_files()
                 self.models[m.label] = m
@@ -460,8 +477,16 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
-
+                
+                # unstructured grid check - lon/lat variables should be explicitly added 
+                # in addition to comparison variables
+                if mod.obj.attrs.get("mio_scrip_file", False):
+                    lonlat_list = [ 'lon', 'lat', 'longitude', 'latitude', 'Longitude', 'Latitude' ]
+                    for ll in lonlat_list:
+                        if ll in mod.obj.data_vars:
+                            keys += [ll]
                 model_obj = mod.obj[keys]
+                
                 ## TODO:  add in ability for simple addition of variables from
 
                 # simplify the objs object with the correct mapping vairables
