@@ -252,32 +252,35 @@ class model:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
         if 'cmaq' in self.model.lower():
+            print('**** Reading CMAQ model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
             if self.files_vert is not None:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
             if self.files_surf is not None:
                 self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            from .new_monetio import cmaq as cmaq  # Eventually add to monet itself.
-            self.obj = cmaq.open_mfdataset(self.files,**self.mod_kwargs)
+            if len(self.files) > 1:
+                self.mod_kwargs.update({'concatenate_forecasts' : True})
+            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
+            print('**** Reading WRF-Chem model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from .new_monetio import wrfchem as wrfchem  # Eventually add to monet itself.
-            self.obj = wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
+            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'rrfs' in self.model.lower():
+            print('**** Reading RRFS-CMAQ model output...')
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            from .new_monetio import rrfs_cmaq as rrfs_cmaq  # Eventually add to monet itself.            
-            self.obj = rrfs_cmaq.open_mfdataset(self.files,**self.mod_kwargs)
+            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
+            print('**** Reading GSD-Chem model output...')
             if len(self.files) > 1:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         elif 'cesm_fv' in self.model.lower():
-            from .new_monetio import read_cesm_fv
-            print('**** Reading CESM model output...')
-            self.obj = read_cesm_fv.open_mfdataset(self.files)
+            print('**** Reading CESM FV model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
         # CAM-chem-SE grid or MUSICAv0
         elif 'cesm_se' in self.model.lower(): 
             from .new_monetio import read_cesm_se
@@ -288,6 +291,7 @@ class model:
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
         else:
+            print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
             else:
