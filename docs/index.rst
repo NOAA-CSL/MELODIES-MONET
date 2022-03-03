@@ -74,6 +74,7 @@ MONETIO please refer to:
    examples/intro_examples
    examples/airnow_wrfchem
    examples/camchem
+   examples/idealized
    
 .. toctree::
    :hidden:

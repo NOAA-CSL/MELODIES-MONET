@@ -71,8 +71,9 @@ napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
 execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
-jupyter_execute_notebooks = "auto"  # don't execute if all cells have output (default)
+# jupyter_execute_notebooks = "auto"  # don't execute if all cells have output (default)
 # jupyter_execute_notebooks = "cache"  # to speed build when working on other things
+jupyter_execute_notebooks = "off"
 
 myst_enable_extensions = ["colon_fence"]
 
@@ -100,7 +101,6 @@ language = None
 # This pattern also affects html_static_path and html_extra_path .
 exclude_patterns = [
     u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
-    'examples/idealized.ipynb',
 ]
 
 # The name of the Pygments (syntax highlighting) style to use.
