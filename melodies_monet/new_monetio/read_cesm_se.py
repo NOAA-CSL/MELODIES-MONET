@@ -7,9 +7,10 @@ from pandas import Series, to_datetime
 def open_mfdataset(fname,
                    earth_radius=6370000,
                    convert_to_ppb=True,
-                   var_list = ['O3','PM25'],
+                   var_list = ['O3','NO','NO2','lat','lon'],
+                   scrip_file = '',
                    **kwargs):
-    """Method to open multiple (or single) CESM netcdf files.
+    """Method to open multiple (or single) CESM SE netcdf files.
        This method extends the xarray.open_mfdataset functionality
        It is the main method called by the driver. Other functions defined 
        in this file are internally called by open_mfdataset and are preceeded
@@ -27,6 +28,8 @@ def open_mfdataset(fname,
         and units of aerosols to ug m^-3
     var_list : string or list
         List of variables to load from the CESM file. Default is to load ozone (O3) and PM2.5 (PM25).
+    scrip_file: string
+        Scrip file path for unstructured grid output
 
 
     Returns
@@ -41,14 +44,21 @@ def open_mfdataset(fname,
     # open the dataset using xarray
     try:
         if netcdf:
-            dset_load = xr.open_mfdataset(fname, combine='nested', concat_dim='time', **kwargs)
+            dset_load = xr.open_mfdataset(fname, combine='by_coords', concat_dim='time', **kwargs)
         else:
             raise ValueError
-    except:
+    except ValueError:
         print('''File format not recognized. Note that files should be in netcdf
                 format. Do not mix and match file types.''')
-            
-    #############################
+    
+    # To keep lat & lon variables in the dataset
+    if 'lat' not in var_list:
+        var_list.append( 'lat' )
+    if 'lon' not in var_list:
+        var_list.append( 'lon' )
+
+    
+    # ===========================
     # Process the loaded data
     #extract variables of choice
     dset = dset_load.get(var_list)
@@ -56,8 +66,13 @@ def open_mfdataset(fname,
     dset = dset.rename({'lev':'z'})
     #re-order so surface is associated with the first vertical index
     dset = dset.sortby('z',ascending=False)
+    # ===========================
     
-    #############################
+        
+    # Make sure this dataset has unstructured grid
+    dset.attrs["mio_has_unstructured_grid"] = True
+    dset.attrs["mio_scrip_file"] = scrip_file
+    
     
     # convert units
     if convert_to_ppb:
@@ -73,6 +88,8 @@ def open_mfdataset(fname,
                     dset[i].attrs['units'] = '$\mu g m^{-3}$'
                     
 
+    # dset_scrip = xr.open_dataset( scrip_file )                
+    # return dset, dset_scrip
     return dset
 
 
