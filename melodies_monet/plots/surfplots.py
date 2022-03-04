@@ -132,6 +132,8 @@ def map_projection(f):
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
     elif f.model.lower() in ['cesm_fv','cesm_se']:
         proj = ccrs.PlateCarree()
+    elif f.model.lower() == 'random':
+        proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj

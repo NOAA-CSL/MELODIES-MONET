@@ -12,8 +12,16 @@ dependencies:
   - netcdf4
   - wrf-python
   #
+  # Extras
+  - pooch
+  #
   # Docs
-  - jupyterlab
+  - ipykernel
+  - jupyterlab=3.*
+  - jupytext
+  - myst-nb
+  - nbclient
   - sphinx=4.*
   - sphinx-autobuild
+  - sphinx-design
   - sphinx_rtd_theme

@@ -42,6 +42,19 @@ class pair:
         self.obs_vars = None
         self.filename = None
 
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    type={self.type!r},\n"
+            f"    radius_of_influence={self.radius_of_influence!r},\n"
+            f"    obs={self.obs!r},\n"
+            f"    model={self.model!r},\n"
+            f"    model_vars={self.model_vars!r},\n"
+            f"    obs_vars={self.obs_vars!r},\n"
+            f"    filename={self.filename!r},\n"
+            ")"
+        )
+
     def fix_paired_xarray(self, dset):
         """Reformat the paired dataset.
     
@@ -114,6 +127,18 @@ class observation:
         self.type = 'pt_src'
         self.variable_dict = None
 
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    obs={self.obs!r},\n"
+            f"    label={self.label!r},\n"
+            f"    file={self.file!r},\n"
+            f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    type={self.type!r},\n"
+            f"    variable_dict={self.variable_dict!r},\n"
+            ")"
+        )
+
     def open_obs(self):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
@@ -124,19 +149,33 @@ class observation:
         """
         from glob import glob
         from numpy import sort
+        from . import tutorial
 
+        if self.file.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+            files = [tutorial.fetch_example(example_id)]
+        else:
+            files = sort(glob(self.file))
+
+        assert len(files) >= 1, "need at least one"
+
+        _, extension = os.path.splitext(files[0])
         try:
-            if os.path.isfile(self.file):
-                _, extension = os.path.splitext(self.file)
-                if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
-                    if len(glob(self.file)) > 1:
-                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                    self.obj = xr.open_dataset(self.file)
-                elif extension in ['.ict', '.icarrt']:
-                    self.obj = mio.icarrt.add_data(self.file)
-                self.mask_and_scale()  # mask and scale values from the control values
-        except ValueError:
-            print('something happened opening file')
+            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                if len(files) > 1:
+                    self.obj = xr.open_mfdataset(files)
+                else:
+                    self.obj = xr.open_dataset(files[0])
+            elif extension in ['.ict', '.icarrt']:
+                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                self.obj = mio.icarrt.add_data(files[0])
+            else:
+                raise ValueError(f'extension {extension!r} currently unsupported')
+        except Exception as e:
+            print('something happened opening file:', e)
+            return
+
+        self.mask_and_scale()  # mask and scale values from the control values
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -213,6 +252,21 @@ class model:
         self.variable_dict = None
         self.plot_kwargs = None
 
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    model={self.model!r},\n"
+            f"    radius_of_influence={self.radius_of_influence!r},\n"
+            f"    mod_kwargs={self.mod_kwargs!r},\n"
+            f"    file_str={self.file_str!r},\n"
+            f"    label={self.label!r},\n"
+            f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    mapping={self.mapping!r},\n"
+            f"    label={self.label!r},\n"
+            "    ...\n"
+            ")"
+        )
+
     def glob_files(self):
         """Convert the model file location string read in by the yaml file
         into a list of files containing all model data.
@@ -223,9 +277,14 @@ class model:
         """
         from numpy import sort  # TODO: maybe use `sorted` for this
         from glob import glob
+        from . import tutorial
 
         print(self.file_str)
-        self.files = sort(glob(self.file_str))
+        if self.file_str.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
+            self.files = [tutorial.fetch_example(example_id)]
+        else:
+            self.files = sort(glob(self.file_str))
         
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
@@ -359,6 +418,22 @@ class analysis:
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(\n"
+            f"    control={self.control!r},\n"
+            f"    control_dict={repr(self.control_dict) if self.control_dict is None else '...'},\n"
+            f"    models={self.models!r},\n"
+            f"    obs={self.obs!r},\n"
+            f"    paired={self.paired!r},\n"
+            f"    start_time={self.start_time!r},\n"
+            f"    end_time={self.end_time!r},\n"
+            f"    download_maps={self.download_maps!r},\n"
+            f"    output_dir={self.output_dir!r},\n"
+            f"    debug={self.debug!r},\n"
+            ")"
+        )
 
     def read_control(self, control=None):
         """Read the input yaml file,
@@ -586,7 +661,7 @@ class analysis:
                             modvar = modvar + '_new'
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe()
+                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
@@ -976,7 +1051,7 @@ class analysis:
                             modvar = modvar + '_new'
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe()
+                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
