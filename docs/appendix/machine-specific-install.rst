@@ -21,7 +21,7 @@ or tcsh shell.
 
 **Step 1 Miniconda:** The conda package manager is not installed on the Cheyenne 
 or Casper clusters, but you can install Miniconda in your own user space 
-(`CISL instructions <https://www2.cisl.ucar.edu/resources/conda-environments>`_):
+(`CISL instructions <https://arc.ucar.edu/knowledge_base/83853599>`_):
 
 (a) Download latest version::
 
