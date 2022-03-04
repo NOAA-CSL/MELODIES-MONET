@@ -36,6 +36,14 @@ _examples = {
             "example_model_data/cesmfv_example/CAM_chem_merra2_FCSD_1deg_QFED_world_201909-01-09_small_sfc.nc",
             "sha256:b1efe4475796c5a507466c84a101efeb18ff142ddc40a21d0c4691527e7378c4",
         ),
+        "se": (
+            "example_model_data/musica_example/Sample_MUSICAv0_CONUS_2019-09-05.nc",
+            "sha256:0bf2437bdc8c9a6f686bb8f8f1c38f5f7f877d996d31f7c15bbd51f6c4c100db",
+        ),
+        "se_scrip": (
+            "example_model_data/musica_example/ne0CONUS_ne30x8_np4_SCRIP.nc",
+            "sha256:890e1e98f52a5687c57cb15e52f481aa17c6b9eea2bf8e860cae2301697cc027",
+        ),
     }
 }
 """Files to fetch for a certain example, paths relative to the FTP site."""

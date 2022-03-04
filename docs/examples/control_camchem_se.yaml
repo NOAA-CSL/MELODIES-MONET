@@ -16,9 +16,9 @@ analysis:
 # Model definitions
 model:
   cam-chem-se: # model label to be shown on plots
-    files: /glade/work/cdswk/MUSICA_Tutorial/MAR_2022/Sample_MUSICAv0_CONUS_2019-09-05.nc
+    files: example:camchem:se
     mod_type: 'cesm_se' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, rrfs, gsdchem
-    scrip_file: /glade/p/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc
+    scrip_file: example:camchem:se_scrip
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow: 
@@ -38,7 +38,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /glade/u/home/cdswk/MELODIES-MONET/MELODIES-MONET_devel_SE/melodies_monet/data/AIRNOW_20190901_20190930.nc
+    filename: example:airnow:2019-09
     obs_type: pt_sfc
     variables: #Opt 
       PM2.5:
