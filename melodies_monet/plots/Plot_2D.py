@@ -1,3 +1,6 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 '''
 Plot_2D.py
 this code is designed for plotting CESM output 

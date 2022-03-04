@@ -1,3 +1,6 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 try:
     from setuptools import setup, find_packages
 except ImportError:
