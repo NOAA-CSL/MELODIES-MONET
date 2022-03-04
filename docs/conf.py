@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2021, NCAR/UCAR, NOAA'
+copyright = u'2022, NCAR/UCAR, NOAA'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version

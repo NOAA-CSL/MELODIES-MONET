@@ -7,7 +7,7 @@ Upcoming
 --------
 
 
-**MELODIES MONET tutorial during the MUSICA workshop**
+**MELODIES MONET tutorial during the MUSICA Tutorial Series**
 
     March 11, 2022 - During the `MUSICA tutorial <https://www2.acom.ucar.edu/workshop/musica-tutorial-2021>`__, 
     we will demonstrate how to use MELODIES MONET to evaluate against surface 

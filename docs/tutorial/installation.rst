@@ -4,18 +4,11 @@ Installation/Requirements
 Required dependencies
 ---------------------
 
-- Python 3.6+
-- `numpy <http://www.numpy.org/>`__ (1.11 or later)
-- `pandas <http://pandas.pydata.org/>`__ (0.18.0 or later)
-- `xarray <http://xarray.pydata.org/>`__ (0.10 or later)
-- `dask <http://dask.pydata.org/>`__
-- `netcdf4 <http://unidata.github.io/netcdf4-python/>`__
-- `s3fs <https://github.com/dask/s3fs>`__
-
-For parallel computing
-~~~~~~~~~~~~~~~~~~~~~~
-
-- `dask.array <http://dask.pydata.org>`__ (0.9.0 or later): required for
+- Python 3.9 (recommended)
+- netcdf4
+- wrf-python
+- All required dependencies for `MONET <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
+- All required dependencies for `MONETIO <https://monetio.readthedocs.io/en/stable/installing.html>`__
 
 Conda YAML files
 ~~~~~~~~~~~~~~~~
