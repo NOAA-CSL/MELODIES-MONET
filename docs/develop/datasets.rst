@@ -12,3 +12,8 @@ Instructions for reading in aircraft and satellite observations are under develo
 
 Models
 ------
+Examples for reading model datasets can be
+found in the monetio/models folder.
+These include e.g., *_cesm_fv_mm.py*, *_cmaq_mm.py*, and *_wrfchem_mm.py*.
+
+Support for additional models is also under developed.
