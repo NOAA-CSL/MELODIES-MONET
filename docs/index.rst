@@ -34,7 +34,7 @@ MONETIO please refer to:
 
    - Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models.” Atmosphere 8, no. 11: 210
 
-   - TBD - An NCAR Technote?
+   - MELODIES - TBD
 
 .. toctree::
    :hidden:

@@ -17,7 +17,7 @@ Supported Models
 In general, processing requires input to be in netCDF format. For the above 
 models, scripts to configure the model data into a standard format for 
 MELODIES MONET are available. If input datasets are in netCDF format and  
-define latitude, longitude, and a datetime object, MELODIES MONET may be able 
+define latitude, longitude, altitude, and a datetime object, MELODIES MONET may be able 
 to directly read the input files.
 
 See the `Expand models <https://github.com/NOAA-CSL/MELODIES-MONET/projects/8>`_ 
@@ -38,7 +38,7 @@ Surface
      (in MONET, coming soon to MELODIES MONET)
    * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_ 
      (in MONET, coming soon to MELODIES MONET)
-   * `ISH <https://www.ncdc.noaa.gov/isd/>`_ (in MONET, coming soon to MELODIES MONET)
+   * `ISD <https://www.ncdc.noaa.gov/isd/>`_ (in MONET, coming soon to MELODIES MONET)
    
 See the `Expand Surface Observations <https://github.com/NOAA-CSL/MELODIES-MONET/projects/7>`_ 
 project on GitHub to learn about current and future development.
