@@ -2,45 +2,8 @@
 Plot_2D.py
 this code is designed for plotting CESM output 
 can be used for either finite volume or spectral element (+ regional refinement)
-(1) 2D map plotting (class Plot_2D)
-
-MODIFICATION HISTORY:
-    Duseong Jo, 19, JAN, 2021: VERSION 1.00
-    - Initial version
-    Duseong Jo, 20, JAN, 2021: VERSION 1.10
-    - Add a unit option
-    Duseong Jo, 22, JAN, 2021: VERSION 1.11
-    - Possible minor bug fix
-    Duseong Jo, 25, JAN, 2021: VERSION 1.20
-    - Set edgecolor none for polycollection method
-    Duseong Jo, 05, FEB, 2021: VERSION 1.21
-    - Minor bug fix for lon/lat input values check
-    Duseong Jo, 06, FEB, 2021: VERSION 1.22
-    - Minor bug fix for custom colorlabels
-    Duseong Jo, 09, FEB, 2021: VERSION 1.30
-    - Add a log scale option
-    Duseong Jo, 12, FEB, 2021: VERSION 1.40
-    - Add a symlog functionality for minus values in log plot
-    Duseong Jo, 13, FEB, 2021: VERSION 1.50
-    - Add a diff option for difference plot
-    Duseong Jo, 24, JEB, 2021: VERSION 1.60
-    - Minor bug fix for log plot with maximum values less than 0.1
-    Duseong Jo, 31, MAY, 2021: VERSION 1.61
-    - Minor bug fix when colorbar is False
-    Duseong Jo, 07, OCT, 2021: VERSION 1.70
-    - Now can deal with regional output files
-    Duseong Jo, 27, OCT, 2021: VERSION 1.71
-    - Get colorticks even if colorbar=False
-    Duseong Jo, 02, NOV, 2021: VERSION 1.72
-    - Minor bug fix for a log scale color labels
-    Duseong Jo, 09, DEC, 2021: VERSION 1.80
-    - New capability for shifting center longitude in the plot
-    Duseong Jo, 10, DEC, 2021: VERSION 1.85
-    - Add more options to deal with lon/lat lines
 '''
 
-
-### Module import ###
 import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
@@ -54,68 +17,6 @@ import matplotlib
 from matplotlib import ticker
 
 class Plot_2D(object):
-    '''
-    NAME:
-           Plot_2D
-
-    PURPOSE:
-           2D map plotting of the CESM model output
-
-    INPUTS:
-           var: a 2D (or 1D for regional refinement) variable array to be plotted
-           lons: longitude values (1-D array) for plotting in case of FV model
-           lats: latitude values (1-D array) for plotting in case of FV model           
-           lon_range: 2-elements list with longitude ranges to plot
-           lat_range: 2-elements list with latitude ranges to plot
-           scrip_file: a scrip filename for regional refinement model output 
-           ax: Parent axes from which space for the plot will be drawn
-           cmap: colormap for plot
-           projection: map projection by cartopy.crs
-           center_180: if True, center of the plot will be 180 instead of 0 degree
-           grid_line: plot grid lines?
-           grid_line_lw: linewidth for grid line
-           coast: draw coastlines
-           country: draw country boundary lines
-           state: draw state/province lines
-           resolution: resolution of coast/country/state lines (10m, 50m, or 110m)
-           feature_line_lw: linewidth for coast/country/state lines
-           feature_color: color for coast/country/state lines
-           lonlat_info: show longitude & latitude lines/labels?
-           lonlat_line: show/hide longitude & latitude lines?
-           lon_interval: longitude lines interval
-           lat_interval: latitude lines interval
-           lon_labels: for custom longitude labels [list]
-           lat_labels: for custom latitude labels [list]
-           font_family: font family being used for the plot
-           label_size: label size for the plot (longitude & latitude)
-           colorbar: add colorbar?
-           log_scale: log_scale? (True) or linear_scale? (False)
-           log_scale_min: if provided, this value is used for the closest tick to zero
-                          used for maximum tick value < 10^(-1)
-                          ignored if both cmin and cmax are positive 
-                          ignored if colorticks is specified
-           diff: if True, absolute values of cmin and cmax set to be the same
-           orientation: colorbar orientation - horizontal or vertical
-           shrink: fraction by which to multiply the size of the colorbar
-           pad: fraction of original axes between colorbar and image axes
-           fraction: fraction of original axis to use for colorbar
-           extend: If not 'neither', make pointed ends for out-of-range values
-           colorticks: list of ticks being used for colorbar
-           colorlabels: list of tick labels being used for colorbar
-           pretty_tick: If True, colorbar ticks are specially calculated
-           nticks: number of ticks, being ignored when colorticks are specified
-           cmax: maximum value for the plot and colorbar
-           cmin: minimum value for the plot and colorbar
-           title: plot title
-           title_size: font size of the title
-           title_bold: if True, set title font to bold
-           unit: unit next to the colorbar
-           unit_size: font size of the unit
-           unit_bold: if True, set unit font to bold
-           unit_italic: if True, set unit font to italic
-           unit_offset: to make adjustment to colorbar position
-           verbose: Display detailed information on what is being done     
-    '''
     
     def __init__(self, var, lons=None, lats=None, lon_range=[-180,180], lat_range=[-90,90],
                  scrip_file="", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, 
