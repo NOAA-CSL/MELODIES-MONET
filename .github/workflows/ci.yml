@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        monet: [cf, dev]
+      fail-fast: false  # just until cf versions are working
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python (Conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.8"  # hard-coded in the docs env
+          channels: conda-forge,nodefaults
+          activate-environment: melodies-monet-docs
+          environment-file: docs/environment-docs.yml
+
+      - name: Install additional deps
+        run: conda install -c conda-forge pytest
+
+      - if: ${{ matrix.monet == 'dev' }}
+        name: Install development versions of monet and monetio
+        run: |
+          python -m pip list | grep monet
+          python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monetio/archive/develop.zip
+          python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monet/archive/develop.zip
+          python -m pip list | grep monet
+          conda list --show-channel-urls | grep monet
+
+      - name: pytest
+        run: python -m pytest melodies_monet
+      
+      - name: Run docs/examples notebooks as scripts
+        run: |
+          cd docs/examples
+          for f in *.ipynb; do
+            if [ "$f" == 'idealized.ipynb' ]; then
+              jupytext --to py $f -o t.py
+              python t.py
+            fi
+          done
+
+  docs:
+    name: Check docs build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python (Conda)
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.8"
+          channels: conda-forge,nodefaults
+          activate-environment: melodies-monet-docs
+          environment-file: docs/environment-docs.yml
+
+      - name: linkcheck
+        run: sphinx-build -D jupyter_execute_notebooks=off -b linkcheck docs docs/_build/linkcheck
+
+      - name: sphinx-build -W
+        run: sphinx-build -D execution_show_tb=True -b html -W docs docs/_build/html
+
+      - name: Check Sphinx failure log
+        if: ${{ failure() }}
+        run: |
+          for f in /tmp/sphinx-err*; do
+            echo $f
+            cat $f
+          done
