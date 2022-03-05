@@ -7,10 +7,11 @@ public archive for users to download to support these examples cases.
 
 *This is under development.*
 
-Two examples compare AirNow surface observations to model data:
+Three examples compare AirNow surface observations to model data:
 
 * :doc:`airnow_wrfchem`
 * :doc:`camchem`
+* :doc:`airnow_camchem_se`
 
 Other examples:
 
