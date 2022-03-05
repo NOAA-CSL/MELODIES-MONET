@@ -11,7 +11,7 @@
 MELODIES MONET is a joint project between NCAR and NOAA to develop a
 modular framework that integrates existing and future diverse atmospheric
 chemistry observational datasets with chemistry model results for the
-evaluation of air quality and atmospheric composition
+evaluation of air quality and atmospheric composition.
 
 ## Documentation
 
