@@ -345,11 +345,14 @@ class model:
             self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
         # CAM-chem-SE grid or MUSICAv0
         elif 'cesm_se' in self.model.lower(): 
-            from .new_monetio import read_cesm_se
-            self.mod_kwargs.update({'var_list' : list_input_var})            
-            self.mod_kwargs.update({'scrip_file' : self.scrip_file})
             print('**** Reading CESM SE model output...')
-            self.obj = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.scrip_file.startswith("example:"):
+                from . import tutorial
+                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                self.scrip_file = tutorial.fetch_example(example_id)
+            self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
+            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
         else:
