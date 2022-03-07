@@ -62,8 +62,9 @@ changes.
     by using the “Fetch Upstream” button on your fork.
     Alternatively::
 
-    $ git pull upstream master
-    $ git push origin master
+    $ git remote add upstream https://github.com/NOAA-CSL/MELODIES-MONET.git
+    $ git pull upstream main
+    $ git push origin main
 
 (b) Navigate on your working machine
 to where you would like to keep the MELODIES-MONET code
@@ -110,8 +111,8 @@ To build the HTML docs::
     $ make clean
     $ make html
 
-The generated HTML will be created in docs/_build/html,
-with docs/_build/html/index.html the main page that can be
+The generated HTML will be created in ``docs/_build/html``,
+with ``docs/_build/html/index.html`` the main page that can be
 viewed in any browser.
 
 Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/2>`_ 
