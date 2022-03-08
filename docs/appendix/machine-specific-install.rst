@@ -100,6 +100,10 @@ dependencies.
 
 **You are ready to start developing MELODIES MONET!**
 
+.. note::
+   In the NCAR JupyterHub, in the Launcher, you should see an option
+   resembling 'Python [conda env:melodies-monet]'.
+
 NOAA HPC Hera
 -------------
 
