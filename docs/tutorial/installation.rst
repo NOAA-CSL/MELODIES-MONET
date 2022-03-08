@@ -42,19 +42,19 @@ MONETIO::
 (b) Clone and link the latest versions of MONET and MONETIO from GitHub to
 your conda environment::
 
-    $ git clone git@github.com:noaa-oar-arl/monet.git
+    $ git clone https://github.com/noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
     $ pip install --no-deps --editable .
     
-    $ git clone git@github.com:noaa-oar-arl/monetio.git
+    $ git clone https://github.com/noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
     $ pip install --no-deps --editable .
 
 \(c) Clone the MELODIES MONET package::
 
-    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+    $ git clone https://github.com/NOAA-CSL/MELODIES-MONET.git
     
 **Note to developers:** In order to incorporate updates to MELODIES MONET, you 
 will need to fork the repository to your own GitHub account, make changes, and 
