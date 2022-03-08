@@ -43,10 +43,11 @@ or Casper clusters, but you can install Miniconda in your own user space
 
     $ bash install_miniconda.sh -u
 
-Accept the license and default install paths. Say yes to running conda init. 
-Log out of Cheyenne/Casper and log back in. You may see '(base)' as the start 
+Accept the license and default install paths. Say yes to running ``conda init``. 
+Log out of Cheyenne/Casper and log back in. You may see ``(base)`` as the start 
 of your terminal prompt. If you have any issues with package conflicts you may 
 need to uninstall miniconda and reinstall.
+If you do not see ``(base)`` in your prompt, type ``bash`` and it should appear.
 
 **Step 2 Dependent Python Packages:** Set up a conda environment with required 
 dependencies.
@@ -57,7 +58,7 @@ dependencies.
     $ conda create --name melodies-monet python=3.9
     $ conda activate melodies-monet
 
-    You should see '(melodies-monet)' at the start of your terminal prompt.
+    You should see ``(melodies-monet)`` at the start of your terminal prompt.
 
 (b) Install the following packages to the environment. Note they have sub-packages 
     that will be downloaded. The '-y' means you will not have to interactively
@@ -76,8 +77,8 @@ dependencies.
     environment is still activated, get the most recent branches of MONET and 
     MONETIO using GitHub, and link them with conda. This is done because MONET
     and MONETIO are still in active development. Create a 'monet-base' folder
-    (e.g. in your /glade/work directory on cheyenne; you can put the monet and 
-    monetio repositories anywhere).
+    (e.g. in your ``/glade/work/<user>`` directory, accessible on both Cheyenne
+    and Casper).
 
     Set up and link MONET within monet-base::
 
@@ -86,7 +87,7 @@ dependencies.
     $ git checkout develop
     $ pip install --no-deps --editable .
 
-    Set up and link MONET IO within monet-base::
+    Set up and link MONETIO within monet-base::
 
     $ git clone https://github.com/noaa-oar-arl/monetio.git
     $ cd monetio
@@ -96,11 +97,6 @@ dependencies.
 **Step 3: Clone the MELODIES-MONET GitHub repository** ::
 
     $ git clone https://github.com/NOAA-CSL/MELODIES-MONET.git
-
-    At the end of working with MELODIES MONET, deactivate the 
-    conda environment::
-
-    $ conda deactivate
 
 **You are ready to start developing MELODIES MONET!**
 
