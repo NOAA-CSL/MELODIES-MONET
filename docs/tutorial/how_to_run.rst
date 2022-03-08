@@ -19,7 +19,7 @@ Prepare an Input YAML File
 --------------------------
 You will need to prepare an input YAML file to be read into MELODIES MONET. 
 Example input YAML files to start from are provided in the 
-examples/yaml folder of the code on GitHub. There are a number 
+``examples/yaml`` folder of the code on GitHub. There are a number 
 of comments in these example input YAML files to get you started. The overall 
 structure is the following:
 
