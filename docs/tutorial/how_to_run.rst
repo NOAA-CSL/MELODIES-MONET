@@ -121,7 +121,7 @@ Jupyter Notebook
 ----------------
 
 Jupyter notebook examples explaining how to run MELODIES MONET are in the 
-examples/jupyter_notebooks folder of the code on GitHub. It is
+``examples/jupyter_notebooks`` folder of the code on GitHub. It is
 highly recommended for new and expert users to first use MELODIES MONET on a 
 subset of the analysis in jupyter notebook. The jupyter notebook examples 
 demonstrate how to print different pieces of the analysis class instance in 
