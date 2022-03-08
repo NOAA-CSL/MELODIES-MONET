@@ -9,8 +9,8 @@ Supported Models
 ----------------
 
    * `CMAQ <https://www.epa.gov/cmaq/>`_
-   * `WRF-CHEM <https://ruc.noaa.gov/wrf/wrf-chem/>`_
-   * `CESM/CAM-Chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
+   * `WRF-Chem <https://ruc.noaa.gov/wrf/wrf-chem/>`_
+   * `CESM/CAM-chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
    * RRFS-CMAQ (under development)
    * GSD-Chem (under development)
 
