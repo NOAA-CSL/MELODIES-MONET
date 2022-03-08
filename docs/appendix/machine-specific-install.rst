@@ -46,7 +46,8 @@ or Casper clusters, but you can install Miniconda in your own user space
 Accept the license and default install paths. Say yes to running conda init. 
 Log out of Cheyenne/Casper and log back in. You may see '(base)' as the start 
 of your terminal prompt. If you have any issues with package conflicts you may 
-need to uninstall miniconda and reinstall.
+need to uninstall miniconda and reinstall.  If you do not see '(base)' in your 
+prompt, type 'bash', and it should appear.
 
 **Step 2 Dependent Python Packages:** Set up a conda environment with required 
 dependencies.
@@ -76,7 +77,7 @@ dependencies.
     environment is still activated, get the most recent branches of MONET and 
     MONETIO using GitHub, and link them with conda. This is done because MONET
     and MONETIO are still in active development. Create a 'monet-base' folder
-    (e.g. in your work location on cheyenne).
+    (e.g. in your /glade/work/ directory on cheyenne, but it can be anywhere).
 
     Set up and link MONET within monet-base::
 
@@ -94,12 +95,10 @@ dependencies.
 
 **Step 3: Clone the MELODIES-MONET GitHub repository** ::
 
-    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+    $ git clone https://github.com/NOAA-CSL/MELODIES-MONET.git
 
-    End step. At the end of working with MELODIES MONET, deactivate the 
-    conda environment::
-
-    $ conda deactivate
+    In JupyterHub you will now have a choice for the 'conda-melodies-monet' 
+    kernel in your notebooks.
 
 **You are ready to start developing MELODIES MONET!**
 
