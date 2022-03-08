@@ -135,7 +135,7 @@ Jupyter notebooks are great for quick analysis and ensuring you have set up the
 configuration properly, but if you want to perform the analysis for a longer 
 time period or create hundreds of plots submitting a bash script as a job on 
 your HPC computer is preferred. Bash script examples for running MELODIES MONET 
-are in the examples/submit_jobs folder of the code on GitHub.
+are in the ``examples/submit_jobs`` folder of the code on GitHub.
 
    * If you are using a model like WRF-Chem, CMAQ, or RRFS-CMAQ that is run in 
      forecasting mode and you want to combine model results across multiple 
