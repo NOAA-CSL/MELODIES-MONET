@@ -1,8 +1,8 @@
 Machine-specific Install
 ========================
 
-NCAR HPC Cheyenne or Casper
----------------------------
+NCAR HPC Cheyenne/Casper
+------------------------
 
 Below is a specific recipe for how to set up all the necessary Python dependencies 
 on the NCAR HPC, Cheyenne/Casper. Note: these are developer-specific instructions. 
