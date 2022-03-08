@@ -1,8 +1,8 @@
 Machine-specific Install
 ========================
 
-NCAR HPC Cheyenne
------------------
+NCAR HPC Cheyenne or Casper
+---------------------------
 
 Below is a specific recipe for how to set up all the necessary Python dependencies 
 on the NCAR HPC, Cheyenne/Casper. Note: these are developer-specific instructions. 
@@ -76,7 +76,8 @@ dependencies.
     environment is still activated, get the most recent branches of MONET and 
     MONETIO using GitHub, and link them with conda. This is done because MONET
     and MONETIO are still in active development. Create a 'monet-base' folder
-    (e.g. in your work location on cheyenne).
+    (e.g. in your /glade/work directory on cheyenne; you can put the monet and 
+    monetio repositories anywhere).
 
     Set up and link MONET within monet-base::
 
@@ -94,9 +95,9 @@ dependencies.
 
 **Step 3: Clone the MELODIES-MONET GitHub repository** ::
 
-    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+    $ git clone https://github.com/NOAA-CSL/MELODIES-MONET.git
 
-    End step. At the end of working with MELODIES MONET, deactivate the 
+    At the end of working with MELODIES MONET, deactivate the 
     conda environment::
 
     $ conda deactivate
