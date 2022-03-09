@@ -132,8 +132,8 @@ project on GitHub to learn about current and future development.
    use::
       $ conda env update -n melodies-monet -f docs/environment-docs.yml
 
-   to update your existing conda environment.
-   or ::
+   to update your existing conda environment,
+   or::
       $ conda env create -f docs/environment-docs.yml
 
    to create a new conda environment (``melodies-monet-docs``).
