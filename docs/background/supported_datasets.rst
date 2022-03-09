@@ -9,10 +9,10 @@ Supported Models
 ----------------
 
    * `CMAQ <https://www.epa.gov/cmaq/>`_
-   * `WRF-CHEM <https://ruc.noaa.gov/wrf/wrf-chem/>`_
+   * `WRF-Chem <https://ruc.noaa.gov/wrf/wrf-chem/>`_
+   * `CESM/CAM-chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
    * RRFS-CMAQ (under development)
    * GSD-Chem (under development)
-   * CESM/CAM-Chem (under development)
 
 In general, processing requires input to be in netCDF format. For the above 
 models, scripts to configure the model data into a standard format for 
