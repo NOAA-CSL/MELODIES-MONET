@@ -62,11 +62,11 @@ changes.
     .. note::
        You can pull updates from the main NOAA repository
        by using the "Fetch Upstream" button on your fork.
-       Alternatively [#clone]_ ::
+       Alternatively: [#clone]_ ::
 
-       $ git remote add upstream git@github.com:NOAA-CSL/MELODIES-MONET.git
-       $ git pull upstream main
-       $ git push origin main
+          $ git remote add upstream git@github.com:NOAA-CSL/MELODIES-MONET.git
+          $ git pull upstream main
+          $ git push origin main
 
 (b) Navigate on your working machine
     to where you would like to keep the MELODIES-MONET code
@@ -74,12 +74,13 @@ changes.
 
        $ git clone git@github.com:$GitHubUsername/$ForkName.git
 
-(c) Checkout the develop branch - you need to do this with the remote branch as well as create a local tracking branch::
+(c) Checkout the develop branch --- you need to do this with the remote branch
+    as well as create a local tracking branch::
 
        $ git checkout origin/develop
        $ git checkout develop
 
-    Then all development work will be in the melodies_monet folder::
+    Then all development work will be in the ``melodies_monet`` folder. ::
 
        $ cd melodies_monet
 
