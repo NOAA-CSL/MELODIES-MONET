@@ -1,8 +1,8 @@
 Machine-specific Install
 ========================
 
-NCAR HPC Cheyenne
------------------
+NCAR HPC Cheyenne/Casper
+------------------------
 
 Below is a specific recipe for how to set up all the necessary Python dependencies 
 on the NCAR HPC, Cheyenne/Casper. Note: these are developer-specific instructions. 
@@ -21,7 +21,7 @@ or tcsh shell.
 
 **Step 1 Miniconda:** The conda package manager is not installed on the Cheyenne 
 or Casper clusters, but you can install Miniconda in your own user space 
-(`CISL instructions <https://www2.cisl.ucar.edu/resources/conda-environments>`_):
+(`CISL instructions <https://arc.ucar.edu/knowledge_base/83853599>`_):
 
 (a) Download latest version::
 
@@ -43,10 +43,11 @@ or Casper clusters, but you can install Miniconda in your own user space
 
     $ bash install_miniconda.sh -u
 
-Accept the license and default install paths. Say yes to running conda init. 
-Log out of Cheyenne/Casper and log back in. You may see '(base)' as the start 
+Accept the license and default install paths. Say yes to running ``conda init``. 
+Log out of Cheyenne/Casper and log back in. You may see ``(base)`` as the start 
 of your terminal prompt. If you have any issues with package conflicts you may 
 need to uninstall miniconda and reinstall.
+If you do not see ``(base)`` in your prompt, type ``bash`` and it should appear.
 
 **Step 2 Dependent Python Packages:** Set up a conda environment with required 
 dependencies.
@@ -57,7 +58,7 @@ dependencies.
     $ conda create --name melodies-monet python=3.9
     $ conda activate melodies-monet
 
-    You should see '(melodies-monet)' at the start of your terminal prompt.
+    You should see ``(melodies-monet)`` at the start of your terminal prompt.
 
 (b) Install the following packages to the environment. Note they have sub-packages 
     that will be downloaded. The '-y' means you will not have to interactively
@@ -76,32 +77,32 @@ dependencies.
     environment is still activated, get the most recent branches of MONET and 
     MONETIO using GitHub, and link them with conda. This is done because MONET
     and MONETIO are still in active development. Create a 'monet-base' folder
-    (e.g. in your work location on cheyenne).
+    (e.g. in your ``/glade/work/<user>`` directory, accessible on both Cheyenne
+    and Casper).
 
-    Set up and link MONET within monet-base::
+    Set up and link MONET within monet-base [#clone]_ ::
 
-    $ git clone https://github.com/noaa-oar-arl/monet.git
+    $ git clone git@github.com:noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
     $ pip install --no-deps --editable .
 
-    Set up and link MONET IO within monet-base::
+    Set up and link MONETIO within monet-base::
 
-    $ git clone https://github.com/noaa-oar-arl/monetio.git
+    $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
     $ pip install --no-deps --editable .
 
-**Step 3: Clone the MELODIES-MONET GitHub repository** ::
+**Step 3: Clone the MELODIES-MONET GitHub repository** [#clone]_ ::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
-    End step. At the end of working with MELODIES MONET, deactivate the 
-    conda environment::
-
-    $ conda deactivate
-
 **You are ready to start developing MELODIES MONET!**
+
+.. note::
+   In the NCAR JupyterHub, in the Launcher, you should see an option
+   resembling 'Python [conda env:melodies-monet]'.
 
 NOAA HPC Hera
 -------------
@@ -146,7 +147,7 @@ environment for running and developing MELODIES MONET.
    * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
      to add an ssh key on Hera.
 
-#. **Clone the MELODIES MONET GitHub repository**::
+#. **Clone the MELODIES MONET GitHub repository** [#clone]_ ::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
@@ -198,7 +199,7 @@ environment for running and developing MELODIES MONET.
      package install it in your conda environment.
     
    * Once you have a working and activated conda environment, you will need to 
-     link the latest versions of MONET and MONETIO from GitHub. ::
+     link [#clone]_ the latest versions of MONET and MONETIO from GitHub. ::
    
       $ git clone git@github.com:noaa-oar-arl/monet.git
       $ cd monet
@@ -217,3 +218,7 @@ environment for running and developing MELODIES MONET.
       $ ./link_cartopy_files.sh
 
 **You are ready to start using and developing MELODIES MONET!**
+
+
+.. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
+   trouble cloning the repositories this way.
