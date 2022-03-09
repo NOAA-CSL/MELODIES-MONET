@@ -39,7 +39,7 @@ MONETIO::
     $ conda activate melodies-monet
     $ conda install -y -c conda-forge netcdf4 wrf-python jupyterlab monet monetio
 
-(b) Clone and link the latest versions of MONET and MONETIO from GitHub to
+(b) Clone [#clone]_ and link the latest versions of MONET and MONETIO from GitHub to
 your conda environment::
 
     $ git clone git@github.com:noaa-oar-arl/monet.git
@@ -52,7 +52,7 @@ your conda environment::
     $ git checkout develop
     $ pip install --no-deps --editable .
 
-\(c) Clone the MELODIES MONET package::
+\(c) Clone [#clone]_ the MELODIES MONET package::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
     
@@ -62,3 +62,18 @@ submit a pull request. For details, see
 :ref:`develop/developers_guide:How to incorporate updates to MELODIES MONET`.
 
 
+.. _clone-notes:
+.. [#clone] Note that in order to do an SSH clone,
+   e.g. ::
+
+      $ git clone git@github.com:noaa-oar-arl/monet.git
+
+   you must have already
+   `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
+   to your GitHub account for your current machine.
+   If you are new to GitHub, check out
+   `this GitHub tutorial <http://jlord.us/git-it/index.html>`__.
+   We recommend the SSH method, but if you don't add an SSH key
+   you can still clone the repositories via HTTPS, e.g. ::
+
+       $ git clone https://github.com/noaa-oar-arl/monet.git

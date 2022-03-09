@@ -80,23 +80,23 @@ dependencies.
     (e.g. in your ``/glade/work/<user>`` directory, accessible on both Cheyenne
     and Casper).
 
-    Set up and link MONET within monet-base::
+    Set up and link MONET within monet-base [#clone]_ ::
 
-    $ git clone https://github.com/noaa-oar-arl/monet.git
+    $ git clone git@github.com:noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
     $ pip install --no-deps --editable .
 
     Set up and link MONETIO within monet-base::
 
-    $ git clone https://github.com/noaa-oar-arl/monetio.git
+    $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
     $ pip install --no-deps --editable .
 
-**Step 3: Clone the MELODIES-MONET GitHub repository** ::
+**Step 3: Clone the MELODIES-MONET GitHub repository** [#clone]_ ::
 
-    $ git clone https://github.com/NOAA-CSL/MELODIES-MONET.git
+    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
 **You are ready to start developing MELODIES MONET!**
 
@@ -147,7 +147,7 @@ environment for running and developing MELODIES MONET.
    * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
      to add an ssh key on Hera.
 
-#. **Clone the MELODIES MONET GitHub repository**::
+#. **Clone the MELODIES MONET GitHub repository** [#clone]_ ::
 
     $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
 
@@ -199,7 +199,7 @@ environment for running and developing MELODIES MONET.
      package install it in your conda environment.
     
    * Once you have a working and activated conda environment, you will need to 
-     link the latest versions of MONET and MONETIO from GitHub. ::
+     link [#clone]_ the latest versions of MONET and MONETIO from GitHub. ::
    
       $ git clone git@github.com:noaa-oar-arl/monet.git
       $ cd monet
@@ -218,3 +218,7 @@ environment for running and developing MELODIES MONET.
       $ ./link_cartopy_files.sh
 
 **You are ready to start using and developing MELODIES MONET!**
+
+
+.. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
+   trouble cloning the repositories this way.
