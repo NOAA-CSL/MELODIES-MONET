@@ -54,32 +54,34 @@ In order to contribute code to MELODIES MONET, you will need to fork the
 repository, make changes on your fork, and submit a pull request with your
 changes. 
 
-(a) Fork the GitHub repository to your own GitHub account:
+(a) Fork the GitHub repository to your own GitHub account
+    using the "Fork" button near the top right:
 
     https://github.com/NOAA-CSL/MELODIES-MONET
 
-    Note: you can pull updates from the main NOAA repository
-    by using the “Fetch Upstream” button on your fork.
-    Alternatively::
+    .. note::
+       You can pull updates from the main NOAA repository
+       by using the "Fetch Upstream" button on your fork.
+       Alternatively [#clone]_ ::
 
-    $ git remote add upstream https://github.com/NOAA-CSL/MELODIES-MONET.git
-    $ git pull upstream main
-    $ git push origin main
+       $ git remote add upstream git@github.com:NOAA-CSL/MELODIES-MONET.git
+       $ git pull upstream main
+       $ git push origin main
 
 (b) Navigate on your working machine
-to where you would like to keep the MELODIES-MONET code
-(e.g. in your work location) and clone your fork::
+    to where you would like to keep the MELODIES-MONET code
+    (e.g. in your work location) and clone [#clone]_ your fork::
 
-    $ git clone https://github.com/$GitHubUsername/$ForkName.git
+       $ git clone git@github.com:$GitHubUsername/$ForkName.git
 
 (c) Checkout the develop branch - you need to do this with the remote branch as well as create a local tracking branch::
 
-    $ git checkout origin/develop
-    $ git checkout develop
+       $ git checkout origin/develop
+       $ git checkout develop
 
     Then all development work will be in the melodies_monet folder::
 
-    $ cd melodies_monet
+       $ cd melodies_monet
 
 (d) Make changes to your fork.
 
@@ -117,3 +119,7 @@ viewed in any browser.
 
 Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/2>`_ 
 project on GitHub to learn about current and future development.
+
+
+.. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
+   trouble cloning the repositories this way.
