@@ -21,6 +21,11 @@ of all the dependencies are available via the GitHub:
 General Instructions
 --------------------
 
+The instructions below allow users to contribute to the development of
+MELODIES MONET (which is encouraged!). If you prefer to be a casual user, you may
+clone the monet, monetio and MELODIES-MONET repositories using HTTPS instead 
+of ssh [#clone]_.
+
 Setting up MELODIES MONET on HPC machines can be complicated. To help users 
 get started, instructions for specific HPC machine environments are in the 
 Appendix. If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera 
