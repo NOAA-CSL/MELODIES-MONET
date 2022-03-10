@@ -29,6 +29,11 @@ follow these machine specific instructions instead.
 - :ref:`NCAR Cheyenne <appendix/machine-specific-install:NCAR HPC Cheyenne/Casper>`
 - :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
 
+.. important::
+   The instructions below are for cloning a repository using SSH.
+   If you prefer, you can also clone the monet, monetio, and
+   MELODIES-MONET repositories using HTTPS [#clone]_.
+
 To install MELODIES MONET on your laptop or on HPC machines in general follow 
 these instructions: 
  
