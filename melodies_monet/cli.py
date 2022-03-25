@@ -5,57 +5,21 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-# import io
-# import threading
-# from itertools import cycle
+try:
+    import typer
+except ImportError:
+    print(
+        "The MELODIES MONET CLI requires the module 'typer'. "
+        "Install with `conda install -c conda-forge typer` or "
+        "`pip install typer`."
+    )
+    raise SystemExit(1)
 
-import typer
 
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN
 ERROR_COLOR = typer.colors.BRIGHT_RED
 SUCCESS_COLOR = typer.colors.GREEN
-
-
-# class Spinner(object):
-#     # Based on https://gist.github.com/cevaris/79700649f0543584009e
-#     spinner_cycle = cycle(['-', '/', '|', '\\'])
-
-#     def __init__(self, desc="", *, speed=0.25):
-#         self.stop_running = threading.Event()
-#         self.spin_thread = threading.Thread(target=self.init_spin)
-#         self._desc = desc
-#         self._speed = speed
-
-#     def start(self):
-#         self.spin_thread.start()
-
-#     def stop(self):
-#         self.stop_running.set()
-#         self.spin_thread.join()
-
-#     def init_spin(self):
-#         import sys
-
-#         print(f"{self._desc} ", end="")
-#         while not self.stop_running.is_set():
-#             print(next(self.spinner_cycle), flush=True, end="")
-#             time.sleep(self._speed)
-#             print("\b", end="")
-
-
-# @contextmanager
-# def _spinner(desc=""):
-#     start = time.perf_counter()
-
-#     print(f"{desc} ...")
-#     try:
-#         spinner = Spinner(desc, speed=0.2)
-#         spinner.start()
-#         yield
-#     finally:
-#         spinner.stop()
-#         elapsed = time.perf_counter() - start
 
 
 @contextmanager
