@@ -1,0 +1,57 @@
+analysis:
+  start_time: "2019-09-09 00:00"
+  end_time: "2019-09-10 00:00"
+  output_dir: ./output/idealized
+  debug: True
+
+model:
+  test_model:
+    files: test_model.nc
+    mod_type: random
+    variables:
+      A:
+        units: "Units of A"
+        unit_scale: 1
+        unit_scale_method: "*"
+      B:
+        units: "Units of B"
+        unit_scale: 1
+        unit_scale_method: "*"
+    mapping:
+      test_obs:
+        A: "A_obs"
+        B: "B_obs"
+    projection: None  # unused
+
+obs:
+  test_obs:
+    # use_airnow: True
+    filename: test_obs.nc
+    obs_type: pt_sfc
+
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    default_plot_kwargs:  # required (with at least one key)
+      linewidth: 2.0
+    domain_type: ['all']  # required
+    domain_name: ['CONUS']  # required
+    data: ['test_obs_test_model']  # required
+    data_proc:  # These four seem to be required for time series
+      rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time'  # 'time' for UTC or 'time_local'
+      ts_avg_window: '3H'  # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      # ^ TODO: null setting seems not working
+      set_axis: False  # If True, add vmin_plot and vmax_plot for each variable in obs.
+
+  plot_grp2:
+    type: 'spatial_overlay'
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+    domain_type: ['all']  # required
+    domain_name: ['CONUS']  # required
+    data: ['test_obs_test_model']  # required
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True

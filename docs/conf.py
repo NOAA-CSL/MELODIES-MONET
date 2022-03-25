@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2021, NCAR/UCAR, NOAA'
+copyright = u'2022, NCAR/UCAR, NOAA'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
@@ -45,6 +45,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
+    'myst_nb',
+    'sphinx_design',
 ]
 
 extlinks = {
@@ -68,6 +70,15 @@ napoleon_use_rtype = False
 napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
+execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
+# jupyter_execute_notebooks = "auto"  # don't execute if all cells have output (default)
+# jupyter_execute_notebooks = "cache"  # to speed build when working on other things
+jupyter_execute_notebooks = "off"
+execution_excludepatterns = [
+    "examples/airnow_wrfchem.ipynb",
+]
+
+myst_enable_extensions = ["colon_fence"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -91,7 +102,9 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = [
+    u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'

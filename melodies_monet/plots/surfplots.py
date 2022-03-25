@@ -1,3 +1,6 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 #Code to create plots for surface observations
 
 import os
@@ -17,7 +20,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..new_monetio import code_to_move_to_monet as code_m_new
+from ..plots import savefig
 
 # from util import write_ncf
 
@@ -127,6 +130,10 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
+    elif f.model.lower() in ['cesm_fv','cesm_se']:
+        proj = ccrs.PlateCarree()
+    elif f.model.lower() == 'random':
+        proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
@@ -240,7 +247,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=120, decorate=True, bbox_inches='tight', dpi=200)
+    savefig(outname + '.png', loc=4, logo_height=120)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -571,9 +578,22 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
-    #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
-                                robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+    # For unstructured grid, we need a more advanced plotting code
+    # Call an external funtion (Plot_2D)
+    if vmodel.attrs.get('mio_has_unstructured_grid',False):
+        from .Plot_2D import Plot_2D
+        
+        fig = plt.figure( figsize=fig_dict['figsize'] )
+        ax = fig.add_subplot(1,1,1,projection=proj)
+        
+        p2d = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
+                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+                       ax=ax, state=fig_dict['states'] )
+    else:
+        #I add extend='both' here because the colorbar is setup to plot the values outside the range
+        ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
+                                    robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+    
     
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
@@ -590,18 +610,20 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #plt.colorbar(scatter,ax=ax)
     
     #Update colorbar
-    f = plt.gcf()
-    model_ax = f.get_axes()[0]
-    cax = f.get_axes()[1]
-    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-    position_m = model_ax.get_position()
-    position_c = cax.get_position()
-    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
+    # Call below only for structured grid cases
+    if not vmodel.attrs.get('mio_has_unstructured_grid',False):
+        f = plt.gcf()
+        model_ax = f.get_axes()[0]
+        cax = f.get_axes()[1]
+        #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+        position_m = model_ax.get_position()
+        position_c = cax.get_position()
+        cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
+        cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
+        cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
+    savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
 def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
@@ -746,5 +768,4 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ax.set_ylim(ymin = vmin, ymax = vmax)
     
     plt.tight_layout()
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
-    
+    savefig(outname + '.png', loc=4, logo_height=100)
