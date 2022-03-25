@@ -21,6 +21,12 @@ INFO_COLOR = typer.colors.CYAN
 ERROR_COLOR = typer.colors.BRIGHT_RED
 SUCCESS_COLOR = typer.colors.GREEN
 
+HEADER = """
+------------------
+| MELODIES MONET |
+------------------    
+""".strip()
+
 
 @contextmanager
 def _timer(desc=""):
@@ -71,6 +77,7 @@ def main(
         typer.echo(f"Error: control file {control!r} does not exist")
         raise typer.Exit(2)
 
+    typer.echo(HEADER)
     typer.secho(f"Using control file: {control!r}", fg=INFO_COLOR)
     typer.secho(f"with full path: {p.absolute().as_posix()}", fg=INFO_COLOR)
 
