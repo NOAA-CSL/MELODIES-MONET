@@ -11,6 +11,11 @@ from pathlib import Path
 
 import typer
 
+DEBUG = False
+INFO_COLOR = typer.colors.CYAN
+ERROR_COLOR = typer.colors.BRIGHT_RED
+SUCCESS_COLOR = typer.colors.GREEN
+
 
 # class Spinner(object):
 #     # Based on https://gist.github.com/cevaris/79700649f0543584009e
@@ -57,13 +62,27 @@ import typer
 def _timer(desc=""):
     start = time.perf_counter()
 
-    typer.echo(f"{desc} ...")
+    tpl = f"{desc} {{status}} in {{elapsed:.3g}} seconds"
+
+    typer.secho(f"{desc} ...", fg=INFO_COLOR)
     try:
         yield
-    finally:
-        elapsed = time.perf_counter() - start
-        typer.echo(f"{desc} took {elapsed:.3g} seconds")
-
+    except Exception as e:
+        typer.secho(
+            tpl.format(status="failed", elapsed=time.perf_counter() - start),
+            fg=ERROR_COLOR
+        )
+        typer.secho(f"Error message: {e}", fg=ERROR_COLOR)
+        if DEBUG:
+            raise
+        else:
+            typer.echo("(Use the '--debug' flag to see more info.)")
+            raise typer.Exit(1)
+    else:
+        typer.secho(
+            tpl.format(status="succeeded", elapsed=time.perf_counter() - start),
+            fg=SUCCESS_COLOR
+        )
 
 
 def main(
@@ -71,16 +90,25 @@ def main(
         ...,
         help="Path to the control file to use.", 
     ),
+    debug: bool = typer.Option(
+        False,
+        "--debug/",
+        help="Print more messages (including full tracebacks).",
+    )
 ):
     """Run MELODIES MONET as described in the control file CONTROL."""
+
+    global DEBUG
+
+    DEBUG = debug
 
     p = Path(control)
     if not p.is_file():
         typer.echo(f"Error: control file {control!r} does not exist")
         raise typer.Exit(2)
 
-    typer.echo(f"Using control file: {control!r}")
-    typer.echo(f"with full path: {p.absolute().as_posix()}")
+    typer.secho(f"Using control file: {control!r}", fg=INFO_COLOR)
+    typer.secho(f"with full path: {p.absolute().as_posix()}", fg=INFO_COLOR)
 
     with _timer("Importing the driver"):
         from .driver import analysis
