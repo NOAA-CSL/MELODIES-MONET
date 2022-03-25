@@ -55,16 +55,26 @@ def _timer(desc=""):
         )
 
 
+def _version_callback(value: bool):
+    from . import __version__
+
+    if value:
+        typer.echo(f"melodies-monet {__version__}")
+        # TODO: monet/monetio versions?
+        raise typer.Exit()
+
+
 def main(
     control: str = typer.Argument(
         ...,
         help="Path to the control file to use.", 
     ),
     debug: bool = typer.Option(
-        False,
-        "--debug/",
-        help="Print more messages (including full tracebacks).",
-    )
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+    version: bool = typer.Option(
+        False, "--version/", help="Print version.", callback=_version_callback, is_eager=True
+    ),
 ):
     """Run MELODIES MONET as described in the control file CONTROL."""
 
