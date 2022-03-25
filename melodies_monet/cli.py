@@ -2,27 +2,21 @@
 melodies-monet -- MELODIES MONET CLI
 """
 from pathlib import Path
-from typing import Optional
 
 import typer
 
 
 def main(
-    control: Optional[str] = typer.Argument(
-        None,
-        help="Path to control file to run.", 
-        show_default="./control.yaml"
+    control: str = typer.Argument(
+        ...,
+        help="Path to the control file to use.", 
     ),
 ):
-    """Run MELODIES MONET as described in the control file CONTROL.
-    If not provided, 'control.yaml' is looked for in the current directory.    
-    """
-    if control is None:
-        control = "./control.yaml"
+    """Run MELODIES MONET as described in the control file CONTROL."""
 
     if not Path(control).is_file():
-        typer.echo(f"error: {control!r} does not exist")
-        return 1
+        typer.echo(f"Error: control file {control!r} does not exist")
+        raise typer.Exit(2)
 
     from .driver import analysis
     
