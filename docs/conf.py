@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'myst_nb',
     'sphinx_design',
+    'sphinx_click',
 ]
 
 extlinks = {

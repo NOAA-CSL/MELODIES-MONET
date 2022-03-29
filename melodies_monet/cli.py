@@ -64,6 +64,10 @@ def _version_callback(value: bool):
         raise typer.Exit()
 
 
+app = typer.Typer()
+
+
+@app.command()
 def main(
     control: str = typer.Argument(
         ...,
@@ -119,8 +123,9 @@ def main(
             an.stats()
 
 
-def cli():
-    typer.run(main)
+cli = app
+
+_typer_click_object = typer.main.get_command(app)
 
 
 if __name__ == "__main__":
