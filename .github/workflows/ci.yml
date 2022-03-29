@@ -82,7 +82,9 @@ jobs:
       - name: Check Sphinx failure log
         if: ${{ failure() }}
         run: |
-          for f in /tmp/sphinx-err*; do
-            echo $f
-            cat $f
-          done
+          if [ -e /tmp/sphinx-err* ]; then
+            for f in /tmp/sphinx-err*; do
+              echo $f
+              cat $f
+            done
+          fi
