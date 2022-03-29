@@ -10,11 +10,11 @@ dependencies:
   - monet
   - monetio
   - netcdf4
-  - wrf-python
   #
   # Extras
   - pooch
   - typer
+  - wrf-python  # for WRF-Chem reader in monetio
   #
   # Docs
   - ipykernel
@@ -22,7 +22,7 @@ dependencies:
   - jupytext
   - myst-nb
   - nbclient
-  - sphinx=4.*
+  - sphinx=4.4.*
   - sphinx-autobuild
   - sphinx-design
   - sphinx_rtd_theme
