@@ -73,6 +73,10 @@ jobs:
           activate-environment: melodies-monet-docs
           environment-file: docs/environment-docs.yml
 
+      - name: Conda env info
+        run: |
+          conda list --show-channel-urls
+
       - name: linkcheck
         run: sphinx-build -D jupyter_execute_notebooks=off -b linkcheck docs docs/_build/linkcheck
 
