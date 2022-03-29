@@ -125,7 +125,7 @@ def main(
 
 cli = app
 
-_typer_click_object = typer.main.get_command(app)
+_typer_click_object = typer.main.get_command(app)  # for sphinx-click in docs
 
 
 if __name__ == "__main__":
