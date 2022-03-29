@@ -7,14 +7,14 @@ from pathlib import Path
 
 try:
     import typer
-except ImportError:
+except ImportError as e:
     print(
         "The MELODIES MONET CLI requires the module 'typer'. "
-        "Install with `conda install -c conda-forge typer` or "
-        "`pip install typer`."
+        "You can install it with `conda install -c conda-forge typer` or "
+        "`pip install typer`. "
+        f"The error message was: {e}"
     )
     raise SystemExit(1)
-
 
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN

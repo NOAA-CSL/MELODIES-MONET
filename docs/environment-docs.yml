@@ -12,6 +12,7 @@ dependencies:
   - netcdf4
   #
   # Extras
+  - click=8.0.*  # temporary fix for typer#377
   - pooch
   - typer
   - wrf-python  # for WRF-Chem reader in monetio
@@ -22,8 +23,13 @@ dependencies:
   - jupytext
   - myst-nb
   - nbclient
-  - sphinx=4.4.*
+  - sphinx=4.*
   - sphinx-autobuild
   - sphinx-click
   - sphinx-design
   - sphinx_rtd_theme
+  #
+  - pip
+  - pip:
+    # melodies_monet itself
+    - '-e ../'
