@@ -12,7 +12,6 @@ dependencies:
   - netcdf4
   #
   # Extras
-  - click=8.0.*  # temporary fix for typer#377
   - pooch
   - typer
   - wrf-python  # for WRF-Chem reader in monetio
