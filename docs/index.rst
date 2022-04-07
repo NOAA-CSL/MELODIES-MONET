@@ -93,6 +93,7 @@ MONETIO please refer to:
    :caption: Help and Reference
 
    api
+   cli
    appendix/machine-specific-install
    appendix/yaml
 

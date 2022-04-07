@@ -54,6 +54,15 @@ jobs:
               python t.py
             fi
           done
+          cd -
+
+      - name: Check CLI works
+        run: |
+          cd docs/examples
+          melodies-monet --version
+          python -m melodies_monet --version
+          melodies-monet control_idealized.yaml
+          cd -
 
   docs:
     name: Check docs build
@@ -73,6 +82,10 @@ jobs:
           activate-environment: melodies-monet-docs
           environment-file: docs/environment-docs.yml
 
+      - name: Conda env info
+        run: |
+          conda list --show-channel-urls
+
       - name: linkcheck
         run: sphinx-build -D jupyter_execute_notebooks=off -b linkcheck docs docs/_build/linkcheck
 
@@ -82,7 +95,9 @@ jobs:
       - name: Check Sphinx failure log
         if: ${{ failure() }}
         run: |
-          for f in /tmp/sphinx-err*; do
-            echo $f
-            cat $f
-          done
+          if [ -e /tmp/sphinx-err* ]; then
+            for f in /tmp/sphinx-err*; do
+              echo $f
+              cat $f
+            done
+          fi

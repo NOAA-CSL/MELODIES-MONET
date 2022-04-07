@@ -6,18 +6,6 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-
-# sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
@@ -47,6 +35,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'myst_nb',
     'sphinx_design',
+    'sphinx_click',
 ]
 
 extlinks = {
