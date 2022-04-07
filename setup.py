@@ -33,7 +33,6 @@ setup(
         'global_land_mask',
         'pyyaml',
         'pyhdf',
-        'xesmf',
     ],
     extra_requires={'xesmf;platform_system!="Windows"'},
 )
