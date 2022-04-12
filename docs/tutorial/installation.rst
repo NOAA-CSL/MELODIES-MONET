@@ -1,24 +1,13 @@
 Installation/Requirements
 =========================
 
-Required dependencies
+Required dependencies [#yaml]_
 ---------------------
 
 - Python 3.9 (recommended)
 - ``pyyaml`` (to read control files)
 - ``monet``, which brings `many dependencies <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
 - ``monetio``, which brings `a few dependencies <https://monetio.readthedocs.io/en/stable/installing.html>`__
-
-Conda YAML files
-~~~~~~~~~~~~~~~~
-
-Examples of `conda <https://conda.io>`__
-`environment.yml files <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file>`__
-that include a record
-of all the dependencies are available via the GitHub:
-
-- `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
-- `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
 
 Optional dependencies
 ---------------------
@@ -47,3 +36,12 @@ Add dependencies from conda-forge::
 Now, install the stable branch of MELODIES MONET to the environment::
 
     $ pip install --no-deps https://github.com/NOAA-CSL/MELODIES-MONET/archive/main.zip
+
+
+.. [#yaml] Examples of `conda <https://conda.io>`__
+   `environment.yml files <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file>`__
+   that include a record
+   of all the dependencies (direct and indirect) are available via the GitHub:
+
+   - `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+   - `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__

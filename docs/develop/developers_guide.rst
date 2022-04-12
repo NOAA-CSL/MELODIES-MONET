@@ -68,31 +68,31 @@ To install MELODIES MONET on your laptop or on HPC machines in general follow
 these instructions:
  
 (a) Set up a conda environment with all the dependencies, including MONET and 
-MONETIO::
+    MONETIO::
 
-    $ conda create --name melodies-monet python=3.9
-    $ conda activate melodies-monet
-    $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python click pooch jupyterlab
+       $ conda create --name melodies-monet python=3.9
+       $ conda activate melodies-monet
+       $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python click pooch jupyterlab
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::
 
-    $ git clone git@github.com:noaa-oar-arl/monet.git
-    $ cd monet
-    $ git checkout develop
-    $ pip install --no-deps --editable .
+       $ git clone git@github.com:noaa-oar-arl/monet.git
+       $ cd monet
+       $ git checkout develop
+       $ pip install --no-deps --editable .
 
-    $ git clone git@github.com:noaa-oar-arl/monetio.git
-    $ cd monetio
-    $ git checkout develop
-    $ pip install --no-deps --editable .
+       $ git clone git@github.com:noaa-oar-arl/monetio.git
+       $ cd monetio
+       $ git checkout develop
+       $ pip install --no-deps --editable .
 
-\(c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
+(c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
 
-    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
-    $ cd MELODIES-MONET
-    $ git checkout develop
-    $ pip install --no-deps --editable .
+       $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+       $ cd MELODIES-MONET
+       $ git checkout develop
+       $ pip install --no-deps --editable .
 
 
 How to incorporate updates to MELODIES MONET
