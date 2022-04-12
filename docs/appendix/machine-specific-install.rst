@@ -211,6 +211,12 @@ environment for running and developing MELODIES MONET.
       $ git checkout develop
       $ pip install --force-reinstall --no-deps --editable .
 
+     .. note::
+        In the recent past [#hera_no_pypi]_, Hera did not allow downloading
+        from PyPI. As a result, such ``pip install``\s commands failed since pip was not
+        able to download setuptools from PyPI.
+        As a (reluctant) workaround, ``python setup.py develop`` can be used instead.
+
    * Hera has download restrictions, so link the required cartopy shapefiles 
      for plotting by running the following script ::
        
@@ -222,3 +228,5 @@ environment for running and developing MELODIES MONET.
 
 .. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
    trouble cloning the repositories this way.
+
+.. [#hera_no_pypi] Recent as of 12-Apr-2022. See :issue:`79`.
