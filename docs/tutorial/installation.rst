@@ -2,7 +2,7 @@ Installation/Requirements
 =========================
 
 Required dependencies [#yaml]_
----------------------
+------------------------------
 
 - Python 3.9 (recommended)
 - ``pyyaml`` (to read control files)
