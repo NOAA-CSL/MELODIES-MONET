@@ -85,14 +85,14 @@ dependencies.
     $ git clone git@github.com:noaa-oar-arl/monet.git
     $ cd monet
     $ git checkout develop
-    $ pip install --no-deps --editable .
+    $ pip install --force-reinstall --no-deps --editable .
 
     Set up and link MONETIO within monet-base::
 
     $ git clone git@github.com:noaa-oar-arl/monetio.git
     $ cd monetio
     $ git checkout develop
-    $ pip install --no-deps --editable .
+    $ pip install --force-reinstall --no-deps --editable .
 
 **Step 3: Clone the MELODIES-MONET GitHub repository** [#clone]_ ::
 
@@ -204,12 +204,12 @@ environment for running and developing MELODIES MONET.
       $ git clone git@github.com:noaa-oar-arl/monet.git
       $ cd monet
       $ git checkout develop
-      $ pip install --no-deps --editable .
+      $ pip install --force-reinstall --no-deps --editable .
     
       $ git clone git@github.com:noaa-oar-arl/monetio.git
       $ cd monetio
       $ git checkout develop
-      $ pip install --no-deps --editable .
+      $ pip install --force-reinstall --no-deps --editable .
 
    * Hera has download restrictions, so link the required cartopy shapefiles 
      for plotting by running the following script ::

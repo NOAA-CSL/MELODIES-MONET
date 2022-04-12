@@ -80,19 +80,19 @@ these instructions:
        $ git clone git@github.com:noaa-oar-arl/monet.git
        $ cd monet
        $ git checkout develop
-       $ pip install --no-deps --editable .
+       $ pip install --force-reinstall --no-deps --editable .
 
        $ git clone git@github.com:noaa-oar-arl/monetio.git
        $ cd monetio
        $ git checkout develop
-       $ pip install --no-deps --editable .
+       $ pip install --force-reinstall --no-deps --editable .
 
 (c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
 
        $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
        $ cd MELODIES-MONET
        $ git checkout develop
-       $ pip install --no-deps --editable .
+       $ pip install --force-reinstall --no-deps --editable .
 
 
 How to incorporate updates to MELODIES MONET
