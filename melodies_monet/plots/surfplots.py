@@ -17,7 +17,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..new_monetio import code_to_move_to_monet as code_m_new
+from new_monetio import code_to_move_to_monet as code_m_new
 
 # from util import write_ncf
 
@@ -751,3 +751,104 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
     
+def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None, 
+                      label_m=None, ylabel = None, vmin=None,
+                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
+                      domain_type=None, domain_name=None, fig_dict=None, 
+                      text_dict=None,debug=False):
+        
+    """Creates difference plot for satellite and model data. Needs to be altered for cases where more than 1 overpass for a location,
+    eg. more than 1 day of data."""
+    if debug == False:
+        plt.ioff()
+        
+    def_map = dict(states=True,figsize=[15, 8])
+    if fig_dict is not None:
+        map_kwargs = {**def_map, **fig_dict}
+    else:
+        map_kwargs = def_map
+  
+    #set default text size
+    def_text = dict(fontsize=20)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+        
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = column_o
+    
+    #Take the difference for the model output - the sat output
+    diff_mod_min_obs = (df[column_o] - df[column_m]).squeeze()
+
+    
+    #Determine the domain
+    if domain_type == 'all' and domain_name == 'CONUS':
+        latmin= 25.0
+        lonmin=-130.0
+        latmax= 50.0
+        lonmax=-60.0
+        title_add = domain_name + ': '
+    elif domain_type == 'epa_region' and domain_name is not None:
+        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
+        title_add = 'EPA Region ' + domain_name + ': '
+    else:
+        latmin= -90
+        lonmin= -180
+        latmax= 90
+        lonmax= 180
+        title_add = domain_name + ': '
+    
+    #Map the model output first.
+    cbar_kwargs = dict(aspect=15,shrink=.8)
+    
+    #Add options that this could be included in the fig_kwargs in yaml file too.
+    if 'extent' not in map_kwargs:
+        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax] 
+    if 'crs' not in map_kwargs:
+        map_kwargs['crs'] = proj
+    
+    #First determine colorbar
+    if vmin == None and vmax == None:
+        #vmin = vmodel_mean.quantile(0.01)
+        vmax = np.max((np.abs(diff_mod_min_obs.quantile(0.99)),np.abs(diff_mod_min_obs.quantile(0.01))))
+        vmin = -vmax
+        
+    if nlevels == None:
+        nlevels = 21
+    print(vmin,vmax)
+    clevel = np.linspace(vmin,vmax,nlevels)
+    cmap = mpl.cm.get_cmap('bwr',nlevels-1) 
+    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
+        
+    #I add extend='both' here because the colorbar is setup to plot the values outside the range
+    ax = monet.plots.mapgen.draw_map(crs=map_kwargs['crs'],extent=map_kwargs['extent'])
+    # draw scatter plot of model and satellite differences
+    c = ax.axes.scatter(df.longitude,df.latitude,c=diff_mod_min_obs,cmap=cmap,s=2,norm=norm)
+    plt.gcf().canvas.draw() 
+    plt.tight_layout(pad=0)
+    plt.title(title_add + label_o + ' - ' + label_m,fontweight='bold',**text_kwargs)
+    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
+    
+    #Uncomment these lines if you update above just to verify colorbars are identical.
+    #Also specify plot above scatter = ax.axes.scatter etc.
+    #cbar = ax.figure.get_axes()[1] 
+    plt.colorbar(c,ax=ax,extend='both')
+    
+    #Update colorbar
+    f = plt.gcf()
+    
+    model_ax = f.get_axes()[0]
+    cax = f.get_axes()[1]
+    
+    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+    position_m = model_ax.get_position()
+    position_c = cax.get_position()
+    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
+    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
+    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
+    
+    #plt.tight_layout(pad=0)
+    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
+    return ax    
