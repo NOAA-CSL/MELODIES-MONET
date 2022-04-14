@@ -153,17 +153,16 @@ class observation:
 
         try:
             if self.label == 'omps_limb':
-                self.obj = mio.omps_limb.read_omps_limb(self.file)
-            elif self.label == 'omps_nm':
-                self.obj = mio.omps_nadir.read_OMPS_nm(self.file)
+                from new_monetio import omps_limb
+                self.obj = omps_limb.read_omps_limb(self.file)
             elif self.label == 'mopitt_l3':
-                from .new_monetio import mopitt_grid
+                from new_monetio import mopitt_grid
                 print('Reading MOPITT')
                 self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
             elif self.label == 'modis_l2':
-                
+                from monetio import modis_l2
                 print('Reading MODIS L2')
-                self.obj = mio.modis_l2.read_mfdataset(
+                self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
@@ -211,7 +210,6 @@ class observation:
         -------
         None
         """
-
         try:
             self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
         except KeyError:
@@ -231,7 +229,6 @@ class model:
         model
         """
         self.model = None
-        self.apply_ak = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -313,12 +310,13 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        
-        elif 'raqms' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files)
+        elif 'fv3raqms' in self.model.lower():
+            from new_monetio import fv3raqms as fv3raqms
+            
+            if len(self.files) < 1:
+                self.obj = fv3raqms.open_dataset(self.files)
             else:
-                self.obj = mio.raqms.open_dataset(self.files)
+                self.obj = fv3raqms.open_mfdataset(self.files)
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -431,10 +429,6 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
-                if "apply_ak" in self.control_dict['model'][mod].keys():
-                    m.apply_ak = self.control_dict['model'][mod]['apply_ak']
-                else:
-                    m.apply_ak = False
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -508,9 +502,6 @@ class analysis:
             for obs_to_pair in mod.mapping.keys():
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
-                
-                
-                
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
 
                 model_obj = mod.obj[keys]
@@ -518,7 +509,7 @@ class analysis:
 
                 # simplify the objs object with the correct mapping vairables
                 obs = self.obs[obs_to_pair]
-                
+
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
@@ -550,28 +541,7 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
-                elif obs.obs_type.lower() == 'sat_swath_clm':
-                    
-                    if obs.label == 'omps_nm':
-                        print(model_obj)
-                        from .util import satellite_utilities as sutil
-                        if mod.apply_ak == True:
-                            keys.append('pdash')
-                            keys.append('sfcp')
-                            model_obj = mod.obj[keys]
-                            paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj)
-                        else:
-                            keys.append('dpm')
-                            model_obj = mod.obj[keys]
-                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj)
-                        p = pair()
-                        p.obs = obs.label
-                        p.model = mod.label
-                        p.model_vars = keys
-                        p.obs_vars = obs_vars
-                        p.obj = paired_data 
-                        label = '{}_{}'.format(p.obs,p.model)
-                        self.paired[label] = p
+                
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -590,7 +560,7 @@ class analysis:
         -------
         None
         """
-        from .plots import surfplots as splots
+        from plots import surfplots as splots
         from .new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
@@ -632,9 +602,9 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
 
-                        # convert to dataframe and ensure index is time
-                        pairdf_all = p.obj.to_dataframe().reset_index().set_index('time')
-                        print(pairdf_all)
+                        # convert to dataframe
+                        pairdf_all = p.obj.to_dataframe()
+
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
 
@@ -862,22 +832,6 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
-                        elif plot_type.lower() == 'gridded_spatial_bias':
-                            splots.make_spatial_bias_gridded(
-                                p.obj,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=modvar,
-                                label_m=p.model,
-                                ylabel=use_ylabel,
-                                #vdiff=vdiff,
-                                outname=outname,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                                )
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -944,7 +898,7 @@ class analysis:
         -------
         None
         """
-        from .stats import proc_stats as proc_stats
+        from stats import proc_stats as proc_stats
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
