@@ -148,7 +148,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
             sfc[tindex,:] += np.expand_dims(tfac1.values,axis=1)*sfp[f,tindex,:].values
     # Interpolate model data to satellite pressure levels
     from wrf import interplevel
-    ozone_satp = interplevel(ozone_temp,pressure_temp/100.,obs_data.pressure,missing=np.nan)
+    ozone_satp = interplevel(ozone_temp,pressure_temp,obs_data.pressure,missing=np.nan)
     ozone_satp = ozone_satp.values
     
     ozone_satp[np.isnan(ozone_satp)] = 0
@@ -174,7 +174,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
             dp = band[i]
         else:
             sfc[sfc == 0] = np.nan
-            dp = np.abs(sfc/100. - obs_data.pressure[i].values) + band[i]
+            dp = np.abs(sfc - obs_data.pressure[i].values) + band[i]
 
         add = du_fac*dp*ozone_satp[i]
         eff = obs_data.layer_efficiency[:,:,i].values
