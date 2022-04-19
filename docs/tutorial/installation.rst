@@ -17,6 +17,8 @@ Optional dependencies
 - ``click`` (to use the :doc:`/cli`)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
 
+.. _user-install-instructions:
+
 General instructions
 --------------------
 
