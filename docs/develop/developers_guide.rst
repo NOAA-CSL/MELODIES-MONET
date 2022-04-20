@@ -46,6 +46,8 @@ _________________
 The *develop_testsuite* branch holds modules
 under development for unit tests and regression tests.
 
+.. _dev-install-instructions:
+
 Setting up your development environment
 ---------------------------------------
 

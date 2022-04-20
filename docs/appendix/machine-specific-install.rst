@@ -110,19 +110,19 @@ NOAA HPC Hera
 Below is a specific recipe for how to set up all the necessary Python 
 dependencies on the NOAA Hera machine. There are three steps to complete 
 before you can use and develop MELODIES MONET on hera: **Step 1.** Install 
-the conda package manager Anaconda/Miniconda, **Step 2.** Clone MELODIES MONET 
-code, and **Step 3.** Create a conda environment with all required dependencies
+the conda package manager Anaconda/Miniconda, **Step 2.** Install MELODIES MONET,
+and **Step 3.** link cartopy files.
 
 We will use the conda package manager system to create a contained Python 
 environment for running and developing MELODIES MONET. 
 
-#. **Download Anaconda/Miniconda:** Follow the instructions
+#. **Install Anaconda/Miniconda:** Follow the instructions
    `on the RDHPCS wiki <https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda>`__
-   to download and run anaconda/miniconda on Hera. Tips for success:
+   to download and run Anaconda/Miniconda on Hera. Tips for success:
 
    * You will need a NOAA HPC account to access the RDHPCS wiki link above.
 
-   * Both anaconda/miniconda will work well for MELODIES MONET. See
+   * Both Anaconda/Miniconda will work well for MELODIES MONET. See
      `conda instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda>`__
      to determine, which is the best option for you.
      
@@ -140,50 +140,44 @@ environment for running and developing MELODIES MONET.
        due to the limited space available on your home directory. Make sure you 
        change the default location.
      
-     * Unless you want to initialize anaconda/miniconda yourself select "yes" 
+     * Unless you want to initialize Anaconda/Miniconda yourself select "yes" 
        when asked "Do you wish the installer to initialize Miniconda3 by 
        running conda init?"
 
-   * Follow the `github ssh key instructions <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
-     to add an ssh key on Hera.
+#. **Install MELODIES MONET:** If you plan to modify the MELODIES MONET or MONET/MONETIO
+   codebases, follow the :ref:`dev install instructions <dev-install-instructions>`.
+   Otherwise, follow the :ref:`user install instructions <user-install-instructions>`.
 
-#. **Clone the MELODIES MONET GitHub repository** [#clone]_ ::
+#. **Link the cartopy shapefiles:** Hera has download restrictions,
+   so link the required cartopy shapefiles 
+   for plotting by running the ``link_cartopy_files.sh`` script.
 
-    $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+   If you have cloned the repo (e.g. following the dev install instructions)::
+       
+      $ cd MELODIES-MONET/python_env_ymls/hera
+      $ ./link_cartopy_files.sh
 
-#. **Create a conda environment with the required dependencies on Hera:** 
+   If you didn't clone the repo and don't want to::
 
-   * Follow either option 1 below by using an example ``environment.yml`` file from 
-     the MELODIES MONET repository or follow option 2 below to set this up manually.
-     
-     **Option 1: Use an example environment.yml file:**
+      $ wget -O - https://raw.githubusercontent.com/NOAA-CSL/MELODIES-MONET/main/python_env_ymls/hera/link_cartopy_files.sh | bash
 
-       * Make a copy of the environment.yml file for Hera stored in the
-         MELODIES MONET GitHub repository
-         (MELODIES_MONET/python_env_ymls/hera/environment.yml). If needed, 
-         update the first line to change the default environment name. Also 
-         update the last line to point to your own anaconda/miniconda directory 
-         location and if needed update the default environment name.
 
-       * Run the following, to create the environment. ::
-    
-          $ conda env create -f environment.yml
+**You are ready to start using and developing MELODIES MONET!**
 
-       * Verify the new environment exists ::
-    
-          $ conda env list
 
-       * Activate the new environment :: 
-    
-          $ conda activate melodies-monet
-     
-     **Option 2: Manual method:** 
+.. note::
+   In the recent past [#hera_no_pypi]_, Hera did not allow downloading
+   from PyPI. As a result, such ``pip install``\s commands failed since pip was not
+   able to download setuptools from PyPI.
+   As a (reluctant) workaround, ``python setup.py develop`` can be used instead
+   for editable (development) installs of MELODIES MONET and MONET/MONETIO.
 
-     .. important::
-        Downloading a lot of dependent packages at once on Hera leads to stalling.
-        To overcome this challange, either use Option 1 or install some of the 
-        larger packages first and then install MONET and MONETIO like the following: ::
-   
+
+.. note::
+   In the recent past, downloading a lot of dependent packages at once
+   with conda on Hera led to stalling.
+   To overcome this challange, try installing packages individually::
+  
         $ conda create --name melodies-monet python=3.9
         $ conda activate melodies-monet
         $ conda install -c conda-forge jupyterlab
@@ -192,38 +186,7 @@ environment for running and developing MELODIES MONET.
         $ conda install -c conda-forge cartopy
         $ conda install -c conda-forge esmf
         $ conda install -c conda-forge monet
-        $ conda install -c conda-forge monetio        
-        
-   * Note: There are instances where other packages will be needed. These are 
-     just to download the basics, so if you get an error about missing a 
-     package install it in your conda environment.
-    
-   * Once you have a working and activated conda environment, you will need to 
-     link [#clone]_ the latest versions of MONET and MONETIO from GitHub. ::
-   
-      $ git clone git@github.com:noaa-oar-arl/monet.git
-      $ cd monet
-      $ git checkout develop
-      $ pip install --force-reinstall --no-deps --editable .
-    
-      $ git clone git@github.com:noaa-oar-arl/monetio.git
-      $ cd monetio
-      $ git checkout develop
-      $ pip install --force-reinstall --no-deps --editable .
-
-     .. note::
-        In the recent past [#hera_no_pypi]_, Hera did not allow downloading
-        from PyPI. As a result, such ``pip install``\s commands failed since pip was not
-        able to download setuptools from PyPI.
-        As a (reluctant) workaround, ``python setup.py develop`` can be used instead.
-
-   * Hera has download restrictions, so link the required cartopy shapefiles 
-     for plotting by running the following script ::
-       
-      $ cd MELODIES-MONET/python_env_ymls/hera
-      $ ./link_cartopy_files.sh
-
-**You are ready to start using and developing MELODIES MONET!**
+        $ conda install -c conda-forge monetio    
 
 
 .. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
