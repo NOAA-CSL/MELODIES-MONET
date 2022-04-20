@@ -4,7 +4,7 @@ Installation/Requirements
 Required dependencies [#yaml]_
 ------------------------------
 
-- Python 3.7+ (3.9 recommended)
+- Python 3.6+ (3.9 recommended)
 - ``pyyaml`` (to read control files)
 - ``monet``, which brings `many dependencies <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
 - ``monetio``, which brings `a few dependencies <https://monetio.readthedocs.io/en/stable/installing.html>`__
