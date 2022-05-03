@@ -12,8 +12,8 @@ on the NCAR HPC, Cheyenne/Casper.
 One option is to use the "melodies-monet" kernel [#ncar_jhub_kernel]_ on the NCAR JupyterHub.
 
 #. Navigate to https://jupyterhub.hpc.ucar.edu in your web browser.
-#. Select "Production" and log in with your NCAR CIT credentials
-#. Start a server
+#. Select "Production" and log in with your NCAR CIT credentials.
+#. Start a server.
 #. In the Notebook section of the Launcher, select "melodies-monet"
    to create a new notebook using the kernel.
 
@@ -30,9 +30,10 @@ You can use the
 `NCAR-maintained conda installation <https://arc.ucar.edu/knowledge_base/83853599>`__
 to get access to ``conda`` by invoking::
 
-    module load conda/latest
+    $ module load conda/latest
 
-Or, `install your own copy <https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html>`__
+Or,
+`install your own copy <https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html>`__
 of Miniconda or Anaconda.
 
 Once you have conda, you are ready to install MELODIES MONET.
