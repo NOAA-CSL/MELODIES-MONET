@@ -159,6 +159,6 @@ are in the ``examples/submit_jobs`` folder of the code on GitHub.
    * Submit the submit_hera.sh script (e.g., on NOAA hera: sbatch submit_hera.sh)	 
 
 
-.. [#install] This should work from any directory as long is MELODIES MONET is installed
+.. [#install] This should work from any directory as long as MELODIES MONET is installed
    in your active conda environment, which it should be if you followed the
    :ref:`install instructions <user-install-instructions>`.
