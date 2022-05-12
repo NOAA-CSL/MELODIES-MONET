@@ -164,6 +164,11 @@ class observation:
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
+            elif self.label == 'tropomi_l2_no2':
+                from monetio import tropomi_l2_no2
+                print('Reading TROPOMI L2 NO2')
+                self.obj = tropomi_l2_no2.read_trpdataset(
+                    self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
