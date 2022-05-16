@@ -739,8 +739,7 @@ class analysis:
                             cal_reg = obs_plot_dict['regulatory']
                         else:
                             cal_reg = False
-
-                        print('Paired dataframe without regulatory: ', cal_reg, modvar, p_label, pairdf)
+                        #print('Paired dataframe without regulatory: ', cal_reg, modvar, p_label, pairdf)
 
                         if cal_reg:
                             df1 = pairdf.copy()
@@ -758,7 +757,7 @@ class analysis:
                                 print('No valid data for '+obsvar+'_reg')
                                 cal_reg = False
                             else:
-                                print('Paired dataframe with regulatory: ', obsvar, pairdf_reg)
+                                #print('Paired dataframe with regulatory: ', obsvar, pairdf_reg)
                                 outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
                                 use_ylabel = obs_plot_dict['ylabel2_plot']
 
@@ -962,6 +961,7 @@ class analysis:
                                     debug=self.debug
                                 )
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        #JianHe: need upates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
