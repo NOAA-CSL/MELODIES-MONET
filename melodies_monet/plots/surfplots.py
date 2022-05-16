@@ -73,7 +73,7 @@ def make_8hr_regulatory(df, col=None):
 def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
-    # select sites with nobs >=18
+    # JianHe: select sites with nobs >=18, 75% completeness based on EPA
     df_rolling_max = df_rolling.groupby("siteid").resample("D", on="time_local").max(min_count=18).reset_index(drop=True).dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
@@ -156,6 +156,65 @@ def map_projection(f):
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
+
+def get_utcoffset(lat,lon):
+    """get UTC offset in hour based on a point (lat/lon)
+
+    Parameters
+    ----------
+    lat : latitude of a single point
+    lon : longitude of a single point
+        
+    Returns
+    -------
+    UTC offset in hour
+
+    """
+
+    from datetime import datetime
+    import pytz
+    from datetime import datetime, timezone
+
+    tf = TimezoneFinder()
+
+    lon2 = lon.values.tolist()
+    lat2 = lat.values.tolist()
+    timezone_str = tf.timezone_at(lng=lon2, lat=lat2)
+
+    if timezone_str == None:
+        #print('None timezone: ', lat2, lon2)
+        if lon > -100.0:
+            timezone_str = 'America/New_York'
+        else:
+            timezone_str = 'America/Los_Angeles'
+
+        tz = pytz.timezone(timezone_str)
+        d=datetime.utcnow()
+        uos = tz.utcoffset(d, is_dst=False)
+        utchour = uos.seconds/60.0/60.0
+        utcday = uos.days
+
+    elif timezone_str.startswith(('Etc','GMT')):
+        #print('Ocean timezone: ', timezone_str)
+        tz = pytz.timezone(timezone_str)
+        d=datetime.utcnow()
+        uos = tz.utcoffset(d, is_dst=False)
+        utchour = uos.seconds/60.0/60.0
+        utcday = uos.days
+
+    else:
+        #print('Land timezone: ', timezone_str)
+        tz = pytz.timezone(timezone_str)
+        d=datetime.utcnow()
+        uos = tz.utcoffset(d, is_dst=True)
+        utchour = uos.seconds/60.0/60.0
+        utcday = uos.days
+
+    if utcday < 0:
+       utchour = (24-utchour)*(-1) # Local - UTC
+
+    return utchour
+
 
 def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vdiff=None,
