@@ -191,10 +191,11 @@ texinfo_documents = [
 # -- Extension configuration -------------------------------------------------
 
 linkcheck_ignore = [
-    "https://github.com/NOAA-CSL/MELODIES-MONET.*",  # just until repo is public
     # Auth required:
     "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
     "https://www2.cisl.ucar.edu/resources/conda-environments",
+    # Sphinx 4.5 linkcheck having problem:
+    "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
 ]
 
 autosectionlabel_prefix_document = True
