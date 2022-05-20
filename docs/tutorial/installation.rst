@@ -40,6 +40,11 @@ Now, install the stable branch of MELODIES MONET to the environment::
     $ pip install --no-deps https://github.com/NOAA-CSL/MELODIES-MONET/archive/main.zip
 
 
+.. note::
+   If you are interested in modifying what MELODIES MONET can do
+   take a look at the :doc:`/develop/developers_guide`.
+
+
 .. [#yaml] Examples of `conda <https://conda.io>`__
    `environment.yml files <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file>`__
    that include a record
