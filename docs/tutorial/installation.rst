@@ -41,7 +41,7 @@ Now, install the stable branch of MELODIES MONET to the environment::
 
 
 .. note::
-   If you are interested in modifying what MELODIES MONET can do
+   If you are interested in modifying what MELODIES MONET can do,
    take a look at the :doc:`/develop/developers_guide`.
 
 
