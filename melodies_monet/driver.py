@@ -708,6 +708,11 @@ class analysis:
                         else:
                             use_ylabel = None
 
+                        if 'percentile_opt' in obs_plot_dict.keys():
+                            use_percentile = obs_plot_dict['percentile_opt']
+                        else:
+                            use_percentile = None
+
                         # Determine if set axis values or use defaults
                         if grp_dict['data_proc']['set_axis'] == True:
                             if obs_plot_dict:  # Is not null
@@ -720,8 +725,6 @@ class analysis:
 
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
-                        #if self.output_dir is not None:
-                        #    outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Query selected points if applicable
                         if domain_type != 'all':
@@ -734,14 +737,16 @@ class analysis:
                         else:
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
 
-                        #JianHe: Determine if calcuate regulatory values
-                        if 'regulatory' in obs_plot_dict.keys():
-                            cal_reg = obs_plot_dict['regulatory']
-                        else:
-                            cal_reg = False
-                        #print('Paired dataframe without regulatory: ', cal_reg, modvar, p_label, pairdf)
+                        # JianHe: Determine if calcuate regulatory values
+                        cal_reg = obs_plot_dict.get('regulatory', False)
 
                         if cal_reg:
+                            # Specify ylabel_reg if noted in yaml file.
+                            if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                                use_ylabel = obs_plot_dict['ylabel_reg_plot']
+                            else:
+                                use_ylabel = None
+
                             df1 = pairdf.copy()
                             df1.index = df1.time_local
                             df2 = df1.groupby("siteid").resample('H').mean().reset_index()        
@@ -757,14 +762,10 @@ class analysis:
                                 print('No valid data for '+obsvar+'_reg')
                                 cal_reg = False
                             else:
-                                #print('Paired dataframe with regulatory: ', obsvar, pairdf_reg)
                                 outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
-                                use_ylabel = obs_plot_dict['ylabel2_plot']
-
-                            del(df1)
-                            del(df2)
+                            del df1, df2 
                         else:
-                            pairdf_reg = pd.DataFrame()
+                            pairdf_reg = None
                             outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
                         if self.output_dir is not None:
@@ -936,6 +937,7 @@ class analysis:
                                 column_m=modvar,
                                 label_m=p.model,
                                 ylabel=use_ylabel,
+                                ptile=use_percentile,
                                 vdiff=vdiff,
                                 outname=outname,
                                 domain_type=domain_type,
@@ -944,15 +946,29 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
+                                if set_yaxis == True:
+                                    if 'vdiff_reg_plot' in obs_plot_dict.keys():
+                                        vdiff = obs_plot_dict['vdiff_reg_plot']
+                                    else:
+                                        print('Warning: vdiff_reg_plot not specified for ' + obsvar + ', so default used.')
+                                        vdiff = None
+                                else:
+                                    vdiff = None
+
+                                # p_label needs to be added to the outname for this plot
                                 outname = "{}.{}".format(outname, p_label)
-                                splots.make_spatial_exceedance(
+                                splots.make_spatial_bias_exceedance(
                                     pairdf_reg,
                                     column_o=obsvar+'_reg',
                                     label_o=p.obs,
                                     column_m=modvar+'_reg',
                                     label_m=p.model,
                                     ylabel=use_ylabel,
+                                    ptile=use_percentile,
+                                    vdiff=vdiff,
                                     outname=outname,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
@@ -960,8 +976,10 @@ class analysis:
                                     text_dict=text_dict,
                                     debug=self.debug
                                 )
-                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
-                        #JianHe: need upates to include regulatory option for overlay plots
+                                del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                            else:
+                                print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
+                        # JianHe: need upates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -1021,6 +1039,9 @@ class analysis:
                                     text_dict=text_dict,
                                     debug=self.debug
                                 )
+                            else:
+                                print('Warning: Spatial overlay plots are not available yet for regulatory metrics.')
+
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
 
     def stats(self):
@@ -1070,12 +1091,8 @@ class analysis:
             else:
                 obs_plot_dict = {}
 
-            #JianHe: Determine if calcuate regulatory values
-            if 'regulatory' in obs_plot_dict.keys():
-                cal_reg = obs_plot_dict['regulatory']
-            else:
-                cal_reg = False
-            print('Stat for reg: ', obsvar, cal_reg)
+            # JianHe: Determine if calcuate regulatory values
+            cal_reg = obs_plot_dict.get('regulatory', False)
 
             # Next loop over all of the domains.
             # Loop also over the domain types.
@@ -1090,8 +1107,6 @@ class analysis:
                 df_o_d = pd.DataFrame()
                 # Determine outname
                 outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar, domain_type, domain_name, startdatename, enddatename)
-                #if self.output_dir is not None:
-                #    outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                 # Determine plotting kwargs
                 if 'output_table_kwargs' in stat_dict.keys():
@@ -1140,6 +1155,12 @@ class analysis:
                         pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
 
                         if cal_reg:
+                            # Specify title for stat plots.
+                            if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                                title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
+                            else:
+                                title = obsvar + ': ' + domain_type + ' ' + domain_name
+
                             # Process regulatory values
                             df1 = pairdf.copy()
                             df1.index = df1.time_local
@@ -1159,11 +1180,9 @@ class analysis:
                                 # Drop NaNs for model and observations in all cases.
                                 pairdf2 = pairdf_reg.reset_index().dropna(subset=[modvar+'_reg', obsvar+'_reg'])
                                 outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar+'_reg', domain_type, domain_name, startdatename, enddatename)
-                                title = obs_plot_dict['ylabel2_plot'] + ': ' + domain_type + ' ' + domain_name
+                                title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
 
-                            del(df1)
-                            del(df2)
-
+                            del df1, df2
 
                         # Create empty list for all dom
                         # Calculate statistic and append to list

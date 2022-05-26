@@ -85,7 +85,7 @@ obs:
         vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
         nlevels_plot: 23 #Opt number of levels used in colorbar for contourf plot.
         regulatory: False #Opt compute regulatory functions
-        ylabel2_plot: 'PM2.5_24hr (ug/m3)'
+        ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
       OZONE:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
@@ -96,7 +96,7 @@ obs:
         vdiff_plot: 20.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
         nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
         regulatory: False #Opt compute regulatory functions
-        ylabel2_plot: 'MDA8 O3 (ppbv)'
+        ylabel_reg_plot: 'MDA8 O3 (ppbv)'
       WS:
         unit_scale: 0.514  # convert obs knots-->m/s
         unit_scale_method: '*'

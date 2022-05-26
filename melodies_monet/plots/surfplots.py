@@ -22,7 +22,6 @@ from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 import math
 from ..plots import savefig
 import datetime, pytz
-#from timezonefinder import TimezoneFinder
 #from monet.plots.mapgen import draw_map
 
 # from util import write_ncf
@@ -174,6 +173,7 @@ def get_utcoffset(lat,lon):
     from datetime import datetime
     import pytz
     from datetime import datetime, timezone
+    from timezonefinder import TimezoneFinder
 
     tf = TimezoneFinder()
 
@@ -194,7 +194,7 @@ def get_utcoffset(lat,lon):
         utchour = uos.seconds/60.0/60.0
         utcday = uos.days
 
-    elif timezone_str.startswith(('Etc','GMT')):
+    elif timezone_str.startswith({'Etc','GMT'}):
         #print('Ocean timezone: ', timezone_str)
         tz = pytz.timezone(timezone_str)
         d=datetime.utcnow()
@@ -216,8 +216,8 @@ def get_utcoffset(lat,lon):
     return utchour
 
 
-def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vdiff=None,
+def make_spatial_bias(df, df_reg=None, regulatory=False, column_o=None, label_o=None, column_m=None, 
+                      label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
@@ -228,9 +228,9 @@ def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, 
     ----------
     df : dataframe
         model/obs pair data to plot
-    df_reg: dataframe
-        model/obs pair data to plot
-    regulatory : boolean
+    df_reg : dataframe
+        model/obs pair of regulatory data to plot
+    regulatory : bool
         Whether to plot regulatory values (True) or not (False)
     column_o : str
         Column label of observation variable to plot
@@ -242,7 +242,9 @@ def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, 
         Name of model variable to use in plot title
     ylabel : str
         Title of colorbar axis
-    vdiff : real number
+    ptile : float
+        Percentile for MDA8 O3 calculation
+    vdiff : float
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
@@ -289,8 +291,11 @@ def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, 
         ylabel = column_o
     
     if regulatory:
-        #Take the mean for each siteid
-        df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
+        # JianHe: we have options of 5th, 50th, and 95th percentile for MDA8O3 only
+        if ptile == None:
+            df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
+        else:
+            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile)
 
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -340,7 +345,7 @@ def make_spatial_bias(df, df_reg, regulatory=None, column_o=None, label_o=None, 
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
     
-def make_timeseries(df, df_reg, regulatory=None, column=None, label=None, ax=None, avg_window=None, ylabel=None,
+def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
                     domain_type=None, domain_name=None,
                     plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -350,9 +355,9 @@ def make_timeseries(df, df_reg, regulatory=None, column=None, label=None, ax=Non
     ----------
     df : dataframe
         model/obs pair data to plot
-    df_reg: dataframe
-        model/obs pair data to plot
-    regulatory : boolean
+    df_reg : dataframe
+        model/obs pair of regulatory data to plot
+    regulatory : bool
         Whether to plot regulatory values (True) or not (False)
     column : str
         Column label of variable to plot
@@ -461,7 +466,7 @@ def make_timeseries(df, df_reg, regulatory=None, column=None, label=None, ax=Non
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
     
-def make_taylor(df, df_reg, regulatory=None, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
+def make_taylor(df, df_reg=None, regulatory=False, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
                 dia=None, ylabel=None, ty_scale=1.5,
                 domain_type=None, domain_name=None,
                 plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -472,8 +477,8 @@ def make_taylor(df, df_reg, regulatory=None, column_o=None, label_o='Obs', colum
     ----------
     df : dataframe
         model/obs pair data to plot
-    df_reg: dataframe
-        model/obs pair data to plot
+    df_reg : dataframe
+        model/obs pair of regulatory data to plot
     regulatory : boolean
         Whether to plot regulatory values (True) or not (False)
     column_o : str
@@ -756,16 +761,16 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
-def calculate_boxplot(df, df_reg, regulatory=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+def calculate_boxplot(df, df_reg=None, regulatory=False, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot
     
     Parameters
     ----------
     df : dataframe
         Model/obs pair object
-    df_reg: dataframe
-        model/obs pair data to plot
-    regulatory : boolean
+    df_reg : dataframe
+        model/obs pair of regulatory data to plot
+    regulatory : bool
         Whether to plot regulatory values (True) or not (False)
     column : str
         Column label of variable to plot
@@ -907,8 +912,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
-def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
-                      label_m=None, ylabel = None, vdiff=None,
+def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
+                      label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot',
                       domain_type=None, domain_name=None, fig_dict=None,
                       text_dict=None,debug=False):
@@ -918,7 +923,7 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
     Parameters
     ----------
     df : dataframe
-        model/obs pair data to plot
+        model/obs pair of regulatory data to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -929,7 +934,9 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
         Name of model variable to use in plot title
     ylabel : str
         Title of colorbar axis
-    vdiff : real number
+    ptile : float
+        Percentile for MDA8 O3 calculation
+    vdiff : float
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
@@ -937,11 +944,11 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
         Domain type specified in input yaml file
     domain_name : str
         Domain name specified in input yaml file
-    fig_dict : dictionary
+    fig_dict : dict
         Dictionary containing information about figure
-    text_dict : dictionary
+    text_dict : dict
         Dictionary containing information about text
-    debug : boolean
+    debug : bool
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
         
@@ -974,16 +981,14 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
     if ylabel is None:
         ylabel = column_o
 
-    #Take the mean for each siteid
-    #df_mean=df.groupby(['siteid'],as_index=False).mean()
-
-    #df_reg = pd.DataFrame()
-    print(df)
     # calculate exceedance
     if column_o == 'OZONE_reg':
-        # JianHe: we can get mean, or 95th, 99th percentile
-        #df_p99=df.groupby(['siteid'],as_index=False).quantile(.99)
-        df_mean=df.groupby(['siteid'],as_index=False).mean()
+        # JianHe: we have options of 5th, 50th, and 95th percentile for MDA8O3 only
+        if ptile == None:
+            df_mean=df.groupby(['siteid'],as_index=False).mean()
+        else:
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile)
+
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 70.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 70.].groupby(['siteid'],as_index=False)[column_m].count()     
@@ -1002,13 +1007,13 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
     df_combine[column_m]=df_combine[column_m].fillna(0)
 
     df_reg = df_mean.reset_index(drop=True).merge(df_combine.reset_index(drop=True),on=['siteid']).rename(index=str,columns={column_o+'_y':column_o+'_day',column_m+'_y':column_m+'_day'})
-    print(df_reg)
+    #print(df_reg)
 
     if not df_reg.empty:
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
-            df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=15.,
+            df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
             cmap=new_color_map(), edgecolor='k',linewidth=.8)
 
         if domain_type == 'all':
@@ -1043,7 +1048,7 @@ def make_spatial_exceedance(df, column_o=None, label_o=None, column_m=None,
         cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)
 
         #plt.tight_layout(pad=0)
-        savefig(outname + '_exceendance.png', loc=4, logo_height=120)
+        savefig(outname + '_exceedance.png', loc=4, logo_height=120)
     else:
         print('No exceedance found!')
 
