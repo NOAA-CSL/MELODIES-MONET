@@ -4,6 +4,9 @@ import xesmf as xe
 import numpy as np
 from datetime import datetime,timedelta
 
+
+
+
 def omps_nm_pairing(model_data,obs_data):
     'Pairs UFS-RAQMS ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
@@ -15,24 +18,9 @@ def omps_nm_pairing(model_data,obs_data):
     
     du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
     
-    # define satellite lat/lon grid as dataset
-    ds_out = xr.Dataset({'lat': (['x','y'], obs_data['latitude'].values),
-                         'lon': (['x','y'], obs_data['longitude'].values),
-                        }
-                       )
-    ds_mod = xr.Dataset({'lat':(['x','y'],model_data['latitude'].values),
-                         'lon':(['x','y'],model_data['longitude'].values),})
-    # regrid spatially (model lat/lon to satellite swath lat/lon)
-    # dimensions of new variables will be (time, z, satellite_x, satellite_y)
-    regridr = xe.Regridder(model_data,ds_out,'bilinear') # standard bilinear spatial regrid. 
-    regrid_oz = regridr(model_data['o3vmr'])
-    regrid_dp = regridr(model_data['dpm'])
-    nf,nz,nx,ny = regrid_oz.shape
+    
+    nf,nz,nx,ny = model_data['o3vmr'].shape
 
-    # calculate ozone column, no averaging kernel or apriori applied.
-    col = np.nansum(du_fac*regrid_dp*regrid_oz,axis=1) # new dimensions will be (time, satellite_x, satellite_y)
-   
-    nf,nx,ny = col.shape
     
     ## initialize dataset holder for final dataset
     oz = np.zeros_like(obs_data.ozone_column.values)
@@ -41,40 +29,52 @@ def omps_nm_pairing(model_data,obs_data):
     ## loop over model time steps
     for f in range(nf):
         tindex = np.where(np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0]))[0]
-        #tfac1 = 1-np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0])
+        
+        if len(tindex):
+            # regrid spatially (model lat/lon to satellite swath lat/lon)
+            # dimensions of new variables will be (time, z, satellite_x, satellite_y)
+            regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear') # standard bilinear spatial regrid. 
+            regrid_oz = regridr(model_data['o3vmr'][f])
+            regrid_dp = regridr(model_data['dpm'][f])
+            nz,nx,ny = regrid_oz.shape
+            #print(regrid_oz.shape)
+            # calculate ozone column, no averaging kernel or apriori applied.
+            col = np.nansum(du_fac*regrid_dp*regrid_oz,axis=0) # new dimensions will be (time, satellite_x, satellite_y)
 
-        #sum_tf[tindex] += tfac1
-        # fixes for observations before/after model time range.
-        if f == (nf-1):
-            print('last')
-            tindex = np.where((obs_data.time >= model_data.time[f]))[0]
-            oz[tindex,:] = col[f][tindex,:]#.values
-            #sum_tf[tindex] += 1
-            
-            tind_2 = np.where((obs_data.time < model_data.time[f]) & 
-                              (np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tind_2])/(model_data.time[1]-model_data.time[0]))
-            
-            oz[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*col[f][tind_2,:]
-            #sum_tf[tind_2] += tfac1
-        elif f == (0):
-            print('first')
-            tindex = np.where((obs_data.time <= model_data.time[f]))[0]
-            oz[tindex,:] = col[f][tindex,:]#.values
-            #sum_tf[tindex] += 1
-            tind_2 = np.where((obs_data.time > model_data.time[f]) & 
-                              (np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tind_2])/(model_data.time[1]-model_data.time[0]))
-            
-            oz[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*col[f][tind_2,:]
-            #sum_tf[tind_2] += tfac1
-        else:
-            print('not 1 or last')
-            tindex = np.where(np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0]))[0]
-            
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0]))
+            nx,ny = col.shape
+            #print(col.shape)
+            tfac1 = 1-np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0])
+
             #sum_tf[tindex] += tfac1
-            oz[tindex,:] += np.expand_dims(tfac1.values,axis=1)*col[f][tindex,:]#.values
+            # fixes for observations before/after model time range.
+            if f == (nf-1):
+            #    print('last')
+                t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
+                oz[tindex[t2],:] = col[t2]
+
+                tind_2 = np.where((obs_data.time[tindex] < model_data.time[f]) & 
+                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
+
+                oz[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*col[tind_2]
+            #    sum_tf[tind_2] += tfac1
+            elif f == (0):
+            #    print('first')
+                t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
+                oz[tindex[t2],:] = col[t2]#[tindex,:]#.values
+                #sum_tf[tindex] += 1
+                tind_2 = np.where((obs_data.time[tindex] > model_data.time[f]) & 
+                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
+
+                oz[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*col[tind_2,:]
+                #sum_tf[tind_2] += tfac1
+            else:
+            
+
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0]))
+                #sum_tf[tindex] += tfac1
+                oz[tindex,:] += np.expand_dims(tfac1.values,axis=1)*col#[tindex,:]#.values
 
     ds = xr.Dataset({'o3vmr': (['x','y'],oz),
                      'ozone_column':(['x','y'],obs_data.ozone_column.values)
@@ -86,6 +86,8 @@ def omps_nm_pairing(model_data,obs_data):
                     })    
 
     return ds
+                                                                            
+                                                                            
 
 def omps_nm_pairing_apriori(model_data,obs_data):
     'Pairs UFS-RAQMS data with OMPS nm. Applies satellite apriori column to model observations.'
@@ -96,56 +98,53 @@ def omps_nm_pairing_apriori(model_data,obs_data):
     du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
     
     print('pairing with averaging kernel application')
-    # define satellite lat/lon grid as dataset
-    ds_out = xr.Dataset({'lat': (['x','y'], obs_data['latitude'].values),
-                         'lon': (['x','y'], obs_data['longitude'].values),
-                        }
-                       )
-    # regrid spatially (model lat/lon to satellite swath lat/lon)
-    # dimensions of new variables will be (time, z, satellite_x, satellite_y)
-    regridr = xe.Regridder(model_data,ds_out,'bilinear') # standard bilinear spatial regrid. 
-    regrid_oz = regridr(model_data['o3vmr'])
-    regrid_p = regridr(model_data['pdash']) # this one should be pressure variable (for the interpolation).
-    sfp = regridr(model_data['sfcp'])
-    # Interpolate model data in time. Final dataset will be (satellite_x, satellite_y) dimensions at satellite times.
-    nf,nz_m,nx,ny = regrid_oz.shape
-
+                     
+    # Grab necessary shape information
+    nf,nz_m,nx_m,ny_m = model_data['o3vmr'].shape
+    nx,ny = obs_data.ozone_column.shape
     ## initialize intermediates for use in calcluating column
     pressure_temp = np.zeros((nz_m,nx,ny))
     ozone_temp = np.zeros((nz_m,nx,ny))
     sfc = np.zeros((nx,ny))
     ## loop over model time steps
     for f in range(nf):
+        
         tindex = np.where(np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0]))[0]
-        # fixes for observations before/after model time range.
-        if f == (nf-1):
-            tindex = np.where((obs_data.time >= model_data.time[f]))[0]
-            ozone_temp[:,tindex,:] = regrid_oz[f,:,tindex,:].values
-            pressure_temp[:,tindex,:] = regrid_p[f,:,tindex,:].values
-            sfc[tindex,:] = sfp[f,tindex,:].values 
-            tind_2 = np.where((obs_data.time < model_data.time[f]) & 
-                              (np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tind_2])/(model_data.time[1]-model_data.time[0]))
-            
-            ozone_temp[:,tind_2,:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[f,:,tind_2,:].values
-            pressure_temp[:,tind_2,:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[f,:,tind_2,:].values
-            sfc[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*sfp[f,tind_2,:].values
-        elif f == 0:
-            tindex = np.where((obs_data.time <= model_data.time[f]))[0]
-            ozone_temp[:,tindex,:] = regrid_oz[f,:,tindex,:].values
-            pressure_temp[:,tindex,:] = regrid_p[f,:,tindex,:].values
-            sfc[tindex,:] = sfp[f,tindex,:].values 
-            tind_2 = np.where((obs_data.time > model_data.time[f]) & 
-                              (np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tind_2])/(model_data.time[1]-model_data.time[0]))
-            ozone_temp[:,tind_2,:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[f,:,tind_2,:].values
-            pressure_temp[:,tind_2,:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[f,:,tind_2,:].values
-            sfc[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*sfp[f,tind_2,:].values
-        else:
-            tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0]))
-            ozone_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[f,:,tindex,:].values
-            pressure_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[f,:,tindex,:].values
-            sfc[tindex,:] += np.expand_dims(tfac1.values,axis=1)*sfp[f,tindex,:].values
+        if len(tindex):
+            # regrid spatially (model lat/lon to satellite swath lat/lon)
+            regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear')
+            regrid_oz = regridr(model_data['o3vmr'][f])
+            regrid_p = regridr(model_data['pdash'][f]) # this one should be pressure variable (for the interpolation).
+            sfp = regridr(model_data['sfcp'][f])
+            # fixes for observations before/after model time range.
+            if f == (nf-1):
+                t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
+                ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
+                pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
+                sfc[t2,:] = sfp[t2,:].values 
+                tind_2 = np.where((obs_data.time[tindex] < model_data.time[f]) & 
+                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
+
+                ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
+                pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
+                sfc[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
+            elif f == 0:
+                t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
+                ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
+                pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
+                sfc[tindex[t2],:] = sfp[t2,:].values 
+                tind_2 = np.where((obs_data.time[tindex] > model_data.time[f]) & 
+                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
+                ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
+                pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
+                sfc[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
+            else:
+                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0]))
+                ozone_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz.values
+                pressure_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_p.values
+                sfc[tindex,:] += np.expand_dims(tfac1.values,axis=1)*sfp.values
     # Interpolate model data to satellite pressure levels
     from wrf import interplevel
     ozone_satp = interplevel(ozone_temp,pressure_temp/100.,obs_data.pressure[::-1],missing=np.nan)

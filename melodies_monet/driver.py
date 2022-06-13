@@ -258,9 +258,16 @@ class model:
         from numpy import sort  # TODO: maybe use `sorted` for this
         from glob import glob
 
-        print(self.file_str)
+        #print(len(self.file_str))
+        #if len(self.file_str) == 1:
         self.files = sort(glob(self.file_str))
         
+        # add option to read list of files from text file
+        if 'txt' in self.file_str:
+            with open(self.file_str,'r') as f:
+                self.files = f.read().split(' \n')[:-1]
+        print(self.files)
+        #    self.files = sort(self.file_str)
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
@@ -312,11 +319,21 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+        #elif 'fv3raqms' in self.model.lower():
+        #    print(self.files)
+        #    if len(self.files) > 1:
+        #        self.obj = mio.fv3raqms.open_mfdataset(self.files)
+        #    else:
+        #        self.obj = mio.fv3raqms.open_dataset(self.files)
         elif 'raqms' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.raqms.open_mfdataset(self.files)
             else:
                 self.obj = mio.raqms.open_dataset(self.files)
+            self.obj = self.obj.rename_vars({'psfc':'sfcp','delp':'dpm'})
+            self.obj['dpm'] = self.obj['dpm']
+            self.obj['sfcp'] = self.obj['sfcp']*100
+            self.obj['pdash'] = self.obj['pdash']*100
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -559,6 +576,7 @@ class analysis:
                             keys.append('dpm')
                             model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj)
+                        #paired_data['o3vmr'][(paired_data['o3vmr'] < 150)] = np.nan
                         p = pair()
                         p.obs = obs.label
                         p.model = mod.label
