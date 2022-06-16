@@ -101,3 +101,13 @@ jobs:
               cat $f
             done
           fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check that .py files have the license header
+        run: python3 ci/check-for-license-header.py
