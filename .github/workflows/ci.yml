@@ -20,7 +20,7 @@ jobs:
       fail-fast: false  # just until cf versions are working
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python (Conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -72,7 +72,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python (Conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check that .py files have the license header
         run: python3 ci/check-for-license-header.py
