@@ -59,11 +59,11 @@ napoleon_use_rtype = False
 napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
-execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
+nb_execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
 # jupyter_execute_notebooks = "auto"  # don't execute if all cells have output (default)
 # jupyter_execute_notebooks = "cache"  # to speed build when working on other things
-jupyter_execute_notebooks = "off"
-execution_excludepatterns = [
+nb_execution_mode = "off"
+nb_execution_excludepatterns = [
     "examples/airnow_wrfchem.ipynb",
 ]
 

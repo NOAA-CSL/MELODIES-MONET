@@ -20,7 +20,7 @@ dependencies:
   - ipykernel
   - jupyterlab=3.*
   - jupytext
-  - myst-nb
+  - myst-nb>=0.14
   - nbclient
   - sphinx=4.*
   - sphinx-autobuild
