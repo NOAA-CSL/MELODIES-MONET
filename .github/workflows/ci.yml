@@ -87,10 +87,10 @@ jobs:
           conda list --show-channel-urls
 
       - name: linkcheck
-        run: sphinx-build -D jupyter_execute_notebooks=off -b linkcheck docs docs/_build/linkcheck
+        run: sphinx-build -b linkcheck docs docs/_build/linkcheck
 
       - name: sphinx-build -W
-        run: sphinx-build -D nb_execution_show_tb=True -b html -W docs docs/_build/html
+        run: sphinx-build -b html -W docs docs/_build/html
 
       - name: Check Sphinx failure log
         if: ${{ failure() }}
