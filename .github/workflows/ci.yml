@@ -42,8 +42,8 @@ jobs:
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monet/archive/develop.zip
           python -m pip list | grep monet
           micromamba list | grep monet
-          python -c "import monetio; print(getattr(monetio, '__version__'), '?')"
-          python -c "import monet; print(getattr(monet, '__version__'), '?')"
+          python -c "import monetio; print('monetio.__version__', getattr(monetio, '__version__', '?'))"
+          python -c "import monet;   print('monet.__version__',   getattr(monet, '__version__', '?'))"
 
       - name: pytest
         run: python -m pytest melodies_monet
