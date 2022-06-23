@@ -21,7 +21,6 @@ from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
-import datetime, pytz
 #from monet.plots.mapgen import draw_map
 
 # from util import write_ncf
@@ -169,10 +168,9 @@ def get_utcoffset(lat,lon):
     UTC offset in hour
 
     """
-
-    from datetime import datetime
+    import datetime, pytz
+    from datetime import datetimee, timezone
     import pytz
-    from datetime import datetime, timezone
     from timezonefinder import TimezoneFinder
 
     tf = TimezoneFinder()

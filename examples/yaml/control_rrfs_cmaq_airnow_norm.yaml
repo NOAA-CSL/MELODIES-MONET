@@ -86,6 +86,9 @@ obs:
         nlevels_plot: 23 #Opt number of levels used in colorbar for contourf plot.
         regulatory: False #Opt compute regulatory functions
         ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
+        vmin_reg_plot: 0.0 #Opt
+        vmax_reg_plot: 22.0 #Opt
+        vdiff_reg_plot: 5.0 #Opt
       OZONE:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
@@ -97,6 +100,9 @@ obs:
         nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
         regulatory: False #Opt compute regulatory functions
         ylabel_reg_plot: 'MDA8 O3 (ppbv)'
+        vmin_reg_plot: 30.0 #Opt
+        vmax_reg_plot: 70.0 #Opt
+        vdiff_reg_plot: 15.0 #Opt
       WS:
         unit_scale: 0.514  # convert obs knots-->m/s
         unit_scale_method: '*'
@@ -183,6 +189,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
+      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
   plot_grp4:
     type: 'spatial_overlay' # plot type
     fig_kwargs: #For all spatial plots, specify map_kwargs here too.
@@ -196,6 +203,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
   plot_grp5:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
@@ -208,6 +216,20 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+  plot_grp6:
+    type: 'spatial_bias_exceedance' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: True
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: True #If select True, add vdiff_plot for each variable in obs.
+      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
