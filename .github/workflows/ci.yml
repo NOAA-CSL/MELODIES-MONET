@@ -37,7 +37,7 @@ jobs:
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monetio/archive/develop.zip
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monet/archive/develop.zip
           python -m pip list | grep monet
-          micromamba list --show-channel-urls | grep monet
+          micromamba list | grep monet
 
       - name: pytest
         run: python -m pytest melodies_monet
