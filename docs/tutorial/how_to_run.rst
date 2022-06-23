@@ -58,10 +58,8 @@ in the Appendix under :doc:`/appendix/yaml`.
 Basic Commands
 --------------
 
-First, you will import the MELODIES MONET driver. You will need to update the path
-below to point to the location of your MELODIES-MONET GitHub repository. ::
+First, you will import the MELODIES MONET driver [#install]_. ::
 
-    import sys; sys.path.append("../../")
     from melodies_monet import driver
 
 Then you will create an instance of the python driver analysis class. The 
@@ -160,3 +158,7 @@ are in the ``examples/submit_jobs`` folder of the code on GitHub.
 
    * Submit the submit_hera.sh script (e.g., on NOAA hera: sbatch submit_hera.sh)	 
 
+
+.. [#install] This should work from any directory as long as MELODIES MONET is installed
+   in your active conda environment, which it should be if you followed the
+   :ref:`install instructions <user-install-instructions>`.

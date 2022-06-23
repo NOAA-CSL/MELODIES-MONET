@@ -20,7 +20,7 @@ jobs:
       fail-fast: false  # just until cf versions are working
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python (Conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -54,6 +54,15 @@ jobs:
               python t.py
             fi
           done
+          cd -
+
+      - name: Check CLI works
+        run: |
+          cd docs/examples
+          melodies-monet --version
+          python -m melodies_monet --version
+          melodies-monet control_idealized.yaml
+          cd -
 
   docs:
     name: Check docs build
@@ -63,7 +72,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python (Conda)
         uses: conda-incubator/setup-miniconda@v2
@@ -73,16 +82,32 @@ jobs:
           activate-environment: melodies-monet-docs
           environment-file: docs/environment-docs.yml
 
+      - name: Conda env info
+        run: |
+          conda list --show-channel-urls
+
       - name: linkcheck
-        run: sphinx-build -D jupyter_execute_notebooks=off -b linkcheck docs docs/_build/linkcheck
+        run: sphinx-build -b linkcheck docs docs/_build/linkcheck
 
       - name: sphinx-build -W
-        run: sphinx-build -D execution_show_tb=True -b html -W docs docs/_build/html
+        run: sphinx-build -b html -W docs docs/_build/html
 
       - name: Check Sphinx failure log
         if: ${{ failure() }}
         run: |
-          for f in /tmp/sphinx-err*; do
-            echo $f
-            cat $f
-          done
+          if [ -e /tmp/sphinx-err* ]; then
+            for f in /tmp/sphinx-err*; do
+              echo $f
+              cat $f
+            done
+          fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check that .py files have the license header
+        run: python3 ci/check-for-license-header.py

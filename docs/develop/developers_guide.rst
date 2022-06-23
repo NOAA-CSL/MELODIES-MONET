@@ -46,6 +46,56 @@ _________________
 The *develop_testsuite* branch holds modules
 under development for unit tests and regression tests.
 
+.. _dev-install-instructions:
+
+Setting up your development environment
+---------------------------------------
+
+In order to prepare for developing MELODIES MONET,
+we clone the repositories and create a conda environment that references them.
+
+.. note::
+   If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera
+   follow these machine specific instructions instead.
+
+   - :ref:`NCAR Cheyenne <appendix/machine-specific-install:NCAR HPC Cheyenne/Casper>`
+   - :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
+
+.. important::
+   The instructions below are for cloning a repository using SSH.
+   If you prefer, you can also clone the monet, monetio, and
+   MELODIES-MONET repositories using HTTPS [#clone]_.
+
+To install MELODIES MONET on your laptop or on HPC machines in general follow 
+these instructions:
+ 
+(a) Set up a conda environment with all the dependencies, including MONET and 
+    MONETIO::
+
+       $ conda create --name melodies-monet python=3.9
+       $ conda activate melodies-monet
+       $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python click pooch jupyterlab
+
+(b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
+    your conda environment::
+
+       $ git clone git@github.com:noaa-oar-arl/monet.git
+       $ cd monet
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
+       $ git clone git@github.com:noaa-oar-arl/monetio.git
+       $ cd monetio
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
+(c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
+
+       $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+       $ cd MELODIES-MONET
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
 
 How to incorporate updates to MELODIES MONET
 --------------------------------------------
@@ -126,8 +176,22 @@ Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projec
 project on GitHub to learn about current and future development.
 
 
-.. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
-   trouble cloning the repositories this way.
+.. _clone-notes:
+.. [#clone] Note that in order to do an SSH clone,
+   e.g. ::
+
+      $ git clone git@github.com:noaa-oar-arl/monet.git
+
+   you must have already
+   `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
+   to your GitHub account for your current machine.
+   If you are new to GitHub, check out
+   `this GitHub tutorial <https://jlord.us/git-it/>`__.
+   We recommend the SSH method, but if you don't add an SSH key
+   you can still clone the repositories via HTTPS, e.g. ::
+
+       $ git clone https://github.com/noaa-oar-arl/monet.git
+
 
 .. [#env] That is,
    use::

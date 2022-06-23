@@ -5,7 +5,6 @@
 #This is needed to tell matplotlib to use a non-interactive backend and avoid display errors.
 import matplotlib
 matplotlib.use('Agg')
-import sys; sys.path.append("../../")
 from melodies_monet import driver
 import os
 import dask
