@@ -43,7 +43,7 @@ jobs:
           python -m pip list | grep monet
           micromamba list | grep monet
           python -c "import monetio; print(getattr(monetio, '__version__'), '?')"
-          python -c "import monet; print(getattr(monetio, '__version__'), '?')"
+          python -c "import monet; print(getattr(monet, '__version__'), '?')"
 
       - name: pytest
         run: python -m pytest melodies_monet
