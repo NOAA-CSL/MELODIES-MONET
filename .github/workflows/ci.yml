@@ -36,10 +36,13 @@ jobs:
       - if: ${{ matrix.monet == 'dev' }}
         name: Install development versions of monet and monetio
         run: |
-          which python
           python -m pip list | grep monet
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monetio/archive/develop.zip
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monet/archive/develop.zip
+
+      - name: Versions
+        run: |
+          which python
           python -m pip list | grep monet
           micromamba list | grep monet
           python -c "import monetio; print('monetio.__version__', getattr(monetio, '__version__', '?'))"
