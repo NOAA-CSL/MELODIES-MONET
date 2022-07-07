@@ -186,12 +186,10 @@ class observation:
         None
         """
         vars = self.obj.data_vars
-        print('Diag variable_dict in obs: ', self.obj)
         if self.variable_dict is not None:
             for v in vars:
                 if v in self.variable_dict:
                     d = self.variable_dict[v]
-                    print('Diag self.obj: ', self.obj[v].data)
                     # Apply removal of min, max, and nan on the units in the obs file first.
                     if 'obs_min' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] >= d['obs_min'])
@@ -215,7 +213,7 @@ class observation:
                             self.obj[v].data += -1 * scale
                     if 'obs_unit' in d:
                         unitin = d['obs_unit']
-                        if unitin == 'ppmv' or unitin == 'ppm':
+                        if unitin in {'ppmv', 'ppm'}:
                             scale = 1000. # convert to ppb
                             self.obj[v].data *= scale
 
@@ -378,7 +376,6 @@ class model:
         None
         """
         vars = self.obj.data_vars
-        print('Diag variable_dict on model: ', self.obj)
         if self.variable_dict is not None:
             for v in vars:
                 if v in self.variable_dict:
@@ -512,8 +509,6 @@ class analysis:
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
-                print(mod)
-                print(self.control_dict['model'][mod])
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -751,7 +746,7 @@ class analysis:
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
-                        if pairdf[obsvar].isnull().all() or pairdf.empty:
+                        if pairdf.empty or pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                         else:
                             # JianHe: Determine if calcuate regulatory values
@@ -764,9 +759,13 @@ class analysis:
                                 else:
                                     use_ylabel = None
 
-                                df1 = pairdf.copy()
-                                df1.index = df1.time_local
-                                df2 = df1.groupby("siteid").resample('H').mean().reset_index()        
+                                df2 = (
+                                    pairdf.copy()
+                                    .groupby("siteid")
+                                    .resample('H', on='time_local')
+                                    .mean()
+                                    .reset_index()
+                                )
                             
                                 if obsvar == 'PM2.5':  
                                     pairdf_reg = splots.make_24hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
@@ -774,13 +773,15 @@ class analysis:
                                     pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
                                 else:
                                     print('Warning: no regulatory caculations found for ' + obsvar) 
+                                    pairdf_reg = None
 
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
                                     print('No valid data for '+obsvar+'_reg')
                                     cal_reg = False
+                                    pairdf_reg = None
                                 else:
                                     outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
-                                del df1, df2 
+                                del df2 
                             else:
                                 pairdf_reg = None
                                 outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
@@ -809,7 +810,6 @@ class analysis:
                                     ax = splots.make_timeseries(
                                         pairdf,
                                         pairdf_reg,
-                                        regulatory=cal_reg,
                                         column=obsvar,
                                         label=p.obs,
                                         avg_window=a_w,
@@ -827,7 +827,6 @@ class analysis:
                                 ax = splots.make_timeseries(
                                     pairdf,
                                     pairdf_reg,
-                                    regulatory=cal_reg,
                                     column=modvar,
                                     label=p.model,
                                     ax=ax,
@@ -859,10 +858,10 @@ class analysis:
                                     vmax = None
                                 # First for p_index = 0 create the obs box plot data array.
                                 if p_index == 0:
-                                    comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, regulatory=cal_reg, column=obsvar, 
+                                    comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
                                                                                  label=p.obs, plot_dict=obs_dict)
                                 # Then add the models to this dataarray.
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, regulatory=cal_reg, column=modvar, label=p.model,
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
                                                                              plot_dict=plot_dict, comb_bx=comb_bx,
                                                                              label_bx=label_bx)
                                 # For the last p_index make the plot.
@@ -897,7 +896,6 @@ class analysis:
                                     dia = splots.make_taylor(
                                         pairdf,
                                         pairdf_reg,
-                                        regulatory=cal_reg,
                                         column_o=obsvar,
                                         label_o=p.obs,
                                         column_m=modvar,
@@ -916,7 +914,6 @@ class analysis:
                                     dia = splots.make_taylor(
                                         pairdf,
                                         pairdf_reg,
-                                        regulatory=cal_reg,
                                         column_o=obsvar,
                                         label_o=p.obs,
                                         column_m=modvar,
@@ -948,7 +945,6 @@ class analysis:
                                 splots.make_spatial_bias(
                                     pairdf,
                                     pairdf_reg,
-                                    regulatory=cal_reg,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=modvar,
@@ -1179,15 +1175,19 @@ class analysis:
 
                             if cal_reg:
                                 # Specify title for stat plots.
-                                if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                                if 'ylabel_reg_plot' in obs_plot_dict:
                                     title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
                                 else:
                                     title = obsvar + ': ' + domain_type + ' ' + domain_name
 
                                 # Process regulatory values
-                                df1 = pairdf.copy()
-                                df1.index = df1.time_local
-                                df2 = df1.groupby("siteid").resample('H').mean().reset_index()
+                                df2 = (
+                                    pairdf.copy()
+                                    .groupby("siteid")
+                                    .resample('H', on='time_local')
+                                    .mean()
+                                    .reset_index()
+                                )
 
                                 if obsvar == 'PM2.5':
                                     pairdf_reg = splots.make_24hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
@@ -1205,7 +1205,7 @@ class analysis:
                                     outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar+'_reg', domain_type, domain_name, startdatename, enddatename)
                                     title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
 
-                                del df1, df2
+                                del df2
 
                             # Create empty list for all dom
                             # Calculate statistic and append to list

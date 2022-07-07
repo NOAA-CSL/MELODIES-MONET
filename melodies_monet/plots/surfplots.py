@@ -21,9 +21,6 @@ from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
-#from monet.plots.mapgen import draw_map
-
-# from util import write_ncf
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -45,8 +42,8 @@ def make_24hr_regulatory(df, col=None):
 
 def calc_24hr_ave_v1(df, col=None):
     df.index = df.time_local
-    # select sites with nobs >=12
-    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=12)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
+    # select sites with nobs >=18, 75% completeness
+    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=18)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_24hr_ave, on=["siteid", "time_local"])
 
@@ -160,8 +157,10 @@ def get_utcoffset(lat,lon):
 
     Parameters
     ----------
-    lat : latitude of a single point
-    lon : longitude of a single point
+    lat : 
+        Latitude (deg; -90. to 90.)
+    lon :
+        Longitude (deg; -180. to 180.)
         
     Returns
     -------
@@ -175,12 +174,10 @@ def get_utcoffset(lat,lon):
 
     tf = TimezoneFinder()
 
-    lon2 = lon.values.tolist()
-    lat2 = lat.values.tolist()
-    timezone_str = tf.timezone_at(lng=lon2, lat=lat2)
+    timezone_str = tf.timezone_at(lng=lon, lat=lat)
 
-    if timezone_str == None:
-        #print('None timezone: ', lat2, lon2)
+    if timezone_str is None:
+        #print('None timezone: ', lat, lon)
         if lon > -100.0:
             timezone_str = 'America/New_York'
         else:
@@ -214,7 +211,7 @@ def get_utcoffset(lat,lon):
     return utchour
 
 
-def make_spatial_bias(df, df_reg=None, regulatory=False, column_o=None, label_o=None, column_m=None, 
+def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -224,12 +221,10 @@ def make_spatial_bias(df, df_reg=None, regulatory=False, column_o=None, label_o=
     
     Parameters
     ----------
-    df : dataframe
-        model/obs pair data to plot
-    df_reg : dataframe
-        model/obs pair of regulatory data to plot
-    regulatory : bool
-        Whether to plot regulatory values (True) or not (False)
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -288,7 +283,7 @@ def make_spatial_bias(df, df_reg=None, regulatory=False, column_o=None, label_o=
     if ylabel is None:
         ylabel = column_o
     
-    if regulatory:
+    if df_reg is not None:
         # JianHe: we have options of 5th, 50th, and 95th percentile for MDA8O3 only
         if ptile == None:
             df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
@@ -343,7 +338,7 @@ def make_spatial_bias(df, df_reg=None, regulatory=False, column_o=None, label_o=
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
     
-def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, ax=None, avg_window=None, ylabel=None,
+def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
                     domain_type=None, domain_name=None,
                     plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -351,12 +346,10 @@ def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, 
     
     Parameters
     ----------
-    df : dataframe
-        model/obs pair data to plot
-    df_reg : dataframe
-        model/obs pair of regulatory data to plot
-    regulatory : bool
-        Whether to plot regulatory values (True) or not (False)
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
     column : str
         Column label of variable to plot
     label : str
@@ -428,9 +421,8 @@ def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, 
         else: 
             f,ax = plt.subplots(figsize=(10,6))
         # plot the line
-        if regulatory:
-            df_reg.index=df_reg.time_local
-            ax = df_reg[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
+        if df_reg is not None:
+            ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
         else:
             if avg_window is None:
                 ax = df[column].plot(ax=ax, **plot_kwargs)
@@ -440,9 +432,8 @@ def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, 
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
-        if regulatory:
-            df_reg.index=df_reg.time_local
-            ax = df_reg[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_dict)
+        if df_reg is not None:
+            ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_dict)
         else:
             if avg_window is None:
                 ax = df[column].plot(ax=ax, legend=True, **plot_dict)
@@ -464,7 +455,7 @@ def make_timeseries(df, df_reg=None, regulatory=False, column=None, label=None, 
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
     
-def make_taylor(df, df_reg=None, regulatory=False, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
+def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
                 dia=None, ylabel=None, ty_scale=1.5,
                 domain_type=None, domain_name=None,
                 plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -473,12 +464,10 @@ def make_taylor(df, df_reg=None, regulatory=False, column_o=None, label_o='Obs',
     
     Parameters
     ----------
-    df : dataframe
-        model/obs pair data to plot
-    df_reg : dataframe
-        model/obs pair of regulatory data to plot
-    regulatory : boolean
-        Whether to plot regulatory values (True) or not (False)
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
     column_o : str
         Column label of observational variable to plot
     label_o : str
@@ -530,43 +519,34 @@ def make_taylor(df, df_reg=None, regulatory=False, column_o=None, label_o='Obs',
         ylabel = column_o
     #Then, if no plot has been created yet, create a plot and plot the first pair.
 
-    if regulatory:
-        if dia is None:
-            # create the figure
-            if fig_dict is not None:
-                f = plt.figure(**fig_dict)
-            else:
-                f = plt.figure(figsize=(12,10))
-            sns.set_style('ticks')
-            # plot the line
+    if dia is None:
+        # create the figure
+        if fig_dict is not None:
+            f = plt.figure(**fig_dict)
+        else:
+            f = plt.figure(figsize=(12,10))
+        sns.set_style('ticks')
+        # plot the line
+        if df_reg is not None:
             dia = td(df_reg[column_o+'_reg'].std(), scale=ty_scale, fig=f,
                                rect=111, label=label_o)
             plt.grid(linewidth=1, alpha=.5)
             cc = corrcoef(df_reg[column_o+'_reg'].values, df_reg[column_m+'_reg'].values)[0, 1]
             dia.add_sample(df_reg[column_m+'_reg'].std(), cc, zorder=9, label=label_m, **plot_dict)
-        # If plot has been created add to the current axes.
         else:
-            # this means that an axis handle already exists and use it to plot another model
-            cc = corrcoef(df_reg[column_o+'_reg'].values, df_reg[column_m+'_reg'].values)[0, 1]
-            dia.add_sample(df_reg[column_m+'_reg'].std(), cc, zorder=9, label=label_m, **plot_dict)
-
-    else:
-        if dia is None: 
-            # create the figure
-            if fig_dict is not None:
-                f = plt.figure(**fig_dict)    
-            else: 
-                f = plt.figure(figsize=(12,10))    
-            sns.set_style('ticks')
-            # plot the line
             dia = td(df[column_o].std(), scale=ty_scale, fig=f,
                                rect=111, label=label_o)
             plt.grid(linewidth=1, alpha=.5)
             cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
             dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
+
+    else:
         # If plot has been created add to the current axes.
-        else:
+        if df_reg is not None:
             # this means that an axis handle already exists and use it to plot another model
+            cc = corrcoef(df_reg[column_o+'_reg'].values, df_reg[column_m+'_reg'].values)[0, 1]
+            dia.add_sample(df_reg[column_m+'_reg'].std(), cc, zorder=9, label=label_m, **plot_dict)
+        else:
             cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
             dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
 
@@ -759,17 +739,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
-def calculate_boxplot(df, df_reg=None, regulatory=False, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot
     
     Parameters
     ----------
-    df : dataframe
-        Model/obs pair object
-    df_reg : dataframe
-        model/obs pair of regulatory data to plot
-    regulatory : bool
-        Whether to plot regulatory values (True) or not (False)
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
     column : str
         Column label of variable to plot
     label : str
@@ -802,7 +780,7 @@ def calculate_boxplot(df, df_reg=None, regulatory=False, column=None, label=None
     #For all, a column to the dataframe and append the label info to the list.
     plot_kwargs['column'] = column
     plot_kwargs['label'] = label
-    if regulatory:
+    if df_reg is not None:
         comb_bx[label] = df_reg[column+'_reg']
     else:
         comb_bx[label] = df[column]
@@ -920,8 +898,8 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     
     Parameters
     ----------
-    df : dataframe
-        model/obs pair of regulatory data to plot
+    df : pandas.DataFrame
+        model/obs paired data to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -999,13 +977,22 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         df_countm = df[df[column_m]> 35.].groupby(['siteid'],as_index=False)[column_m].count()
         ylabel2 = 'PM2.5'
 
+    else:
+        print('Error: unable to calculate exceedance for '+column_o)
+
     # combine dataframes
     df_combine = df_counto.set_index(['siteid']).join(df_countm.set_index(['siteid']),on=(['siteid']),how='outer').reset_index()
     df_combine[column_o]=df_combine[column_o].fillna(0)
     df_combine[column_m]=df_combine[column_m].fillna(0)
 
-    df_reg = df_mean.reset_index(drop=True).merge(df_combine.reset_index(drop=True),on=['siteid']).rename(index=str,columns={column_o+'_y':column_o+'_day',column_m+'_y':column_m+'_day'})
+    #df_reg = df_mean.reset_index(drop=True).merge(df_combine.reset_index(drop=True),on=['siteid']).rename(index=str,columns={column_o+'_y':column_o+'_day',column_m+'_y':column_m+'_day'})
     #print(df_reg)
+
+    df_reg = (
+        df_mean.merge(df_combine, on='siteid')
+        .rename(index=str, columns={column_o+'_y': column_o+'_day', column_m+'_y': column_m+'_day'})
+        .reset_index(drop=True)
+    )
 
     if not df_reg.empty:
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
