@@ -125,6 +125,7 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.drop_unused_vars = False
         self.variable_dict = None
 
     def __repr__(self):
@@ -175,7 +176,19 @@ class observation:
             print('something happened opening file:', e)
             return
 
+        if self.drop_unused_vars:
+            self.drop_unused()
+
         self.mask_and_scale()  # mask and scale values from the control values
+
+    def drop_unused(self):
+
+        # drop unused variables
+        print()
+        for var in self.obj.keys():
+            if var not in self.variable_dict:
+                print('observation.drop_unused:dropping:' + var)
+                self.obj = self.obj.drop_vars(var)
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -219,7 +232,12 @@ class observation:
         -------
         None
         """
-        self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
+        try:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
+        except:
+            self.obj = self.obj.to_dataframe().reset_index()
+        print(self.obj.info())
+        print(self.obj.memory_usage())
 
 
 class model:
@@ -537,6 +555,9 @@ class analysis:
                 o.file = self.control_dict['obs'][obs]['filename']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'drop_unused_vars' in self.control_dict['obs'][obs].keys():
+                    o.drop_unused_vars \
+                        = self.control_dict['obs'][obs]['drop_unused_vars']
                 o.open_obs()
                 self.obs[o.label] = o
 
