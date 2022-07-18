@@ -183,10 +183,15 @@ class observation:
 
     def drop_unused(self):
 
+        # append timestamps and other site info to list of mapped variables
+        used_vars = list(self.variable_dict.keys()) \
+            + ['time_local', 'utcoffset', 'units',
+               'site', 'state_name', 'epa_region']
+
         # drop unused variables
         print()
         for var in self.obj.keys():
-            if var not in self.variable_dict:
+            if var not in used_vars:
                 print('observation.drop_unused:dropping:' + var)
                 self.obj = self.obj.drop_vars(var)
 
@@ -232,10 +237,7 @@ class observation:
         -------
         None
         """
-        try:
-            self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
-        except:
-            self.obj = self.obj.to_dataframe().reset_index()
+        self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
         print(self.obj.info())
         print(self.obj.memory_usage())
 
