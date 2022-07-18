@@ -238,8 +238,6 @@ class observation:
         None
         """
         self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
-        print(self.obj.info())
-        print(self.obj.memory_usage())
 
 
 class model:
