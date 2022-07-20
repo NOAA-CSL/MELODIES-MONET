@@ -284,14 +284,11 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         ylabel = column_o
     
     if df_reg is not None:
-        if column_o == 'OZONE':
-            # JianHe: we have options of 5th, 50th, and 95th percentile for O3 only
-            if ptile is None:
-                df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
-            else:
-                df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile)
-        else:
+        # JianHe: we have options of 5th, 50th, and 95th percentile for O3 only
+        if ptile is None:
             df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
+        else:
+            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile)
 
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.

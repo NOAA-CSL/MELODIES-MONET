@@ -725,8 +725,8 @@ class analysis:
                             set_yaxis = False
 
                         # Determine to calculate mean values or percentile
-                        if 'percentile_opt' in grp_dict['data_proc'].keys():
-                            use_percentile = grp_dict['data_proc']['percentile_opt']
+                        if 'percentile_opt' in obs_plot_dict.keys():
+                            use_percentile = obs_plot_dict['percentile_opt']
                         else:
                             use_percentile = None
 

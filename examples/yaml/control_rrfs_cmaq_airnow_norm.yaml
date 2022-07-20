@@ -103,6 +103,7 @@ obs:
         vmin_reg_plot: 30.0 #Opt
         vmax_reg_plot: 70.0 #Opt
         vdiff_reg_plot: 15.0 #Opt
+        percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
       WS:
         unit_scale: 0.514  # convert obs knots-->m/s
         unit_scale_method: '*'
@@ -189,7 +190,6 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
-      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
   plot_grp4:
     type: 'spatial_overlay' # plot type
     fig_kwargs: #For all spatial plots, specify map_kwargs here too.
@@ -203,7 +203,6 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
-      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
   plot_grp5:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
@@ -229,7 +228,6 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
-      percentile_opt: 0.95 #Opt, 0.05, 0.5, 0.95, etc. If not specified, simply calcualte mean values. Used for spatial plots only.
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
