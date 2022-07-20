@@ -236,7 +236,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     ylabel : str
         Title of colorbar axis
     ptile : float
-        Percentile for MDA8 O3 calculation
+        Percentile calculation
     vdiff : float
         Min and max value to use on colorbar axis
     outname : str
@@ -296,7 +296,11 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
             cmap=new_color_map(), edgecolor='k',linewidth=.8)
     else:
-        df_mean=df.groupby(['siteid'],as_index=False).mean()
+        # JianHe: include options for percentile calculation (set in yaml file)
+        if ptile is None:
+            df_mean=df.groupby(['siteid'],as_index=False).mean()
+        else:
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile)
        
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
