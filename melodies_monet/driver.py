@@ -786,6 +786,12 @@ class analysis:
                                 pairdf_reg = None
                                 outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
+                            if plot_type.lower() == 'spatial_bias' or plot_type.lower() == 'spatial_bias_exceedance': 
+                                if use_percentile is None:
+                                    outname = outname+'.mean'
+                                else:
+                                    outname = outname+'.p'+'{:02d}'.format(use_percentile) 
+
                             if self.output_dir is not None:
                                 outname = self.output_dir + '/' + outname  # Extra / just in case.
 

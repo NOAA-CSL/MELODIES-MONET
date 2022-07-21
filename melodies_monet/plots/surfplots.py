@@ -235,7 +235,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         Name of model variable to use in plot title
     ylabel : str
         Title of colorbar axis
-    ptile : float
+    ptile : integer
         Percentile calculation
     vdiff : float
         Min and max value to use on colorbar axis
@@ -282,13 +282,18 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column_o
-    
+     
+    if ptile is None:
+        ylable = 'Mean '+ylabel
+    else:
+        ylable = '{:02d}'.format(ptile)+'th percentile '+ylabel
+ 
     if df_reg is not None:
-        # JianHe: we have options of 5th, 50th, and 95th percentile for O3 only
+        # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
             df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
         else:
-            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile)
+            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile/100.)
 
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -300,7 +305,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         if ptile is None:
             df_mean=df.groupby(['siteid'],as_index=False).mean()
         else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile)
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
        
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -914,8 +919,8 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         Name of model variable to use in plot title
     ylabel : str
         Title of colorbar axis
-    ptile : float
-        Percentile for MDA8 O3 calculation
+    ptile : integer
+        Percentile calculation
     vdiff : float
         Min and max value to use on colorbar axis
     outname : str
@@ -962,20 +967,22 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
 
     # calculate exceedance
+    # JianHe: in regulatory calculation we typically calculate 95th percentile MDA8O3 and mean 24hr PM2.5
     if column_o == 'OZONE_reg':
-        # JianHe: we have options of 5th, 50th, and 95th percentile for MDA8O3 only
         if ptile is None:
             df_mean=df.groupby(['siteid'],as_index=False).mean()
         else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile)
-
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 70.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 70.].groupby(['siteid'],as_index=False)[column_m].count()     
         ylabel2 = 'O3'  
  
     elif column_o == 'PM2.5_reg':
-        df_mean=df.groupby(['siteid'],as_index=False).mean()
+        if ptile is None:
+            df_mean=df.groupby(['siteid'],as_index=False).mean()
+        else:
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 35.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 35.].groupby(['siteid'],as_index=False)[column_m].count()

@@ -89,6 +89,7 @@ obs:
         vmin_reg_plot: 0.0 #Opt
         vmax_reg_plot: 22.0 #Opt
         vdiff_reg_plot: 5.0 #Opt
+        #percentile_opt: 50 #Opt, 5, 50, 95, etc. If not specified, simply calcualte mean values. Currently used for "spatial_bias" and "spatial_bias_exceedances".
       OZONE:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
@@ -103,6 +104,7 @@ obs:
         vmin_reg_plot: 30.0 #Opt
         vmax_reg_plot: 70.0 #Opt
         vdiff_reg_plot: 15.0 #Opt
+        #percentile_opt: 95 #Opt, 5, 50, 95, etc. If not specified, simply calcualte mean values. Currently used for "spatial_bias" and "spatial_bias_exceedances".
       WS:
         unit_scale: 0.514  # convert obs knots-->m/s
         unit_scale_method: '*'
