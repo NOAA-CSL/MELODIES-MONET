@@ -284,9 +284,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         ylabel = column_o
      
     if ptile is None:
-        ylable = 'Mean '+ylabel
+        ylabel = 'Mean '+ylabel
     else:
-        ylable = '{:02d}'.format(ptile)+'th percentile '+ylabel
+        ylabel = '{:02d}'.format(ptile)+'th percentile '+ylabel
  
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
