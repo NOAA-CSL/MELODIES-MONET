@@ -898,7 +898,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     savefig(outname + '.png', loc=4, logo_height=100)
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                      label_m=None, ylabel = None, ptile = None, vdiff=None,
+                      label_m=None, ylabel = None,  vdiff=None,
                       outname = 'plot',
                       domain_type=None, domain_name=None, fig_dict=None,
                       text_dict=None,debug=False):
@@ -919,8 +919,6 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         Name of model variable to use in plot title
     ylabel : str
         Title of colorbar axis
-    ptile : integer
-        Percentile calculation
     vdiff : float
         Min and max value to use on colorbar axis
     outname : str
@@ -967,22 +965,15 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
 
     # calculate exceedance
-    # JianHe: in regulatory calculation we typically calculate 95th percentile MDA8O3 and mean 24hr PM2.5
     if column_o == 'OZONE_reg':
-        if ptile is None:
-            df_mean=df.groupby(['siteid'],as_index=False).mean()
-        else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+        df_mean=df.groupby(['siteid'],as_index=False).quantile(0.95) #concentrations not used in plotting, get the correct format for plotting
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 70.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 70.].groupby(['siteid'],as_index=False)[column_m].count()     
         ylabel2 = 'O3'  
  
     elif column_o == 'PM2.5_reg':
-        if ptile is None:
-            df_mean=df.groupby(['siteid'],as_index=False).mean()
-        else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+        df_mean=df.groupby(['siteid'],as_index=False).mean() #concentrations not used in plotting, get the correct format for plotting
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 35.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 35.].groupby(['siteid'],as_index=False)[column_m].count()
@@ -995,10 +986,11 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     df_combine = df_counto.set_index(['siteid']).join(df_countm.set_index(['siteid']),on=(['siteid']),how='outer').reset_index()
     df_combine[column_o]=df_combine[column_o].fillna(0)
     df_combine[column_m]=df_combine[column_m].fillna(0)
-
+    
     #df_reg = df_mean.reset_index(drop=True).merge(df_combine.reset_index(drop=True),on=['siteid']).rename(index=str,columns={column_o+'_y':column_o+'_day',column_m+'_y':column_m+'_day'})
     #print(df_reg)
 
+    # get the format correct in df_reg for the plotting 
     df_reg = (
         df_mean.merge(df_combine, on='siteid')
         .rename(index=str, columns={column_o+'_y': column_o+'_day', column_m+'_y': column_m+'_day'})

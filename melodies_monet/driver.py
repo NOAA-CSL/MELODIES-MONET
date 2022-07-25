@@ -786,7 +786,7 @@ class analysis:
                                 pairdf_reg = None
                                 outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
-                            if plot_type.lower() == 'spatial_bias' or plot_type.lower() == 'spatial_bias_exceedance': 
+                            if plot_type.lower() == 'spatial_bias': 
                                 if use_percentile is None:
                                     outname = outname+'.mean'
                                 else:
@@ -986,7 +986,6 @@ class analysis:
                                         column_m=modvar+'_reg',
                                         label_m=p.model,
                                         ylabel=use_ylabel,
-                                        ptile=use_percentile,
                                         vdiff=vdiff,
                                         outname=outname,
                                         domain_type=domain_type,
