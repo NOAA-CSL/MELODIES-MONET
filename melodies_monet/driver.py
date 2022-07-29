@@ -355,6 +355,15 @@ class model:
             self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
+        elif 'raqms' in self.model.lower():
+            if len(self.files) > 1:
+                self.obj = mio.raqms.open_mfdataset(self.files)
+            else:
+                self.obj = mio.raqms.open_dataset(self.files)
+            # note pressure units for RAQMS is in mb
+            # psfc = surface pressure
+            # delp
+            # pdash = pressure levels
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
