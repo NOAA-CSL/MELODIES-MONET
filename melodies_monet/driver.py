@@ -165,6 +165,11 @@ class observation:
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
+            elif self.label == 'tropomi_l2_no2':
+                from monetio import tropomi_l2_no2
+                print('Reading TROPOMI L2 NO2')
+                self.obj = tropomi_l2_no2.read_trpdataset(
+                    self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
             print('something happened opening file')
@@ -319,12 +324,12 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        #elif 'fv3raqms' in self.model.lower():
+        elif 'fv3raqms' in self.model.lower():
         #    print(self.files)
-        #    if len(self.files) > 1:
-        #        self.obj = mio.fv3raqms.open_mfdataset(self.files)
-        #    else:
-        #        self.obj = mio.fv3raqms.open_dataset(self.files)
+            if len(self.files) > 1:
+                self.obj = mio.fv3raqms.open_mfdataset(self.files)
+            else:
+                self.obj = mio.fv3raqms.open_dataset(self.files)
         elif 'raqms' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.raqms.open_mfdataset(self.files)
