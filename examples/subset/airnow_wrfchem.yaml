@@ -8,8 +8,8 @@ analysis:
 model:
   # Regional Atmospheric Chemistry Model/Earth System Research Lab
   WRF-Chem:
-    # files: /root/Data/example_model_data/wrfchem_example/racm_esrl/wrfout_d01_2019*
-    files: /root/Data/example_model_data/wrfchem_example/racm_esrl/subset_wrfout_d01_2019*
+    # files: /root/Data/wrfchem_example/racm_esrl/wrfout_d01_2019*
+    files: /root/Data/wrfchem_example/racm_esrl/subset_wrfout_d01_2019*
     required_vars:
       - Times
       - HGT
