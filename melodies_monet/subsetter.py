@@ -34,9 +34,14 @@ for model in control['model']:
     logging.info('processing:' + model)
 
     var_str = '-v '
+
+    for var in control['model'][model]['required_vars']:
+        var_str += var + ','
+
     for dataset in control['model'][model]['mapping']:
         for var in control['model'][model]['mapping'][dataset]:
             var_str += var + ','
+
     var_str = var_str.strip(',')
     logging.info(var_str)
 
