@@ -42,7 +42,9 @@ for model in control['model']:
 
     files = sorted(glob(control['model'][model]['files']))
     for file_in in files:
-        file_out = file_in + '_subset'
+        file_subdirs = file_in.split('/')
+        file_subdirs[-1] = 'subset_' + file_subdirs[-1]
+        file_out = '/'.join(file_subdirs)
         command = 'ncks -O ' + var_str + ' ' + file_in + ' ' + file_out
         logging.info(command)
         os.system(command)
