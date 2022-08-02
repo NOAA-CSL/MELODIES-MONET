@@ -306,9 +306,8 @@ class model:
         -------
         None
         """
-        from os.path import expandvars
 
-        self.file_str = expandvars(self.file_str)
+        self.file_str = os.path.expandvars(self.file_str)
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -456,7 +455,6 @@ class analysis:
         None
         """
         import yaml
-        from os.path import expandvars
 
         if control is not None:
             self.control = control
@@ -468,7 +466,7 @@ class analysis:
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = expandvars(self.control_dict['analysis']['output_dir'])
+            self.output_dir = os.path.expandvars(self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
@@ -532,7 +530,6 @@ class analysis:
         -------
         None
         """
-        from os.path import expandvars
 
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
@@ -541,7 +538,7 @@ class analysis:
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
                 o.file = self.control_dict['obs'][obs]['filename']
-                o.file = expandvars(o.file)
+                o.file = os.path.expandvars(o.file)
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
