@@ -456,6 +456,7 @@ class analysis:
         None
         """
         import yaml
+        from melodies_monet.util.env_sub import env_sub
 
         if control is not None:
             self.control = control
@@ -467,7 +468,7 @@ class analysis:
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = self.control_dict['analysis']['output_dir']
+            self.output_dir = env_sub(self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
