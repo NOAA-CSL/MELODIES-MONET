@@ -57,9 +57,11 @@ Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
 
 **files_vert:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro3d.ncf`` files here.
+Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
 
 **files_surf:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro2d.ncf`` files here.
+Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
 
 **mod_type:** The model type. Options are: 'cmaq', 'wrfchem', 'rrfs', 'gsdchem'. 
 If you specify another name, MELODIES MONET will try to read in the data using
