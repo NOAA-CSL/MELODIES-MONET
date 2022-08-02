@@ -40,7 +40,7 @@ All input related to the analysis class.
 
 **output_dir**: This is optional. This is the directory where the plots are saved. 
 If not specified plots stored in code directory.
-Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **debug:** This is an option to print out plots and more options for trouble 
 shooting. If you want plots to print in jupyter notebooks select this to True.
@@ -53,15 +53,15 @@ All input for each instance of the model class. First level should be the model
 label. Then under each model label provide the following:
 
 **files:** The file directory location and name(s). Hotkeys are allowed.
-Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **files_vert:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro3d.ncf`` files here.
-Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **files_surf:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro2d.ncf`` files here.
-Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **mod_type:** The model type. Options are: 'cmaq', 'wrfchem', 'rrfs', 'gsdchem'. 
 If you specify another name, MELODIES MONET will try to read in the data using
@@ -128,7 +128,7 @@ Generalizing this to include other surface observations is under development.
 
 **filename:**  The file directory location and name. These observations need 
 to be preprocessed prior to incorporating them into MELODIES MONET.
-Shell variables prefixed with the $ symbol, such as $HOME, will be expanded.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 See :doc:`../tutorial/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
