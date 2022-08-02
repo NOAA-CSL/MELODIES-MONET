@@ -531,6 +531,8 @@ class analysis:
         -------
         None
         """
+        from melodies_monet.util.env_sub import env_sub
+
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
@@ -538,6 +540,7 @@ class analysis:
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
                 o.file = self.control_dict['obs'][obs]['filename']
+                o.file = env_sub(o.file)
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
