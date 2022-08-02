@@ -541,7 +541,7 @@ class analysis:
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
                 o.file = self.control_dict['obs'][obs]['filename']
-                o.file = expand_vars(o.file)
+                o.file = expandvars(o.file)
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
