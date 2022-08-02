@@ -267,24 +267,6 @@ class model:
             ")"
         )
 
-    def env_sub(self):
-        """Substitute envirnoment variables prefixed by $
-        in file location string.
-
-        Returns
-        -------
-        None
-        """
-        for subpath in self.file_str.split("/"):
-            if "$" in subpath:
-                envvar = subpath.replace("$", "")
-                envval = os.getenv(envvar)
-                if envval is None:
-                    print("environment variable not defined: " + subpath)
-                    exit(1)
-                else:
-                    self.file_str = self.file_str.replace(subpath, envval)
-
     def glob_files(self):
         """Convert the model file location string read in by the yaml file
         into a list of files containing all model data.
@@ -324,7 +306,9 @@ class model:
         -------
         None
         """
-        self.env_sub()
+        from melodies_monet.util.env_sub import env_sub
+
+        self.file_str = env_sub(self.file_str)
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
