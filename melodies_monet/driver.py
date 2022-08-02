@@ -267,6 +267,16 @@ class model:
             ")"
         )
 
+    def env_var_sub(self):
+        """Substitute envirnoment variables prefixed by $
+        in file location string.
+
+        Returns
+        -------
+        None
+        """
+        pass
+
     def glob_files(self):
         """Convert the model file location string read in by the yaml file
         into a list of files containing all model data.
