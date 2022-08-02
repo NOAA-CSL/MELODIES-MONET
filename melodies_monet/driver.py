@@ -530,15 +530,14 @@ class analysis:
         -------
         None
         """
-
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.file = self.control_dict['obs'][obs]['filename']
-                o.file = os.path.expandvars(o.file)
+                o.file = os.path.expandvars(
+                    self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
