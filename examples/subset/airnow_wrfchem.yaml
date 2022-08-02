@@ -1,15 +1,15 @@
 analysis:
   start_time: '2019-09-05-06:00:00' #UTC
   end_time:   '2019-09-06-06:00:00' #UTC
-  output_dir: /root/Data/melodies_monet_output
+  output_dir: $HOME/Data/melodies_monet_output
   debug: True
 
 
 model:
   # Regional Atmospheric Chemistry Model/Earth System Research Lab
   WRF-Chem:
-    # files: /root/Data/wrfchem_example/racm_esrl/wrfout_d01_2019*
-    files: /root/Data/wrfchem_example/racm_esrl/subset_wrfout_d01_2019*
+    files: $HOME/Data/wrfchem_example/racm_esrl/wrfout_d01_2019*
+    # files: $HOME/Data/wrfchem_example/racm_esrl/subset_wrfout_d01_2019*
     required_vars:
       - Times
       - HGT
@@ -41,7 +41,7 @@ model:
 obs:
   AirNow:
     use_airnow: True
-    filename: /root/Data/surface/AIRNOW_20190901_20190930.nc
+    filename: $HOME/Data/surface_obs/AIRNOW_20190901_20190930.nc
     obs_type: pt_sfc
     variables:
       PM2.5:
