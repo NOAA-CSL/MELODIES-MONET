@@ -45,17 +45,7 @@ for model in control['model']:
     var_str = var_str.strip(',')
     logging.info(var_str)
 
-    file_str = control['model'][model]['files']
-
-    for subpath in file_str.split("/"):
-        if "$" in subpath:
-            envvar = subpath.replace("$", "")
-            envval = os.getenv(envvar)
-            if envval is None:
-                print("environment variable not defined: " + subpath)
-                exit(1)
-            else:
-                file_str = file_str.replace(subpath, envval)
+    file_str = os.path.expandvars(control['model'][model]['files'])
 
     files = sorted(glob(file_str))
 
