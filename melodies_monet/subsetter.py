@@ -45,9 +45,9 @@ for model in control['model']:
     var_str = var_str.strip(',')
     logging.info(var_str)
 
-    fnames = control['model'][model]['files']
+    file_str = control['model'][model]['files']
 
-    for subpath in fnames.split("/"):
+    for subpath in file_str.split("/"):
         if "$" in subpath:
             envvar = subpath.replace("$", "")
             envval = os.getenv(envvar)
@@ -55,9 +55,9 @@ for model in control['model']:
                 print("environment variable not defined: " + subpath)
                 exit(1)
             else:
-                fnames = fnames.replace(subpath, envval)
+                file_str = file_str.replace(subpath, envval)
 
-    files = sorted(glob(fnames))
+    files = sorted(glob(file_str))
 
     for file_in in files:
         file_subdirs = file_in.split('/')
