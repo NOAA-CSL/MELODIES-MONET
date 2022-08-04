@@ -8,7 +8,19 @@ import numpy as np
 def update_grid_data(lat_edges, lon_edges, lat_swath, lon_swath,
                      data_swath, count_grid, data_grid):
     """
-    accumulate swath data on grid
+    Accumulate swath data on a uniform grid
+
+    Parameters
+        lat_edges (np.array): grid latitude edges
+        lon_edges (np.array): grid longitude edges
+        lat_swath (np.array): swath latitudes
+        lon_swath (np.array): swath longitudes
+        data_swath (np.array): swath data values
+        count_grid (np.array): number of swath points in grid cell
+        data_grid (np.array): sum of data values in grid cell
+
+    Returns
+        None
     """
     logging.debug((len(lat_swath), len(lon_swath), len(data_swath)))
     lat_del = lat_edges[1] - lat_edges[0]
@@ -22,3 +34,4 @@ def update_grid_data(lat_edges, lon_edges, lat_swath, lon_swath,
             i_lon = min(nlon - 1, i_lon)
             count_grid[i_lat, i_lon] += 1
             data_grid[i_lat, i_lon] += data_swath[i]
+
