@@ -1,0 +1,36 @@
+analysis:
+    start_time: '2019-09-09'
+    end_time:   '2019-09-11'
+    debug: False
+
+test_setup:
+    random_seed: 3
+    freq: 60min
+
+obs:
+    test_obs:
+        filename: test_obs.nc
+        obs_type: sat_swath
+        drop_unused_vars: True
+        variables:
+            lon:
+                units: 'degrees East'
+                unit_scale: 1.0
+                unit_scale_method: '*'
+                range_min: -120.0
+                range_max: -100.0
+            lat:
+                units: 'degrees North'
+                unit_scale: 1.0
+                unit_scale_method: '*'
+                range_min: 25.0
+                range_max: 45.0
+            A_obs:
+                units: 'Units of A' 
+                unit_scale: 1
+                unit_scale_method: '*'
+            B_obs:
+                units: 'Units of B' 
+                unit_scale: 1
+                unit_scale_method: '*'
+
