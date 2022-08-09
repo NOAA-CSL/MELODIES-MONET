@@ -26,6 +26,7 @@ count_grid = dict()
 data_grid = dict()
 
 files = glob(an.control_dict['obs']['test_obs']['files'])
+obs_var = an.control_dict['test_setup']['obs_var']
 
 # read obs
 for filename in files:
@@ -34,6 +35,6 @@ for filename in files:
     print(obs_ds.info())
 
     grid_util.update_sparse_data_grid(lat_edges, lon_edges,
-        obs_ds['lat'], obs_ds['lon'], obs_ds['A_obs'],
+        obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 

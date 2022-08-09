@@ -1,16 +1,12 @@
 analysis:
   start_time: '2019-09-09'
   end_time:   '2019-09-12'
+  debug: True
 
 test_setup:
   random_seed: 3
   freq: 60min
-
-model:
-  test_model:
-    mapping:
-      test_obs:
-        A: A_obs
+  obs_var: A_obs
 
 obs:
   test_obs:
