@@ -15,8 +15,7 @@ def update_sparse_data_grid(time_edges, lat_edges, lon_edges,
                             count_grid, data_grid):
     """
     Accumulate obs data on a uniform grid with dimensions time x lat x lon
-    Store running counts and sums
-        in dictionaries keyed by grid index tuples (i_time, i_lat, i_lon)
+    Store running counts and sums in dictionaries keyed by grid index tuples (i_time, i_lat, i_lon)
 
     Parameters
         time_edges (np.array): grid time edges
@@ -57,10 +56,8 @@ def update_data_grid_2d(lat_edges, lon_edges,
                         count_grid, data_grid):
     """
     Accumulate obs data on a uniform grid with dimensions lat x lon
-    Store running counts and sums
-        in 2d numpy arrays
-    This method may become unused,
-        it is retained for comparison to the sparse data grid
+    Store running counts and sums in 2d numpy arrays
+    This method may become unused, it is retained for comparison to the sparse data grid
 
     Parameters
         lat_edges (np.array): grid latitude edges
