@@ -35,4 +35,5 @@ obs:
         sparse_data_grid:
             nlon: 360
             nlat: 180
+            lon0: 0
 
