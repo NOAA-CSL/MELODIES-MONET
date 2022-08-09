@@ -66,9 +66,9 @@ def update_sparse_data_grid(lat_edges, lon_edges,
             i_lat = min(nlat - 1, i_lat)
             i_lon = min(nlon - 1, i_lon)
             if (i_lon, i_lat) in count_grid.keys():
-                count_grid[(i_lon, i_lat)] += 1
-                data_grid[(i_lat, i_lon)] += data_obs[i]
+                count_grid[(i_lat, i_lon)] += 1
+                data_grid[(i_lat, i_lon)] += data_obs[i].values
             else:
-                count_grid[(i_lon, i_lat)] = 1
-                data_grid[(i_lat, i_lon)] = data_obs[i]
+                count_grid[(i_lat, i_lon)] = 1
+                data_grid[(i_lat, i_lon)] = data_obs[i].values
 

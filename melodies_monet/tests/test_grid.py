@@ -38,3 +38,5 @@ for filename in files:
         obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 
+print(count_grid)
+print(data_grid)
