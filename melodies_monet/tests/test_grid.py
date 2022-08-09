@@ -4,6 +4,8 @@ import xarray as xr
 from glob import glob
 from melodies_monet import driver
 
+import melodies_monet.util.grid_util
+
 an = driver.analysis()
 
 an.control = 'test_grid.yaml'
@@ -20,6 +22,9 @@ lon_edges = np.linspace(lon0, lon0 + 360, nlon+1, endpoint=True, dtype=float)
 lon_grid = 0.5 * (lon_edges[0:nlon] + lon_edges[1:nlon+1])
 
 files = glob(an.control_dict['obs']['test_obs']['files'])
+
+count_grid = dict()
+data_grid = dict()
 
 # read obs
 for filename in files:
