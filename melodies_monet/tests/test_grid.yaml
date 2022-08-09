@@ -1,39 +1,40 @@
 analysis:
-    start_time: '2019-09-09'
-    end_time:   '2019-09-12'
-    debug: False
+  start_time: '2019-09-09'
+  end_time:   '2019-09-12'
 
 test_setup:
-    random_seed: 3
-    freq: 60min
+  random_seed: 3
+  freq: 60min
+
+model:
+  test_model:
+    mapping:
+      test_obs:
+        A: A_obs
 
 obs:
-    test_obs:
-        files: test_obs*
-        obs_type: sfc_unstruct
-        variables:
-            lon:
-                units: 'degrees East'
-                unit_scale: 1.0
-                unit_scale_method: '*'
-                range_min: -120.0
-                range_max: -100.0
-            lat:
-                units: 'degrees North'
-                unit_scale: 1.0
-                unit_scale_method: '*'
-                range_min: 25.0
-                range_max: 45.0
-            A_obs:
-                units: 'Units of A' 
-                unit_scale: 1
-                unit_scale_method: '*'
-            B_obs:
-                units: 'Units of B' 
-                unit_scale: 1
-                unit_scale_method: '*'
-        sparse_data_grid:
-            nlon: 360
-            nlat: 180
-            lon0: 0
+  test_obs:
+    files: test_obs*
+    obs_type: sfc_unstruct
+    variables:
+      lon:
+        units: 'degrees East'
+        unit_scale: 1.0
+        unit_scale_method: '*'
+        range_min: -120.0
+        range_max: -100.0
+      lat:
+        units: 'degrees North'
+        unit_scale: 1.0
+        unit_scale_method: '*'
+        range_min: 25.0
+        range_max: 45.0
+      A_obs:
+        units: 'Units of A' 
+        unit_scale: 1
+        unit_scale_method: '*'
+    sparse_data_grid:
+      nlon: 360
+      nlat: 180
+      lon0: 0
 

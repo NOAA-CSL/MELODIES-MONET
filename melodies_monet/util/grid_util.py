@@ -5,8 +5,9 @@ file: grid_util.py
 import math
 import numpy as np
 
-def update_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
-                     data_obs, count_grid, data_grid):
+def update_data_grid(lat_edges, lon_edges,
+                     lat_obs, lon_obs, data_obs,
+                     count_grid, data_grid):
     """
     Accumulate obs data on a uniform grid
 
@@ -22,7 +23,6 @@ def update_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
     Returns
         None
     """
-    print(len(lat_obs), len(lon_obs), len(data_obs))
     lat_del = lat_edges[1] - lat_edges[0]
     lon_del = lon_edges[1] - lon_edges[0]
     nlat, nlon = data_grid.shape
@@ -36,10 +36,13 @@ def update_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
             data_grid[i_lat, i_lon] += data_obs[i]
 
 
-def update_sparse_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
-                            data_obs, count_grid, data_grid):
+def update_sparse_data_grid(lat_edges, lon_edges,
+                            lat_obs, lon_obs, data_obs,
+                            count_grid, data_grid):
     """
     Accumulate obs data on a uniform grid
+    Store running counts and sums
+        in dictionaries keyed by grid index tuples (i_lat, i_lon)
 
     Parameters
         lat_edges (np.array): grid latitude edges
@@ -53,7 +56,6 @@ def update_sparse_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
     Returns
         None
     """
-    print(len(lat_obs), len(lon_obs), len(data_obs))
     lat_del = lat_edges[1] - lat_edges[0]
     lon_del = lon_edges[1] - lon_edges[0]
     nlat, nlon = len(lat_edges) - 1, len(lon_edges) - 1
