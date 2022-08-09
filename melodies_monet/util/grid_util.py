@@ -41,9 +41,9 @@ def update_sparse_data_grid(time_edges, lat_edges, lon_edges,
             i_time = math.floor((time_obs[i] - time_edges[0]) / time_del)
             i_lat = math.floor((lat_obs[i] - lat_edges[0]) / lat_del)
             i_lon = math.floor((lon_obs[i] - lon_edges[0]) / lon_del)
-            i_time = min(ntime - 1, i_time)
-            i_lat = min(nlat - 1, i_lat)
-            i_lon = min(nlon - 1, i_lon)
+            i_time = np.clip(i_time, 0, ntime - 1)
+            i_lat = np.clip(i_lat, 0, nlat - 1)
+            i_lon = np.clip(i_lon, 0, nlon - 1)
             if (i_time, i_lon, i_lat) in count_grid.keys():
                 count_grid[(i_time, i_lat, i_lon)] += 1
                 data_grid[(i_time, i_lat, i_lon)] += data_obs[i].values
@@ -81,8 +81,8 @@ def update_data_grid_2d(lat_edges, lon_edges,
         if not np.isnan(data_obs[i]):
             i_lat = math.floor((lat_obs[i] - lat_edges[0]) / lat_del)
             i_lon = math.floor((lon_obs[i] - lon_edges[0]) / lon_del)
-            i_lat = min(nlat - 1, i_lat)
-            i_lon = min(nlon - 1, i_lon)
+            i_lat = np.clip(i_lat, 0, nlat - 1)
+            i_lon = np.clip(i_lon, 0, nlon - 1)
             count_grid[i_lat, i_lon] += 1
             data_grid[i_lat, i_lon] += data_obs[i]
 

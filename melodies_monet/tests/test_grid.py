@@ -1,3 +1,17 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""
+file: test_grid.py
+
+test grid_util.update_sparse_data_grid
+
+requires obs datafiles generated with, e.g.
+    python setup_obs.py --nfile 3 --control test_grid.yaml
+"""
+
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -11,6 +25,9 @@ an = driver.analysis()
 
 an.control = 'test_grid.yaml'
 an.read_control()
+
+
+# lines below emulate functionality that would be in the driver
 
 start_time = pd.to_datetime(an.control_dict['analysis']['start_time'])
 end_time = pd.to_datetime(an.control_dict['analysis']['end_time'])
