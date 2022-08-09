@@ -11,7 +11,6 @@ obs:
     test_obs:
         files: test_obs*
         obs_type: sfc_unstruct
-        drop_unused_vars: True
         variables:
             lon:
                 units: 'degrees East'
@@ -33,4 +32,7 @@ obs:
                 units: 'Units of B' 
                 unit_scale: 1
                 unit_scale_method: '*'
+        sparse_data_grid:
+            nlon: 360
+            nlat: 180
 
