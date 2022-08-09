@@ -3,12 +3,12 @@
 #
 
 """
-file: test_grid.py
+file: sparse_grid.py
 
 test grid_util.update_sparse_data_grid
 
 requires obs datafiles generated with, e.g.
-    python setup_obs.py --nfile 3 --control test_grid.yaml
+    python setup_obs.py --nfile 3 --control sparse_grid.yaml
 """
 
 
@@ -23,7 +23,7 @@ from melodies_monet.util import grid_util
 
 an = driver.analysis()
 
-an.control = 'test_grid.yaml'
+an.control = 'sparse_grid.yaml'
 an.read_control()
 
 
