@@ -69,8 +69,11 @@ for ifile in range(args.nfile):
 
     istart = ifile * ntime_file
     iend = istart + ntime_file
+    datetimes = pd.to_datetime(datetime_indices[istart:iend])
+    df_dict['timestamps'] = [t.timestamp() for t in datetimes]
     df = pd.DataFrame(df_dict, index=datetime_indices[istart:iend]).to_xarray()
     ds = xr.Dataset(df)
+    ds['timestamps'].attrs = {'units': 'seconds since 1970 Jan 01 00:00:00'}
     logging.debug(ds)
     suffix = '_%d.nc' % ifile
     ds.to_netcdf(control['obs']['test_obs']['files'].replace('*', suffix))
