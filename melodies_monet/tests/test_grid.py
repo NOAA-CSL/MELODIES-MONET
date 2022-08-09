@@ -45,10 +45,9 @@ for filename in files:
     print('reading ' + filename)
     obs_ds = xr.open_dataset(filename)
     print(obs_ds.info())
-    print(obs_ds['timestamps'])
 
-    grid_util.update_sparse_data_grid(lat_edges, lon_edges,
-        obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
+    grid_util.update_sparse_data_grid(time_edges, lat_edges, lon_edges,
+        obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 
 # print(count_grid)
