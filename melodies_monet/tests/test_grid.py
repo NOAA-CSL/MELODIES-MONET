@@ -4,7 +4,7 @@ import xarray as xr
 from glob import glob
 from melodies_monet import driver
 
-import melodies_monet.util.grid_util
+from melodies_monet.util import grid_util
 
 an = driver.analysis()
 
@@ -31,4 +31,8 @@ for filename in files:
     print('reading ' + filename)
     obs_ds = xr.open_dataset(filename)
     print(obs_ds.info())
+
+    grid_util.update_sparse_data_grid(lat_edges, lon_edges,
+        obs_ds['lat'], obs_ds['lon'], obs_ds['A_obs'],
+        count_grid, data_grid)
 

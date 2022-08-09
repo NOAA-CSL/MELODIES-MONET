@@ -22,7 +22,7 @@ def update_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
     Returns
         None
     """
-    logging.debug((len(lat_obs), len(lon_obs), len(data_obs)))
+    print(len(lat_obs), len(lon_obs), len(data_obs))
     lat_del = lat_edges[1] - lat_edges[0]
     lon_del = lon_edges[1] - lon_edges[0]
     nlat, nlon = data_grid.shape
@@ -53,17 +53,17 @@ def update_sparse_data_grid(lat_edges, lon_edges, lat_obs, lon_obs,
     Returns
         None
     """
-    logging.debug((len(lat_obs), len(lon_obs), len(data_obs)))
+    print(len(lat_obs), len(lon_obs), len(data_obs))
     lat_del = lat_edges[1] - lat_edges[0]
     lon_del = lon_edges[1] - lon_edges[0]
-    nlat, nlon = data_grid.shape
+    nlat, nlon = len(lat_edges) - 1, len(lon_edges) - 1
     for i in range(len(data_obs)):
         if not np.isnan(data_obs[i]):
             i_lat = math.floor((lat_obs[i] - lat_edges[0]) / lat_del)
             i_lon = math.floor((lon_obs[i] - lon_edges[0]) / lon_del)
             i_lat = min(nlat - 1, i_lat)
             i_lon = min(nlon - 1, i_lon)
-            if (i_lon, ilat) in count_grid.keys():
+            if (i_lon, i_lat) in count_grid.keys():
                 count_grid[(i_lon, i_lat)] += 1
                 data_grid[(i_lat, i_lon)] += data_obs[i]
             else:
