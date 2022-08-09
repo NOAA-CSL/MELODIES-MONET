@@ -73,5 +73,5 @@ for ifile in range(args.nfile):
     ds = xr.Dataset(df)
     logging.debug(ds)
     suffix = '_%d.nc' % ifile
-    ds.to_netcdf(control['obs']['test_obs']['filename'].replace('.nc', suffix))
+    ds.to_netcdf(control['obs']['test_obs']['files'].replace('*', suffix))
 
