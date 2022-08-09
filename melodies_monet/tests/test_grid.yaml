@@ -1,6 +1,6 @@
 analysis:
     start_time: '2019-09-09'
-    end_time:   '2019-09-11'
+    end_time:   '2019-09-12'
     debug: False
 
 test_setup:
@@ -9,8 +9,8 @@ test_setup:
 
 obs:
     test_obs:
-        filename: test_obs.nc
-        obs_type: sat_swath
+        files: test_obs*
+        obs_type: sfc_unstruct
         drop_unused_vars: True
         variables:
             lon:
