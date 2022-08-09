@@ -1,6 +1,6 @@
 analysis:
-  start_time: '2019-09-09'
-  end_time:   '2019-09-12'
+  start_time: '2019-09-09T00:00:00'
+  end_time:   '2019-09-11T23:59:59'
   debug: True
 
 test_setup:
@@ -30,7 +30,8 @@ obs:
         unit_scale: 1
         unit_scale_method: '*'
     sparse_data_grid:
-      nlon: 360
+      ntime: 144
       nlat: 180
+      nlon: 360
       lon0: 0
 
