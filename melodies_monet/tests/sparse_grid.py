@@ -11,7 +11,6 @@ requires obs datafiles generated with, e.g.
     python setup_obs.py --nfile 3 --control sparse_grid.yaml
 """
 
-
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -51,8 +50,12 @@ lon_edges = np.linspace(lon0, lon0 + 360, nlon+1, endpoint=True, dtype=float)
 lon_grid = 0.5 * (lon_edges[0:nlon] + lon_edges[1:nlon+1])
 
 # instantiate count and data dictionaries
-count_grid = dict()
-data_grid = dict()
+count_grid_dict = dict()
+data_grid_dict = dict()
+
+# initialize count and data arrays
+count_grid = np.zeros((ntime, nlat, nlon), dtype=np.int32)
+data_grid = np.zeros((ntime, nlat, nlon), dtype=np.float32)
 
 files = glob(an.control_dict['obs']['test_obs']['files'])
 obs_var = an.control_dict['test_setup']['obs_var']
@@ -65,7 +68,11 @@ for filename in files:
 
     grid_util.update_sparse_data_grid(time_edges, lat_edges, lon_edges,
         obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
+        count_grid_dict, data_grid_dict)
+
+    grid_util.update_data_grid(time_edges, lat_edges, lon_edges,
+        obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 
-# print(count_grid)
-# print(data_grid)
+# print(count_grid_dict)
+# print(data_grid_dict)
