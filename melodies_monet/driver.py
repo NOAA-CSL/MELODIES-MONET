@@ -475,6 +475,18 @@ class analysis:
             self.output_dir = self.control_dict['analysis']['output_dir']
         self.debug = self.control_dict['analysis']['debug']
 
+        # Enable Dask progress bars? (default: false)
+        enable_dask_progress_bars = self.control_dict["analysis"].get(
+            "enable_dask_progress_bars", False)
+        if enable_dask_progress_bars:
+            from dask.diagnostics import ProgressBar
+
+            ProgressBar().register()
+        else:
+            from dask.callbacks import Callback
+
+            Callback.active = set()
+
     def open_models(self):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
