@@ -1,7 +1,9 @@
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
 # SPDX-License-Identifier: Apache-2.0
 #
-""" This is the overall control file.  It will drive the entire analysis package"""
+"""
+Drive the entire analysis package via the :class:`analysis` class.
+"""
 import monetio as mio
 import monet as m
 import os
