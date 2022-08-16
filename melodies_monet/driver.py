@@ -311,6 +311,7 @@ class model:
         -------
         None
         """
+
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -472,7 +473,8 @@ class analysis:
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = self.control_dict['analysis']['output_dir']
+            self.output_dir = os.path.expandvars(
+                self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
     def open_models(self):
@@ -499,13 +501,17 @@ class analysis:
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
                 # create file string (note this can include hot strings)
-                m.file_str = self.control_dict['model'][mod]['files']
+                m.file_str = os.path.expandvars(
+                    self.control_dict['model'][mod]['files'])
                 if 'files_vert' in self.control_dict['model'][mod].keys():
-                    m.file_vert_str = self.control_dict['model'][mod]['files_vert']
+                    m.file_vert_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_vert'])
                 if 'files_surf' in self.control_dict['model'][mod].keys():
-                    m.file_surf_str = self.control_dict['model'][mod]['files_surf']
+                    m.file_surf_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_surf'])
                 if 'files_pm25' in self.control_dict['model'][mod].keys():
-                    m.file_pm25_str = self.control_dict['model'][mod]['files_pm25']
+                    m.file_pm25_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_pm25'])
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
@@ -540,7 +546,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.file = self.control_dict['obs'][obs]['filename']
+                o.file = os.path.expandvars(
+                    self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
