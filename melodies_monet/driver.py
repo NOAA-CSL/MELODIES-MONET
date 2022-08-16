@@ -30,12 +30,7 @@ class pair:
     """
     
     def __init__(self):
-        """Initialize a :class:`pair` object.
-    
-        Returns
-        -------
-        pair
-        """
+        """Initialize a :class:`pair` object."""
         self.type = 'pt_sfc'
         self.radius_of_influence = 1e6
         self.obs = None
@@ -115,12 +110,7 @@ class observation:
     """
 
     def __init__(self):
-        """Initialize an :class:`observation` object.
-
-        Returns
-        -------
-        observation
-        """
+        """Initialize an :class:`observation` object."""
         self.obs = None
         self.label = None
         self.file = None
@@ -236,12 +226,7 @@ class model:
     """    
 
     def __init__(self):
-        """Initialize a :class:`model` object.
-
-        Returns
-        -------
-        model
-        """
+        """Initialize a :class:`model` object."""
         self.model = None
         self.radius_of_influence = None
         self.mod_kwargs = {}
@@ -413,12 +398,7 @@ class analysis:
     """
 
     def __init__(self):
-        """Initialize the :class:`analysis` object.
-
-        Returns
-        -------
-        analysis
-        """
+        """Initialize an :class:`analysis` object."""
         self.control = 'control.yaml'
         self.control_dict = None
         self.models = {}
