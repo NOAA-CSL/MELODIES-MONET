@@ -1,12 +1,17 @@
 API
 ---
 
+.. currentmodule:: melodies_monet
+
 .. autosummary::
    :toctree: api/
    :recursive:
 
-   melodies_monet
-
+   driver
+   plots
+   stats
+   tutorial
+   util
 
 
 :ref:`genindex`
