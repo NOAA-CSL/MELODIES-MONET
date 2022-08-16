@@ -1,6 +1,8 @@
 API
 ---
 
+.. module:: melodies_monet
+
 .. currentmodule:: melodies_monet
 
 .. autosummary::
