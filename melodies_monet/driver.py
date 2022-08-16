@@ -1,7 +1,9 @@
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
 # SPDX-License-Identifier: Apache-2.0
 #
-""" This is the overall control file.  It will drive the entire analysis package"""
+"""
+Drive the entire analysis package via the :class:`analysis` class.
+"""
 import monetio as mio
 import monet as m
 import os
@@ -28,12 +30,7 @@ class pair:
     """
     
     def __init__(self):
-        """Initialize a :class:`pair` object.
-    
-        Returns
-        -------
-        pair
-        """
+        """Initialize a :class:`pair` object."""
         self.type = 'pt_sfc'
         self.radius_of_influence = 1e6
         self.obs = None
@@ -113,12 +110,7 @@ class observation:
     """
 
     def __init__(self):
-        """Initialize an :class:`observation` object.
-
-        Returns
-        -------
-        observation
-        """
+        """Initialize an :class:`observation` object."""
         self.obs = None
         self.label = None
         self.file = None
@@ -234,12 +226,7 @@ class model:
     """    
 
     def __init__(self):
-        """Initialize a :class:`model` object.
-
-        Returns
-        -------
-        model
-        """
+        """Initialize a :class:`model` object."""
         self.model = None
         self.radius_of_influence = None
         self.mod_kwargs = {}
@@ -311,6 +298,7 @@ class model:
         -------
         None
         """
+
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -410,12 +398,7 @@ class analysis:
     """
 
     def __init__(self):
-        """Initialize the :class:`analysis` object.
-
-        Returns
-        -------
-        analysis
-        """
+        """Initialize an :class:`analysis` object."""
         self.control = 'control.yaml'
         self.control_dict = None
         self.models = {}
@@ -472,7 +455,8 @@ class analysis:
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = self.control_dict['analysis']['output_dir']
+            self.output_dir = os.path.expandvars(
+                self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
         # Enable Dask progress bars? (default: false)
@@ -511,13 +495,17 @@ class analysis:
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
                 # create file string (note this can include hot strings)
-                m.file_str = self.control_dict['model'][mod]['files']
+                m.file_str = os.path.expandvars(
+                    self.control_dict['model'][mod]['files'])
                 if 'files_vert' in self.control_dict['model'][mod].keys():
-                    m.file_vert_str = self.control_dict['model'][mod]['files_vert']
+                    m.file_vert_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_vert'])
                 if 'files_surf' in self.control_dict['model'][mod].keys():
-                    m.file_surf_str = self.control_dict['model'][mod]['files_surf']
+                    m.file_surf_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_surf'])
                 if 'files_pm25' in self.control_dict['model'][mod].keys():
-                    m.file_pm25_str = self.control_dict['model'][mod]['files_pm25']
+                    m.file_pm25_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_pm25'])
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
@@ -552,7 +540,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.file = self.control_dict['obs'][obs]['filename']
+                o.file = os.path.expandvars(
+                    self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
