@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-New plotting routines
+Plotting routines.
 """
 from functools import partial
 from pathlib import Path
