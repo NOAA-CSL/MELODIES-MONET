@@ -360,10 +360,11 @@ class model:
                 self.obj = mio.raqms.open_mfdataset(self.files)
             else:
                 self.obj = mio.raqms.open_dataset(self.files)
-            # note pressure units for RAQMS is in mb
-            # psfc = surface pressure
-            # delp
-            # pdash = pressure levels
+            # unit conversions from mb to pa and variable renames
+            self.obj = self.obj.rename({'psfc':'surfpres_pa','delp':'delp_pa','pdash':'pres_pa'})
+            self.obj['surfpres_pa'] *= 100 
+            self.obj['pres_pa'] *= 100 
+            self.obj['delp_pa'] *= 100 
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
