@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Retrieve the docs/examples tutorial datasets, caching with pooch
+Retrieve the docs/examples tutorial datasets, caching with pooch.
 
 The data are retrieved from
 https://csl.noaa.gov/groups/csl4/modeldata/melodies-monet/
