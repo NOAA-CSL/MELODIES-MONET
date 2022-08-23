@@ -271,3 +271,51 @@ def get_epa_region_df(df):
         df.loc[con, 'EPA_INDEX'] = i + 1
         df.loc[con, 'EPA_ACRO'] = acro
     return df
+
+def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
+    import stratify
+    import xarray as xr
+
+    result = stratify.interpolate(levels, vertical.chunk(), da.chunk(), axis=axis,
+                                 interpolation = interpolation,extrapolation = extrapolation)
+    dims = da.dims
+    out = xr.DataArray(result, dims=dims)
+    for i in dims:
+        if i != "z":
+            out[i] = da[i]
+    out.attrs = da.attrs.copy()
+    if len(da.coords) > 0:
+        for i in da.coords:
+            if i != "z":
+                out.coords[i] = da.coords[i]
+    return out
+
+def vert_interp(ds_model,df_obs,var_name_list):
+    import xarray as xr
+    from pandas import merge_asof, Series
+
+    var_out_list = []
+    for var_name in var_name_list:
+        if var_name == 'pressure_model':
+            out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
+                                      ds_model['pressure_model'],axis=1,
+                                      interpolation='linear',extrapolation='nan')
+            #Use extrapolation nan for the pressure so that later you can assign the nan values to the pressure_obs value 
+            #instead of the midpoint of the edge model cells. This is needed for the pairing later on.
+        else:
+            out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
+                                  ds_model['pressure_model'],axis=1,
+                                  interpolation='linear',extrapolation='nearest')
+        out.name = var_name
+        var_out_list.append(out)
+
+    df_model = xr.merge(var_out_list).to_dataframe().reset_index()
+    df_model.pressure_model.fillna(df_model.pressure_obs,inplace=True)
+    df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
+    df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
+
+    final_df_model = merge_asof(df_obs, df_model, 
+                            by=['latitude', 'longitude', 'pressure_obs'], 
+                            on='time', direction='nearest')
+
+    return final_df_model
