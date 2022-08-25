@@ -11,7 +11,6 @@ import numpy as np
 import datetime
 
 # from util import write_ncf
-import melodies_monet
 
 __all__ = (
     "pair",
@@ -654,7 +653,7 @@ class analysis:
                     
                                 # if aircraft (aircraft observation)
                 elif obs.obs_type.lower() == 'aircraft':
-                    
+                    from .util.tools import vert_interp
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
@@ -676,7 +675,7 @@ class analysis:
                     #Interpolate based on time in the observations
                     ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
                     
-                    paired_data = melodies_monet.util.tools.vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
                     print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
@@ -690,7 +689,7 @@ class analysis:
                     p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
-                    # melodies_monet.util.write_util.write_ncf(p.obj,p.filename) # write out to file
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file
                     
                 # TODO: add other network types / data types where (ie flight, satellite etc)
 
