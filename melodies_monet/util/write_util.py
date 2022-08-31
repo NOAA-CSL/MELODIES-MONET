@@ -4,6 +4,44 @@
 import numpy as np
 from pandas.api.types import is_float_dtype
 
+def write_grouped_ncf(obj, output_name, title=''):
+    """Function to write netcdf4 files with some compression for floats from an attribute of the
+    analysis class (models, obs, paired).
+
+    Parameters
+    ----------
+    obj : dict
+        Dict containing attribute of the driver analysis class (model, observation or paired).
+    output_name : str
+        Description of parameter `output_name`.
+
+    Returns
+    -------
+    None
+
+    """
+    import pandas as pd
+    import json
+    
+    print('Writing:', output_name)
+    for group in obj.keys():
+        print('Writing group:', group)
+        dset=obj[group].obj
+        comp = dict(zlib=True, complevel=7)
+        encoding = {}
+        for i in dset.data_vars.keys():
+            # if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
+            #     print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
+            #     dset[i] = compress_variable(dset[i])
+            encoding[i] = comp
+        dset.attrs['title'] = title
+        dset.attrs['format'] = 'NetCDF-4'
+        dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')
+        dict_json = obj[group].__dict__.copy()
+        dict_json.pop('obj')
+        dset.attrs['dict_json'] = json.dumps(dict_json, indent = 4) 
+        # dset.to_netcdf(output_name, encoding=encoding,group=group,mode='a')
+        dset.to_netcdf(output_name, group=group, mode='a')
 
 def write_ncf(dset, output_name, title=''):
     """Function to write netcdf4 files with some compression for floats
@@ -132,3 +170,24 @@ def compress_variable(da):
     da.attrs['_FillValue'] = -1
     da.attrs['missing_value'] = -1
     return da
+
+def write_pkl(obj, output_name):
+    """Function to write a pickle file from an attribute of the analysis class (models, obs, paired)
+
+    Parameters
+    ----------
+    obj : type
+        Description of parameter `obj`.
+    output_name : str
+        Description of parameter `output_name`.
+        
+    Returns
+    -------
+    None
+
+    """
+    from joblib import dump
+    
+    print('Writing:', output_name)
+    with open(output_name, 'wb') as outp:
+        dump(obj, outp)
