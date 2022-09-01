@@ -22,8 +22,13 @@ def write_grouped_ncf(obj, output_name, title=''):
     """
     import pandas as pd
     import json
+    import os.path
     
     print('Writing:', output_name)
+    
+    if os.path.exists(output_name):
+        os.remove(output_name)
+    
     for group in obj.keys():
         print('Writing group:', group)
         dset=obj[group].obj

@@ -647,11 +647,9 @@ class analysis:
         if len(files)==1:
             if method=='pkl':
                 setattr(self, attr, read_pkl(files[0]))
-                 # self.paired = read_pkl(filename[0])
             elif method=='netcdf':
                 group_ds = read_grouped_ncf(files[0],xr_kws)
-                setattr(self, attr,  xarray_to_class(class_type=class_names[attr],group_ds=group_ds))
-                # self.paired = populate_class(class_type='pair',group_ds=group_ds)          
+                setattr(self, attr,  xarray_to_class(class_type=class_names[attr],group_ds=group_ds))        
         
         # If only >1 file then merge by group prior to setting
         elif len(files)>1:
@@ -673,7 +671,6 @@ class analysis:
                         attr_out[group].obj = xr.merge([attr_out[group].obj,attr_append[group].obj])
             
             setattr(self, attr,  attr_out)
-            # self.paired=paired_out
         
     
     ### TODO: Create the plotting driver (most complicated one)
