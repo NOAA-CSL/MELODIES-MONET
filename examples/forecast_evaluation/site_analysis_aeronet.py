@@ -26,7 +26,7 @@ latitude = data['latitude']
 longitude = data['longitude']
 
 for i in range(len(site.values)):
-#for i in range(10):
+
     #use the boolean to select the lat and lon corresponding to each site
     site_lat = latitude.sel(x=i).values
     site_lon = longitude.sel(x=i).values
