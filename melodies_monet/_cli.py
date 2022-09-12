@@ -70,17 +70,23 @@ def _version_callback(value: bool):
 app = typer.Typer()
 
 
-@app.command(name="run")
+@app.callback()
 def main(
+    version: bool = typer.Option(
+        False, "--version/", help="Print version.", callback=_version_callback, is_eager=True
+    ),
+):
+    """MELODIES MONET"""
+
+
+@app.command()
+def run(
     control: str = typer.Argument(
         ...,
         help="Path to the control file to use.", 
     ),
     debug: bool = typer.Option(
         False, "--debug/", help="Print more messages (including full tracebacks)."
-    ),
-    version: bool = typer.Option(
-        False, "--version/", help="Print version.", callback=_version_callback, is_eager=True
     ),
 ):
     """Run MELODIES MONET as described in the control file CONTROL."""
