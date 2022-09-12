@@ -140,14 +140,114 @@ def get_aeronet(
     ),
     dst: Path = typer.Option(".", "-d", "--dst", help=(
             "Destination directory (to control output location "
-            "if using default out name)."
+            "if using default `out_name`)."
         )
     ),
     num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
 ):
     """Download AERONET data using monetio and reformat for MM usage."""
-    ...
+    import monetio as mio
+    import numpy as np
+    import pandas as pd
+    import xarray as xr
+
+    from .util.write_util import write_ncf
+
+    def expand_dims(ds, index=0, site_variable=None):
+        from numpy import unique
+
+        # First set a new index for the siteid
+        ds["x"] = index
+        ds = ds.expand_dims(["x"])
+        ds = ds.set_coords(["x"])
+
+        # Now reduce the site variables to single element variables
+        for sv in site_variable:
+            tmp = [unique(ds[sv])[0]]
+            ds[sv] = (("x",), tmp)
+
+        return ds
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="D")
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"AERONET_L15_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                print(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    #standard_wavelengths = np.array([0.34, 0.44, 0.55, 0.66, 0.86, 1.63, 11.1]) * 1000.0
+    # ^ some of these overlap with existing wls in the dataset
+    #   so the later `dfp.to_xarray()` fails since we get duplicate column names
+    standard_wavelengths = np.array([0.55]) * 1000.0
+    # ^ only really need 550 nm for the comparison to UFS-Aerosol
+    df = mio.aeronet.add_data(
+        dates,
+        interp_to_aod_values=standard_wavelengths,
+        daily=daily,
+        freq=freq,
+        n_procs=num_workers,
+        verbose=1,
+    )
+
+    #print(df.time.unique())
+    verbose = False
+    dfp = df.rename({"siteid": "x"}, axis=1).set_index(["time", "x"])
+    columns = dfp.columns.to_list()
+    columns2 = []
+    remove_columns = []
+
+    for i in np.arange(len(columns)):
+        columns2.append(columns[i])
+        try:
+            dfp[columns2].to_xarray()
+            if verbose:
+                print("COLUMN SUCCESS:", columns[i])
+        except:
+            if verbose:
+                print("COLUMN FAILURE:", columns[i])
+                remove_columns.append(columns[i])
+                columns2.remove(columns[i])
+
+        dft = df.drop(remove_columns, axis=1)
+        dfp = dfp.drop(remove_columns, axis=1).dropna(subset=["latitude", "longitude"])
+        # print(list(dfp))
+        #dfx = dfp.to_xarray()  # TODO: not used
+        dsets = []
+    for s in df.siteid.unique():
+        dsets.append(dft.loc[df.siteid == s].set_index(["time"]).to_xarray())
+
+    site_variable = [
+        "siteid",
+        "latitude",
+        "longitude",
+        "aeronet_instrument_number",
+        "elevation",
+    ]
+
+    # Now `site_variable` are the single element attributes of the individual sites
+    # so lets simplify this
+    for index, d in enumerate(dsets):
+        dsets[index] = expand_dims(d, index=index, site_variable=site_variable)
+
+    # Now combine all the datasets for each site into a single dataset
+    ds = xr.concat(dsets, dim="x").set_coords(site_variable)
     
+    # Write the file
+    t = ds.expand_dims("y").transpose("time", "y", "x")
+    write_ncf(t, dst / out_name)
 
 
 cli = app
