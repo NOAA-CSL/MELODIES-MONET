@@ -135,7 +135,7 @@ def get_aeronet(
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
-            "By default the name is generated like 'AERONET_<product>_<start date>_<end date>.nc'"
+            "By default the name is generated like 'AERONET_<product>_<start-date>_<end-date>.nc'"
         )
     ),
     dst: Path = typer.Option(".", "-d", "--dst", help=(
