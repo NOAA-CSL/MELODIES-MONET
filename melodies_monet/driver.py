@@ -777,9 +777,10 @@ class analysis:
                                     pairdf_reg = None
 
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
-                                    print('No valid data for '+obsvar+'_reg')
+                                    print('No valid data for '+obsvar+'_reg. Creating plot without regulatory calculations instead.')
                                     cal_reg = False
                                     pairdf_reg = None
+                                    use_ylabel = None
                                 else:
                                     outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
                                 del df2 

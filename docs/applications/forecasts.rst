@@ -12,6 +12,12 @@ CO, and NO\ :sub:`2` and AERONET AOD measurements.
 
 Check out the full analysis for each forecast `here <https://rapidrefresh.noaa.gov/RAPchemEPA/>`__.
 
+This includes a new feature developed by NOAA GSL summer student, Mackenzie Arnold,
+to `interactively view plots for individual surface sites online <https://rapidrefresh.noaa.gov/RAPchemEPAsites/>`__.
+
+The code to produce this analysis using MELODIES MONET is in the
+``examples/forecast_evaluation`` folder on GitHub.
+
 Example plots for ozone and PM\ :sub:`2.5` for the forecast on January 18th, 2022 
 are below.
 
