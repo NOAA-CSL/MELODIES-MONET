@@ -70,7 +70,7 @@ def _version_callback(value: bool):
 app = typer.Typer()
 
 
-@app.command()
+@app.command(name="run")
 def main(
     control: str = typer.Argument(
         ...,
@@ -124,6 +124,30 @@ def main(
     if an.control_dict.get("stats") is not None:
         with _timer("Computing and saving statistics"):
             an.stats()
+
+
+@app.command()
+def get_aeronet(
+    start_date: str = typer.Option(..., "-s", "--start-date", help="Start date."),
+    end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
+    daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
+    freq: str = typer.Option(None, "-f", "--freq", help="Frequency to resample to."),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'AERONET_<product>_<start date>_<end date>.nc'"
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default out name)."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+):
+    """Download AERONET data using monetio and reformat for MM usage."""
+    ...
+    
 
 
 cli = app
