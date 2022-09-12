@@ -144,6 +144,7 @@ def get_aeronet(
         )
     ),
     num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
 ):
     """Download AERONET data using monetio and reformat for MM usage."""
     import monetio as mio
@@ -193,41 +194,41 @@ def get_aeronet(
     #   so the later `dfp.to_xarray()` fails since we get duplicate column names
     standard_wavelengths = np.array([0.55]) * 1000.0
     # ^ only really need 550 nm for the comparison to UFS-Aerosol
+    if daily:
+        standard_wavelengths = None
+        # TODO: currently doesn't work with the daily data due to differences
+        # in column names
     df = mio.aeronet.add_data(
         dates,
         interp_to_aod_values=standard_wavelengths,
         daily=daily,
         freq=freq,
         n_procs=num_workers,
-        verbose=1,
+        verbose=1 if verbose else 0,
     )
 
-    #print(df.time.unique())
-    verbose = False
     dfp = df.rename({"siteid": "x"}, axis=1).set_index(["time", "x"])
     columns = dfp.columns.to_list()
-    columns2 = []
+    good_columns = []
     remove_columns = []
-
-    for i in np.arange(len(columns)):
-        columns2.append(columns[i])
+    for column in columns:
+        good_columns.append(column)
         try:
-            dfp[columns2].to_xarray()
+            dfp[good_columns].to_xarray()
             if verbose:
-                print("COLUMN SUCCESS:", columns[i])
+                print("COLUMN SUCCESS:", column)
         except:
             if verbose:
-                print("COLUMN FAILURE:", columns[i])
-                remove_columns.append(columns[i])
-                columns2.remove(columns[i])
+                print("COLUMN FAILURE:", column)
+                remove_columns.append(column)
+                good_columns.pop()
 
-        dft = df.drop(remove_columns, axis=1)
-        dfp = dfp.drop(remove_columns, axis=1).dropna(subset=["latitude", "longitude"])
-        # print(list(dfp))
-        #dfx = dfp.to_xarray()  # TODO: not used
-        dsets = []
-    for s in df.siteid.unique():
-        dsets.append(dft.loc[df.siteid == s].set_index(["time"]).to_xarray())
+    dfp = dfp.drop(columns=remove_columns).dropna(subset=["latitude", "longitude"])
+    dft = df.drop(columns=remove_columns)
+    dsets = [
+        dft.loc[df.siteid == s].set_index(["time"]).to_xarray()
+        for s in df.siteid.unique()
+    ]
 
     site_variable = [
         "siteid",
