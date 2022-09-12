@@ -5,7 +5,7 @@ import numpy as np
 from pandas.api.types import is_float_dtype
 
 
-def write_ncf(dset, output_name, title=''):
+def write_ncf(dset, output_name, title='', *, verbose=True):
     """Function to write netcdf4 files with some compression for floats
 
     Parameters
@@ -23,12 +23,14 @@ def write_ncf(dset, output_name, title=''):
     """
     import pandas as pd
 
-    print('Writing:', output_name)
+    if verbose:
+        print('Writing:', output_name)
     comp = dict(zlib=True, complevel=7)
     encoding = {}
     for i in dset.data_vars.keys():
         if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
-            print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
+            if verbose:
+                print("Compressing: {}, original dtype: {}".format(i, dset[i].dtype))
             dset[i] = compress_variable(dset[i])
         encoding[i] = comp
     dset.attrs['title'] = title

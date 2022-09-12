@@ -248,7 +248,7 @@ def get_aeronet(
     
     # Write the file
     t = ds.expand_dims("y").transpose("time", "y", "x")
-    write_ncf(t, dst / out_name)
+    write_ncf(t, dst / out_name, verbose=verbose)
 
 
 cli = app
