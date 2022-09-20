@@ -126,6 +126,7 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
         self.variable_dict = None
+        self.resample = None
 
     def __repr__(self):
         return (
@@ -136,6 +137,7 @@ class observation:
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
+            f"    resample={self.resample!r},\n"
             ")"
         )
 
@@ -177,6 +179,7 @@ class observation:
 
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
+        self.resample_data()
 
     def rename_vars(self):
         """Rename any variables in observation with rename set.
@@ -214,6 +217,7 @@ class observation:
                         self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
                     if 'nan_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+                    
                     # Then apply a correction if needed for the units.
                     if 'unit_scale' in d:
                         scale = d['unit_scale']
@@ -233,6 +237,22 @@ class observation:
                         if unitin in {'ppmv', 'ppm'}:
                             scale = 1000. # convert to ppb
                             self.obj[v].data *= scale
+                    
+                    # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
+                    if 'LLOD_value' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+                        
+    def resample_data(self):
+        """Resample the obs df based on the value set in the control file.
+        
+        Returns
+        -------
+        None
+        """ 
+                        
+        ##Resample the data
+        if self.resample is not None:
+            self.obj = self.obj.resample(time=self.resample).mean(dim='time')
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -463,7 +483,6 @@ class analysis:
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
-        self.resample = None
 
     def __repr__(self):
         return (
@@ -478,7 +497,6 @@ class analysis:
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
             f"    debug={self.debug!r},\n"
-            f"    resample={self.resample!r},\n"
             ")"
         )
 
@@ -510,8 +528,6 @@ class analysis:
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = self.control_dict['analysis']['output_dir']
         self.debug = self.control_dict['analysis']['debug']
-        if 'resample' in self.control_dict['analysis'].keys():
-            self.resample = self.control_dict['analysis']['resample']
 
     def open_models(self):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -581,6 +597,8 @@ class analysis:
                 o.file = self.control_dict['obs'][obs]['filename']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'resample' in self.control_dict['obs'][obs].keys():
+                    o.resample = self.control_dict['obs'][obs]['resample']
                 o.open_obs()
                 self.obs[o.label] = o
 
@@ -657,10 +675,6 @@ class analysis:
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
-                    
-                    ##Resample the data
-                    if 'resample' in self.control_dict['analysis'].keys():
-                        obs.obj = obs.obj.resample(self.resample).mean()
                     
                     #drop any variables where coords NaN
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
