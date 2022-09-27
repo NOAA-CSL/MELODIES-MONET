@@ -126,6 +126,7 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
         self.variable_dict = None
+        self.resample = None
 
     def __repr__(self):
         return (
@@ -136,6 +137,7 @@ class observation:
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
+            f"    resample={self.resample!r},\n"
             ")"
         )
 
@@ -166,9 +168,9 @@ class observation:
                     self.obj = xr.open_mfdataset(files)
                 else:
                     self.obj = xr.open_dataset(files[0])
-            elif extension in ['.ict', '.icarrt']:
-                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
-                self.obj = mio.icarrt.add_data(files[0])
+            elif extension in ['.ict', '.icartt']:
+                assert len(files) == 1, "monetio.icartt.add_data can only read one file"
+                self.obj = mio.icartt.add_data(files[0])
             else:
                 raise ValueError(f'extension {extension!r} currently unsupported')
         except Exception as e:
@@ -176,6 +178,24 @@ class observation:
             return
 
         self.mask_and_scale()  # mask and scale values from the control values
+        self.rename_vars() # rename any variables as necessary 
+        self.resample_data()
+
+    def rename_vars(self):
+        """Rename any variables in observation with rename set.
+        
+        Returns
+        -------
+        None
+        """ 
+        data_vars = self.obj.data_vars
+        if self.variable_dict is not None:
+            for v in data_vars:
+                if v in self.variable_dict:
+                    d = self.variable_dict[v]
+                    if 'rename' in d:
+                        self.obj = self.obj.rename({v:d['rename']})
+                        self.variable_dict[d['rename']] = self.variable_dict.pop(v)
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -197,6 +217,7 @@ class observation:
                         self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
                     if 'nan_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+                    
                     # Then apply a correction if needed for the units.
                     if 'unit_scale' in d:
                         scale = d['unit_scale']
@@ -216,6 +237,22 @@ class observation:
                         if unitin in {'ppmv', 'ppm'}:
                             scale = 1000. # convert to ppb
                             self.obj[v].data *= scale
+                    
+                    # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
+                    if 'LLOD_value' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+                        
+    def resample_data(self):
+        """Resample the obs df based on the value set in the control file.
+        
+        Returns
+        -------
+        None
+        """ 
+                        
+        ##Resample the data
+        if self.resample is not None:
+            self.obj = self.obj.resample(time=self.resample).mean(dim='time')
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -367,6 +404,23 @@ class model:
             else:
                 self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
+        self.rename_vars() # rename any variables as necessary 
+
+    def rename_vars(self):
+        """Rename any variables in model with rename set.
+        
+        Returns
+        -------
+        None
+        """ 
+        data_vars = self.obj.data_vars
+        if self.variable_dict is not None:
+            for v in data_vars:
+                if v in self.variable_dict:
+                    d = self.variable_dict[v]
+                    if 'rename' in d:
+                        self.obj = self.obj.rename({v:d['rename']})
+                        self.variable_dict[d['rename']] = self.variable_dict.pop(v)
 
     def mask_and_scale(self):
         """Mask and scale model data including unit conversions.
@@ -543,6 +597,8 @@ class analysis:
                 o.file = self.control_dict['obs'][obs]['filename']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'resample' in self.control_dict['obs'][obs].keys():
+                    o.resample = self.control_dict['obs'][obs]['resample']
                 o.open_obs()
                 self.obs[o.label] = o
 
@@ -564,6 +620,8 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
+                if mod.variable_dict is not None:
+                    mod_vars = [key for key in mod.variable_dict.keys()]
                 
                 # unstructured grid check - lon/lat variables should be explicitly added 
                 # in addition to comparison variables
@@ -572,8 +630,10 @@ class analysis:
                     for ll in lonlat_list:
                         if ll in mod.obj.data_vars:
                             keys += [ll]
-                model_obj = mod.obj[keys]
-                
+                if mod.variable_dict is not None:
+                    model_obj = mod.obj[keys+mod_vars]
+                else:
+                    model_obj = mod.obj[keys]
                 ## TODO:  add in ability for simple addition of variables from
 
                 # simplify the objs object with the correct mapping vairables
@@ -608,6 +668,43 @@ class analysis:
                     self.paired[label] = p
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
+                    
+                                # if aircraft (aircraft observation)
+                elif obs.obs_type.lower() == 'aircraft':
+                    from .util.tools import vert_interp
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+                    
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
+                    
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs','pressure_obs'])
+                    
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    print('After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.type = 'aircraft'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file
+                    
                 # TODO: add other network types / data types where (ie flight, satellite etc)
 
     ### TODO: Create the plotting driver (most complicated one)
