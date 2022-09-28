@@ -15,6 +15,9 @@ parser.add_argument('--control', type=str,
 parser.add_argument('--logfile', type=str,
     default=sys.stdout,
     help='log file (default stdout)')
+parser.add_argument('--outdir', type=str,
+    default=None,
+    help='output directory')
 parser.add_argument('--debug', action='store_true',
     help='set logging level to debug')
 args = parser.parse_args()
@@ -55,7 +58,10 @@ for model in control['model']:
     for file_in in files:
         file_subdirs = file_in.split('/')
         file_subdirs[-1] = 'subset_' + file_subdirs[-1]
-        file_out = '/'.join(file_subdirs)
+        if args.outdir is not None:
+            file_out = os.path.join(args.outdir, file_subdirs[-1])
+        else:
+            file_out = '/'.join(file_subdirs)
         command = 'ncks -O ' + var_str + ' ' + file_in + ' ' + file_out
         logging.info(command)
         os.system(command)
