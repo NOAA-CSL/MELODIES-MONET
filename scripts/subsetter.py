@@ -41,8 +41,9 @@ for model in control['model']:
 
     var_str = '-v '
 
-    for var in control['model'][model]['required_vars']:
-        var_str += var + ','
+    if 'required_vars' in control['model'][model]:
+        for var in control['model'][model]['required_vars']:
+            var_str += var + ','
 
     for dataset in control['model'][model]['mapping']:
         for var in control['model'][model]['mapping'][dataset]:
