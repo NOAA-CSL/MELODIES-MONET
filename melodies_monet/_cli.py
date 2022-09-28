@@ -138,6 +138,12 @@ def get_aeronet(
     end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
     daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
     freq: str = typer.Option(None, "-f", "--freq", help="Frequency to resample to."),
+    interp_to: str = typer.Option(None, "--interp-to", help=(
+            "Wavelength(s) to interpolate the AOD values to (micron). "
+            "Separate with commas to specify multiple. "
+            "Note that this functionality requires pytspack."
+        )
+    ),
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
@@ -195,11 +201,10 @@ def get_aeronet(
             dst = p.parent
             out_name = p.name
 
-    #standard_wavelengths = np.array([0.34, 0.44, 0.55, 0.66, 0.86, 1.63, 11.1]) * 1000.0
-    # ^ some of these overlap with existing wls in the dataset
-    #   so the later `dfp.to_xarray()` fails since we get duplicate column names
-    interp_to = np.array([0.55]) * 1000.0
-    # ^ only really need 550 nm for the comparison to UFS-Aerosol
+    if interp_to is not None:
+        interp_to = np.array([float(x.strip()) for x in interp_to.strip().split(",")])
+        interp_to *= 1000  # um -> nm
+
     try:
         df = mio.aeronet.add_data(
             dates,
