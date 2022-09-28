@@ -198,20 +198,25 @@ def get_aeronet(
     #standard_wavelengths = np.array([0.34, 0.44, 0.55, 0.66, 0.86, 1.63, 11.1]) * 1000.0
     # ^ some of these overlap with existing wls in the dataset
     #   so the later `dfp.to_xarray()` fails since we get duplicate column names
-    standard_wavelengths = np.array([0.55]) * 1000.0
+    interp_to = np.array([0.55]) * 1000.0
     # ^ only really need 550 nm for the comparison to UFS-Aerosol
-    if daily:
-        standard_wavelengths = None
-        # TODO: currently doesn't work with the daily data due to differences
-        # in column names
-    df = mio.aeronet.add_data(
-        dates,
-        interp_to_aod_values=standard_wavelengths,
-        daily=daily,
-        freq=freq,
-        n_procs=num_workers,
-        verbose=1 if verbose else 0,
-    )
+    try:
+        df = mio.aeronet.add_data(
+            dates,
+            interp_to_aod_values=interp_to,
+            daily=daily,
+            freq=freq,
+            n_procs=num_workers,
+            verbose=1 if verbose else 0,
+        )
+    except ValueError as e:
+        print(f"Error loading AERONET: {e}")
+        if daily and interp_to is not None:
+            print("Note that using interp with the daily product requires monetio >0.2.2")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"Error loading AERONET: {e}")
+        raise typer.Exit(1)
 
     dfp = df.rename({"siteid": "x"}, axis=1).set_index(["time", "x"])
     columns = dfp.columns.to_list()
