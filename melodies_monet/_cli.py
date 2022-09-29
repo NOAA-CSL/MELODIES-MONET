@@ -162,24 +162,8 @@ def get_aeronet(
     import monetio as mio
     import numpy as np
     import pandas as pd
-    import xarray as xr
 
     from .util.write_util import write_ncf
-
-    def expand_dims(ds, index=0, site_variable=None):
-        from numpy import unique
-
-        # First set a new index for the siteid
-        ds["x"] = index
-        ds = ds.expand_dims(["x"])
-        ds = ds.set_coords(["x"])
-
-        # Now reduce the site variables to single element variables
-        for sv in site_variable:
-            tmp = [unique(ds[sv])[0]]
-            ds[sv] = (("x",), tmp)
-
-        return ds
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
@@ -222,31 +206,8 @@ def get_aeronet(
     except Exception as e:
         print(f"Error loading AERONET: {e}")
         raise typer.Exit(1)
-
-    dfp = df.rename({"siteid": "x"}, axis=1).set_index(["time", "x"])
-    columns = dfp.columns.to_list()
-    good_columns = []
-    remove_columns = []
-    for column in columns:
-        good_columns.append(column)
-        try:
-            dfp[good_columns].to_xarray()
-            if verbose:
-                print("COLUMN SUCCESS:", column)
-        except:
-            if verbose:
-                print("COLUMN FAILURE:", column)
-                remove_columns.append(column)
-                good_columns.pop()
-
-    dfp = dfp.drop(columns=remove_columns).dropna(subset=["latitude", "longitude"])
-    dft = df.drop(columns=remove_columns)
-    dsets = [
-        dft.loc[df.siteid == s].set_index(["time"]).to_xarray()
-        for s in df.siteid.unique()
-    ]
-
-    site_variable = [
+  
+    site_vns = [
         "siteid",
         "latitude",
         "longitude",
@@ -254,17 +215,30 @@ def get_aeronet(
         "elevation",
     ]
 
-    # Now `site_variable` are the single element attributes of the individual sites
-    # so lets simplify this
-    for index, d in enumerate(dsets):
-        dsets[index] = expand_dims(d, index=index, site_variable=site_variable)
+    # Site-specific variables should only vary in x
+    ds_site = (
+        df[site_vns]
+        .groupby("siteid")
+        .first()  # TODO: would be nice to confirm unique-ness
+        .to_xarray()
+        .rename_dims(siteid="x")
+    )
 
-    # Now combine all the datasets for each site into a single dataset
-    ds = xr.concat(dsets, dim="x").set_coords(site_variable)
-    
-    # Write the file
-    t = ds.expand_dims("y").transpose("time", "y", "x")
-    write_ncf(t, dst / out_name, verbose=verbose)
+    ds = (
+        df
+        .dropna(subset=["latitude", "longitude"])
+        .set_index(["time", "siteid"])
+        .to_xarray()
+        .rename_dims(siteid="x")
+        .drop_vars(site_vns)
+        .merge(ds_site)
+        .set_coords(site_vns)
+        .assign(x=range(ds_site.dims["x"]))
+        .expand_dims("y")
+        .transpose("time", "y", "x")
+    )
+
+    write_ncf(ds, dst / out_name, verbose=verbose)
 
 
 cli = app
