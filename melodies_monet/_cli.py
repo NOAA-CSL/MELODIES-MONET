@@ -178,6 +178,8 @@ def get_aeronet(
 
     DEBUG = debug
 
+    typer.echo(HEADER)
+
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
     dates = pd.date_range(start_date, end_date, freq="D")
@@ -194,7 +196,7 @@ def get_aeronet(
         else:
             # `out_name` has path
             if dst != Path("."):
-                print(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
             dst = p.parent
             out_name = p.name
 
@@ -214,7 +216,7 @@ def get_aeronet(
             )
         except ValueError:
             if daily and interp_to is not None:
-                print("Note that using interp with the daily product requires monetio >0.2.2")
+                typer.echo("Note that using interp with the daily product requires monetio >0.2.2")
             raise
   
     site_vns = [
