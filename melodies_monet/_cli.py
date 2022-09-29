@@ -157,6 +157,9 @@ def get_aeronet(
     ),
     num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
     verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
 ):
     """Download AERONET data using monetio and reformat for MM usage."""
     import monetio as mio
@@ -164,6 +167,10 @@ def get_aeronet(
     import pandas as pd
 
     from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
@@ -189,23 +196,20 @@ def get_aeronet(
         interp_to = np.array([float(x.strip()) for x in interp_to.strip().split(",")])
         interp_to *= 1000  # um -> nm
 
-    try:
-        df = mio.aeronet.add_data(
-            dates,
-            interp_to_aod_values=interp_to,
-            daily=daily,
-            freq=freq,
-            n_procs=num_workers,
-            verbose=1 if verbose else 0,
-        )
-    except ValueError as e:
-        print(f"Error loading AERONET: {e}")
-        if daily and interp_to is not None:
-            print("Note that using interp with the daily product requires monetio >0.2.2")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"Error loading AERONET: {e}")
-        raise typer.Exit(1)
+    with _timer("Fetching data with monetio"):
+        try:
+            df = mio.aeronet.add_data(
+                dates,
+                interp_to_aod_values=interp_to,
+                daily=daily,
+                freq=freq,
+                n_procs=num_workers,
+                verbose=1 if verbose else 0,
+            )
+        except ValueError:
+            if daily and interp_to is not None:
+                print("Note that using interp with the daily product requires monetio >0.2.2")
+            raise
   
     site_vns = [
         "siteid",
@@ -215,30 +219,33 @@ def get_aeronet(
         "elevation",
     ]
 
-    # Site-specific variables should only vary in x
-    ds_site = (
-        df[site_vns]
-        .groupby("siteid")
-        .first()  # TODO: would be nice to confirm unique-ness
-        .to_xarray()
-        .rename_dims(siteid="x")
-    )
+    with _timer("Forming xarray Dataset"):
+        # Site-specific variables should only vary in x.
+        # Here we take the first non-NaN value (should all be same).
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()  # TODO: would be nice to confirm unique-ness
+            .to_xarray()
+            .rename_dims(siteid="x")
+        )
 
-    ds = (
-        df
-        .dropna(subset=["latitude", "longitude"])
-        .set_index(["time", "siteid"])
-        .to_xarray()
-        .rename_dims(siteid="x")
-        .drop_vars(site_vns)
-        .merge(ds_site)
-        .set_coords(site_vns)
-        .assign(x=range(ds_site.dims["x"]))
-        .expand_dims("y")
-        .transpose("time", "y", "x")
-    )
+        ds = (
+            df
+            .dropna(subset=["latitude", "longitude"])
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .rename_dims(siteid="x")
+            .drop_vars(site_vns)
+            .merge(ds_site)
+            .set_coords(site_vns)
+            .assign(x=range(ds_site.dims["x"]))
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
 
-    write_ncf(ds, dst / out_name, verbose=verbose)
+    with _timer("Writing netCDF file"):
+        write_ncf(ds, dst / out_name, verbose=verbose)
 
 
 cli = app
