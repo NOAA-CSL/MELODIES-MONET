@@ -155,6 +155,12 @@ def get_aeronet(
             "if using default `out_name`)."
         )
     ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
     num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
     verbose: bool = typer.Option(False),
     debug: bool = typer.Option(
@@ -245,7 +251,10 @@ def get_aeronet(
         )
 
     with _timer("Writing netCDF file"):
-        write_ncf(ds, dst / out_name, verbose=verbose)
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
 
 
 cli = app
