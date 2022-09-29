@@ -226,6 +226,8 @@ def get_aeronet(
     ]
 
     with _timer("Forming xarray Dataset"):
+        df = df.dropna(subset=["latitude", "longitude"])
+
         # Site-specific variables should only vary in x.
         # Here we take the first non-NaN value (should all be same).
         ds_site = (
@@ -238,7 +240,6 @@ def get_aeronet(
 
         ds = (
             df
-            .dropna(subset=["latitude", "longitude"])
             .set_index(["time", "siteid"])
             .to_xarray()
             .rename_dims(siteid="x")
