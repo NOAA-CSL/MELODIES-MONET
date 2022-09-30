@@ -260,6 +260,167 @@ def get_aeronet(
             ds.to_netcdf(dst / out_name)
 
 
+@app.command()
+def get_airnow(
+    start_date: str = typer.Option(..., "-s", "--start-date", help="Start date."),
+    end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
+    daily: bool = typer.Option(False, help=(
+            "Whether to retrieve the daily averaged data product. "
+            "By default, the hourly data is fetched."
+        )
+    ),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'AERONET_<product>_<start-date>_<end-date>.nc'"
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default `out_name`)."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download AirNow data using monetio and reformat for MM usage.
+    
+    The date range used is closed on both sides.
+    """
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    typer.echo(HEADER)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="H")
+    print(dates)
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"AERONET_L15_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    with _timer("Fetching data with monetio"):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            df = mio.airnow.add_data(
+                dates,
+                download=False,
+                wide_fmt=True,  # column for each variable
+                n_procs=num_workers,
+                daily=daily,
+            )
+
+    print(len(df), "columns")
+    print(df.columns.tolist())
+    print(df.head(3))
+
+    with _timer("Forming xarray Dataset"):
+        df = df.dropna(subset=["latitude", "longitude"])
+
+        site_vns = [
+            "site",
+            "siteid",
+            "utcoffset",
+            "latitude",
+            "longitude",
+            "cmsa_name",
+            "msa_code",
+            "msa_name",
+            "state_name",
+            "epa_region",
+        ]
+        # NOTE: time_local not included since it varies in time as well
+        if daily:
+            site_vns.remove("utcoffset")  # not present in the daily data product
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .rename_dims(siteid="x")
+        )
+
+        # Extract units info so we can add as attrs
+        unit_suff = "_unit"
+        unit_cols = [n for n in df.columns if n.endswith(unit_suff)]
+        assert (df[unit_cols].nunique() == 1).all()
+        units = df[unit_cols][~df[unit_cols].isnull()].iloc[0].to_dict()
+
+        cols = [n for n in df.columns if not n.endswith(unit_suff)]
+        ds = (
+            df[cols]
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .rename_dims(siteid="x")
+            .drop_vars(site_vns)
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Add units
+        for k, u in units.items():
+            vn = k[:-len(unit_suff)]
+            ds[vn].attrs.update(units=u)
+
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        if not daily:
+            ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+    print(ds)
+    if not daily:
+        print(ds.time_local)
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
+
+
 cli = app
 
 _typer_click_object = typer.main.get_command(app)  # for sphinx-click in docs
