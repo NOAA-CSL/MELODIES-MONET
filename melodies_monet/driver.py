@@ -773,7 +773,7 @@ class analysis:
                                 elif obsvar == 'OZONE':
                                     pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
                                 else:
-                                    print('Warning: no regulatory caculations found for ' + obsvar) 
+                                    print('Warning: no regulatory calculations found for ' + obsvar) 
                                     pairdf_reg = None
 
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
@@ -1201,10 +1201,10 @@ class analysis:
                                 elif obsvar == 'OZONE':
                                     pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
                                 else:
-                                    print('Warning: no regulatory caculations found for ' + obsvar)
+                                    print('Warning: no regulatory calculations found for ' + obsvar)
 
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
-                                    print('No valid data for '+obsvar+'_reg')
+                                    print('No valid data for '+obsvar+'_reg. Creating stats table without regulatory calculations instead.')
                                     cal_reg = False
                                 else:
                                     # Drop NaNs for model and observations in all cases.
