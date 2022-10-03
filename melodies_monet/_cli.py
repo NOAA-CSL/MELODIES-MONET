@@ -311,8 +311,10 @@ def get_airnow(
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H")
-    print(dates)
+    dates = pd.date_range(start_date, end_date, freq="H" if not daily else "D")
+    if verbose:
+        print("Dates:")
+        print(dates)
 
     # Set destination and file name
     fmt = r"%Y%m%d"
@@ -344,10 +346,6 @@ def get_airnow(
                 daily=daily,
             )
 
-    print(len(df), "columns")
-    print(df.columns.tolist())
-    print(df.head(3))
-
     with _timer("Forming xarray Dataset"):
         df = df.dropna(subset=["latitude", "longitude"])
 
@@ -367,8 +365,22 @@ def get_airnow(
         if daily:
             site_vns.remove("utcoffset")  # not present in the daily data product
 
+        # site_vn_str = [
+        #     "site",  # site name
+        #     "siteid",  # site code (9 or 12 digits/chars)
+        #     #
+        #     "cmsa_name",
+        #     "msa_code",
+        #     "msa_name",
+        #     "state_name",
+        #     "epa_region",
+        # ]
+
+        # df[site_vn_str] = df[site_vn_str].astype("string")
+
         ds_site = (
             df[site_vns]
+            # .replace(["", " ", None], pd.NA)  # TODO: monetio should do?
             .groupby("siteid")
             .first()
             .to_xarray()
@@ -409,10 +421,6 @@ def get_airnow(
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
-
-    print(ds)
-    if not daily:
-        print(ds.time_local)
 
     with _timer("Writing netCDF file"):
         if compress:
