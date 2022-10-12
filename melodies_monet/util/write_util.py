@@ -4,16 +4,18 @@
 import numpy as np
 from pandas.api.types import is_float_dtype
 
-def write_grouped_ncf(obj, output_name, title=''):
+def write_analysis_ncf(obj, output_dir='', fn_prefix=None, title=''):
     """Function to write netcdf4 files with some compression for floats from an attribute of the
-    analysis class (models, obs, paired).
+    analysis class (models, obs, paired). Writes the objects within the attribute as separate files.
 
     Parameters
     ----------
     obj : dict
         Dict containing attribute of the driver analysis class (model, observation or paired).
-    output_name : str
-        Description of parameter `output_name`.
+    output_dir : str
+        Directory to save files in.
+    fn_prefix : str
+        Prefix to add to the group name when saving.
 
     Returns
     -------
@@ -24,13 +26,15 @@ def write_grouped_ncf(obj, output_name, title=''):
     import json
     import os.path
     
-    print('Writing:', output_name)
-    
-    if os.path.exists(output_name):
-        os.remove(output_name)
+    if fn_prefix is not None:
+        base_name = os.path.join(output_dir,'{prefix}_{groupname}.nc4')
+    else:
+        base_name = os.path.join(output_dir,'{groupname}.nc4')
     
     for group in obj.keys():
-        print('Writing group:', group)
+        output_name = base_name.format(prefix=fn_prefix, groupname=group)
+        print('Writing:', output_name)
+        
         dset=obj[group].obj
         comp = dict(zlib=True, complevel=7)
         encoding = {}
@@ -45,8 +49,7 @@ def write_grouped_ncf(obj, output_name, title=''):
         dict_json = obj[group].__dict__.copy()
         dict_json.pop('obj')
         dset.attrs['dict_json'] = json.dumps(dict_json, indent = 4) 
-        # dset.to_netcdf(output_name, encoding=encoding,group=group,mode='a')
-        dset.to_netcdf(output_name, group=group, mode='a')
+        dset.to_netcdf(output_name)
 
 def write_ncf(dset, output_name, title=''):
     """Function to write netcdf4 files with some compression for floats

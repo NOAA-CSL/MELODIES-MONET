@@ -25,37 +25,40 @@ def read_pkl(filename):
         
     return obj
 
-def read_grouped_ncf(filename,xr_kws={}):
-    """Function to read netcdf4 files containing a part of the analysis class (models, obs, paired).
+def read_analysis_ncf(filenames,xr_kws={}):
+    """Function to read netcdf4 files containing an object within an attribute of a part of the
+    analysis class (models, obs, paired). For example, a single model/obs pairing or a single model. 
+    If the object is saved in multiple files, the function will merge the files.
 
     Parameters
     ----------
-    filename : str
+    filenames : str or iterable
         Description of parameter `filename`.
     xr_kws : optional
-            Additional keyword arguments for xr.open_dataset()
+        Additional keyword arguments for xr.open_dataset()
         
     Returns
     -------
-    ds_dict : type
-        Dict containing xarray datasets for each group.
+    ds_out : type
+        Xarray dataset containing merged files.
 
     """
-    import netCDF4
     import xarray as xr
     
-    print('Reading:', filename)
-    
-    # Get a list of netCDF groups in the file
-    ncf = netCDF4.Dataset(filename,mode='r')
-    groups = ncf.groups.keys()
-    ncf.close()
-    
-    obj = {}
-    for group in groups:
-        obj[group] = xr.open_dataset(filename,group=group,**xr_kws)
+    if len(filenames)==1:
+        ds_out = xr.open_dataset(filenames[0],**xr_kws)
         
-    return obj
+    elif len(filenames)>1:
+        for count, file in enumerate(filenames):
+            print('Reading:', file)
+
+            if count==0:
+                ds_out = xr.open_dataset(file,**xr_kws)
+            else:
+                ds_append = xr.open_dataset(file,**xr_kws)
+                ds_out = xr.merge([ds_out,ds_append])
+            
+    return ds_out
 
 def xarray_to_class(class_type,group_ds):
     """Remake dict containing driver class instances from dict of xarray datasets. Dict of xarray datasets must contain 

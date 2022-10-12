@@ -618,7 +618,8 @@ class analysis:
         Parameters
         ----------
         filename : str or iterable
-            Description of parameter `filename`.
+            str or list for reading in pkl. For netCDF, must be dict with key=group name and
+            value= str or iterable of filenames in group.
         method : str
             One of either 'pkl' or 'netcdf'.
         attr : str
@@ -633,7 +634,7 @@ class analysis:
         if method=='pkl':
             from .util.read_util import read_pkl
         elif method=='netcdf':
-            from .util.read_util import read_grouped_ncf, xarray_to_class
+            from .util.read_util import read_analysis_ncf, xarray_to_class
             
         class_names = {'paired':'pair','models':'model','obs':'observation'}
         
@@ -643,36 +644,40 @@ class analysis:
         else:
             files = filenames
         
-        # If only 1 file then set directly
-        if len(files)==1:
-            if method=='pkl':
+        # Set from pkl format
+        if method=='pkl':
+            if len(files)==1:
                 setattr(self, attr, read_pkl(files[0]))
-            elif method=='netcdf':
-                group_ds = read_grouped_ncf(files[0],xr_kws)
-                setattr(self, attr,  xarray_to_class(class_type=class_names[attr],group_ds=group_ds))        
-        
-        # If only >1 file then merge by group prior to setting
-        elif len(files)>1:
-            for count, file in enumerate(files):
-                if count==0:
-                    if method=='pkl':
+            elif len(files)>1:
+                for count, file in enumerate(files):
+                    if count==0:
                         attr_out = read_pkl(file)
-                    elif method=='netcdf':
-                        group_ds = read_grouped_ncf(file,xr_kws)
-                        attr_out = xarray_to_class(class_names[attr],group_ds=group_ds) 
-                else:
-                    if method=='pkl':
+                    else:
                         attr_append = read_pkl(file)
-                    elif method=='netcdf':
-                        group_ds = read_grouped_ncf(file,xr_kws)
-                        attr_append = xarray_to_class(class_names[attr],group_ds=group_ds) 
-                        
+
                     for group in attr_out.keys():
                         attr_out[group].obj = xr.merge([attr_out[group].obj,attr_append[group].obj])
-            
-            setattr(self, attr,  attr_out)
+
+                setattr(self, attr,  attr_out)
         
-    
+        elif method=='netcdf':
+            
+            if isinstance(files,dict): 
+                xr_dict = {}
+                for group in files.keys():
+
+                    if isinstance(files[group],str):
+                        group_files = [files[group]]
+                    else:
+                        group_files = files[group]
+
+                    xr_dict[group] = read_analysis_ncf(group_files,xr_kws)
+
+                setattr(self, attr,  xarray_to_class(class_type=class_names[attr],group_ds=xr_dict))    
+                
+            else:
+                raise TypeError('NetCDF format filenames need to be specified as a dict, with format key=group_name value= str or iterable of filenames')
+            
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
