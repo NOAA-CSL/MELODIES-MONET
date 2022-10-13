@@ -412,6 +412,8 @@ class analysis:
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
+        self.save = None
+        self.read = None
 
     def __repr__(self):
         return (
@@ -426,6 +428,8 @@ class analysis:
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
             f"    debug={self.debug!r},\n"
+            f"    save={self.save!r},\n"
+            f"    read={self.read!r},\n"
             ")"
         )
 
@@ -458,6 +462,10 @@ class analysis:
             self.output_dir = os.path.expandvars(
                 self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
+        if 'save' in self.control_dict['analysis'].keys():
+            self.save = self.control_dict['analysis']['save']
+        if 'read' in self.control_dict['analysis'].keys():
+            self.read = self.control_dict['analysis']['read']
 
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
@@ -470,7 +478,54 @@ class analysis:
             from dask.callbacks import Callback
 
             Callback.active = set()
+    
+    def save_analysis(self):
+        """Save all analysis attributes listed in analysis section of input yaml file.
 
+        Returns
+        -------
+        None
+        """
+        if self.save is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            for attr in self.save:
+                if self.save[attr]['method']=='pkl':
+                    from .util.write_util import write_pkl
+                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir,self.save[attr]['output_name']))
+
+                elif self.save[attr]['method']=='netcdf':
+                    from .util.write_util import write_analysis_ncf
+                    # save either all groups or selected groups
+                    if self.save[attr]['data']=='all':
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir,
+                                               fn_prefix=self.save[attr]['prefix'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir)
+                    else:
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir, 
+                                               fn_prefix=self.save[attr]['prefix'], keep_groups=self.save[attr]['data'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir, 
+                                               keep_groups=self.save[attr]['data'])
+        
+    def read_analysis(self):
+        """Read all previously saved analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.read is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            from .util.read_util import read_saved_data
+            for attr in self.read:
+                if self.read[attr]['method']=='pkl':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
+                elif self.read[attr]['method']=='netcdf':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+                    
     def open_models(self):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
@@ -610,73 +665,6 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
-    
-    def read_saved_data(self,filenames, method, attr, xr_kws={}):
-        """Read previously saved dict containing melodies-monet data (:attr:`paired`, :attr:`models`, or :attr:`obs`)
-        from pickle file or netcdf file, populating the :attr:`paired`, :attr:`models`, or :attr:`obs` dict.
-
-        Parameters
-        ----------
-        filename : str or iterable
-            str or list for reading in pkl. For netCDF, must be dict with key=group name and
-            value= str or iterable of filenames in group.
-        method : str
-            One of either 'pkl' or 'netcdf'.
-        attr : str
-            The analysis attribute that will be populated with the saved data. One of either 'paired' or 'models' or 'obs'.
-        **kwargs : optional
-            Additional keyword arguments for xr.open_dataset()
-
-        Returns
-        -------
-        None
-        """
-        if method=='pkl':
-            from .util.read_util import read_pkl
-        elif method=='netcdf':
-            from .util.read_util import read_analysis_ncf, xarray_to_class
-            
-        class_names = {'paired':'pair','models':'model','obs':'observation'}
-        
-        # if filename is a str make it a list 
-        if isinstance(filenames,str):
-            files = [filenames]
-        else:
-            files = filenames
-        
-        # Set from pkl format
-        if method=='pkl':
-            if len(files)==1:
-                setattr(self, attr, read_pkl(files[0]))
-            elif len(files)>1:
-                for count, file in enumerate(files):
-                    if count==0:
-                        attr_out = read_pkl(file)
-                    else:
-                        attr_append = read_pkl(file)
-
-                    for group in attr_out.keys():
-                        attr_out[group].obj = xr.merge([attr_out[group].obj,attr_append[group].obj])
-
-                setattr(self, attr,  attr_out)
-        
-        elif method=='netcdf':
-            
-            if isinstance(files,dict): 
-                xr_dict = {}
-                for group in files.keys():
-
-                    if isinstance(files[group],str):
-                        group_files = [files[group]]
-                    else:
-                        group_files = files[group]
-
-                    xr_dict[group] = read_analysis_ncf(group_files,xr_kws)
-
-                setattr(self, attr,  xarray_to_class(class_type=class_names[attr],group_ds=xr_dict))    
-                
-            else:
-                raise TypeError('NetCDF format filenames need to be specified as a dict, with format key=group_name value= str or iterable of filenames')
             
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):

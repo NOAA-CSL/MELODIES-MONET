@@ -1,7 +1,63 @@
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
+def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
+    """Read previously saved dict containing melodies-monet data (:attr:`paired`, :attr:`models`, or :attr:`obs`)
+    from pickle file or netcdf file, populating the :attr:`paired`, :attr:`models`, or :attr:`obs` dict.
 
+    Parameters
+    ----------
+    analysis : class
+        Instance of the analysis class from driver script.
+    filenames : str or iterable
+        str or list for reading in pkl. For netCDF, must be dict with format {group1:str or iterable of filenames, group2:...}
+    method : str
+        One of either 'pkl' or 'netcdf'.
+    attr : str
+        The analysis attribute that will be populated with the saved data. One of either 'paired' or 'models' or 'obs'.
+    **kwargs : optional
+        Additional keyword arguments for xr.open_dataset()
+
+    Returns
+    -------
+    None
+    """
+    import xarray as xr
+    
+    # if filename is a str make it a list 
+    if isinstance(filenames,str):
+        files = [filenames]
+    else:
+        files = filenames
+
+    # for converting name of attribute to name of class for constructing
+    class_names = {'paired':'pair','models':'model','obs':'observation'}
+
+    if method=='pkl':
+        if len(files)==1:
+            setattr(analysis, attr, read_pkl(files[0]))
+        elif len(files)>1:
+            for count, file in enumerate(files):
+                if count==0:
+                    attr_out = read_pkl(file)
+                else:
+                    attr_append = read_pkl(file)
+                    for group in attr_out.keys():
+                        attr_out[group].obj = xr.merge([attr_out[group].obj,attr_append[group].obj])
+            setattr(analysis, attr,  attr_out)
+
+    elif method=='netcdf':
+        if isinstance(files,dict): 
+            xr_dict = {}
+            for group in files.keys():
+                if isinstance(files[group],str):
+                    group_files = [files[group]]
+                else:
+                    group_files = files[group]
+                xr_dict[group] = read_analysis_ncf(group_files,xr_kws)
+            setattr(analysis, attr,  xarray_to_class(class_type=class_names[attr],group_ds=xr_dict))    
+        else:
+            raise TypeError('NetCDF format filenames need to be specified as a dict, with format {group1:str or iterable of filenames, group2:...}')
 
 def read_pkl(filename):
     """Function to read a pickle file containing part of the analysis class (models, obs, paired)

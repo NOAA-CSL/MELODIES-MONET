@@ -4,7 +4,7 @@
 import numpy as np
 from pandas.api.types import is_float_dtype
 
-def write_analysis_ncf(obj, output_dir='', fn_prefix=None, title=''):
+def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, title=''):
     """Function to write netcdf4 files with some compression for floats from an attribute of the
     analysis class (models, obs, paired). Writes the objects within the attribute as separate files.
 
@@ -16,6 +16,8 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, title=''):
         Directory to save files in.
     fn_prefix : str
         Prefix to add to the group name when saving.
+    keep_groups : list
+        List of groups that should be saved. Other groups will not be saved.
 
     Returns
     -------
@@ -31,7 +33,12 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, title=''):
     else:
         base_name = os.path.join(output_dir,'{groupname}.nc4')
     
-    for group in obj.keys():
+    if keep_groups is not None:
+        groups=[elem for elem in obj.keys() if elem in keep_groups]
+    else:
+        groups=obj.keys()
+    
+    for group in groups:
         output_name = base_name.format(prefix=fn_prefix, groupname=group)
         print('Writing:', output_name)
         

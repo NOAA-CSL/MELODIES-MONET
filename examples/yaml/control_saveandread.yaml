@@ -1,0 +1,25 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: '2019-08-02-12:00:00' #UTC
+  end_time: '2019-08-03-12:00:00' #UTC
+  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802 #Opt if not specified plots stored in code directory.
+  debug: True
+  save:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          prefix: '0904' # use only with method=netcdf
+          # output_name: '0904.pkl' # use only with method=pkl
+          data: 'all'   # 'all' to save out all pairs or ['pair1','pair2',...] to save out specific pairs. With method='pkl' this is ignored and always saves all.
+      # models:
+      # obs:
+  read:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          filenames: {'airnow_wrfchem_v4.2':['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} # exable for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}
+          # filenames: ['0904.pkl','0905.pkl'] # exable for pkl method, uses str or iterable of filenames
+      # models:
+      # obs:
