@@ -1,5 +1,5 @@
-#Code to create plots for surface observations
-
+#Code to create plots for satellite observations
+# Copied from surfplots and altered to use xarray syntax instead of pandas
 import os
 import monetio as mio
 import monet as monet
@@ -127,123 +127,11 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() == 'fv3raqms':
+    elif f.model.lower() == 'fv3raqms' or f.model.lower() == 'raqms':
         proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
-
-def make_spatial_bias(df, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vdiff=None,
-                      outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
-        
-    """Creates surface spatial bias plot. 
-    
-    Parameters
-    ----------
-    df : dataframe
-        model/obs pair data to plot
-    column_o : str
-        Column label of observation variable to plot
-    label_o : str
-        Name of observation variable to use in plot title 
-    column_m : str
-        Column label of model variable to plot
-    label_m : str
-        Name of model variable to use in plot title
-    ylabel : str
-        Title of colorbar axis
-    vdiff : real number
-        Min and max value to use on colorbar axis
-    outname : str
-        file location and name of plot (do not include .png)
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    plot 
-        surface bias plot
-        
-    """
-    if debug == False:
-        plt.ioff()
-        
-    def_map = dict(states=True,figsize=[10, 5])
-    if fig_dict is not None:
-        map_kwargs = {**def_map, **fig_dict}
-    else:
-        map_kwargs = def_map
-        
-    #If not specified use the PlateCarree projection
-    if 'crs' not in map_kwargs:
-        map_kwargs['crs'] = ccrs.PlateCarree()
-  
-    #set default text size
-    def_text = dict(fontsize=20)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-        
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column_o
-    
-    #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean()
-       
-    #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
-    #and then uses -1*val_max value for the minimum.
-    ax = monet.plots.sp_scatter_bias(
-        df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-        cmap=new_color_map(), edgecolor='k',linewidth=.8)
-    
-    if domain_type == 'all' and domain_name == 'CONUS':
-        latmin= 25.0
-        lonmin=-130.0
-        latmax= 50.0
-        lonmax=-60.0
-        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-        plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    
-    else:
-        latmin= math.floor(min(df.latitude))
-        lonmin= math.floor(min(df.longitude))
-        latmax= math.ceil(max(df.latitude))
-        lonmax= math.ceil(max(df.longitude))
-        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    
-    if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
-    
-    #Update colorbar
-    f = plt.gcf()
-    model_ax = f.get_axes()[0]
-    cax = f.get_axes()[1]
-    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-    position_m = model_ax.get_position()
-    position_c = cax.get_position()
-    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
-    
-    #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=120, decorate=True, bbox_inches='tight', dpi=200)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -326,22 +214,34 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
         else: 
             f,ax = plt.subplots(figsize=(10,6))
         # plot the line
+        print(plot_kwargs)
+        # {'color': 'k', 'linestyle': '-', 'marker': '*', 'linewidth': 2.0, 'markersize': 10.0, 'label': 'omps_nm', 'fontsize': 14.4}
         if avg_window is None:
-            ax = df[column].plot(ax=ax, **plot_kwargs)
+            df[column].mean('y').plot(ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
+                                           marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
+                                          markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
         else:
-            ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)
+            df[column].resample(time = avg_window).mean().mean('y').plot(ax=ax,color=plot_kwargs['color'],\
+                                                                              linestyle=plot_kwargs['linestyle'],\
+                                           marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
+                                          markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
     
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
         if avg_window is None:
-            ax = df[column].plot(ax=ax, legend=True, **plot_dict)
+            df[column].mean('y').plot(ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
+                                           marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
+                                          markersize=plot_dict['markersize'],label=plot_dict['label'])
         else:
-            ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict)    
+            df[column].resample(time=avg_window).mean().mean('y').plot(ax=ax, color=plot_dict['color'],\
+                                                                            linestyle=plot_dict['linestyle'],\
+                                           marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
+                                          markersize=plot_dict['markersize'],label=plot_dict['label'])   
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.set_xlabel(df.index.name,fontweight='bold',**text_kwargs)
+    ax.set_xlabel('time',fontweight='bold',**text_kwargs)
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
@@ -401,6 +301,7 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
         Taylor diagram class defined in MONET
         
     """
+    nan_ind = ((~np.isnan(df[column_o].values))&(~np.isnan(df[column_m].values)))
     #First define items for all plots
     if debug == False:
         plt.ioff()
@@ -423,17 +324,16 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
             f = plt.figure(figsize=(12,10))    
         sns.set_style('ticks')
         # plot the line
-        dia = td(df[column_o].std(), scale=ty_scale, fig=f,
+        dia = td(df[column_o].std().values, scale=ty_scale, fig=f,
                                rect=111, label=label_o)
         plt.grid(linewidth=1, alpha=.5)
-        cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
-        print(label_m,plot_dict)
-        dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
+        cc = corrcoef(df[column_o].values[nan_ind].flatten(), df[column_m].values[nan_ind].flatten())[0, 1]
+        dia.add_sample(df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict)
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot another model
-        cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
-        dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
+        cc = corrcoef(df[column_o].values[nan_ind].flatten(), df[column_m].values[nan_ind].flatten())[0, 1]
+        dia.add_sample(df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict)
     #Set parameters for all plots
     contours = dia.add_contours(colors='0.5')
     plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
@@ -443,8 +343,6 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             plt.title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        elif domain_type == 'htap_region':
-            plt.title('HTAP Region {}'.format(domain_name),fontweight='bold',**text_kwargs)
         else:
             plt.title(domain_name,fontweight='bold',**text_kwargs)
     ax = plt.gca()
