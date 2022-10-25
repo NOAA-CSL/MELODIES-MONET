@@ -237,14 +237,14 @@ def get_aeronet(
             .groupby("siteid")
             .first()  # TODO: would be nice to confirm unique-ness
             .to_xarray()
-            .rename_dims(siteid="x")
+            .swap_dims(siteid="x")
         )
 
         ds = (
             df
             .set_index(["time", "siteid"])
             .to_xarray()
-            .rename_dims(siteid="x")
+            .swap_dims(siteid="x")
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(site_vns)
@@ -384,7 +384,7 @@ def get_airnow(
             .groupby("siteid")
             .first()
             .to_xarray()
-            .rename_dims(siteid="x")
+            .swap_dims(siteid="x")
         )
 
         # Extract units info so we can add as attrs
@@ -398,7 +398,7 @@ def get_airnow(
             df[cols]
             .set_index(["time", "siteid"])
             .to_xarray()
-            .rename_dims(siteid="x")
+            .swap_dims(siteid="x")
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
