@@ -272,7 +272,7 @@ def get_airnow(
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
-            "By default the name is generated like 'AERONET_<product>_<start-date>_<end-date>.nc'"
+            "By default the name is generated like 'AirNow_<start-date>_<end-date>.nc'"
         )
     ),
     dst: Path = typer.Option(".", "-d", "--dst", help=(
@@ -319,7 +319,7 @@ def get_airnow(
     # Set destination and file name
     fmt = r"%Y%m%d"
     if out_name is None:
-        out_name = f"AERONET_L15_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+        out_name = f"AirNow_{start_date:{fmt}}_{end_date:{fmt}}.nc"
     else:
         p = Path(out_name)
         if p.name == out_name:
