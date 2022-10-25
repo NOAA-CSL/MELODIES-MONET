@@ -157,9 +157,8 @@ class observation:
             elif self.label == 'omps_nm':
                 self.obj = mio.omps_nadir.read_OMPS_nm(self.file)
             elif self.label == 'mopitt_l3':
-                from new_monetio import mopitt_grid
                 print('Reading MOPITT')
-                self.obj = mopitt_grid.readMOPITTfiles(str(self.file), 'column')
+                self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
             elif self.label == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
