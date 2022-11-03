@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
-# from util import write_ncf
+from .util import write_util
 
 __all__ = (
     "pair",
@@ -271,7 +271,7 @@ class model:
         if 'txt' in self.file_str:
             with open(self.file_str,'r') as f:
                 self.files = f.read().split(' \n')[:-1]
-        print(self.files)
+       
         #    self.files = sort(self.file_str)
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
@@ -324,11 +324,22 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+        elif 'fv3raqms' in self.model.lower():
+        #    print(self.files)
+            if len(self.files) > 1:
+                self.obj = mio.models.fv3raqms.open_mfdataset(self.files)
+            else:
+                self.obj = mio.models.fv3raqms.open_dataset(self.files)
+            self.obj = self.obj.rename({'sfcp':'surfpres_pa','dpm':'dp_pa','pdash':'pres_pa'})
+            self.obj['surfpres_pa'] *= 100
+            self.obj['dp_pa'] *= 100
+            
         elif 'raqms' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.raqms.open_mfdataset(self.files)
             else:
                 self.obj = mio.raqms.open_dataset(self.files)
+
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -394,7 +405,8 @@ class analysis:
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
-
+        self.save_paired = False
+        self.paired_files = {}
     def read_control(self, control=None):
         """Read the input yaml file,
         updating various :class:`analysis` instance attributes.
@@ -424,7 +436,7 @@ class analysis:
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = self.control_dict['analysis']['output_dir']
         self.debug = self.control_dict['analysis']['debug']
-
+        self.save_paired = self.control_dict['analysis']['save_paired']
     def open_models(self):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
@@ -449,6 +461,13 @@ class analysis:
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                if 'initial_file' in self.control_dict['model'][mod].keys(): 
+                    m.initial_file = self.control_dict['model'][mod]['initial_file']
+                else: m.initial_file = False
+                if 'last_file' in self.control_dict['model'][mod].keys(): 
+                    m.last_file = self.control_dict['model'][mod]['last_file']
+                else: m.last_file = False
+                        
                 if 'mod_kwargs' in self.control_dict['model'][mod].keys():
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
@@ -463,7 +482,8 @@ class analysis:
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
-                
+                print(mod)
+                print(self.control_dict['model'][mod])
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -560,16 +580,18 @@ class analysis:
                     
                     if obs.label == 'omps_nm':
                         print(model_obj)
+                        has_1st = mod.initial_file
+                        has_nth = mod.last_file
                         from .util import satellite_utilities as sutil
                         if mod.apply_ak == True:
                             keys.append('pres_pa')
                             keys.append('surfpres_pa')
                             model_obj = mod.obj[keys]
-                            paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj)
+                            paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,has_1st,has_nth)
                         else:
                             keys.append('dp_pa')
                             model_obj = mod.obj[keys]
-                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
+                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys,has_1st,has_nth)
                         #paired_data['o3vmr'][(paired_data['o3vmr'] < 150)] = np.nan
                         paired_data = paired_data.where(paired_data.o3vmr > 0)
                         p = pair()
@@ -580,6 +602,14 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+                if self.save_paired:
+                    otime1 = obs.obj.time[0].dt.strftime('%Y%m%d%H').values
+                    otime2 = obs.obj.time[-1].dt.strftime('%Y%m%d%H').values
+                    paired_fname = '{}_{}_{}.nc'.format(label,otime1,otime2)
+                    write_util.write_ncf(p.obj,paired_fname)
+                    if label not in self.paired_files.keys():
+                        self.paired_files[label] = []
+                    self.paired_files[label].append(paired_fname)
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):

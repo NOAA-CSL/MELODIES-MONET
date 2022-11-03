@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime,timedelta
 
 
-def space_and_time_pairing(model_data,obs_data,pair_variables):
+def space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
     '''Bilinear spatial and temporal satellite pairing code. 
     Assumes model data has (time,pressure,latitude,longitude) dimensions.
     Assumes observation data contains fields named time, pressure, latiutde, and longitude.
@@ -38,7 +38,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
                 interm_var = regridr(model_data[j][f])
                 
                 # apply  time interpolation
-                if f == (mod_nf-1):
+                if f == (mod_nf-1) and has_nth:
                 #    print('last')
                     t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
                     ds[j][:,tindex[t2]] = interm_var[:,t2].values
@@ -49,7 +49,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
 
                     ds[j][:,tindex[tind_2]] += np.expand_dims(tfac1.values,axis=1)*interm_var[:,tind_2].values
                 
-                elif f == (0):
+                elif f == (0) and has_1st:
                 #    print('first')
                     t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
                     ds[j][:,tindex[t2],:] = interm_var[:,t2].values
@@ -67,7 +67,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
                     
                     ds[j][:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*interm_var.values
     return ds
-def omps_nm_pairing(model_data,obs_data,pair_variables):
+def omps_nm_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
     'Pairs UFS-RAQMS ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
 
@@ -78,7 +78,7 @@ def omps_nm_pairing(model_data,obs_data,pair_variables):
     
     du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
     
-    paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
+    paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth)
     
     # calculate ozone column, no averaging kernel or apriori applied.
     col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
@@ -95,7 +95,7 @@ def omps_nm_pairing(model_data,obs_data,pair_variables):
                                                                             
                                                                             
 
-def omps_nm_pairing_apriori(model_data,obs_data):
+def omps_nm_pairing_apriori(model_data,obs_data,has_1st,has_nth):
     'Pairs UFS-RAQMS data with OMPS nm. Applies satellite apriori column to model observations.'
 
     import xarray as xr
@@ -123,7 +123,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
             regrid_p = regridr(model_data['pres_pa'][f]) # this one should be pressure variable (for the interpolation).
             sfp = regridr(model_data['surfpres_pa'][f])
             # fixes for observations before/after model time range.
-            if f == (nf-1):
+            if f == (nf-1) and has_nth:
                 t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
                 ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
                 pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
@@ -135,7 +135,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
                 ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
                 pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
                 sfc[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
-            elif f == 0:
+            elif f == 0 and has_1st:
                 t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
                 ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
                 pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
