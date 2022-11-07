@@ -359,7 +359,7 @@ class model:
             if len(self.files) > 1:
                 self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwards)
+                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
