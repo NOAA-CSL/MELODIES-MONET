@@ -754,7 +754,7 @@ class analysis:
                             cal_reg = obs_plot_dict.get('regulatory', False)
 
                             if cal_reg:
-                                # Specify ylabel_reg if noted in yaml file.
+                                # Reset use_ylabel for regulatory calculations
                                 if 'ylabel_reg_plot' in obs_plot_dict.keys():
                                     use_ylabel = obs_plot_dict['ylabel_reg_plot']
                                 else:
@@ -773,20 +773,18 @@ class analysis:
                                 elif obsvar == 'OZONE':
                                     pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
                                 else:
-                                    print('Warning: no regulatory calculations found for ' + obsvar) 
-                                    pairdf_reg = None
-
+                                    print('Warning: no regulatory calculations found for ' + obsvar + '. Skipping plot.')
+                                    del df2
+                                    continue
+                                del df2
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
-                                    print('No valid data for '+obsvar+'_reg. Creating plot without regulatory calculations instead.')
-                                    cal_reg = False
-                                    pairdf_reg = None
-                                    use_ylabel = None
+                                    print('No valid data for '+obsvar+'_reg. Skipping plot.')
+                                    continue
                                 else:
+                                    # Reset outname for regulatory options
                                     outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
-                                del df2 
                             else:
                                 pairdf_reg = None
-                                outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
                             if plot_type.lower() == 'spatial_bias': 
                                 if use_percentile is None:
@@ -1126,7 +1124,10 @@ class analysis:
                 # Create an empty pandas dataarray.
                 df_o_d = pd.DataFrame()
                 # Determine outname
-                outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar, domain_type, domain_name, startdatename, enddatename)
+                if cal_reg:
+                    outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar+'_reg', domain_type, domain_name, startdatename, enddatename)
+                else:
+                    outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar, domain_type, domain_name, startdatename, enddatename)
 
                 # Determine plotting kwargs
                 if 'output_table_kwargs' in stat_dict.keys():
@@ -1138,17 +1139,23 @@ class analysis:
                 df_o_d['Stat_ID'] = stat_list
                 df_o_d['Stat_FullName'] = stat_fullname_ns
 
+                # Specify title for stat plots. 
+                if cal_reg:
+                    if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                        title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
+                    else:
+                        title = obsvar + '_reg: ' + domain_type + ' ' + domain_name
+                else:
+                    if 'ylabel_plot' in obs_plot_dict.keys():
+                        title = obs_plot_dict['ylabel_plot'] + ': ' + domain_type + ' ' + domain_name
+                    else:
+                        title = obsvar + ': ' + domain_type + ' ' + domain_name
+
                 # Finally Loop through each of the pairs
                 for p_label in pair_labels:
                     p = self.paired[p_label]
                     # Create an empty list to store the stat_var
                     p_stat_list = []
-
-                    # Specify title for stat plots.
-                    if 'ylabel_plot' in obs_plot_dict.keys():
-                        title = obs_plot_dict['ylabel_plot'] + ': ' + domain_type + ' ' + domain_name
-                    else:
-                        title = obsvar + ': ' + domain_type + ' ' + domain_name
 
                     # Loop through each of the stats
                     for stat_grp in stat_list:
@@ -1181,12 +1188,6 @@ class analysis:
                         else:
 
                             if cal_reg:
-                                # Specify title for stat plots.
-                                if 'ylabel_reg_plot' in obs_plot_dict:
-                                    title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
-                                else:
-                                    title = obsvar + ': ' + domain_type + ' ' + domain_name
-
                                 # Process regulatory values
                                 df2 = (
                                     pairdf.copy()
@@ -1201,18 +1202,18 @@ class analysis:
                                 elif obsvar == 'OZONE':
                                     pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
                                 else:
-                                    print('Warning: no regulatory calculations found for ' + obsvar)
-
+                                    print('Warning: no regulatory calculations found for ' + obsvar + '. Setting stat calculation to NaN.')
+                                    del df2
+                                    p_stat_list.append('NaN')
+                                    continue
+                                del df2
                                 if len(pairdf_reg[obsvar+'_reg']) == 0:
-                                    print('No valid data for '+obsvar+'_reg. Creating stats table without regulatory calculations instead.')
-                                    cal_reg = False
+                                    print('No valid data for '+obsvar+'_reg. Setting stat calculation to NaN.')
+                                    p_stat_list.append('NaN')
+                                    continue
                                 else:
                                     # Drop NaNs for model and observations in all cases.
                                     pairdf2 = pairdf_reg.reset_index().dropna(subset=[modvar+'_reg', obsvar+'_reg'])
-                                    outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar+'_reg', domain_type, domain_name, startdatename, enddatename)
-                                    title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
-
-                                del df2
 
                             # Create empty list for all dom
                             # Calculate statistic and append to list
