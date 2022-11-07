@@ -74,7 +74,7 @@ these instructions:
 
        $ conda create --name melodies-monet python=3.9
        $ conda activate melodies-monet
-       $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python click pooch jupyterlab
+       $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::
