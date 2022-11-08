@@ -58,3 +58,27 @@ def test_get_airnow(tmp_path):
         ds0[vn] = ds0[vn].where(ds0[vn] != -1)
         ds[vn] = ds[vn].where(~ ((ds[vn] == 0) & (ds0[vn] != 0)))
         assert (np.abs((ds[vn] - ds0[vn]) / ds0[vn]).to_series().dropna() < 2e-6).all()
+        assert (np.abs(ds[vn] - ds0[vn]).to_series().dropna() < 3e-7).all()
+
+
+def test_get_airnow_comp(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-airnow",
+        "-s", "2019-09-01", "-e", "2019-09-02",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+        "--compress",
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn).squeeze().swap_dims(x="siteid")
+    ds0 = ds0_airnow.sel(time=ds.time).squeeze().swap_dims(x="siteid")
+
+    assert ds.time.equals(ds0.time)
+
+    for vn in ["NO2", "OZONE", "PM2.5"]:
+        ds0[vn] = ds0[vn].where(ds0[vn] != -1)
+        ds[vn] = ds[vn].where(ds[vn] != -1)
+        ds[vn] = ds[vn].where(~ ((ds[vn] == 0) & (ds0[vn] != 0)))
+        # assert (np.abs((ds[vn] - ds0[vn]) / ds0[vn]).to_series().dropna() < 2e-6).all()
+        assert (np.abs(ds[vn] - ds0[vn]).to_series().dropna() < 3e-7).all()
