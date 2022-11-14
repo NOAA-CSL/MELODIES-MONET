@@ -471,9 +471,14 @@ class analysis:
 
             Callback.active = set()
 
-    def open_models(self):
+    def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : pandas.DatetimeIndex
+            If not None, restrict models to datetime range spanned by time_interval.
 
         Returns
         -------
@@ -525,10 +530,16 @@ class analysis:
                 m.open_model_files()
                 self.models[m.label] = m
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
         populating the :attr:`obs` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : pandas.DatetimeIndex
+            If not None, restrict models to datetime range spanned by time_interval.
+
 
         Returns
         -------
