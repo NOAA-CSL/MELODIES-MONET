@@ -622,6 +622,16 @@ class analysis:
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
 
+    def concat_pairs(self):
+        """Read and concatenate all observation and model time interval pair data,
+        populating the :attr:`paired` dict.
+
+        Returns
+        -------
+        None
+        """
+        pass
+
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
