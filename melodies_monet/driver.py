@@ -409,6 +409,7 @@ class analysis:
         """dict : Paired data, set by :meth:`pair_data`."""
         self.start_time = None
         self.end_time = None
+        self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
@@ -459,6 +460,12 @@ class analysis:
                 self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
+        # generate time intervals for time chunking
+        if 'time_interval' in self.control_dict['analysis'].keys():
+            self.time_intervals = pd.date_range(
+                start=self.start_time, end=self.end_time,
+                freq=self.control_dict['analysis']['time_interval'])
+
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -477,8 +484,8 @@ class analysis:
 
         Parameters
         __________
-        time_interval (optional, default None) : pandas.DatetimeIndex
-            If not None, restrict models to datetime range spanned by time_interval.
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -537,8 +544,8 @@ class analysis:
 
         Parameters
         __________
-        time_interval (optional, default None) : pandas.DatetimeIndex
-            If not None, restrict models to datetime range spanned by time_interval.
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
 
         Returns
