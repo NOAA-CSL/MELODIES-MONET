@@ -462,9 +462,11 @@ class analysis:
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
-            self.time_intervals = pd.date_range(
+            time_stamps = pd.date_range(
                 start=self.start_time, end=self.end_time,
                 freq=self.control_dict['analysis']['time_interval'])
+            self.time_intervals \
+                = [[time_stamps[n], time_stamps[n+1]] for n in range(len(time_stamps)-1)]
 
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
