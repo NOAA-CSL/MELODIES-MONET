@@ -56,6 +56,7 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         dict_json = obj[group].__dict__.copy()
         dict_json.pop('obj')
         dset.attrs['dict_json'] = json.dumps(dict_json, indent = 4) 
+        dset.attrs['group_name'] = group
         dset.to_netcdf(output_name)
 
 def write_ncf(dset, output_name, title=''):

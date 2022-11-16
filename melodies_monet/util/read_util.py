@@ -102,17 +102,23 @@ def read_analysis_ncf(filenames,xr_kws={}):
     import xarray as xr
     
     if len(filenames)==1:
+        print('Reading: ', filenames[0])
         ds_out = xr.open_dataset(filenames[0],**xr_kws)
         
     elif len(filenames)>1:
         for count, file in enumerate(filenames):
-            print('Reading:', file)
+            print('Reading: ', file)
 
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
+                group_name1 =  ds_out.attrs['group_name']
             else:
                 ds_append = xr.open_dataset(file,**xr_kws)
-                ds_out = xr.merge([ds_out,ds_append])
+                # Test if all the files have the same group to prevent merge issues
+                if group_name1 != ds_append.attrs['group_name']:
+                    raise Exception('The group names are not consistent between the netcdf files being read.') 
+                else:
+                    ds_out = xr.merge([ds_out,ds_append])
             
     return ds_out
 
@@ -135,7 +141,7 @@ def xarray_to_class(class_type,group_ds):
     from melodies_monet import driver
     
     class_dict = {}
-    for group in group_ds.keys():
+    for count, group in enumerate(group_ds.keys()):
         if class_type == 'pair':
             c=driver.pair()
         elif class_type == 'model':
@@ -144,6 +150,7 @@ def xarray_to_class(class_type,group_ds):
             c=driver.observation()
 
         obj_dict = json.loads(group_ds[group].attrs['dict_json'])
+        
         for attr in obj_dict.keys():
             setattr(c, attr, obj_dict[attr])
         c.obj = group_ds[group]
