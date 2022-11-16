@@ -131,9 +131,14 @@ class observation:
             ")"
         )
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -285,7 +290,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self):
+    def open_model_files(self, time_interval=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -293,6 +298,11 @@ class model:
         If a model is not supported, MELODIES-MONET will try to open 
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -536,7 +546,7 @@ class analysis:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
                         
                 # open the model
-                m.open_model_files()
+                m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
     def open_obs(self, time_interval=None):
@@ -564,7 +574,7 @@ class analysis:
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs()
+                o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
     def pair_data(self):
