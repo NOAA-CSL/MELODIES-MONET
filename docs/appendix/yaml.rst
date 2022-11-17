@@ -47,6 +47,23 @@ shooting. If you want plots to print in jupyter notebooks select this to True.
 Set this to False, when you are submitting MELODIES MONET as a job to an HPC
 machine to avoid display errors. 
 
+**save:** This is an optional argument. This option allows for saving attributes of the 
+analysis class (paired, models, obs) to a file, using the analysis.save_analysis() method.
+The files saved using this method will always be saved to the output_dir set in the 
+analysis section of the .yaml file.
+
+   * **method:** The file format to save to. Options are 'netcdf' and 'pkl'. 
+   * **prefix:** This option should be used with method: 'netcdf'. When saving to netcdf format, a new file is made for each group (for example each model/obs pair is a new file). The prefix option adds a prefix to the filename in the format [prefix]_[group].nc4. 
+   * **output_name:** This option should be used with method: 'pkl'. Unlike with netcdf saving, pickle saving saves all groups to a single file. This option directly sets the filename that will be used for saving. 
+   * **data:** This option only works when saving with 'netcdf'. Setting data: 'all' will save all groups to netCDF files. If a subset of the groups is desired, this can be set to an iterable in the form ['group1','group2',...]. 
+
+**read:** This is an optional argument. This option allows for read attributes of the 
+analysis class (paired, models, obs) from a previously saved file, using the 
+analysis.read_analysis() method.
+
+   * **method:** The file format to read from. Options are 'netcdf' and 'pkl'. 
+   * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. 
+
 Models
 ------
 All input for each instance of the model class. First level should be the model 
