@@ -336,9 +336,9 @@ class model:
             
         elif 'raqms' in self.model.lower():
             if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files)
+                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = mio.raqms.open_dataset(self.files)
+                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
 
         else:
             if len(self.files) > 1:
