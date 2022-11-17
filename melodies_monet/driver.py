@@ -578,10 +578,16 @@ class analysis:
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
-    def pair_data(self):
+    def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
         populating the :attr:`paired` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict pairing to datetime range spanned by time interval [start, end].
+
 
         Returns
         -------
