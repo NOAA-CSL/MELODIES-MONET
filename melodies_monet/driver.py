@@ -434,6 +434,7 @@ class analysis:
             f"    paired={self.paired!r},\n"
             f"    start_time={self.start_time!r},\n"
             f"    end_time={self.end_time!r},\n"
+            f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
             f"    debug={self.debug!r},\n"
