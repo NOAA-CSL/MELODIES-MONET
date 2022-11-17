@@ -141,7 +141,7 @@ def xarray_to_class(class_type,group_ds):
     from melodies_monet import driver
     
     class_dict = {}
-    for count, group in enumerate(group_ds.keys()):
+    for group in group_ds.keys():
         if class_type == 'pair':
             c=driver.pair()
         elif class_type == 'model':
