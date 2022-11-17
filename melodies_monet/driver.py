@@ -476,8 +476,14 @@ class analysis:
             time_stamps = pd.date_range(
                 start=self.start_time, end=self.end_time,
                 freq=self.control_dict['analysis']['time_interval'])
+            # if (end_time - start_time) is not an integer multiple
+            #   of freq, append end_time to time_stamps
+            if time_stamps[-1] < pd.Timestamp(self.end_time):
+                time_stamps = time_stamps.append(
+                    pd.DatetimeIndex([self.end_time]))
             self.time_intervals \
-                = [[time_stamps[n], time_stamps[n+1]] for n in range(len(time_stamps)-1)]
+                = [[time_stamps[n], time_stamps[n+1]]
+                    for n in range(len(time_stamps)-1)]
 
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
