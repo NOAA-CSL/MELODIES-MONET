@@ -1,3 +1,6 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 #Code to create plots for surface observations
 
 import os
@@ -17,7 +20,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..new_monetio import code_to_move_to_monet as code_m_new
+from ..plots import savefig
 
 # from util import write_ncf
 
@@ -127,7 +130,9 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() == 'fv3raqms':
+    elif f.model.lower() in ['cesm_fv','cesm_se']:
+        proj = ccrs.PlateCarree()
+    elif f.model.lower() == 'random':
         proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
@@ -210,7 +215,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
         df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
         cmap=new_color_map(), edgecolor='k',linewidth=.8)
     
-    if domain_type == 'all' and domain_name == 'CONUS':
+    if domain_type == 'all':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -219,7 +224,6 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     elif domain_type == 'epa_region' and domain_name is not None:
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    
     else:
         latmin= math.floor(min(df.latitude))
         lonmin= math.floor(min(df.longitude))
@@ -243,7 +247,7 @@ def make_spatial_bias(df, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=120, decorate=True, bbox_inches='tight', dpi=200)
+    savefig(outname + '.png', loc=4, logo_height=120)
     
 def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -427,7 +431,6 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
                                rect=111, label=label_o)
         plt.grid(linewidth=1, alpha=.5)
         cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
-        print(label_m,plot_dict)
         dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
     # If plot has been created add to the current axes.
     else:
@@ -443,8 +446,6 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             plt.title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        elif domain_type == 'htap_region':
-            plt.title('HTAP Region {}'.format(domain_name),fontweight='bold',**text_kwargs)
         else:
             plt.title(domain_name,fontweight='bold',**text_kwargs)
     ax = plt.gca()
@@ -538,7 +539,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
     
     #Determine the domain
-    if domain_type == 'all' and domain_name == 'CONUS':
+    if domain_type == 'all':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -577,9 +578,22 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
-    #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
-                                robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+    # For unstructured grid, we need a more advanced plotting code
+    # Call an external funtion (Plot_2D)
+    if vmodel.attrs.get('mio_has_unstructured_grid',False):
+        from .Plot_2D import Plot_2D
+        
+        fig = plt.figure( figsize=fig_dict['figsize'] )
+        ax = fig.add_subplot(1,1,1,projection=proj)
+        
+        p2d = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
+                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+                       ax=ax, state=fig_dict['states'] )
+    else:
+        #I add extend='both' here because the colorbar is setup to plot the values outside the range
+        ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
+                                    robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+    
     
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
@@ -596,18 +610,20 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #plt.colorbar(scatter,ax=ax)
     
     #Update colorbar
-    f = plt.gcf()
-    model_ax = f.get_axes()[0]
-    cax = f.get_axes()[1]
-    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-    position_m = model_ax.get_position()
-    position_c = cax.get_position()
-    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
+    # Call below only for structured grid cases
+    if not vmodel.attrs.get('mio_has_unstructured_grid',False):
+        f = plt.gcf()
+        model_ax = f.get_axes()[0]
+        cax = f.get_axes()[1]
+        #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+        position_m = model_ax.get_position()
+        position_c = cax.get_position()
+        cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
+        cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
+        cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
+    savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
 def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
@@ -707,7 +723,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = label_bx[0]
+        ylabel = label_bx[0]['column']
     
     #Fix the order and palate colors
     order_box = []
@@ -752,106 +768,4 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ax.set_ylim(ymin = vmin, ymax = vmax)
     
     plt.tight_layout()
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=200)
-    
-def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vmin=None,
-                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
-        
-    """Creates difference plot for satellite and model data. Needs to be altered for cases where more than 1 overpass for a location,
-    eg. more than 1 day of data."""
-    if debug == False:
-        plt.ioff()
-        
-    def_map = dict(states=True,figsize=[15, 8])
-    if fig_dict is not None:
-        map_kwargs = {**def_map, **fig_dict}
-    else:
-        map_kwargs = def_map
-  
-    #set default text size
-    def_text = dict(fontsize=20)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-        
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column_o
-    
-    #Take the difference for the model output - the sat output
-    diff_mod_min_obs = (df[column_o] - df[column_m]).squeeze()
-
-    
-    #Determine the domain
-    if domain_type == 'all' and domain_name == 'CONUS':
-        latmin= 25.0
-        lonmin=-130.0
-        latmax= 50.0
-        lonmax=-60.0
-        title_add = domain_name + ': '
-    elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-        title_add = 'EPA Region ' + domain_name + ': '
-    else:
-        latmin= -90
-        lonmin= -180
-        latmax= 90
-        lonmax= 180
-        title_add = domain_name + ': '
-    
-    #Map the model output first.
-    cbar_kwargs = dict(aspect=15,shrink=.8)
-    
-    #Add options that this could be included in the fig_kwargs in yaml file too.
-    if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax] 
-    if 'crs' not in map_kwargs:
-        map_kwargs['crs'] = proj
-    
-    #First determine colorbar
-    if vmin == None and vmax == None:
-        #vmin = vmodel_mean.quantile(0.01)
-        vmax = np.max((np.abs(diff_mod_min_obs.quantile(0.99)),np.abs(diff_mod_min_obs.quantile(0.01))))
-        vmin = -vmax
-        
-    if nlevels == None:
-        nlevels = 21
-    print(vmin,vmax)
-    clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('bwr',nlevels-1) 
-    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
-        
-    #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = monet.plots.mapgen.draw_map(crs=map_kwargs['crs'],extent=map_kwargs['extent'])
-    # draw scatter plot of model and satellite differences
-    c = ax.axes.scatter(df.longitude,df.latitude,c=diff_mod_min_obs,cmap=cmap,s=2,norm=norm)
-    plt.gcf().canvas.draw() 
-    plt.tight_layout(pad=0)
-    plt.title(title_add + label_o + ' - ' + label_m,fontweight='bold',**text_kwargs)
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
-    
-    #Uncomment these lines if you update above just to verify colorbars are identical.
-    #Also specify plot above scatter = ax.axes.scatter etc.
-    #cbar = ax.figure.get_axes()[1] 
-    plt.colorbar(c,ax=ax,extend='both')
-    
-    #Update colorbar
-    f = plt.gcf()
-    
-    model_ax = f.get_axes()[0]
-    cax = f.get_axes()[1]
-    
-    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-    position_m = model_ax.get_position()
-    position_c = cax.get_position()
-    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
-    
-    #plt.tight_layout(pad=0)
-    code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
-    return ax    
+    savefig(outname + '.png', loc=4, logo_height=100)
