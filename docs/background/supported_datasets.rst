@@ -13,7 +13,8 @@ Supported Models
    * `CESM/CAM-chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
    * RRFS-CMAQ (under development)
    * GSD-Chem (under development)
-
+   * `RAQMS <http://raqms-ops.ssec.wisc.edu/>`_
+   
 In general, processing requires input to be in netCDF format. For the above 
 models, scripts to configure the model data into a standard format for 
 MELODIES MONET are available. If input datasets are in netCDF format and  

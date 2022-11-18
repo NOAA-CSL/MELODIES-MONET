@@ -285,7 +285,7 @@ class model:
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
-        
+            
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
@@ -355,6 +355,11 @@ class model:
             self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
+        elif 'raqms' in self.model.lower():
+            if len(self.files) > 1:
+                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+            else:
+                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
@@ -539,7 +544,7 @@ class analysis:
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 o.open_obs()
                 self.obs[o.label] = o
-
+                
     def pair_data(self):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
