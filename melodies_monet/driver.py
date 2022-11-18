@@ -155,7 +155,7 @@ class observation:
             if self.label == 'omps_limb':
                 self.obj = mio.omps_limb.read_omps_limb(self.file)
             elif self.label == 'omps_nm':
-                self.obj = mio.omps_nadir.read_OMPS_nm(self.file)
+                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(self.file)
             elif self.label == 'mopitt_l3':
                 print('Reading MOPITT')
                 self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
@@ -323,21 +323,11 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        elif 'fv3raqms' in self.model.lower():
-        #    print(self.files)
-            if len(self.files) > 1:
-                self.obj = mio.fv3raqms.open_mfdataset(self.files)
-            else:
-                self.obj = mio.fv3raqms.open_dataset(self.files)
         elif 'raqms' in self.model.lower():
             if len(self.files) > 1:
                 self.obj = mio.raqms.open_mfdataset(self.files)
             else:
                 self.obj = mio.raqms.open_dataset(self.files)
-            self.obj = self.obj.rename_vars({'psfc':'sfcp','delp':'dpm'})
-            self.obj['dpm'] = self.obj['dpm']
-            self.obj['sfcp'] = self.obj['sfcp']*100
-            self.obj['pdash'] = self.obj['pdash']*100
         else:
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
@@ -472,8 +462,7 @@ class analysis:
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
-                print(mod)
-                print(self.control_dict['model'][mod])
+                
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -572,15 +561,16 @@ class analysis:
                         print(model_obj)
                         from .util import satellite_utilities as sutil
                         if mod.apply_ak == True:
-                            keys.append('pdash')
-                            keys.append('sfcp')
+                            keys.append('pres_pa')
+                            keys.append('surfpres_pa')
                             model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj)
                         else:
-                            keys.append('dpm')
+                            keys.append('dp_pa')
                             model_obj = mod.obj[keys]
-                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj)
+                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
                         #paired_data['o3vmr'][(paired_data['o3vmr'] < 150)] = np.nan
+                        paired_data = paired_data.where(paired_data.o3vmr > 0)
                         p = pair()
                         p.obs = obs.label
                         p.model = mod.label
@@ -607,7 +597,12 @@ class analysis:
         -------
         None
         """
-        from .plots import surfplots as splots
+	
+        obs_to_pair = list(self.models[(list(self.models.keys()))[0]].mapping.keys())[0]
+        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
+            from .plots import surfplots as splots
+        else:
+            from .plots import satplots as splots
         from .new_monetio import code_to_move_to_monet as code_m_new
 
         # first get the plotting dictionary from the yaml file
@@ -648,13 +643,20 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+                            
+                        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc':
+                            # convert to dataframe and ensure index is time
+                            pairdf_all = p.obj.to_dataframe().reset_index().set_index('time')
 
-                        # convert to dataframe and ensure index is time
-                        pairdf_all = p.obj.to_dataframe().reset_index().set_index('time')
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
+                        else:
+                            # convert index to time
+                            pairdf_all = p.obj.swap_dims({'x':'time'})
 
-                        # Select only the analysis time window.
-                        pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
-
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
+                        
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
                             if self.models[p.model].plot_kwargs is not None:
@@ -713,13 +715,15 @@ class analysis:
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
 
-                        # Drop NaNs
-                        if grp_dict['data_proc']['rem_obs_nan'] == True:
-                            # I removed drop=True in reset_index in order to keep 'time' as a column.
-                            pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
+                        # Drop NaNs if using pandas 
+                        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc':
+                            if grp_dict['data_proc']['rem_obs_nan'] == True:
+                                # I removed drop=True in reset_index in order to keep 'time' as a column.
+                                pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
+                            else:
+                                pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
                         else:
-                            pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-
+                            pairdf = pairdf_all
                         # Types of plots
                         if plot_type.lower() == 'timeseries':
                             if set_yaxis == True:
@@ -734,7 +738,8 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
+                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
                             a_w = grp_dict['data_proc']['ts_avg_window']
                             if p_index == 0:
                                 # First plot the observations.
