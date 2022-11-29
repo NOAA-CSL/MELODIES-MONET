@@ -215,7 +215,7 @@ included. You may include as many plotting groups as you like.
 For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
-**type:** The model type. Options are: "timeseries", "taylor", "spatial_bias",
+**type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
 "spatial_overlay", "spatial_bias_exceedance", and "boxplot"
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
