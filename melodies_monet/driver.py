@@ -131,9 +131,14 @@ class observation:
             ")"
         )
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -285,7 +290,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self):
+    def open_model_files(self, time_interval=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -293,6 +298,11 @@ class model:
         If a model is not supported, MELODIES-MONET will try to open 
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -409,6 +419,7 @@ class analysis:
         """dict : Paired data, set by :meth:`pair_data`."""
         self.start_time = None
         self.end_time = None
+        self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
         self.debug = False
@@ -423,6 +434,7 @@ class analysis:
             f"    paired={self.paired!r},\n"
             f"    start_time={self.start_time!r},\n"
             f"    end_time={self.end_time!r},\n"
+            f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
             f"    debug={self.debug!r},\n"
@@ -459,6 +471,20 @@ class analysis:
                 self.control_dict['analysis']['output_dir'])
         self.debug = self.control_dict['analysis']['debug']
 
+        # generate time intervals for time chunking
+        if 'time_interval' in self.control_dict['analysis'].keys():
+            time_stamps = pd.date_range(
+                start=self.start_time, end=self.end_time,
+                freq=self.control_dict['analysis']['time_interval'])
+            # if (end_time - start_time) is not an integer multiple
+            #   of freq, append end_time to time_stamps
+            if time_stamps[-1] < pd.Timestamp(self.end_time):
+                time_stamps = time_stamps.append(
+                    pd.DatetimeIndex([self.end_time]))
+            self.time_intervals \
+                = [[time_stamps[n], time_stamps[n+1]]
+                    for n in range(len(time_stamps)-1)]
+
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -471,9 +497,14 @@ class analysis:
 
             Callback.active = set()
 
-    def open_models(self):
+    def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -522,13 +553,19 @@ class analysis:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
                         
                 # open the model
-                m.open_model_files()
+                m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
         populating the :attr:`obs` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
+
 
         Returns
         -------
@@ -544,13 +581,19 @@ class analysis:
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs()
+                o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
-    def pair_data(self):
+    def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
         populating the :attr:`paired` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict pairing to datetime range spanned by time interval [start, end].
+
 
         Returns
         -------
@@ -610,6 +653,16 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
+
+    def concat_pairs(self):
+        """Read and concatenate all observation and model time interval pair data,
+        populating the :attr:`paired` dict.
+
+        Returns
+        -------
+        None
+        """
+        pass
 
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
