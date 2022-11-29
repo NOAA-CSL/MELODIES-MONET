@@ -217,6 +217,7 @@ Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
 "spatial_overlay", "spatial_bias_exceedance", and "boxplot"
+Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
 characteristics to be read in by Matplotlib. 
