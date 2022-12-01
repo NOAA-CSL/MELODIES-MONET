@@ -89,7 +89,7 @@ obs:
         vmin_reg_plot: 0.0 #Opt
         vmax_reg_plot: 22.0 #Opt
         vdiff_reg_plot: 5.0 #Opt
-        #percentile_opt: 50 #Opt, for regulatory calculation of 24hrPM2.5, we simply calculate mean values, no need to set percentile_opt
+        #percentile_opt: 50 #Opt, 5, 50, 95, etc. If not specified, simply calculate mean values. Currently used for "spatial_bias".
       OZONE:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
@@ -162,7 +162,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      ts_avg_window: 'D' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type

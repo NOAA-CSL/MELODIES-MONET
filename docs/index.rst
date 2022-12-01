@@ -44,6 +44,7 @@ MONETIO please refer to:
    background/introduction
    background/description
    background/supported_datasets
+   background/supported_analyses
    background/supported_plots
    background/supported_stats
    
