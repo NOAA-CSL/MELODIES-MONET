@@ -23,12 +23,33 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     None
     """
     import xarray as xr
+    from glob import glob
     
-    # if filename is a str make it a list 
-    if isinstance(filenames,str):
-        files = [filenames]
-    else:
-        files = filenames
+    # expand any wildcards in the filenames
+    if method=='pkl':
+        if isinstance(filenames,str):
+            files = sorted([file for sublist in [glob(file) for file in [filenames]] for file in sublist])
+        else:
+            files = sorted([file for sublist in [glob(file) for file in filenames] for file in sublist])
+        if not files:
+            raise FileNotFoundError('No such file: ',filenames)
+    elif method=='netcdf':
+        if isinstance(filenames,dict): 
+            files = {}
+            for group in filenames.keys():
+                if isinstance(filenames[group],str):
+                    files[group] = sorted([file for sublist in [glob(file) for file in [filenames[group]]] for file in sublist])
+                else:
+                    files[group] = sorted([file for sublist in [glob(file) for file in filenames[group]] for file in sublist])
+                if not files[group]:
+                    raise FileNotFoundError('No such file: ', filenames[group])
+        else:
+            raise TypeError('NetCDF format filenames need to be specified as a dict, with format {group1:str or iterable of filenames, group2:...}')
+    
+    # Set analysis.read such that it now contains expanded filenames so user has list of read files
+    expanded_filenames = getattr(analysis,'read')
+    expanded_filenames[attr]['filenames'] = files 
+    setattr(analysis, 'read', expanded_filenames)
 
     # for converting name of attribute to name of class for constructing
     class_names = {'paired':'pair','models':'model','obs':'observation'}
@@ -47,17 +68,14 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
             setattr(analysis, attr,  attr_out)
 
     elif method=='netcdf':
-        if isinstance(files,dict): 
-            xr_dict = {}
-            for group in files.keys():
-                if isinstance(files[group],str):
-                    group_files = [files[group]]
-                else:
-                    group_files = files[group]
-                xr_dict[group] = read_analysis_ncf(group_files,xr_kws)
-            setattr(analysis, attr,  xarray_to_class(class_type=class_names[attr],group_ds=xr_dict))    
-        else:
-            raise TypeError('NetCDF format filenames need to be specified as a dict, with format {group1:str or iterable of filenames, group2:...}')
+        xr_dict = {}
+        for group in files.keys():
+            if isinstance(files[group],str):
+                group_files = [files[group]]
+            else:
+                group_files = files[group]
+            xr_dict[group] = read_analysis_ncf(group_files,xr_kws)
+        setattr(analysis, attr,  xarray_to_class(class_type=class_names[attr],group_ds=xr_dict))
 
 def read_pkl(filename):
     """Function to read a pickle file containing part of the analysis class (models, obs, paired)
