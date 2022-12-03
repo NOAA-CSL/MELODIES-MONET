@@ -422,6 +422,8 @@ class analysis:
         self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.output_dir_save = None
+        self.output_dir_read = None
         self.debug = False
         self.save = None
         self.read = None
@@ -439,6 +441,8 @@ class analysis:
             f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
+            f"    output_dir_save={self.output_dir_save!r},\n"
+            f"    output_dir_read={self.output_dir_read!r},\n"
             f"    debug={self.debug!r},\n"
             f"    save={self.save!r},\n"
             f"    read={self.read!r},\n"
@@ -473,6 +477,18 @@ class analysis:
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = os.path.expandvars(
                 self.control_dict['analysis']['output_dir'])
+        if 'output_dir_save' in self.control_dict['analysis'].keys():
+            self.output_dir_save = os.path.expandvars(
+                self.control_dict['analysis']['output_dir_save'])
+        else:
+            self.output_dir_save=self.output_dir
+        if 'output_dir_read' in self.control_dict['analysis'].keys():
+            if self.control_dict['analysis']['output_dir_read'] is not None:
+                self.output_dir_read = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir_read'])
+        else:
+            self.output_dir_read=self.output_dir
+            
         self.debug = self.control_dict['analysis']['debug']
         if 'save' in self.control_dict['analysis'].keys():
             self.save = self.control_dict['analysis']['save']
@@ -517,23 +533,23 @@ class analysis:
             for attr in self.save:
                 if self.save[attr]['method']=='pkl':
                     from .util.write_util import write_pkl
-                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir,self.save[attr]['output_name']))
+                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir_save,self.save[attr]['output_name']))
 
                 elif self.save[attr]['method']=='netcdf':
                     from .util.write_util import write_analysis_ncf
                     # save either all groups or selected groups
                     if self.save[attr]['data']=='all':
                         if 'prefix' in self.save[attr]:
-                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir,
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save,
                                                fn_prefix=self.save[attr]['prefix'])
                         else:
-                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir)
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save)
                     else:
                         if 'prefix' in self.save[attr]:
-                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir, 
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
                                                fn_prefix=self.save[attr]['prefix'], keep_groups=self.save[attr]['data'])
                         else:
-                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir, 
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
                                                keep_groups=self.save[attr]['data'])
         
     def read_analysis(self):

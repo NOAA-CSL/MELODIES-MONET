@@ -24,13 +24,20 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     """
     import xarray as xr
     from glob import glob
+    import os
+    
+    # Determine where to read files from
+    if getattr(analysis,'output_dir_read') is not None:
+        read_dir = getattr(analysis,'output_dir_read')
+    else:
+        read_dir = ''
     
     # expand any wildcards in the filenames
     if method=='pkl':
         if isinstance(filenames,str):
-            files = sorted([file for sublist in [glob(file) for file in [filenames]] for file in sublist])
+            files = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in [filenames]] for file in sublist])
         else:
-            files = sorted([file for sublist in [glob(file) for file in filenames] for file in sublist])
+            files = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames] for file in sublist])
         if not files:
             raise FileNotFoundError('No such file: ',filenames)
     elif method=='netcdf':
@@ -38,9 +45,9 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
             files = {}
             for group in filenames.keys():
                 if isinstance(filenames[group],str):
-                    files[group] = sorted([file for sublist in [glob(file) for file in [filenames[group]]] for file in sublist])
+                    files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in [filenames[group]]] for file in sublist])
                 else:
-                    files[group] = sorted([file for sublist in [glob(file) for file in filenames[group]] for file in sublist])
+                    files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames[group]] for file in sublist])
                 if not files[group]:
                     raise FileNotFoundError('No such file: ', filenames[group])
         else:
