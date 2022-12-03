@@ -474,9 +474,8 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = os.path.expandvars(
-                self.control_dict['analysis']['output_dir'])
+        self.output_dir = os.path.expandvars(
+            self.control_dict['analysis']['output_dir'])
         if 'output_dir_save' in self.control_dict['analysis'].keys():
             self.output_dir_save = os.path.expandvars(
                 self.control_dict['analysis']['output_dir_save'])
