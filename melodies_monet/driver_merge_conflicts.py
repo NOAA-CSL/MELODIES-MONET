@@ -176,7 +176,7 @@ class observation:
         
         #import sys
         #sys. exit()  
-=======
+======= HEAD + develop
         from . import tutorial
 
         if self.file.startswith("example:"):
@@ -337,7 +337,7 @@ class model:
         #print(len(self.file_str))
         #if len(self.file_str) == 1:
         self.files = sort(glob(self.file_str))
-=======
+======= develop
         print(self.file_str)
         if self.file_str.startswith("example:"):
             example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
@@ -379,7 +379,7 @@ class model:
         """
 <<<<<<< HEAD
         print(self.model.lower())
-=======
+======= HEAD
 
 >>>>>>> develop
         self.glob_files()
@@ -421,7 +421,7 @@ class model:
                 self.obj = mio.raqms.open_mfdataset(self.files)
             else:
                 self.obj = mio.raqms.open_dataset(self.files)
-=======
+======= HEAD + develop
         elif 'cesm_fv' in self.model.lower():
             print('**** Reading CESM FV model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
@@ -628,7 +628,7 @@ class analysis:
                 # add variable dict
 <<<<<<< HEAD
                 
-=======
+======= develop
 >>>>>>> develop
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
@@ -682,7 +682,7 @@ class analysis:
 
 
     def pair_data(self):
-=======
+======= HEAD + develop
                 o.file = os.path.expandvars(
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
@@ -746,7 +746,7 @@ class analysis:
                             model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
                     except KeyError:
                         pass
-=======
+======= develop
                     try:
                         if model_obj.sizes['z'] > 1:
                             # Select only the surface values to pair with obs.
@@ -795,7 +795,7 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
-=======
+======= HEAD + develop
 
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
@@ -834,7 +834,7 @@ class analysis:
         else:
             from .plots import satplots as splots
         from .new_monetio import code_to_move_to_monet as code_m_new
-=======
+======= HEAD + 'import savefig'
         from .plots import surfplots as splots, savefig
 >>>>>>> develop
 
@@ -887,7 +887,7 @@ class analysis:
                         else:
                             # convert index to time
                             pairdf_all = p.obj.swap_dims({'x':'time'})
-=======
+======= develop ?
                         # convert to dataframe
                         pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
@@ -970,7 +970,7 @@ class analysis:
                         else:
 <<<<<<< HEAD
                             pairdf = pairdf_all
-=======
+======= develop
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
 
@@ -1213,7 +1213,7 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                                 )    
-=======
+======= HEAD + develop
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
@@ -1327,7 +1327,7 @@ class analysis:
         """
         from .stats import proc_stats as proc_stats
 <<<<<<< HEAD
-=======
+======= develop
         from .plots import surfplots as splots
 >>>>>>> develop
 
