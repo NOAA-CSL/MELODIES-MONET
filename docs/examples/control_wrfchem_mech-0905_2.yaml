@@ -18,7 +18,6 @@ analysis:
   start_time: "2019-09-05-06:00:00" # UTC
   end_time: "2019-09-06-06:00:00" # UTC
   output_dir: ./output/airnow_wrfchem  # relative to the program using this control file
-  # ^ optional; if not specified, plots are stored in code directory (??)
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
 

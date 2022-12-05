@@ -6,7 +6,13 @@
 analysis:
   start_time: '2019-09-05-00:00:00' #UTC
   end_time: '2019-09-06-00:00:00' #UTC
-  output_dir: /wrk/charkins/melodies_monet/aircraft/analysis_saveout/example #Opt if not specified plots stored in code directory.
+  output_dir: /wrk/charkins/melodies_monet/aircraft/analysis_saveout2 # relative to the program using this control file
+  #   Currently, the directory must exist or plot saving will error and fail.
+  output_dir_save: /wrk/charkins/melodies_monet/aircraft/analysis_saveout2/savedir_test #Opt Directory to use for melodies-monet data from 'save' below.
+  #   If not specified, saved melodies-monet data stored in output_dir.
+  output_dir_read: /wrk/charkins/melodies_monet/aircraft/analysis_saveout2/readdir_test #Opt Directory to use for melodies-monet data from 'read' below.
+  #   If not specified, reads melodies-monet data from output_dir. 
+  #   To not assume any directory for reading (use paths specified under 'read' directly) set output_dir_read: null
   debug: True
   save:
       paired:
@@ -19,16 +25,13 @@ analysis:
   read:
       paired:
           method: 'netcdf' # 'netcdf' or 'pkl'
-          filenames: {'airnow_wrfchem_v4.2':['0905_airnow_wrfchem_v4.2.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}
+          filenames: {'airnow_wrfchem_v4.2':['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}  Any wildcards will be expanded
           # filenames: {'airnow_wrfchem_v4.2':['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}
           # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
       # models:
       # obs:
 model:
   wrfchem_v4.2: # model label
-    # files: /scratch2/BMC/rcm1/rhs/wrfchem/runs_firex/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/Output/0802/*
-    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
-    # files: /wrk/d2/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0904/wrfout_d01_2019-09-04_*
     files: /wrk/d2/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/wrfout_d01_2019-09-05_*
     mod_type: 'wrfchem'
     mod_kwargs: 

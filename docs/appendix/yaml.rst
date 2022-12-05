@@ -41,8 +41,16 @@ All input related to the analysis class.
 **end_time:** The end time in UTC of the analysis window.
 (e.g., "2019-08-03-12:00:00")
 
-**output_dir**: This is optional. This is the directory where the plots are saved. 
-If not specified plots stored in code directory.
+**output_dir**: This is the directory where the plots are saved. 
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
+
+**output_dir_save**: This is an optional argument. This is the directory where the files from the 'save' argument below are saved. 
+If this argument is not specified, output_dir_save defaults to output_dir.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
+
+**output_dir_read**: This is an optional argument. This is the directory where the files from the 'read' argument below are read from. 
+If this argument is not specified, output_dir_read defaults to output_dir. 
+To read files directly from the path provided in 'read', set ``output_dir_read: null``.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **debug:** This is an option to print out plots and more options for trouble 
@@ -52,8 +60,7 @@ machine to avoid display errors.
 
 **save:** This is an optional argument. This option allows for saving attributes of the 
 analysis class (paired, models, obs) to a file, using the analysis.save_analysis() method.
-The files saved using this method will always be saved to the output_dir set in the 
-analysis section of the .yaml file.
+Read the information for output_dir_save for information regarding the directory files are saved to. 
 
    * **method:** The file format to save to. Options are 'netcdf' and 'pkl'. 
    * **prefix:** This option should be used with method: 'netcdf'. When saving to netcdf format, a new file is made for each group (for example each model/obs pair is a new file). The prefix option adds a prefix to the filename in the format [prefix]_[group].nc4. 
@@ -62,10 +69,11 @@ analysis section of the .yaml file.
 
 **read:** This is an optional argument. This option allows for read attributes of the 
 analysis class (paired, models, obs) from a previously saved file, using the 
-analysis.read_analysis() method.
+analysis.read_analysis() method. Read the information for output_dir_read for information 
+regarding the directory files are read from. 
 
    * **method:** The file format to read from. Options are 'netcdf' and 'pkl'. 
-   * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. 
+   * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. Wildcards will be expanded to any matching files. 
 
 Models
 ------
