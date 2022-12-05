@@ -6,23 +6,11 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-
-# sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2021, NCAR/UCAR, NOAA'
+copyright = u'2022, NCAR/UCAR, NOAA'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
@@ -45,6 +33,9 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
+    'myst_nb',
+    'sphinx_design',
+    'sphinx_click',
 ]
 
 extlinks = {
@@ -68,6 +59,16 @@ napoleon_use_rtype = False
 napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
+nb_execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
+# nb_execution_mode = "auto"  # don't execute if all cells have output (default)
+# nb_execution_mode = "cache"  # to speed build when working on other things
+nb_execution_mode = "off"
+nb_execution_excludepatterns = [
+    "examples/airnow_wrfchem.ipynb",
+]
+nb_execution_show_tb = True
+
+myst_enable_extensions = ["colon_fence"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -91,7 +92,9 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = [
+    u'_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -189,10 +192,11 @@ texinfo_documents = [
 # -- Extension configuration -------------------------------------------------
 
 linkcheck_ignore = [
-    "https://github.com/NOAA-CSL/MELODIES-MONET.*",  # just until repo is public
     # Auth required:
     "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
     "https://www2.cisl.ucar.edu/resources/conda-environments",
+    # Sphinx 4.5 linkcheck having problem:
+    "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
 ]
 
 autosectionlabel_prefix_document = True

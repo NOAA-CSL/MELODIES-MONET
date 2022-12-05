@@ -4,16 +4,31 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.8
+  - python=3.9
   #
   # melodies_monet deps
   - monet
   - monetio
   - netcdf4
-  - wrf-python
+  #
+  # Extras
+  - pooch
+  - typer
+  - wrf-python  # for WRF-Chem reader in monetio
   #
   # Docs
-  - jupyterlab
+  - ipykernel
+  - jupyterlab=3.*
+  - jupytext
+  - myst-nb>=0.14
+  - nbclient
   - sphinx=4.*
   - sphinx-autobuild
+  - sphinx-click
+  - sphinx-design
   - sphinx_rtd_theme
+  #
+  - pip
+  - pip:
+    # melodies_monet itself
+    - '-e ../'

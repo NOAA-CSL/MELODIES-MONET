@@ -4,27 +4,30 @@ Description of All YAML Options
 General Rules
 -------------
 
-* Any key that is specific for a plot type will begin with one of the 
-  following descriptors:
-  - ts for Timeseries
-  - ty for Taylor
+* Any key that is specific for a plot type will begin with one of the following
+  descriptors:
+  
+  * ts for Timeseries
+  * ty for Taylor
 * When a key is optional it will be followed by #Opt 
-* All plots use data over the entire analysis window from the "start_time" 
-  to the "end_time" specified in the "analysis" section. 
-  - timeseries - average over window provided by "ts_avg_window"
-  - taylor - calculated over entire analysis window
-  - spatial_bias - average over entire analysis window
-  - spatial_overlay - average over entire analysis window
-  - boxplot - calculated over entire analysis window
+* All plots use data over the entire analysis window from the "start_time"
+  to the "end_time" specified in the "analysis" section.
+  
+  * timeseries - average over window provided by "ts_avg_window"
+  * taylor - calculated over entire analysis window
+  * spatial_bias - average over entire analysis window unless "percentile" provided
+  * spatial_overlay - average over entire analysis window
+  * spatial_overlay_exceedance - number of exceedances within the analysis window 
+  * boxplot - calculated over entire analysis window
 * If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
-  for that plot_grp will be set based on the values specified in the "obs" 
+  for that "plot_grp" will be set based on the values specified in the "obs" 
   section for each "variable". If "set_axis" = False, then the automatic
-  scaling in Matplotlib will be used. 'vmin_plot' and 'vmax_plot' are needed
-  for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed
-  for 'spatial_bias' plots and 'ty_scale' is needed for 'taylor' plots. 
-  'nlevels' or the number of levels used in the contour plot can also 
-  optionally be provided for 'spatial_overlay' plot. If set_axis = True and 
-  the proper limits are not provided in the 'obs' section, a warning will 
+  scaling in Matplotlib will be used. "vmin_plot" and "vmax_plot" are needed
+  for "timeseries", "spatial_overlay", and "boxplot". "vdiff_plot" is needed
+  for "spatial_bias" plots and "ty_scale" is needed for "taylor" plots. 
+  "nlevels" or the number of levels used in the contour plot can also 
+  optionally be provided for "spatial_overlay" plot. If "set_axis" = True and 
+  the proper limits are not provided in the "obs" section, a warning will 
   print, and the plot will be created using the automatic scaling in
   Matplotlib.
 
@@ -33,13 +36,14 @@ Analysis
 All input related to the analysis class.
 
 **start_time:** The start time in UTC of the analysis window.
-(e.g., '2019-08-02-12:00:00')
+(e.g., "2019-08-02-12:00:00")
 
 **end_time:** The end time in UTC of the analysis window.
-(e.g., '2019-08-03-12:00:00')
+(e.g., "2019-08-03-12:00:00")
 
 **output_dir**: This is optional. This is the directory where the plots are saved. 
-If not specified plots stored in code directory. 
+If not specified plots stored in code directory.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **debug:** This is an option to print out plots and more options for trouble 
 shooting. If you want plots to print in jupyter notebooks select this to True.
@@ -52,23 +56,26 @@ All input for each instance of the model class. First level should be the model
 label. Then under each model label provide the following:
 
 **files:** The file directory location and name(s). Hotkeys are allowed.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **files_vert:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro3d.ncf`` files here.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **files_surf:** This is for CMAQ only. If you want to calculate vertical info, 
 please provide location of ``*.metcro2d.ncf`` files here.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
-**mod_type:** The model type. Options are: 'cmaq', 'wrfchem', 'rrfs', 'gsdchem'. 
+**mod_type:** The model type. Options are: "cmaq", "wrfchem", "rrfs", "gsdchem",
+"cesm_fv", and "cesm_se". 
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
 
 **mod_kwargs**: This is an optional dictionary to include information to 
-provide to the model dataset reader scripts in MONETIO (temporarily in the 
-MELODIES-MONET/melodies_monet/new_monetio folder on Github). For example, you
-can provide mechanism information (e.g., mech: 'cb6r3_ae6_aq') or for some models, 
-in order to reduce processing time you can only pull in the surface data 
-(e.g., surf_only: True).
+provide to the model dataset reader scripts in MONETIO (``monetio/models/*_mm.py``).
+For example, you can provide mechanism information (e.g., mech: 'cb6r3_ae6_aq') or
+for some models, in order to reduce processing time, you can only pull in the surface
+data (e.g., surf_only: True).
 
 **radius_of_influence:** The "radius of influence" used for pairing in MONET. 
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
@@ -123,8 +130,9 @@ observation label. Then under each observation label provide the following:
 Generalizing this to include other surface observations is under development.
 
 **filename:**  The file directory location and name. These observations need 
-to be preprocessed prior to incorporating them into MELODIES MONET. See 
-:doc:`../tutorial/downloading_obs` for more details.
+to be preprocessed prior to incorporating them into MELODIES MONET.
+Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
+See :doc:`../tutorial/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
@@ -151,6 +159,23 @@ nan_values are set to NaN first and then the unit conversion is applied.
      plot, change set_axis = True in plot_group.
    * **nlevels_plot:** The number of levels used in colorbar for contourf plot. To 
      apply to a plot, change set_axis = True in plot_group.
+   * **percentile_opt:** If not specified, defaults to average. If specified, value
+     (in %) is used to calculate the percentile (e.g., 5, 50, 95). Currently only
+     used for "spatial_bias" plots. Will work with data as is and regulatory metrics.
+   * **regulatory:** If false (default), use data as is. If set to true, the
+     regulatory metric is calculated as explained under :doc:`/background/supported_analyses`.
+     Only works for "OZONE" and "PM2.5" variables.
+   * **ylabel_reg_plot:** String to use as ylabel in plot for regulatory calculation.
+     Useful for adding units or instrument information. Only used if regulatory = True.
+   * **vmin_reg_plot:** Minimum for y-axis during plotting for regulatory calculation.
+     To apply to a plot, change set_axis = True in plot_group. Only used if regulatory
+     = True.
+   * **vmax_reg_plot:** Maximum for y-axis during plotting for regulatory calculation.
+     To apply to a plot, change set_axis = True in plot_group. Only used if regulatory
+     = True.
+   * **vdiff_reg_plot:** The range (+/-) to use in bias plots for regulatory calculation.
+     To apply to a plot, change set_axis = True in plot_group. Only used if regulatory
+     = True.
 
 For example, ::
 
@@ -166,11 +191,18 @@ For example, ::
     vmax_plot: 22.0 
     vdiff_plot: 15.0 
     nlevels_plot: 23
+    regulatory: True
+    ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
+    vmin_reg_plot: 0.0 #Opt
+    vmax_reg_plot: 22.0 #Opt
+    vdiff_reg_plot: 5.0 #Opt
+    percentile_opt: 50
 
 Copy that above and update the observation label for all the observations you 
 would like to include in the analysis. Note that all models are paired with all 
 observations. At this point MELODIES MONET does not pair observations with each 
-other.
+other. Remember all of the possibilities above are optional, so feel free to only
+select the options you need to create your desired plot.
 
 Plots
 -----
@@ -183,8 +215,9 @@ included. You may include as many plotting groups as you like.
 For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
-**type:** The model type. Options are: 'timeseries', 'taylor', 'spatial_bias',
-'spatial_overlay', 'boxplot'
+**type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
+"spatial_overlay", "spatial_bias_exceedance", and "boxplot"
+Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
 characteristics to be read in by Matplotlib. 
