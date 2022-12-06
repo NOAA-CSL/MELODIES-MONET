@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-08-01-12:00:00' #UTC
   end_time: '2019-08-31-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/jhe/postp/AirNow/outdir_CONUS_v150_a/08/ #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/jhe/postp/AirNow/outdir_CONUS_v150_a/08/ 
   debug: True
 model:
   cmaq_oper: # model label

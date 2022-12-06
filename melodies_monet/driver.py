@@ -422,7 +422,11 @@ class analysis:
         self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.output_dir_save = None
+        self.output_dir_read = None
         self.debug = False
+        self.save = None
+        self.read = None
 
     def __repr__(self):
         return (
@@ -437,7 +441,11 @@ class analysis:
             f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
+            f"    output_dir_save={self.output_dir_save!r},\n"
+            f"    output_dir_read={self.output_dir_read!r},\n"
             f"    debug={self.debug!r},\n"
+            f"    save={self.save!r},\n"
+            f"    read={self.read!r},\n"
             ")"
         )
 
@@ -466,10 +474,25 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = os.path.expandvars(
-                self.control_dict['analysis']['output_dir'])
+        self.output_dir = os.path.expandvars(
+            self.control_dict['analysis']['output_dir'])
+        if 'output_dir_save' in self.control_dict['analysis'].keys():
+            self.output_dir_save = os.path.expandvars(
+                self.control_dict['analysis']['output_dir_save'])
+        else:
+            self.output_dir_save=self.output_dir
+        if 'output_dir_read' in self.control_dict['analysis'].keys():
+            if self.control_dict['analysis']['output_dir_read'] is not None:
+                self.output_dir_read = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir_read'])
+        else:
+            self.output_dir_read=self.output_dir
+            
         self.debug = self.control_dict['analysis']['debug']
+        if 'save' in self.control_dict['analysis'].keys():
+            self.save = self.control_dict['analysis']['save']
+        if 'read' in self.control_dict['analysis'].keys():
+            self.read = self.control_dict['analysis']['read']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
@@ -496,6 +519,53 @@ class analysis:
             from dask.callbacks import Callback
 
             Callback.active = set()
+    
+    def save_analysis(self):
+        """Save all analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.save is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            for attr in self.save:
+                if self.save[attr]['method']=='pkl':
+                    from .util.write_util import write_pkl
+                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir_save,self.save[attr]['output_name']))
+
+                elif self.save[attr]['method']=='netcdf':
+                    from .util.write_util import write_analysis_ncf
+                    # save either all groups or selected groups
+                    if self.save[attr]['data']=='all':
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save,
+                                               fn_prefix=self.save[attr]['prefix'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save)
+                    else:
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               fn_prefix=self.save[attr]['prefix'], keep_groups=self.save[attr]['data'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               keep_groups=self.save[attr]['data'])
+        
+    def read_analysis(self):
+        """Read all previously saved analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.read is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            from .util.read_util import read_saved_data
+            for attr in self.read:
+                if self.read[attr]['method']=='pkl':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
+                elif self.read[attr]['method']=='netcdf':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 

@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-08-02-12:00:00' #UTC
   end_time: '2019-08-03-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802 #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802 
   debug: True
 model:
   wrfchem_v4.2: # model label
