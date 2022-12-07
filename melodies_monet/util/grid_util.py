@@ -87,3 +87,18 @@ def update_data_grid(time_edges, lat_edges, lon_edges,
             count_grid[i_time, i_lat, i_lon] += 1
             data_grid[i_time, i_lat, i_lon] += data_obs[i]
 
+
+def normalize_data_grid(count_grid, data_grid):
+    """
+    Normalize accumulated data on a uniform grid
+
+    Parameters
+        count_grid (np.array): number of obs points in grid cell
+        data_grid (np.array): sum of data values in grid cell
+
+    Returns
+        None
+    """
+    data_grid[count_grid == 0] = np.nan
+    data_grid[count_grid > 0] /= count_grid[count_grid > 0]
+
