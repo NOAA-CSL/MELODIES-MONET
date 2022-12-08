@@ -74,5 +74,9 @@ for filename in files:
         obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 
+grid_util.normalize_data_grid(count_grid, data_grid)
+
+data_da = xr.DataArray(data_grid, coords=[time_grid, lat_grid, lon_grid])
+
 # print(count_grid_dict)
 # print(data_grid_dict)
