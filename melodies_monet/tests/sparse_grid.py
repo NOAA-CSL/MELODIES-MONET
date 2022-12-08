@@ -93,9 +93,15 @@ lat_da = xr.DataArray(lat_grid,
 lon_da = xr.DataArray(lon_grid,
     attrs={'longname': 'longitude', 'units': 'degree East'})
 
+"""
 count_da = xr.DataArray(count_np, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
 data_da = xr.DataArray(data_np, dims=['time', 'lat', 'lon'],
+    coords=[time_da, lat_da, lon_da])
+"""
+count_da = xr.DataArray(count_grid, dims=['time', 'lat', 'lon'],
+    coords=[time_da, lat_da, lon_da])
+data_da = xr.DataArray(data_grid, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
 ds = xr.Dataset({'count': count_da, 'data': data_da})
 ds.to_netcdf('sparse_grid.nc')

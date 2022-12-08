@@ -43,7 +43,7 @@ def update_sparse_data_grid(time_edges, lat_edges, lon_edges,
             i_time = np.clip(i_time, 0, ntime - 1)
             i_lat = np.clip(i_lat, 0, nlat - 1)
             i_lon = np.clip(i_lon, 0, nlon - 1)
-            if (i_time, i_lon, i_lat) in count_grid.keys():
+            if (i_time, i_lat, i_lon) in count_grid.keys():
                 count_grid[(i_time, i_lat, i_lon)] += 1
                 data_grid[(i_time, i_lat, i_lon)] += data_obs[i].values
             else:
