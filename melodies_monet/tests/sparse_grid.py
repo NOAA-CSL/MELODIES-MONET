@@ -76,7 +76,19 @@ for filename in files:
 
 grid_util.normalize_data_grid(count_grid, data_grid)
 
-data_da = xr.DataArray(data_grid, coords=[time_grid, lat_grid, lon_grid])
+time_da = xr.DataArray(time_grid,
+    attrs={'longname': 'time', 'units': 'seconds since 1970 Jan 01 00:00:00'})
+lat_da = xr.DataArray(lat_grid,
+    attrs={'longname': 'latitude', 'units': 'degree North'})
+lon_da = xr.DataArray(lon_grid,
+    attrs={'longname': 'longitude', 'units': 'degree East'})
+
+count_da = xr.DataArray(count_grid, dims=['time', 'lat', 'lon'],
+    coords=[time_da, lat_da, lon_da])
+data_da = xr.DataArray(data_grid, dims=['time', 'lat', 'lon'],
+    coords=[time_da, lat_da, lon_da])
+ds = xr.Dataset({'count': count_da, 'data': data_da})
+ds.to_netcdf('sparse_grid.nc')
 
 # print(count_grid_dict)
 # print(data_grid_dict)

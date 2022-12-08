@@ -30,8 +30,8 @@ obs:
         unit_scale: 1
         unit_scale_method: '*'
     sparse_data_grid:
-      ntime: 144
+      ntime: 72
       nlat: 180
       nlon: 360
-      lon0: 0
+      lon0: -180
 
