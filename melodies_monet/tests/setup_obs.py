@@ -73,7 +73,8 @@ for ifile in range(args.nfile):
         else:
             range_max = 1
 
-        df_dict[var_name] = (range_max - range_min) * np.random.rand(ntime_file) + range_min
+        df_dict[var_name] = (range_max - range_min) \
+            * np.float32(np.random.rand(ntime_file)) + range_min
 
     istart = ifile * ntime_file
     iend = istart + ntime_file
