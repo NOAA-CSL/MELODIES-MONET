@@ -75,8 +75,16 @@ for filename in files:
         count_grid, data_grid)
 
 grid_util.normalize_sparse_data_grid(count_grid_dict, data_grid_dict)
+count_np, data_np = grid_util.to_np_array(time_edges, lat_edges, lon_edges,
+    count_grid_dict, data_grid_dict)
 
 grid_util.normalize_data_grid(count_grid, data_grid)
+
+count_diff = count_grid - count_np
+data_diff = data_grid - data_np
+mask = np.where(count_diff > 0)
+print(mask)
+print(count_diff.min(), count_diff.max())
 
 time_da = xr.DataArray(time_grid,
     attrs={'longname': 'time', 'units': 'seconds since 1970 Jan 01 00:00:00'})
@@ -85,12 +93,9 @@ lat_da = xr.DataArray(lat_grid,
 lon_da = xr.DataArray(lon_grid,
     attrs={'longname': 'longitude', 'units': 'degree East'})
 
-count_da = xr.DataArray(count_grid, dims=['time', 'lat', 'lon'],
+count_da = xr.DataArray(count_np, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
-data_da = xr.DataArray(data_grid, dims=['time', 'lat', 'lon'],
+data_da = xr.DataArray(data_np, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
 ds = xr.Dataset({'count': count_da, 'data': data_da})
 ds.to_netcdf('sparse_grid.nc')
-
-# print(count_grid_dict)
-# print(data_grid_dict)

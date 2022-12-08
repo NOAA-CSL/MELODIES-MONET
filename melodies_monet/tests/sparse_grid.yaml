@@ -5,7 +5,7 @@ analysis:
 
 test_setup:
   random_seed: 3
-  freq: 10s
+  freq: 30s
   obs_var: A_obs
 
 obs:

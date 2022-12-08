@@ -66,6 +66,31 @@ def normalize_sparse_data_grid(count_grid, data_grid):
         data_grid[index_tuple] /= count_grid[index_tuple]
 
 
+def to_np_array(time_edges, lat_edges, lon_edges,
+                count_grid, data_grid):
+    """
+    Convert sparse grid data to numpy arrays
+
+    Parameters
+        time_edges (np.array): grid time edges
+        lat_edges (np.array): grid latitude edges
+        lon_edges (np.array): grid longitude edges
+        count_grid (dict): number of obs points in grid cell
+        data_grid (dict): sum of data values in grid cell
+
+    Returns
+        None
+    """
+    ntime, nlat, nlon = len(time_edges) - 1, len(lat_edges) - 1, len(lon_edges) - 1
+    count_grid_array = np.zeros((ntime, nlat, nlon), dtype=np.int32)
+    data_grid_array = np.full((ntime, nlat, nlon), np.nan, dtype=np.float32)
+    for index_tuple in count_grid.keys():
+        count_grid_array[index_tuple[0], index_tuple[1], index_tuple[2]] = count_grid[index_tuple]
+        data_grid_array[index_tuple[0], index_tuple[1], index_tuple[2]] = data_grid[index_tuple]
+
+    return count_grid_array, data_grid_array
+
+
 def update_data_grid(time_edges, lat_edges, lon_edges,
                      time_obs, lat_obs, lon_obs, data_obs,
                      count_grid, data_grid):
