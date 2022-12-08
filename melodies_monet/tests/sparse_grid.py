@@ -57,7 +57,7 @@ data_grid_dict = dict()
 count_grid = np.zeros((ntime, nlat, nlon), dtype=np.int32)
 data_grid = np.zeros((ntime, nlat, nlon), dtype=np.float32)
 
-files = glob(an.control_dict['obs']['test_obs']['files'])
+files = sorted(glob(an.control_dict['obs']['test_obs']['files']))
 obs_var = an.control_dict['test_setup']['obs_var']
 
 # read obs
@@ -73,6 +73,8 @@ for filename in files:
     grid_util.update_data_grid(time_edges, lat_edges, lon_edges,
         obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
+
+grid_util.normalize_sparse_data_grid(count_grid_dict, data_grid_dict)
 
 grid_util.normalize_data_grid(count_grid, data_grid)
 

@@ -51,6 +51,21 @@ def update_sparse_data_grid(time_edges, lat_edges, lon_edges,
                 data_grid[(i_time, i_lat, i_lon)] = data_obs[i].values
 
 
+def normalize_sparse_data_grid(count_grid, data_grid):
+    """
+    Normalize accumulated data on a uniform grid
+
+    Parameters
+        count_grid (dict): number of obs points in grid cell
+        data_grid (dict): sum of data values in grid cell
+
+    Returns
+        None
+    """
+    for index_tuple in count_grid.keys():
+        data_grid[index_tuple] /= count_grid[index_tuple]
+
+
 def update_data_grid(time_edges, lat_edges, lon_edges,
                      time_obs, lat_obs, lon_obs, data_obs,
                      count_grid, data_grid):
