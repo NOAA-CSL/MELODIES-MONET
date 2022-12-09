@@ -67,7 +67,8 @@ def normalize_sparse_data_grid(count_grid, data_grid):
 
 
 def sparse_data_to_array(time_edges, lat_edges, lon_edges,
-                         count_grid, data_grid):
+                         count_grid, data_grid,
+                         count_type=np.uint32, data_type=np.float32):
     """
     Convert sparse grid data to numpy arrays
 
@@ -77,14 +78,16 @@ def sparse_data_to_array(time_edges, lat_edges, lon_edges,
         lon_edges (np.array): grid longitude edges
         count_grid (dict): number of obs points in grid cell
         data_grid (dict): sum of data values in grid cell
+        count_type (dtype, default=np.uint32): data type of count_grid_array
+        data_type (dtype, default=np.float32): data type of data_grid_array
 
     Returns
         count_grid_array (np.array): number of obs points in grid cell
         data_grid_array (np.array): sum of data values in grid cell
     """
     ntime, nlat, nlon = len(time_edges) - 1, len(lat_edges) - 1, len(lon_edges) - 1
-    count_grid_array = np.zeros((ntime, nlat, nlon), dtype=np.int32)
-    data_grid_array = np.full((ntime, nlat, nlon), np.nan, dtype=np.float32)
+    count_grid_array = np.zeros((ntime, nlat, nlon), dtype=count_type)
+    data_grid_array = np.full((ntime, nlat, nlon), np.nan, dtype=data_type)
     for index_tuple in count_grid.keys():
         count_grid_array[index_tuple[0], index_tuple[1], index_tuple[2]] = count_grid[index_tuple]
         data_grid_array[index_tuple[0], index_tuple[1], index_tuple[2]] = data_grid[index_tuple]
