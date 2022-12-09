@@ -49,9 +49,9 @@ lat_min, lat_max = lat_edges[0:nlat], lat_edges[1:nlat+1]
 lon_edges = np.linspace(lon0, lon0 + 360, nlon+1, endpoint=True, dtype=float)
 lon_grid = 0.5 * (lon_edges[0:nlon] + lon_edges[1:nlon+1])
 
-# instantiate count and data dictionaries
-count_grid_dict = dict()
-data_grid_dict = dict()
+# instantiate sparse count and sparse data dictionaries
+count_grid_sparse = dict()
+data_grid_sparse = dict()
 
 # initialize count and data arrays
 count_grid = np.zeros((ntime, nlat, nlon), dtype=np.int32)
@@ -68,20 +68,22 @@ for filename in files:
 
     grid_util.update_sparse_data_grid(time_edges, lat_edges, lon_edges,
         obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
-        count_grid_dict, data_grid_dict)
+        count_grid_sparse, data_grid_sparse)
 
     grid_util.update_data_grid(time_edges, lat_edges, lon_edges,
         obs_ds['timestamps'], obs_ds['lat'], obs_ds['lon'], obs_ds[obs_var],
         count_grid, data_grid)
 
-grid_util.normalize_sparse_data_grid(count_grid_dict, data_grid_dict)
-count_np, data_np = grid_util.to_np_array(time_edges, lat_edges, lon_edges,
-    count_grid_dict, data_grid_dict)
+# normalize sparse data and convert to array data
+grid_util.normalize_sparse_data_grid(count_grid_sparse, data_grid_sparse)
+count_grid_array, data_grid_array = grid_util.sparse_data_to_array(time_edges, lat_edges, lon_edges,
+    count_grid_sparse, data_grid_sparse)
 
+# normalize data
 grid_util.normalize_data_grid(count_grid, data_grid)
 
-count_diff = count_grid - count_np
-data_diff = data_grid[count_grid > 0] - data_np[count_grid > 0]
+count_diff = count_grid - count_grid_array
+data_diff = data_grid[count_grid > 0] - data_grid_array[count_grid > 0]
 print('count diff min, max = %d, %d' % (count_diff.min(), count_diff.max()))
 print('data diff min, max = %f, %f' % (data_diff.min(), data_diff.max()))
 
@@ -92,15 +94,10 @@ lat_da = xr.DataArray(lat_grid,
 lon_da = xr.DataArray(lon_grid,
     attrs={'longname': 'longitude', 'units': 'degree East'})
 
-count_da = xr.DataArray(count_np, dims=['time', 'lat', 'lon'],
+count_grid_da = xr.DataArray(count_grid_array, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
-data_da = xr.DataArray(data_np, dims=['time', 'lat', 'lon'],
+data_grid_da = xr.DataArray(data_grid_array, dims=['time', 'lat', 'lon'],
     coords=[time_da, lat_da, lon_da])
-"""
-count_da = xr.DataArray(count_grid, dims=['time', 'lat', 'lon'],
-    coords=[time_da, lat_da, lon_da])
-data_da = xr.DataArray(data_grid, dims=['time', 'lat', 'lon'],
-    coords=[time_da, lat_da, lon_da])
-"""
-ds = xr.Dataset({'count': count_da, 'data': data_da})
+ds = xr.Dataset({'count': count_grid_da, 'data': data_grid_da})
 ds.to_netcdf('sparse_grid.nc')
+
