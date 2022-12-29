@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-08-01-12:00:00' #UTC
   end_time: '2019-09-01-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/ #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/ 
   debug: False
 model:
   rrfs_r131v1: # model label

@@ -1,7 +1,9 @@
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
 # SPDX-License-Identifier: Apache-2.0
 #
-""" This is the overall control file.  It will drive the entire analysis package"""
+"""
+Drive the entire analysis package via the :class:`analysis` class.
+"""
 import monetio as mio
 import monet as m
 import os
@@ -28,12 +30,7 @@ class pair:
     """
     
     def __init__(self):
-        """Initialize a :class:`pair` object.
-    
-        Returns
-        -------
-        pair
-        """
+        """Initialize a :class:`pair` object."""
         self.type = 'pt_sfc'
         self.radius_of_influence = 1e6
         self.obs = None
@@ -113,12 +110,7 @@ class observation:
     """
 
     def __init__(self):
-        """Initialize an :class:`observation` object.
-
-        Returns
-        -------
-        observation
-        """
+        """Initialize an :class:`observation` object."""
         self.obs = None
         self.label = None
         self.file = None
@@ -139,9 +131,14 @@ class observation:
             ")"
         )
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -211,6 +208,11 @@ class observation:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
+                    if 'obs_unit' in d:
+                        unitin = d['obs_unit']
+                        if unitin in {'ppmv', 'ppm'}:
+                            scale = 1000. # convert to ppb
+                            self.obj[v].data *= scale
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -229,12 +231,7 @@ class model:
     """    
 
     def __init__(self):
-        """Initialize a :class:`model` object.
-
-        Returns
-        -------
-        model
-        """
+        """Initialize a :class:`model` object."""
         self.model = None
         self.radius_of_influence = None
         self.mod_kwargs = {}
@@ -293,7 +290,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self):
+    def open_model_files(self, time_interval=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -302,10 +299,16 @@ class model:
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
 
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
+
         Returns
         -------
         None
         """
+
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -369,8 +372,7 @@ class model:
         self.mask_and_scale()
 
     def mask_and_scale(self):
-        """Mask and scale observations including unit conversions and setting
-        detection limits.
+        """Mask and scale model data including unit conversions.
 
         Returns
         -------
@@ -394,6 +396,10 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
+                    if 'om2oc_factor' in d:
+                        print('Convert OM to OC here using factor ',d['om2oc_factor'],self.obj[v].data)
+                        scale = d['om2oc_factor']
+                        self.obj[v].data = self.obj[v].data/scale
 
 
 class analysis:
@@ -407,12 +413,7 @@ class analysis:
     """
 
     def __init__(self):
-        """Initialize the :class:`analysis` object.
-
-        Returns
-        -------
-        analysis
-        """
+        """Initialize an :class:`analysis` object."""
         self.control = 'control.yaml'
         self.control_dict = None
         self.models = {}
@@ -423,9 +424,14 @@ class analysis:
         """dict : Paired data, set by :meth:`pair_data`."""
         self.start_time = None
         self.end_time = None
+        self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.output_dir_save = None
+        self.output_dir_read = None
         self.debug = False
+        self.save = None
+        self.read = None
 
     def __repr__(self):
         return (
@@ -437,9 +443,14 @@ class analysis:
             f"    paired={self.paired!r},\n"
             f"    start_time={self.start_time!r},\n"
             f"    end_time={self.end_time!r},\n"
+            f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
+            f"    output_dir_save={self.output_dir_save!r},\n"
+            f"    output_dir_read={self.output_dir_read!r},\n"
             f"    debug={self.debug!r},\n"
+            f"    save={self.save!r},\n"
+            f"    read={self.read!r},\n"
             ")"
         )
 
@@ -468,13 +479,107 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = self.control_dict['analysis']['output_dir']
+        self.output_dir = os.path.expandvars(
+            self.control_dict['analysis']['output_dir'])
+        if 'output_dir_save' in self.control_dict['analysis'].keys():
+            self.output_dir_save = os.path.expandvars(
+                self.control_dict['analysis']['output_dir_save'])
+        else:
+            self.output_dir_save=self.output_dir
+        if 'output_dir_read' in self.control_dict['analysis'].keys():
+            if self.control_dict['analysis']['output_dir_read'] is not None:
+                self.output_dir_read = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir_read'])
+        else:
+            self.output_dir_read=self.output_dir
+            
         self.debug = self.control_dict['analysis']['debug']
+        if 'save' in self.control_dict['analysis'].keys():
+            self.save = self.control_dict['analysis']['save']
+        if 'read' in self.control_dict['analysis'].keys():
+            self.read = self.control_dict['analysis']['read']
 
-    def open_models(self):
+        # generate time intervals for time chunking
+        if 'time_interval' in self.control_dict['analysis'].keys():
+            time_stamps = pd.date_range(
+                start=self.start_time, end=self.end_time,
+                freq=self.control_dict['analysis']['time_interval'])
+            # if (end_time - start_time) is not an integer multiple
+            #   of freq, append end_time to time_stamps
+            if time_stamps[-1] < pd.Timestamp(self.end_time):
+                time_stamps = time_stamps.append(
+                    pd.DatetimeIndex([self.end_time]))
+            self.time_intervals \
+                = [[time_stamps[n], time_stamps[n+1]]
+                    for n in range(len(time_stamps)-1)]
+
+        # Enable Dask progress bars? (default: false)
+        enable_dask_progress_bars = self.control_dict["analysis"].get(
+            "enable_dask_progress_bars", False)
+        if enable_dask_progress_bars:
+            from dask.diagnostics import ProgressBar
+
+            ProgressBar().register()
+        else:
+            from dask.callbacks import Callback
+
+            Callback.active = set()
+    
+    def save_analysis(self):
+        """Save all analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.save is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            for attr in self.save:
+                if self.save[attr]['method']=='pkl':
+                    from .util.write_util import write_pkl
+                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir_save,self.save[attr]['output_name']))
+
+                elif self.save[attr]['method']=='netcdf':
+                    from .util.write_util import write_analysis_ncf
+                    # save either all groups or selected groups
+                    if self.save[attr]['data']=='all':
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save,
+                                               fn_prefix=self.save[attr]['prefix'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save)
+                    else:
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               fn_prefix=self.save[attr]['prefix'], keep_groups=self.save[attr]['data'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               keep_groups=self.save[attr]['data'])
+        
+    def read_analysis(self):
+        """Read all previously saved analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.read is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            from .util.read_util import read_saved_data
+            for attr in self.read:
+                if self.read[attr]['method']=='pkl':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
+                elif self.read[attr]['method']=='netcdf':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+
+    def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict models to datetime range spanned by time interval [start, end].
 
         Returns
         -------
@@ -496,18 +601,20 @@ class analysis:
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
                 # create file string (note this can include hot strings)
-                m.file_str = self.control_dict['model'][mod]['files']
+                m.file_str = os.path.expandvars(
+                    self.control_dict['model'][mod]['files'])
                 if 'files_vert' in self.control_dict['model'][mod].keys():
-                    m.file_vert_str = self.control_dict['model'][mod]['files_vert']
+                    m.file_vert_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_vert'])
                 if 'files_surf' in self.control_dict['model'][mod].keys():
-                    m.file_surf_str = self.control_dict['model'][mod]['files_surf']
+                    m.file_surf_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_surf'])
                 if 'files_pm25' in self.control_dict['model'][mod].keys():
-                    m.file_pm25_str = self.control_dict['model'][mod]['files_pm25']
+                    m.file_pm25_str = os.path.expandvars(
+                        self.control_dict['model'][mod]['files_pm25'])
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
-                print(mod)
-                print(self.control_dict['model'][mod])
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -521,13 +628,19 @@ class analysis:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
                         
                 # open the model
-                m.open_model_files()
+                m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-    def open_obs(self):
+    def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
         populating the :attr:`obs` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
+
 
         Returns
         -------
@@ -539,16 +652,23 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-                o.file = self.control_dict['obs'][obs]['filename']
+                o.file = os.path.expandvars(
+                    self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs()
+                o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
-                
-    def pair_data(self):
+
+    def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
         populating the :attr:`paired` dict.
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict pairing to datetime range spanned by time interval [start, end].
+
 
         Returns
         -------
@@ -594,7 +714,7 @@ class analysis:
                         raise Exception("MONET requires an altitude dimension named 'z'") from e
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
-                    # print(paired_data)
+                    print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.obs = obs.label
@@ -608,6 +728,16 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
+
+    def concat_pairs(self):
+        """Read and concatenate all observation and model time interval pair data,
+        populating the :attr:`paired` dict.
+
+        Returns
+        -------
+        None
+        """
+        pass
 
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
@@ -723,10 +853,14 @@ class analysis:
                         else:
                             set_yaxis = False
 
+                        # Determine to calculate mean values or percentile
+                        if 'percentile_opt' in obs_plot_dict.keys():
+                            use_percentile = obs_plot_dict['percentile_opt']
+                        else:
+                            use_percentile = None
+
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
-                        if self.output_dir is not None:
-                            outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Query selected points if applicable
                         if domain_type != 'all':
@@ -737,7 +871,58 @@ class analysis:
                             # I removed drop=True in reset_index in order to keep 'time' as a column.
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                         else:
+                            print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
+
+                        # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
+                        if pairdf.empty or pairdf[obsvar].isnull().all():
+                            print('Warning: no valid obs found for '+domain_name)
+                            continue
+
+                        # JianHe: Determine if calcuate regulatory values
+                        cal_reg = obs_plot_dict.get('regulatory', False)
+
+                        if cal_reg:
+                            # Reset use_ylabel for regulatory calculations
+                            if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                                use_ylabel = obs_plot_dict['ylabel_reg_plot']
+                            else:
+                                use_ylabel = None
+
+                            df2 = (
+                                pairdf.copy()
+                                .groupby("siteid")
+                                .resample('H', on='time_local')
+                                .mean()
+                                .reset_index()
+                            )
+
+                            if obsvar == 'PM2.5':  
+                                pairdf_reg = splots.make_24hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
+                            elif obsvar == 'OZONE':
+                                pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
+                            else:
+                                print('Warning: no regulatory calculations found for ' + obsvar + '. Skipping plot.')
+                                del df2
+                                continue
+                            del df2
+                            if len(pairdf_reg[obsvar+'_reg']) == 0:
+                                print('No valid data for '+obsvar+'_reg. Skipping plot.')
+                                continue
+                            else:
+                                # Reset outname for regulatory options
+                                outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar+'_reg', startdatename, enddatename, domain_type, domain_name)
+                        else:
+                            pairdf_reg = None
+
+                        if plot_type.lower() == 'spatial_bias': 
+                            if use_percentile is None:
+                                outname = outname+'.mean'
+                            else:
+                                outname = outname+'.p'+'{:02d}'.format(use_percentile) 
+
+                        if self.output_dir is not None:
+                            outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Types of plots
                         if plot_type.lower() == 'timeseries':
@@ -759,6 +944,7 @@ class analysis:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
                                     pairdf,
+                                    pairdf_reg,
                                     column=obsvar,
                                     label=p.obs,
                                     avg_window=a_w,
@@ -775,6 +961,7 @@ class analysis:
                             # For all p_index plot the model.
                             ax = splots.make_timeseries(
                                 pairdf,
+                                pairdf_reg,
                                 column=modvar,
                                 label=p.model,
                                 ax=ax,
@@ -806,10 +993,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=obsvar, 
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, column=modvar, label=p.model,
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
                             # For the last p_index make the plot.
@@ -843,6 +1030,7 @@ class analysis:
                                 # Plot initial obs/model
                                 dia = splots.make_taylor(
                                     pairdf,
+                                    pairdf_reg,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=modvar,
@@ -860,6 +1048,7 @@ class analysis:
                                 # For the rest, plot on top of dia
                                 dia = splots.make_taylor(
                                     pairdf,
+                                    pairdf_reg,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=modvar,
@@ -890,11 +1079,13 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             splots.make_spatial_bias(
                                 pairdf,
+                                pairdf_reg,
                                 column_o=obsvar,
                                 label_o=p.obs,
                                 column_m=modvar,
                                 label_m=p.model,
                                 ylabel=use_ylabel,
+                                ptile=use_percentile,
                                 vdiff=vdiff,
                                 outname=outname,
                                 domain_type=domain_type,
@@ -904,6 +1095,38 @@ class analysis:
                                 debug=self.debug
                             )
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        elif plot_type.lower() == 'spatial_bias_exceedance':
+                            if cal_reg:
+                                if set_yaxis == True:
+                                    if 'vdiff_reg_plot' in obs_plot_dict.keys():
+                                        vdiff = obs_plot_dict['vdiff_reg_plot']
+                                    else:
+                                        print('Warning: vdiff_reg_plot not specified for ' + obsvar + ', so default used.')
+                                        vdiff = None
+                                else:
+                                    vdiff = None
+
+                                # p_label needs to be added to the outname for this plot
+                                outname = "{}.{}".format(outname, p_label)
+                                splots.make_spatial_bias_exceedance(
+                                    pairdf_reg,
+                                    column_o=obsvar+'_reg',
+                                    label_o=p.obs,
+                                    column_m=modvar+'_reg',
+                                    label_m=p.model,
+                                    ylabel=use_ylabel,
+                                    vdiff=vdiff,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                                del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                            else:
+                                print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
+                        # JianHe: need upates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -935,32 +1158,37 @@ class analysis:
                                     vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             except KeyError as e:
                                 raise Exception("MONET requires an altitude dimension named 'z'") from e
-                                
+
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             # For just the spatial overlay plot, you do not use the model data from the pair file
                             # So get the variable name again since pairing one could be _new.
-                            splots.make_spatial_overlay(
-                                pairdf,
-                                vmodel,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=p.model_vars[index],
-                                label_m=p.model,
-                                ylabel=use_ylabel,
-                                vmin=vmin,
-                                vmax=vmax,
-                                nlevels=nlevels,
-                                proj=proj,
-                                outname=outname,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                            )
+                            # JianHe: only make overplay plots for non-regulatory variables for now
+                            if not cal_reg:
+                                splots.make_spatial_overlay(
+                                    pairdf,
+                                    vmodel,
+                                    column_o=obsvar,
+                                    label_o=p.obs,
+                                    column_m=p.model_vars[index],
+                                    label_m=p.model,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    nlevels=nlevels,
+                                    proj=proj,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                            else:
+                                print('Warning: Spatial overlay plots are not available yet for regulatory metrics.')
+
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
 
     def stats(self):
@@ -977,6 +1205,7 @@ class analysis:
         None
         """
         from .stats import proc_stats as proc_stats
+        from .plots import surfplots as splots
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
@@ -1009,6 +1238,9 @@ class analysis:
             else:
                 obs_plot_dict = {}
 
+            # JianHe: Determine if calcuate regulatory values
+            cal_reg = obs_plot_dict.get('regulatory', False)
+
             # Next loop over all of the domains.
             # Loop also over the domain types.
             domain_types = stat_dict['domain_type']
@@ -1021,9 +1253,10 @@ class analysis:
                 # Create an empty pandas dataarray.
                 df_o_d = pd.DataFrame()
                 # Determine outname
-                outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar, domain_type, domain_name, startdatename, enddatename)
-                if self.output_dir is not None:
-                    outname = self.output_dir + '/' + outname  # Extra / just in case.
+                if cal_reg:
+                    outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar+'_reg', domain_type, domain_name, startdatename, enddatename)
+                else:
+                    outname = "{}.{}.{}.{}.{}.{}".format('stats', obsvar, domain_type, domain_name, startdatename, enddatename)
 
                 # Determine plotting kwargs
                 if 'output_table_kwargs' in stat_dict.keys():
@@ -1035,17 +1268,23 @@ class analysis:
                 df_o_d['Stat_ID'] = stat_list
                 df_o_d['Stat_FullName'] = stat_fullname_ns
 
+                # Specify title for stat plots. 
+                if cal_reg:
+                    if 'ylabel_reg_plot' in obs_plot_dict.keys():
+                        title = obs_plot_dict['ylabel_reg_plot'] + ': ' + domain_type + ' ' + domain_name
+                    else:
+                        title = obsvar + '_reg: ' + domain_type + ' ' + domain_name
+                else:
+                    if 'ylabel_plot' in obs_plot_dict.keys():
+                        title = obs_plot_dict['ylabel_plot'] + ': ' + domain_type + ' ' + domain_name
+                    else:
+                        title = obsvar + ': ' + domain_type + ' ' + domain_name
+
                 # Finally Loop through each of the pairs
                 for p_label in pair_labels:
                     p = self.paired[p_label]
                     # Create an empty list to store the stat_var
                     p_stat_list = []
-
-                    # Specify title for stat plots.
-                    if 'ylabel_plot' in obs_plot_dict.keys():
-                        title = obs_plot_dict['ylabel_plot'] + ': ' + domain_type + ' ' + domain_name
-                    else:
-                        title = obsvar + ': ' + domain_type + ' ' + domain_name
 
                     # Loop through each of the stats
                     for stat_grp in stat_list:
@@ -1071,15 +1310,55 @@ class analysis:
                         # Drop NaNs for model and observations in all cases.
                         pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
 
+                        # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
+                        if pairdf[obsvar].isnull().all() or pairdf.empty:
+                            print('Warning: no valid obs found for '+domain_name)
+                            p_stat_list.append('NaN')
+                            continue
+
+                        if cal_reg:
+                            # Process regulatory values
+                            df2 = (
+                                pairdf.copy()
+                                .groupby("siteid")
+                                .resample('H', on='time_local')
+                                .mean()
+                                .reset_index()
+                            )
+
+                            if obsvar == 'PM2.5':
+                                pairdf_reg = splots.make_24hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
+                            elif obsvar == 'OZONE':
+                                pairdf_reg = splots.make_8hr_regulatory(df2,[obsvar,modvar]).rename(index=str,columns={obsvar+'_y':obsvar+'_reg',modvar+'_y':modvar+'_reg'})
+                            else:
+                                print('Warning: no regulatory calculations found for ' + obsvar + '. Setting stat calculation to NaN.')
+                                del df2
+                                p_stat_list.append('NaN')
+                                continue
+                            del df2
+                            if len(pairdf_reg[obsvar+'_reg']) == 0:
+                                print('No valid data for '+obsvar+'_reg. Setting stat calculation to NaN.')
+                                p_stat_list.append('NaN')
+                                continue
+                            else:
+                                # Drop NaNs for model and observations in all cases.
+                                pairdf2 = pairdf_reg.reset_index().dropna(subset=[modvar+'_reg', obsvar+'_reg'])
+
                         # Create empty list for all dom
                         # Calculate statistic and append to list
                         if obsvar == 'WD':  # Use separate calculations for WD
                             p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=True))
                         else:
-                            p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=False))
+                            if cal_reg:
+                                p_stat_list.append(proc_stats.calc(pairdf2, stat=stat_grp, obsvar=obsvar+'_reg', modvar=modvar+'_reg', wind=False))
+                            else:
+                                p_stat_list.append(proc_stats.calc(pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=False))
 
                     # Save the stat to a dataarray
                     df_o_d[p_label] = p_stat_list
+
+                if self.output_dir is not None:
+                    outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                 # Save the pandas dataframe to a txt file
                 # Save rounded output
@@ -1090,10 +1369,10 @@ class analysis:
                     # Output as a table graphic too.
                     # Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
-
-                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']), 
-                                            outname=outname, 
-                                            title=title, 
+ 
+                    proc_stats.create_table(df_o_d.drop(columns=['Stat_ID']),
+                                            outname=outname,
+                                            title=title,
                                             out_table_kwargs=out_table_kwargs,
                                             debug=self.debug
                                            )
