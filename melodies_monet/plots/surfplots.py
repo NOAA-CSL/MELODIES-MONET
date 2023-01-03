@@ -69,7 +69,10 @@ def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
     # JianHe: select sites with nobs >=18, 75% completeness based on EPA
-    df_rolling_max = df_rolling.groupby("siteid").resample("D", on="time_local").max(min_count=18).reset_index(drop=True).dropna()
+    #df_rolling_max = df_rolling.groupby("siteid").resample("D", on="time_local").max(min_count=18).reset_index(drop=True).dropna()
+    df_rolling.index = df_rolling.time_local
+    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18).reset_index(drop=True).dropna()
+    #print(df_rolling_max)
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
 
@@ -106,11 +109,33 @@ def new_color_map():
         Orange and blue color map
         
     """
-    top = mpl.cm.get_cmap('Blues_r', 128)
-    bottom = mpl.cm.get_cmap('Oranges', 128)
+    top = mpl.cm.get_cmap("Blues_r", 128)
+    bottom = mpl.cm.get_cmap("Oranges", 128)
+
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
                            bottom(np.linspace(0, 1, 128))))
     return ListedColormap(newcolors, name='OrangeBlue')
+
+def new_color_map2():
+    """
+    # JianHe: create new colors here, fix for mpl v3.6+
+    Creates new color map for difference plots
+       
+    Returns
+    -------
+    colormap
+        Orange and blue color map
+
+    """
+    top = mpl.colormaps['Blues_r'].resampled(128)
+    bottom = mpl.colormaps['Oranges'].resampled(128)
+
+    newcolors = np.vstack((top(np.linspace(0, 1, 128)),
+                           bottom(np.linspace(0, 1, 128))))
+    newcmap = ListedColormap(newcolors, name='OrangeBlue')
+    mpl.colormaps.register(newcmap)
+
+    return newcmap
 
 def map_projection(f):
     """Defines map projection. This needs updating to make it more generic.
@@ -288,6 +313,14 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     else:
         ylabel = '{:02d}'.format(ptile)+'th percentile '+ylabel
  
+    #Jian He, get new cmap, need use colorname below for mpl v3.6+
+    newcmap = 'OrangeBlue'
+     
+    try:
+        mpl.colormaps[newcmap]
+    except KeyError:
+        new_color_map2()
+
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -299,7 +332,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap=newcmap, edgecolor='k',linewidth=.8)
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -311,7 +344,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap=newcmap, edgecolor='k',linewidth=.8)
     
     if domain_type == 'all':
         latmin= 25.0
@@ -997,12 +1030,20 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         .reset_index(drop=True)
     )
 
+    #Jian He, get new cmap, need use colorname below for mpl v3.6+
+    newcmap = 'OrangeBlue'
+
+    try:
+        mpl.colormaps[newcmap]
+    except KeyError:
+        new_color_map2()
+
     if not df_reg.empty:
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap=newcmap, edgecolor='k',linewidth=.8)
 
         if domain_type == 'all':
             latmin= 25.0
