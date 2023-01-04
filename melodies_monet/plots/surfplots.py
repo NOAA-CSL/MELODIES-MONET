@@ -144,7 +144,7 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() in ['cesm_fv','cesm_se']:
+    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
         proj = ccrs.PlateCarree()
     elif f.model.lower() == 'random':
         proj = ccrs.PlateCarree()

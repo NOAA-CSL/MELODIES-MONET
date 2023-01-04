@@ -47,6 +47,11 @@ in regional coupled chemistry-meteorology models. My plans include testing and
 expanding the capability of MELODIES MONET for evaluating simulations with
 research and operational models of fire impacts on air quality and weather.
 
+**Margaret Bruckner:**
+I am a graduate student at the University of Wisconsin-Madison. My development plans
+primarily focus on adding capabilities for comparison of satellite observations to model
+output and expanding data processing options. 
+
 **Rebecca Buchholz:**
 I am a Project Scientist at NCAR/ACOM helping with the development of MELODIES MONET.
 My development plans include incorporating satellite datasets such as MOPITT CO and

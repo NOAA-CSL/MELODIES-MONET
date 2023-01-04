@@ -146,8 +146,7 @@ class observation:
         """
         from glob import glob
         from numpy import sort
-<<<<<<< HEAD
-        
+ 
         try:
             if os.path.isfile(self.file):
                 _, extension = os.path.splitext(self.file)
@@ -176,7 +175,6 @@ class observation:
         
         #import sys
         #sys. exit()  
-=======
         from . import tutorial
 
         if self.file.startswith("example:"):
@@ -204,7 +202,6 @@ class observation:
             return
 
         self.mask_and_scale()  # mask and scale values from the control values
->>>>>>> develop
 
         try:
             if self.label == 'omps_limb':
@@ -333,25 +330,20 @@ class model:
         from glob import glob
         from . import tutorial
 
-<<<<<<< HEAD
-        #print(len(self.file_str))
-        #if len(self.file_str) == 1:
-        self.files = sort(glob(self.file_str))
-=======
         print(self.file_str)
         if self.file_str.startswith("example:"):
             example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
->>>>>>> develop
-        
+ 
         # add option to read list of files from text file
         if 'txt' in self.file_str:
             with open(self.file_str,'r') as f:
                 self.files = f.read().split(' \n')[:-1]
         print(self.files)
         #    self.files = sort(self.file_str)
+
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
@@ -377,11 +369,8 @@ class model:
         -------
         None
         """
-<<<<<<< HEAD
         print(self.model.lower())
-=======
 
->>>>>>> develop
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
@@ -415,13 +404,6 @@ class model:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-<<<<<<< HEAD
-        elif 'raqms' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files)
-            else:
-                self.obj = mio.raqms.open_dataset(self.files)
-=======
         elif 'cesm_fv' in self.model.lower():
             print('**** Reading CESM FV model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
@@ -438,7 +420,11 @@ class model:
             self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
->>>>>>> develop
+        elif 'raqms' in self.model.lower():
+            if len(self.files) > 1:
+                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+            else:
+                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
@@ -503,7 +489,11 @@ class analysis:
         self.time_intervals = None
         self.download_maps = True  # Default to True
         self.output_dir = None
+        self.output_dir_save = None
+        self.output_dir_read = None
         self.debug = False
+        self.save = None
+        self.read = None
 
     def __repr__(self):
         return (
@@ -518,7 +508,11 @@ class analysis:
             f"    time_intervals={self.time_intervals!r},\n"
             f"    download_maps={self.download_maps!r},\n"
             f"    output_dir={self.output_dir!r},\n"
+            f"    output_dir_save={self.output_dir_save!r},\n"
+            f"    output_dir_read={self.output_dir_read!r},\n"
             f"    debug={self.debug!r},\n"
+            f"    save={self.save!r},\n"
+            f"    read={self.read!r},\n"
             ")"
         )
 
@@ -548,10 +542,25 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        if 'output_dir' in self.control_dict['analysis'].keys():
-            self.output_dir = os.path.expandvars(
-                self.control_dict['analysis']['output_dir'])
+        self.output_dir = os.path.expandvars(
+            self.control_dict['analysis']['output_dir'])
+        if 'output_dir_save' in self.control_dict['analysis'].keys():
+            self.output_dir_save = os.path.expandvars(
+                self.control_dict['analysis']['output_dir_save'])
+        else:
+            self.output_dir_save=self.output_dir
+        if 'output_dir_read' in self.control_dict['analysis'].keys():
+            if self.control_dict['analysis']['output_dir_read'] is not None:
+                self.output_dir_read = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir_read'])
+        else:
+            self.output_dir_read=self.output_dir
+            
         self.debug = self.control_dict['analysis']['debug']
+        if 'save' in self.control_dict['analysis'].keys():
+            self.save = self.control_dict['analysis']['save']
+        if 'read' in self.control_dict['analysis'].keys():
+            self.read = self.control_dict['analysis']['read']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
@@ -578,6 +587,53 @@ class analysis:
             from dask.callbacks import Callback
 
             Callback.active = set()
+    
+    def save_analysis(self):
+        """Save all analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.save is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            for attr in self.save:
+                if self.save[attr]['method']=='pkl':
+                    from .util.write_util import write_pkl
+                    write_pkl(obj=getattr(self,attr), output_name=os.path.join(self.output_dir_save,self.save[attr]['output_name']))
+
+                elif self.save[attr]['method']=='netcdf':
+                    from .util.write_util import write_analysis_ncf
+                    # save either all groups or selected groups
+                    if self.save[attr]['data']=='all':
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save,
+                                               fn_prefix=self.save[attr]['prefix'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save)
+                    else:
+                        if 'prefix' in self.save[attr]:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               fn_prefix=self.save[attr]['prefix'], keep_groups=self.save[attr]['data'])
+                        else:
+                            write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
+                                               keep_groups=self.save[attr]['data'])
+        
+    def read_analysis(self):
+        """Read all previously saved analysis attributes listed in analysis section of input yaml file.
+
+        Returns
+        -------
+        None
+        """
+        if self.read is not None:
+            # Loop over each possible attr type (models, obs and paired)
+            from .util.read_util import read_saved_data
+            for attr in self.read:
+                if self.read[attr]['method']=='pkl':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
+                elif self.read[attr]['method']=='netcdf':
+                    read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -626,10 +682,7 @@ class analysis:
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
-<<<<<<< HEAD
-                
-=======
->>>>>>> develop
+
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -667,31 +720,20 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
-<<<<<<< HEAD
-                o.file = self.control_dict['obs'][obs]['filename']
+                o.file = os.path.expandvars(
+                    self.control_dict['obs'][obs]['filename'])
                 if 'debug' in self.control_dict['obs'][obs].keys():
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 if o.obs_type == 'pt_sfc':    
-                    o.open_obs()
+                    o.open_obs(time_interval=time_interval)
                 elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                     'sat_grid_clm', 'sat_swath_prof']:
                     o.open_sat_obs()
                 self.obs[o.label] = o
 
-
-    def pair_data(self):
-=======
-                o.file = os.path.expandvars(
-                    self.control_dict['obs'][obs]['filename'])
-                if 'variables' in self.control_dict['obs'][obs].keys():
-                    o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs(time_interval=time_interval)
-                self.obs[o.label] = o
-
     def pair_data(self, time_interval=None):
->>>>>>> develop
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
         populating the :attr:`paired` dict.
@@ -738,22 +780,12 @@ class analysis:
                         obs.obs_to_df()
                     #Check if z dim is larger than 1. If so select, the first level as all models read through 
                     #MONETIO will be reordered such that the first level is the level nearest to the surface.
-<<<<<<< HEAD
-                    # MEB: altered to include try/except logic to take care of case when there is no z dimension to deal with.
-                    #      this was necessary for aeronet/raqms case.
-                    try:
-                         if model_obj.sizes['z'] > 1: 
-                            model_obj = model_obj.isel(z=0).expand_dims('z',axis=1) #Select only the surface values to pair with obs.
-                    except KeyError:
-                        pass
-=======
                     try:
                         if model_obj.sizes['z'] > 1:
                             # Select only the surface values to pair with obs.
                             model_obj = model_obj.isel(z=0).expand_dims('z',axis=1)
                     except KeyError as e:
                         raise Exception("MONET requires an altitude dimension named 'z'") from e
->>>>>>> develop
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
                     print('After pairing: ', paired_data)
@@ -770,7 +802,6 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
-<<<<<<< HEAD
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     
                     if obs.label == 'omps_nm':
@@ -795,7 +826,6 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
-=======
 
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
@@ -807,7 +837,6 @@ class analysis:
         """
         pass
 
->>>>>>> develop
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -826,17 +855,13 @@ class analysis:
         -------
         None
         """
-<<<<<<< HEAD
-	
         obs_to_pair = list(self.models[(list(self.models.keys()))[0]].mapping.keys())[0]
         if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
             from .plots import surfplots as splots
         else:
             from .plots import satplots as splots
         from .new_monetio import code_to_move_to_monet as code_m_new
-=======
-        from .plots import surfplots as splots, savefig
->>>>>>> develop
+        import savefig
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -881,23 +906,12 @@ class analysis:
                             # convert to dataframe and ensure index is time
                             pairdf_all = p.obj.to_dataframe().reset_index().set_index('time')
 
-<<<<<<< HEAD
-                            # Select only the analysis time window.
-                            pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
-                        else:
-                            # convert index to time
-                            pairdf_all = p.obj.swap_dims({'x':'time'})
-=======
                         # convert to dataframe
                         pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
->>>>>>> develop
 
-                            # Select only the analysis time window.
-                            pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
-                        
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
                             if self.models[p.model].plot_kwargs is not None:
@@ -968,9 +982,6 @@ class analysis:
                             else:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
                         else:
-<<<<<<< HEAD
-                            pairdf = pairdf_all
-=======
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
 
@@ -1024,7 +1035,6 @@ class analysis:
                         if self.output_dir is not None:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
 
->>>>>>> develop
                         # Types of plots
                         if plot_type.lower() == 'timeseries':
                             if set_yaxis == True:
@@ -1196,7 +1206,6 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
-<<<<<<< HEAD
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             splots.make_spatial_bias_gridded(
                                 p.obj,
@@ -1213,7 +1222,6 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                                 )    
-=======
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
@@ -1247,7 +1255,6 @@ class analysis:
                             else:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
                         # JianHe: need upates to include regulatory option for overlay plots
->>>>>>> develop
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -1326,10 +1333,7 @@ class analysis:
         None
         """
         from .stats import proc_stats as proc_stats
-<<<<<<< HEAD
-=======
         from .plots import surfplots as splots
->>>>>>> develop
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
