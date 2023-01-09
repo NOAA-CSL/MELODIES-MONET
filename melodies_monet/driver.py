@@ -865,7 +865,15 @@ class analysis:
                         # Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-
+                        
+                        # Query with filter options
+                        if 'filter_dict' in grp_dict['data_proc']:
+                            filter_dict = grp_dict['data_proc']['filter_dict']
+                            for column in filter_dict.keys():
+                                filter_vals = filter_dict[column]['value']
+                                filter_op = filter_dict[column]['oper']
+                                pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        
                         # Drop NaNs
                         if grp_dict['data_proc']['rem_obs_nan'] == True:
                             # I removed drop=True in reset_index in order to keep 'time' as a column.
@@ -1306,7 +1314,15 @@ class analysis:
                         # Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-
+                        
+                        # Query with filter options
+                        if 'filter_dict' in stat_dict['data_proc']:
+                            filter_dict = stat_dict['data_proc']['filter_dict']
+                            for column in filter_dict.keys():
+                                filter_vals = filter_dict[column]['value']
+                                filter_op = filter_dict[column]['oper']
+                                pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        
                         # Drop NaNs for model and observations in all cases.
                         pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
 
