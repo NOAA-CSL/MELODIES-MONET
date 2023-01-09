@@ -288,11 +288,11 @@ observation label is first and the model label is second
 
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 
-	 'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
-	 with airnow sites, setting 'group_var' to 'siteid' will remove all 
-	 sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
-	 only look at values at the beginning of each hour. Set 'times' to ''
-	 if all times should be used.
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used.
    * **rem_obs_nan:** If True, remove all points where model or obs variable is 
      NaN. If False, remove only points where model variable is NaN.
    * **set_axis:** If = True, use the axis constraints described in the 
@@ -362,8 +362,8 @@ observation label is first and the model label is second
 
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 
-	 'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
-	 with airnow sites, setting 'group_var' to 'siteid' will remove all 
-	 sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
-	 only look at values at the beginning of each hour. Set 'times' to ''
-	 if all times should be used.
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used.
