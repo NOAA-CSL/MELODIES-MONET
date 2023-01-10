@@ -206,6 +206,8 @@ class observation:
                         self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
                     elif filter_op == '!=':
                         self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
+                    else:
+                        raise ValueError(f'Filter operation {filter_op!r} is not supported')
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -907,7 +909,12 @@ class analysis:
                             for column in filter_dict.keys():
                                 filter_vals = filter_dict[column]['value']
                                 filter_op = filter_dict[column]['oper']
-                                pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                                if filter_op == 'isin':
+                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                elif filter_op == 'isnotin':
+                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                else:
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
                         
                         # Drop NaNs
                         if grp_dict['data_proc']['rem_obs_nan'] == True:
@@ -1356,7 +1363,12 @@ class analysis:
                             for column in filter_dict.keys():
                                 filter_vals = filter_dict[column]['value']
                                 filter_op = filter_dict[column]['oper']
-                                pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                                if filter_op == 'isin':
+                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                elif filter_op == 'isnotin':
+                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                else:
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
                         
                         # Drop NaNs for model and observations in all cases.
                         pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
