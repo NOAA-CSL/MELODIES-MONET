@@ -175,7 +175,7 @@ options for Aircraft and Satellite observations are under development.
      comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
-                'WS':{'oper':'<','value':1}} 
+     'WS':{'oper':'<','value':1}} 
 
 **variables:** This is all optional. For each observational variable you can 
 include the following information to handle unit conversions, min/max values, 
@@ -312,7 +312,7 @@ observation label is first and the model label is second
      comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
-                'WS':{'oper':'<','value':1}} 
+     'WS':{'oper':'<','value':1}} 
    * **rem_obs_nan:** If True, remove all points where model or obs variable is 
      NaN. If False, remove only points where model variable is NaN.
    * **set_axis:** If = True, use the axis constraints described in the 
@@ -391,4 +391,4 @@ observation label is first and the model label is second
      comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
-                'WS':{'oper':'<','value':1}} 
+     'WS':{'oper':'<','value':1}} 
