@@ -117,6 +117,7 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.data_proc = None
         self.variable_dict = None
 
     def __repr__(self):
@@ -127,6 +128,7 @@ class observation:
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
+            f"    type={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             ")"
         )
@@ -173,6 +175,37 @@ class observation:
             return
 
         self.mask_and_scale()  # mask and scale values from the control values
+        self.filter_obs()
+        
+    def filter_obs(self):
+        """Filter observations based on filter_dict.
+        
+        Returns
+        -------
+        None
+        """
+        if self.data_proc is not None:
+            if 'filter_dict' in self.data_proc:
+                filter_dict = self.data_proc['filter_dict']
+                for column in filter_dict.keys():
+                    filter_vals = filter_dict[column]['value']
+                    filter_op = filter_dict[column]['oper']
+                    if filter_op == 'isin':
+                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == 'isnotin':
+                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == '==':
+                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=True)
+                    elif filter_op == '>':
+                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=True)
+                    elif filter_op == '<':
+                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=True)
+                    elif filter_op == '>=':
+                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=True)
+                    elif filter_op == '<=':
+                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
+                    elif filter_op == '!=':
+                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -652,6 +685,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
+                if 'data_proc' in self.control_dict['obs'][obs].keys():
+                    o.data_proc = self.control_dict['obs'][obs]['data_proc']
                 o.file = os.path.expandvars(
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
