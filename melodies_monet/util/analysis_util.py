@@ -12,7 +12,7 @@ def fill_date_template(template_str, date_str):
         date_str (str yyyy-mm-m_abbr-dd-ddd): date string
 
     Returns
-        None
+        template_str (str): filled template string
     """
 
     yyyy_str, mm_str, m_abbr_str, dd_str, ddd_str \
@@ -39,6 +39,7 @@ def find_file(datadir, filestr):
     Returns
         filename (str): complete path of matching filename in data directory
     """
+    logger = logging.getLogger(__name__)
 
     pattern = os.path.join(os.path.expandvars(datadir), filestr)
     files = glob(pattern)
@@ -49,6 +50,6 @@ def find_file(datadir, filestr):
         raise Exception('more than one file match %s' % pattern)
 
     filename = files[0]
-    logging.info(filename)
+    logger.info(filename)
 
     return filename
