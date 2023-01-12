@@ -19,6 +19,11 @@ def test_fill_date_template():
     print(filled_str)
     assert(filled_str == date.strftime('Year %Y, Month %m, Month Name %b, Day %d'))
 
+    template_str = 'Year YYYY, Julian Day DDD'
+    filled_str = analysis_util.fill_date_template(template_str, date_str)
+    print(filled_str)
+    assert(filled_str == date.strftime('Year %Y, Julian Day %j'))
+
 
 def test_find_file(tmpdir):
 
