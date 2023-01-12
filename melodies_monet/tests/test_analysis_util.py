@@ -9,11 +9,9 @@ from melodies_monet.util import analysis_util
 
 def test_find_file(tmpdir):
 
-    print(tmpdir)
-
     test_file = os.path.join(tmpdir, 'test.txt')
     f = open(test_file, 'w')
     f.close()
 
     filename = analysis_util.find_file(tmpdir, 'test*')
-    print(filename)
+    assert(filename == test_file)
