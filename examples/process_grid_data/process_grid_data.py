@@ -6,9 +6,11 @@ an.read_control()
 
 for time_interval in an.time_intervals:
 
-    an.open_models(time_interval=time_interval)
-    an.open_obs(time_interval=time_interval)
-    an.pair_data()
+    print(time_interval)
+
+    # an.open_models(time_interval=time_interval)
+    # an.open_obs(time_interval=time_interval)
+    # an.pair_data()
 
 # an.concat_pairs()
 
