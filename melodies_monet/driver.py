@@ -432,6 +432,8 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
+        self.obs_regridder = None
+        self.obs_target = None
 
     def __repr__(self):
         return (
@@ -571,6 +573,9 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
                 elif self.read[attr]['method']=='netcdf':
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+
+    def setup_regridders(self):
+        from .util import regrid_util
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
