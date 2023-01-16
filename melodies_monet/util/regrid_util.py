@@ -5,7 +5,7 @@
 """
 file: regrid_util.py
 """
-
+import os
 import xarray as xr
 import xesmf as xe
 

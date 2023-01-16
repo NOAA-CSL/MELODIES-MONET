@@ -575,7 +575,14 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
 
     def setup_regridders(self):
+        """Create an obs xesmf.Regridder from base and target grids specified in the control_dict
+
+        Returns
+        -------
+        None
+        """
         from .util import regrid_util
+        self.obs_regridder, self.obs_target = regrid_util.setup_obs_regridder(self.control_dict)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
