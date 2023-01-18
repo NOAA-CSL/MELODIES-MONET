@@ -137,7 +137,11 @@ def get_aeronet(
     start_date: str = typer.Option(..., "-s", "--start-date", help="Start date."),
     end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
     daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
-    freq: str = typer.Option("H", "-f", "--freq", help="Frequency to resample to."),
+    freq: str = typer.Option("H", "-f", "--freq", help=(
+            "Frequency to resample to. "
+            "Mean is used to reduce the time groups (as opposed to nearest, e.g.)."
+        )
+    ),
     interp_to: str = typer.Option(None, "--interp-to", help=(
             "Wavelength(s) to interpolate the AOD values to (micron). "
             "Separate with commas to specify multiple. "
