@@ -367,4 +367,5 @@ observation label is first and the model label is second
      with airnow sites, setting 'group_var' to 'siteid' will remove all 
      sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
      only look at values at the beginning of each hour. Set 'times' to ''
-     if all times should be used.
+     if all times should be used. This calculation occurs 
+     over the entire analysis window and prior to calculating the regulatory metrics.
