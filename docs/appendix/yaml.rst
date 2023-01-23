@@ -286,6 +286,14 @@ observation label is first and the model label is second
 
 **data_proc:** This section stores all of the data processing information.
 
+   * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
+     'pct_cutoff' and 'times'. If specified, removes all instances of 
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used. This calculation occurs 
+     over the entire analysis window and prior to calculating the regulatory metrics.
    * **rem_obs_nan:** If True, remove all points where model or obs variable is 
      NaN. If False, remove only points where model variable is NaN.
    * **set_axis:** If = True, use the axis constraints described in the 
@@ -350,3 +358,14 @@ where domain_type is equal to domain_name.
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
+
+**data_proc:** This section stores all of the data processing information.
+
+   * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
+     'pct_cutoff' and 'times'. If specified, removes all instances of 
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used. This calculation occurs 
+     over the entire analysis window and prior to calculating the regulatory metrics.
