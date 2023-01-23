@@ -114,26 +114,16 @@ def new_color_map():
                            bottom(np.linspace(0, 1, 128))))
     return ListedColormap(newcolors, name='OrangeBlue')
 
-def new_color_map2():
-    """
-    # JianHe: create new colors here, fix for mpl v3.6+
-    Creates new color map for difference plots
-       
-    Returns
-    -------
-    colormap
-        Orange and blue color map
-
-    """
-    _cmap_name = "OrangeBlue"
+# Register the custom cmap
+_cmap_name = "OrangeBlue"
+try:
+    plt.get_cmap(_cmap_name)
+except ValueError:
+    _cmap = new_color_map()
     try:
-        return(plt.get_cmap(_cmap_name))
-    except ValueError:
-        _cmap = new_color_map()
-        try:
-            return(mpl.colormaps.register(_cmap))  # mpl 3.6+
-        except AttributeError:
-            return(mpl.cm.register_cmap(cmap=_cmap))  # old method
+        mpl.colormaps.register(_cmap)  # mpl 3.6+
+    except AttributeError:
+        mpl.cm.register_cmap(cmap=_cmap)  # old method
 
 def map_projection(f):
     """Defines map projection. This needs updating to make it more generic.
@@ -322,7 +312,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map2(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -334,7 +324,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map2(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     
     if domain_type == 'all':
         latmin= 25.0
@@ -1025,7 +1015,7 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map2(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
 
         if domain_type == 'all':
             latmin= 25.0
