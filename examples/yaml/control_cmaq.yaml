@@ -151,6 +151,7 @@ plots:
     data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
@@ -170,6 +171,7 @@ plots:
     data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
@@ -185,6 +187,7 @@ plots:
     data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
@@ -200,6 +203,7 @@ plots:
     data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -214,6 +218,7 @@ plots:
     data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -235,4 +240,5 @@ stats:
   data: ['airnow_cmaq_expt','airnow_rrfs_13km','airnow_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
   #data_proc:
     #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+    #filter_string: state_name in ['CA','NY'] and WS < 1 # If filter_dict is speciefied, filter_string is ignored. Uses pandas query method.
     #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values

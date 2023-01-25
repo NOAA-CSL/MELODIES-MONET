@@ -313,6 +313,11 @@ observation label is first and the model label is second
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
      'WS':{'oper':'<','value':1}} 
+   * **filter_string:** This is a string used to filter the paired data sent 
+     to the plotting routine. The result is the same as using filter_dict.
+     If filter_dict is specified, filter_string will be ignored. This uses
+     the pandas query method on the paired dataset.
+     Example: state_name in ['CO'] and WS < 1
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 
      'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
@@ -400,6 +405,11 @@ observation label is first and the model label is second
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
      'WS':{'oper':'<','value':1}} 
+   * **filter_string:** This is a string used to filter the paired data sent 
+     to the statistics routine. The result is the same as using filter_dict.
+     If filter_dict is specified, filter_string will be ignored. This uses
+     the pandas query method on the paired dataset.
+     Example: state_name in ['CO'] and WS < 1
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 
      'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
