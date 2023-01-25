@@ -915,6 +915,8 @@ class analysis:
                                     pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
                                 else:
                                     pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        elif 'filter_string' in grp_dict['data_proc']:
+                            pairdf_all.query(grp_dict['data_proc']['filter_string'], inplace=True)
 
                         # Drop sites with greater than X percent NAN values
                         if 'rem_obs_by_nan_pct' in grp_dict['data_proc']:
@@ -1392,6 +1394,8 @@ class analysis:
                                     pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
                                 else:
                                     pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        elif 'filter_string' in stat_dict['data_proc']:
+                            pairdf_all.query(stat_dict['data_proc']['filter_string'], inplace=True)
 
                         # Drop sites with greater than X percent NAN values
                         if 'data_proc' in stat_dict:
