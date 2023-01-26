@@ -171,38 +171,6 @@ class observation:
             Fills the object class associated with the equivalent label (self.label) with satellite observation
             dataset read in from the associated file (self.file) by the satellite file reader
         """
-        from glob import glob
-        
-        #import sys
-        #sys. exit()  
-        from . import tutorial
-
-        if self.file.startswith("example:"):
-            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
-            files = [tutorial.fetch_example(example_id)]
-        else:
-            files = sort(glob(self.file))
-
-        assert len(files) >= 1, "need at least one"
-
-        _, extension = os.path.splitext(files[0])
-        try:
-            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
-                if len(files) > 1:
-                    self.obj = xr.open_mfdataset(files)
-                else:
-                    self.obj = xr.open_dataset(files[0])
-            elif extension in ['.ict', '.icarrt']:
-                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
-                self.obj = mio.icarrt.add_data(files[0])
-            else:
-                raise ValueError(f'extension {extension!r} currently unsupported')
-        except Exception as e:
-            print('something happened opening file:', e)
-            return
-
-        self.mask_and_scale()  # mask and scale values from the control values
-
         try:
             if self.label == 'omps_limb':
                 self.obj = mio.omps_limb.read_omps_limb(self.file)
