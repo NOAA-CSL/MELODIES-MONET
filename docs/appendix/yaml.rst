@@ -315,8 +315,7 @@ observation label is first and the model label is second
      'WS':{'oper':'<','value':1}} 
    * **filter_string:** This is a string used to filter the paired data sent 
      to the plotting routine. The result is the same as using filter_dict.
-     If filter_dict is specified, filter_string will be ignored. This uses
-     the pandas query method on the paired dataset.
+     This uses the pandas query method on the paired dataset.
      Example: state_name in ['CO'] and WS < 1
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 
@@ -407,8 +406,7 @@ observation label is first and the model label is second
      'WS':{'oper':'<','value':1}} 
    * **filter_string:** This is a string used to filter the paired data sent 
      to the statistics routine. The result is the same as using filter_dict.
-     If filter_dict is specified, filter_string will be ignored. This uses
-     the pandas query method on the paired dataset.
+     This uses the pandas query method on the paired dataset.
      Example: state_name in ['CO'] and WS < 1
    * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
      'pct_cutoff' and 'times'. If specified, removes all instances of 

@@ -904,7 +904,9 @@ class analysis:
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
-                        if 'filter_dict' in grp_dict['data_proc']:
+                        if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
+                            raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
+                        elif 'filter_dict' in grp_dict['data_proc']:
                             filter_dict = grp_dict['data_proc']['filter_dict']
                             for column in filter_dict.keys():
                                 filter_vals = filter_dict[column]['value']
@@ -1383,7 +1385,9 @@ class analysis:
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
-                        if 'filter_dict' in stat_dict['data_proc']:
+                        if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
+                            raise Exception("For statistics, only one of filter_dict and filter_string can be specified.")
+                        elif 'filter_dict' in stat_dict['data_proc']:
                             filter_dict = stat_dict['data_proc']['filter_dict']
                             for column in filter_dict.keys():
                                 filter_vals = filter_dict[column]['value']
