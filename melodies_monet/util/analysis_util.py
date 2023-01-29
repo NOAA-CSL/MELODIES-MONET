@@ -53,3 +53,31 @@ def find_file(datadir, filestr):
     logger.info(filename)
 
     return filename
+
+
+def get_obs_vars(config):
+    """
+    Get subset of obs variables from model to obs variable mapping
+
+    Parameters
+        config (dict): configuration dictionary
+
+    Returns
+        obs_vars_subset (dict of dicts):
+            nested dictionary keyed by obs set name and obs variable name
+    """
+    obs_vars_subset = dict()
+
+    for model_name in config['model']:
+
+        mapping = config['model'][model_name]['mapping']
+
+        for obs_name in mapping:
+            obs_vars = config['obs'][obs_name]['variables']
+            obs_vars_subset[obs_name] = dict()
+
+            for model_var in mapping[obs_name]:
+                obs_var = mapping[obs_name][model_var]
+                obs_vars_subset[obs_name][obs_var] = obs_vars[obs_var]
+
+    return obs_vars_subset
