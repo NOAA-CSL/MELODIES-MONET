@@ -432,6 +432,7 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
+        self.grid_data = None
         self.obs_regridder = None
         self.obs_target = None
 
@@ -500,6 +501,10 @@ class analysis:
             self.save = self.control_dict['analysis']['save']
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
+
+        # set grid_data option
+        if 'grid_data' in self.control_dict['analysis'].keys():
+            self.grid_data = self.control_dict['analysis']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
