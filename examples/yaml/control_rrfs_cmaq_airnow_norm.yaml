@@ -219,7 +219,6 @@ plots:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp5:
-    #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
