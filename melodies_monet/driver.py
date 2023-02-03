@@ -117,6 +117,7 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.data_proc = None
         self.variable_dict = None
 
     def __repr__(self):
@@ -127,6 +128,7 @@ class observation:
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
+            f"    type={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             ")"
         )
@@ -173,6 +175,39 @@ class observation:
             return
 
         self.mask_and_scale()  # mask and scale values from the control values
+        self.filter_obs()
+        
+    def filter_obs(self):
+        """Filter observations based on filter_dict.
+        
+        Returns
+        -------
+        None
+        """
+        if self.data_proc is not None:
+            if 'filter_dict' in self.data_proc:
+                filter_dict = self.data_proc['filter_dict']
+                for column in filter_dict.keys():
+                    filter_vals = filter_dict[column]['value']
+                    filter_op = filter_dict[column]['oper']
+                    if filter_op == 'isin':
+                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == 'isnotin':
+                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == '==':
+                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=True)
+                    elif filter_op == '>':
+                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=True)
+                    elif filter_op == '<':
+                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=True)
+                    elif filter_op == '>=':
+                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=True)
+                    elif filter_op == '<=':
+                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
+                    elif filter_op == '!=':
+                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
+                    else:
+                        raise ValueError(f'Filter operation {filter_op!r} is not supported')
 
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
@@ -652,6 +687,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
+                if 'data_proc' in self.control_dict['obs'][obs].keys():
+                    o.data_proc = self.control_dict['obs'][obs]['data_proc']
                 o.file = os.path.expandvars(
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
@@ -866,6 +903,23 @@ class analysis:
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
+                        # Query with filter options
+                        if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
+                            raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
+                        elif 'filter_dict' in grp_dict['data_proc']:
+                            filter_dict = grp_dict['data_proc']['filter_dict']
+                            for column in filter_dict.keys():
+                                filter_vals = filter_dict[column]['value']
+                                filter_op = filter_dict[column]['oper']
+                                if filter_op == 'isin':
+                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                elif filter_op == 'isnotin':
+                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                else:
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        elif 'filter_string' in grp_dict['data_proc']:
+                            pairdf_all.query(grp_dict['data_proc']['filter_string'], inplace=True)
+
                         # Drop sites with greater than X percent NAN values
                         if 'rem_obs_by_nan_pct' in grp_dict['data_proc']:
                             grp_var = grp_dict['data_proc']['rem_obs_by_nan_pct']['group_var']
@@ -1330,6 +1384,23 @@ class analysis:
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
+                        # Query with filter options
+                        if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
+                            raise Exception("For statistics, only one of filter_dict and filter_string can be specified.")
+                        elif 'filter_dict' in stat_dict['data_proc']:
+                            filter_dict = stat_dict['data_proc']['filter_dict']
+                            for column in filter_dict.keys():
+                                filter_vals = filter_dict[column]['value']
+                                filter_op = filter_dict[column]['oper']
+                                if filter_op == 'isin':
+                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                elif filter_op == 'isnotin':
+                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                else:
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        elif 'filter_string' in stat_dict['data_proc']:
+                            pairdf_all.query(stat_dict['data_proc']['filter_string'], inplace=True)
+
                         # Drop sites with greater than X percent NAN values
                         if 'data_proc' in stat_dict:
                             if 'rem_obs_by_nan_pct' in stat_dict['data_proc']:
