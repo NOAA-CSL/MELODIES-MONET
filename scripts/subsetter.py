@@ -61,12 +61,12 @@ for model in control['model']:
     files = sorted(glob(file_str))
 
     for file_in in files:
-        file_subdirs = file_in.split('/')
+        file_subdirs = list(os.path.split(file_in))
         file_subdirs[-1] = 'subset_' + file_subdirs[-1]
         if args.outdir is not None:
             file_out = os.path.join(args.outdir, file_subdirs[-1])
         else:
-            file_out = '/'.join(file_subdirs)
+            file_out = os.path.join(file_subdirs)
         command = 'ncks -O ' + var_str + ' ' + file_in + ' ' + file_out
         logging.info(command)
         os.system(command)
