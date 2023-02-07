@@ -20,6 +20,7 @@ parser.add_argument('--outdir', type=str,
     help='output directory')
 parser.add_argument('--debug', action='store_true',
     help='set logging level to debug')
+# add argument for deflation level
 args = parser.parse_args()
 
 # Setup logging
@@ -46,6 +47,7 @@ for model in control['model']:
         for var in control['model'][model]['mapping'][dataset]:
             var_str += var + ','
     """
+    # use ','.join(...)
     for var in control['model'][model]['variables']:
         var_str += var + ','
 
@@ -65,5 +67,6 @@ for model in control['model']:
             file_out = os.path.join(file_subdirs)
         command = f'ncks -O {var_str} {file_in} {file_out}'
         logging.info(command)
+        # use subprocess.run(..., check=True)
         os.system(command)
 
