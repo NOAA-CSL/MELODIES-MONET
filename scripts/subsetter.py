@@ -28,9 +28,7 @@ Setup logging
 logging_level = logging.DEBUG if args.debug else logging.INFO
 logging.basicConfig(stream=args.logfile, level=logging_level)
 
-"""
-Read YAML control
-"""
+# Read YAML control
 with open(args.control, 'r') as f:
     control = yaml.safe_load(f)
 
