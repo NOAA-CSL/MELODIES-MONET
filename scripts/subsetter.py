@@ -22,9 +22,7 @@ parser.add_argument('--debug', action='store_true',
     help='set logging level to debug')
 args = parser.parse_args()
 
-"""
-Setup logging
-"""
+# Setup logging
 logging_level = logging.DEBUG if args.debug else logging.INFO
 logging.basicConfig(stream=args.logfile, level=logging_level)
 
