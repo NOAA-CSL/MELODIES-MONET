@@ -67,7 +67,7 @@ for model in control['model']:
             file_out = os.path.join(args.outdir, file_subdirs[-1])
         else:
             file_out = os.path.join(file_subdirs)
-        command = 'ncks -O ' + var_str + ' ' + file_in + ' ' + file_out
+        command = f'ncks -O {var_str} {file_in} {file_out}'
         logging.info(command)
         os.system(command)
 
