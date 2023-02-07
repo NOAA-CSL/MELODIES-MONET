@@ -1,5 +1,3 @@
-import sys
-sys.path.append('..')
 from melodies_monet import driver
 
 an = driver.analysis()
