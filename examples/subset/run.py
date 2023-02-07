@@ -8,7 +8,6 @@ an.read_control()
 an.control_dict
 
 an.open_models()
-an.models
 
 an.open_obs()
 
