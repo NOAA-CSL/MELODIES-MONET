@@ -1,7 +1,7 @@
 analysis:
   start_time: '2022-01-01'
   end_time:   '2022-12-31'
-  time_interval: 'D'
+  time_interval: 'MS'
   grid_data: True
   output_dir: $HOME/Plots
   debug: True
