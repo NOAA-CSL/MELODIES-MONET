@@ -63,7 +63,7 @@ def get_obs_vars(config):
         config (dict): configuration dictionary
 
     Returns
-        obs_vars_subset (dict of dicts):
+        obs_vars_subset (dict of dict):
             nested dictionary keyed by obs set name and obs variable name
     """
     obs_vars_subset = dict()
@@ -73,7 +73,7 @@ def get_obs_vars(config):
         mapping = config['model'][model_name]['mapping']
 
         for obs_name in mapping:
-            obs_vars = config['obs'][obs_name]['variables']
+            obs_vars = config['grid_obs'][obs_name]['variables']
             obs_vars_subset[obs_name] = dict()
 
             for model_var in mapping[obs_name]:

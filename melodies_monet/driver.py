@@ -663,6 +663,8 @@ class analysis:
         -------
         None
         """
+        from .util import analysis_util
+
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
@@ -679,6 +681,8 @@ class analysis:
         if 'grid_obs' in self.control_dict:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('grid_obs reading %s' % date_str)
+            obs_vars = analysis_util.get_obs_vars(self.control_dict)
+            print(obs_vars)
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
