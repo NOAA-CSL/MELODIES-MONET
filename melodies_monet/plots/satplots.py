@@ -127,13 +127,15 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() == 'fv3raqms' or f.model.lower() == 'raqms':
+    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
+        proj = ccrs.PlateCarree()
+    elif f.model.lower() == 'random':
         proj = ccrs.PlateCarree()
     else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
         raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
     return proj
     
-def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabel=None,
+def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
                     domain_type=None, domain_name=None,
                     plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -145,6 +147,8 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
         model/obs pair data to plot
     column : str
         Column label of variable to plot
+    df_reg: not currently enabled. empty argument for symmetry with surfplots
+        model/obs paired regulatory data to plot
     label : str
         Name of variable to use in plot legend 
     ax : ax
@@ -254,7 +258,7 @@ def make_timeseries(df, column=None, label=None, ax=None, avg_window=None, ylabe
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
     
-def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
+def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
                 dia=None, ylabel=None, ty_scale=1.5,
                 domain_type=None, domain_name=None,
                 plot_dict=None, fig_dict=None, text_dict=None,debug=False):
@@ -265,6 +269,8 @@ def make_taylor(df, column_o=None, label_o='Obs', column_m=None, label_m='Model'
     ----------
     df : dataframe
         model/obs pair data to plot
+    df_reg: not currently enabled. empty argument for symmetry with surfplots
+        model/obs paired regulatory data to plot
     column_o : str
         Column label of observational variable to plot
     label_o : str
@@ -508,13 +514,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     code_m_new.savefig(outname + '.png',loc=4, height=100, decorate=True, bbox_inches='tight', dpi=150)
     return ax
     
-def calculate_boxplot(df, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+def calculate_boxplot(df, df_reg=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot
     
     Parameters
     ----------
     df : dataframe
-        Model/obs pair object
+         model/obs pair data to plot
+    df_reg: not currently enabled. empty argument for symmetry with surfplots
+        model/obs paired regulatory data to plot
     column : str
         Column label of variable to plot
     label : str

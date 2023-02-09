@@ -776,7 +776,7 @@ class analysis:
                         print(model_obj)
                         from .util import satellite_utilities as sutil
                         if mod.apply_ak == True:
-                            keys.append('pres_pa')
+                            keys.append('pres_pa_mid')
                             keys.append('surfpres_pa')
                             model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj)
@@ -825,11 +825,9 @@ class analysis:
         """
         obs_to_pair = list(self.models[(list(self.models.keys()))[0]].mapping.keys())[0]
         if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
-            from .plots import surfplots as splots
+            from .plots import surfplots as splots,savefig
         else:
-            from .plots import satplots as splots
-        from .new_monetio import code_to_move_to_monet as code_m_new
-        import savefig
+            from .plots import satplots as splots,savefig
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -870,16 +868,23 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
                             
+                        # for pt_sft data, convert to pandas dataframe, format, and trim
                         if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc':
-                            # convert to dataframe and ensure index is time
-                            pairdf_all = p.obj.to_dataframe().reset_index().set_index('time')
+                            # convert to dataframe
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
+                        
+                        # keep data in xarray, fix formatting, and trim
+                        elif self.obs[obs_to_pair].obs_type.lower() in ["sat_swath_sfc", "sat_swath_clm", 
+                                                                        "sat_grid_sfc", "sat_grid_clm", 
+                                                                        "sat_swath_prof"]:
+                             # convert index to time; setup for sat_swath_clm
+                            pairdf_all = p.obj.swap_dims({'x':'time'})
 
-                        # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
-
-                        # Select only the analysis time window.
-                        pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
-
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
+                            
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
                             if self.models[p.model].plot_kwargs is not None:
@@ -949,11 +954,17 @@ class analysis:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                             else:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
+                        elif self.obs[obs_to_pair].obs_type.lower() in  ["sat_swath_sfc", "sat_swath_clm", 
+                                                                        "sat_grid_sfc", "sat_grid_clm", 
+                                                                        "sat_swath_prof"]: 
+                            # xarray doesn't need nan drop because its math operations seem to ignore nans
+                            pairdf = pairdf_all
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
+                        # MEB: pairdf.empty fails for data left in xarray format. isnull format works.
                         if pairdf.empty or pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                             continue

@@ -92,7 +92,7 @@ please provide location of ``*.metcro2d.ncf`` files here.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **mod_type:** The model type. Options are: "cmaq", "wrfchem", "rrfs", "gsdchem",
-"cesm_fv", and "cesm_se". 
+"raqms", "cesm_fv", and "cesm_se". 
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
 
@@ -105,6 +105,10 @@ data (e.g., surf_only: True).
 **radius_of_influence:** The "radius of influence" used for pairing in MONET. 
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
+
+**apply_ak:** This is an optional argument used for pairing of satellite data. This
+should be set to True when application of satellite averaging kernels or apriori data 
+to model observations is desired. 
 
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
