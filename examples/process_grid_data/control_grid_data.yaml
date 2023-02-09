@@ -6,7 +6,7 @@ analysis:
   output_dir: $HOME/Plots
   debug: True
 
-obs:
+grid_obs:
   MOD08_M3:
     data_format: gridded_eos
     datadir: $HOME/Data/MOD08_M3_nc

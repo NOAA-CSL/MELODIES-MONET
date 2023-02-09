@@ -676,6 +676,10 @@ class analysis:
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
+        if 'grid_obs' in self.control_dict:
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('grid_obs reading %s' % date_str)
+
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,
