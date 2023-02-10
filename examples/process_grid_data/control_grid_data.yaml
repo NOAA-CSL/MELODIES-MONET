@@ -1,6 +1,6 @@
 analysis:
-  start_time: '2022-01-01'
-  end_time:   '2022-12-31'
+  start_time: '2020-01-01'
+  end_time:   '2020-12-31'
   time_interval: 'MS'
   grid_data: True
   output_dir: $HOME/Plots
