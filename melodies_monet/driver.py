@@ -687,6 +687,13 @@ class analysis:
             obs_datasets = read_grid_util.read_grid_obs(self.control_dict,
                 obs_vars, date_str)
             print(obs_datasets)
+            for obs in obs_vars:
+                o = observation()
+                o.obs = obs
+                o.label = obs
+                o.obs_type = 'grid_obs'
+                o.obj = obs_datasets[obs]
+                self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
