@@ -9,12 +9,12 @@ so that users do not have to re-download observational data over and over again
 for the same analysis period. We will work on automating this process further 
 in the future. 
 
-Examples of preprocessed observational data for MELODIES MONET are in the 
-melodies_monet/data folder of the code on Github. 
+Examples of preprocessed observational data for MELODIES MONET are here:
+`MELODIES MONET Example Datasets <https://csl.noaa.gov/groups/csl4/modeldata/melodies-monet/>`_. 
 
 In order to preprocess the observational data for additional time periods 
 follow the instructions in the jupyter notebooks in the 
-melodies_monet/examples/process_obs folder of the code on Github. Examples for 
+``examples/process_obs`` folder of the code on GitHub. Examples for 
 the following observational datasets are provided.
 
    * Aeronet

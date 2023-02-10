@@ -1,7 +1,7 @@
 How To Run
 ==========
 
-These are instructions for how to update the examples on Github and run 
+These are instructions for how to update the examples on GitHub and run 
 MELODIES MONET both within a jupyter notebook or in a bash script submitted to 
 an HPC machine. It is highly recommended to start first running MELODIES 
 MONET in a jupyter notebook with a smaller dataset. Then you can expand on the 
@@ -10,7 +10,7 @@ machine. The basic commands in the jupyter notebook and bash script are exactly
 the same and both similarly call an input YAML file.
 
 First, we describe how to `Prepare An Input YAML File`_.
-and we define the `Basic Commands`_.
+Second, we define the `Basic Commands`_ to run MELODIES MONET.
 Then, we describe how to start from either a 
 the `Jupyter Notebook`_ or
 the `Bash Script`_ example.
@@ -19,7 +19,7 @@ Prepare an Input YAML File
 --------------------------
 You will need to prepare an input YAML file to be read into MELODIES MONET. 
 Example input YAML files to start from are provided in the 
-melodies_monet/examples/yaml folder of the code on Github. There are a number 
+``examples/yaml`` folder of the code on GitHub. There are a number 
 of comments in these example input YAML files to get you started. The overall 
 structure is the following:
 
@@ -58,13 +58,9 @@ in the Appendix under :doc:`/appendix/yaml`.
 Basic Commands
 --------------
 
-First, you will import the driver.py file in the melodies_monet directory. 
-You will need to update the path below based on where you are storing either
-your jupyter notebook or bash script. ::
+First, you will import the MELODIES MONET driver [#install]_. ::
 
-    import sys
-    sys.path.append('../../')
-    import driver
+    from melodies_monet import driver
 
 Then you will create an instance of the python driver analysis class. The 
 analysis class consists of 4 main parts; information read in by the input YAML 
@@ -123,7 +119,7 @@ Jupyter Notebook
 ----------------
 
 Jupyter notebook examples explaining how to run MELODIES MONET are in the 
-melodies_monet/examples/jupyter_notebooks folder of the code on Github. It is
+``examples/jupyter_notebooks`` folder of the code on GitHub. It is
 highly recommended for new and expert users to first use MELODIES MONET on a 
 subset of the analysis in jupyter notebook. The jupyter notebook examples 
 demonstrate how to print different pieces of the analysis class instance in 
@@ -137,7 +133,7 @@ Jupyter notebooks are great for quick analysis and ensuring you have set up the
 configuration properly, but if you want to perform the analysis for a longer 
 time period or create hundreds of plots submitting a bash script as a job on 
 your HPC computer is preferred. Bash script examples for running MELODIES MONET 
-are in the melodies_monet/examples/submit_jobs folder of the code on Github.
+are in the ``examples/submit_jobs`` folder of the code on GitHub.
 
    * If you are using a model like WRF-Chem, CMAQ, or RRFS-CMAQ that is run in 
      forecasting mode and you want to combine model results across multiple 
@@ -162,3 +158,7 @@ are in the melodies_monet/examples/submit_jobs folder of the code on Github.
 
    * Submit the submit_hera.sh script (e.g., on NOAA hera: sbatch submit_hera.sh)	 
 
+
+.. [#install] This should work from any directory as long as MELODIES MONET is installed
+   in your active conda environment, which it should be if you followed the
+   :ref:`install instructions <user-install-instructions>`.

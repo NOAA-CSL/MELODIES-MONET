@@ -1,4 +1,4 @@
-name: monet_py36
+name: melodies-monet
 channels:
   - conda-forge
   - defaults
@@ -225,4 +225,4 @@ dependencies:
   - zipp=3.4.1=pyhd8ed1ab_0
   - zlib=1.2.11=h516909a_1010
   - zstd=1.5.0=ha95c52a_0
-prefix: /glade/u/home/buchholz/miniconda3/envs/monet_py36
+prefix: /glade/u/home/buchholz/miniconda3/envs/melodies-monet

@@ -46,8 +46,8 @@ and plotting. Most users will only need to work with the MELODIES MONET
 code-set to complete their desired analysis.
 
 .. figure:: /_static/MM_diagram_connection.png
-  :alt: diagram showing connections between MONET, MONETIO and MELODIES-MONET
+  :alt: diagram showing connections between MONET, MONETIO and MELODIES MONET
   
-  The structure and function of MONET and MONET I/O, and MELODIES-MONET interaction. 
+  The structure and function of MONET and MONET I/O, and MELODIES MONET interaction. 
   Adapted and updated from Figure 1 in Baker and Pan (2017).
 

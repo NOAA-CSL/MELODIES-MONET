@@ -1,14 +1,6 @@
-#!/usr/bin/env python
-
-###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date: 2018-03-29 10:12:00 -0400 (Thu, 29 Mar 2018) $
-# $Revision: 100014 $
-# $Author: Barry.Baker@noaa.gov $
-# $Id: nemsio2nc4.py 100014 2018-03-29 14:12:00Z Barry.Baker@noaa.gov $
-###############################################################
-
-#Rebecca Schwantes adapted scripts from Patrick Campbell to MONET-analysis, added additional features, and generalized across all observations.
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 
 #Simple MONET utility to calculate statistics from paired hdf file
 
@@ -27,7 +19,7 @@ import pandas as pd
 import numpy as np
 from numpy import sqrt
 import matplotlib.pyplot as plt
-from ..new_monetio import code_to_move_to_monet as code_m_new
+from ..plots import savefig
 
 def produce_stat_dict(stat_list,spaces=False):
     """Select statistics. Only statistics listed in the default dictionary 
@@ -264,8 +256,7 @@ def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=Fal
     t.scale(table_kwargs['xscale'], table_kwargs['yscale'])
     plt.title(title,fontsize=table_kwargs['fontsize']*1.1,fontweight='bold')
     fig.tight_layout()
-    code_m_new.savefig(outname + '.png',loc=1, height=70, decorate=True, 
-                                                   bbox_inches='tight', dpi=200)
+    savefig(outname + '.png', loc=1, logo_height=70)
 
     return
 
