@@ -432,7 +432,7 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
-        self.grid_data = None
+        self.grid_data = False  # Default to False
         self.obs_regridder = None
         self.obs_target = None
 
@@ -602,7 +602,7 @@ class analysis:
         -------
         None
         """
-        if 'model' in self.control_dict:
+        if ('model' in self.control_dict) and (not self.grid_data):
             # open each model
             for mod in self.control_dict['model']:
                 # create a new model instance
@@ -648,19 +648,19 @@ class analysis:
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-        if 'grid_model' in self.control_dict:
+        if ('model' in self.control_dict) and self.grid_data:
             from .util import read_grid_util
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('grid_model reading %s' % date_str)
+            print('model reading %s' % date_str)
             model_datasets = read_grid_util.read_grid_models(
                 self.control_dict, date_str)
             print(model_datasets)
             for mod in model_datasets:
                 m = model()
                 m.label = mod
-                if 'variables' in self.control_dict['grid_model'][mod].keys():
+                if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict \
-                        = self.control_dict['grid_model'][mod]['variables']
+                        = self.control_dict['model'][mod]['variables']
                 m.obj = model_datasets[mod]
                 self.models[m.label] = m
 
@@ -682,7 +682,7 @@ class analysis:
         from .util import analysis_util
         from .util import read_grid_util
 
-        if 'obs' in self.control_dict:
+        if ('obs' in self.control_dict) and (not self.grid_data):
             for obs in self.control_dict['obs']:
                 o = observation()
                 o.obs = obs
@@ -695,9 +695,9 @@ class analysis:
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
-        if 'grid_obs' in self.control_dict:
+        if ('obs' in self.control_dict) and self.grid_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('grid_obs reading %s' % date_str)
+            print('obs reading %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(self.control_dict)
             print(obs_vars)
             obs_datasets = read_grid_util.read_grid_obs(
@@ -707,7 +707,7 @@ class analysis:
                 o = observation()
                 o.obs = obs
                 o.label = obs
-                o.obs_type = 'grid_obs'
+                o.obs_type = 'grid_data'
                 o.obj = obs_datasets[obs]
                 self.obs[o.label] = o
 

@@ -6,7 +6,7 @@ analysis:
   output_dir: $HOME/Plots
   debug: True
 
-grid_obs:
+obs:
   MOD08_M3:
     data_format: gridded_eos
     datadir: $HOME/Data/MOD08_M3_nc
@@ -17,7 +17,7 @@ grid_obs:
         scale: 0.001
         units: none
 
-grid_model:
+model:
   MERRA2:
     data_format: netcdf
     datadir: $HOME/Data/MERRA2_TOTEXTTAU

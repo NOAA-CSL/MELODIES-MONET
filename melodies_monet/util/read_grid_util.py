@@ -19,12 +19,12 @@ def read_grid_models(config, date_str):
     """
     model_datasets = dict()
 
-    for model_name in config['grid_model']:
+    for model_name in config['model']:
 
-        datadir = config['grid_model'][model_name]['datadir']
-        filestr = config['grid_model'][model_name]['filestr']
+        datadir = config['model'][model_name]['datadir']
+        filestr = config['model'][model_name]['filestr']
         filestr = fill_date_template(
-            config['grid_model'][model_name]['filestr'], date_str)
+            config['model'][model_name]['filestr'], date_str)
         filename = find_file(datadir, filestr)
 
         model_datasets[model_name] = xr.open_dataset(filename)
@@ -52,10 +52,10 @@ def read_grid_obs(config, obs_vars, date_str):
 
     for obs_name in obs_vars:
 
-        data_format = config['grid_obs'][obs_name]['data_format']
-        datadir = config['grid_obs'][obs_name]['datadir']
+        data_format = config['obs'][obs_name]['data_format']
+        datadir = config['obs'][obs_name]['datadir']
         filestr = fill_date_template(
-            config['grid_obs'][obs_name]['filestr'], date_str)
+            config['obs'][obs_name]['filestr'], date_str)
         filename = find_file(datadir, filestr)
 
         file_extension = os.path.splitext(filename)[1]
