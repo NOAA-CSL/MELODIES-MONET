@@ -2,15 +2,20 @@ analysis:
   start_time: '2020-01-01'
   end_time:   '2020-12-31'
   time_interval: 'MS'
-  grid_data: True
   output_dir: $HOME/Plots
   debug: True
+  grid_data: True
+  target_grid: $HOME/Data/Grids/cam_grid.nc
 
 obs:
+
   MOD08_M3:
     data_format: gridded_eos
     datadir: $HOME/Data/MOD08_M3_nc
     filestr: MOD08_M3.AYYYYDDD.061.*_regrid.nc
+    regrid:
+      base_grid: $HOME/Data/Grids/modis_l3_grid.nc
+      method: bilinear
     variables:
       AOD_550_Dark_Target_Deep_Blue_Combined_Mean_Mean:
         fillvalue: -9999
@@ -18,10 +23,14 @@ obs:
         units: none
 
 model:
+
   MERRA2:
     data_format: netcdf
     datadir: $HOME/Data/MERRA2_TOTEXTTAU
     filestr: MERRA2_*.tavgM_2d_aer_Nx.YYYYMM_MM_TOTEXTTAU_regrid.nc4
+    regrid:
+      base_grid: $HOME/Data/Grids/merra2_grid.nc
+      method: bilinear
     variables:
       fillvalue: 1.e+15
       scale: 1.0

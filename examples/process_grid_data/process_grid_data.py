@@ -3,7 +3,6 @@ from melodies_monet import driver
 an = driver.analysis()
 an.control = 'control_grid_data.yaml'
 an.read_control()
-# an.setup_regridders()
 
 for time_interval in an.time_intervals:
 
@@ -18,5 +17,3 @@ for time_interval in an.time_intervals:
     print(an.models)
     for mod in an.models:
         print(an.models[mod].obj)
-
-# an.plotting()
