@@ -657,7 +657,9 @@ class analysis:
             print(model_datasets)
             for mod in model_datasets:
                 m = model()
+                m.model = mod
                 m.label = mod
+                m.mapping = self.control_dict['model'][mod]['mapping']
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
