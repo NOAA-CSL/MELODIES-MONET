@@ -655,6 +655,14 @@ class analysis:
             model_datasets = read_grid_util.read_grid_models(
                 self.control_dict, date_str)
             print(model_datasets)
+            for mod in model_datasets:
+                m = model()
+                m.label = mod
+                if 'variables' in self.control_dict['grid_model'][mod].keys():
+                    m.variable_dict \
+                        = self.control_dict['grid_model'][mod]['variables']
+                m.obj = model_datasets[mod]
+                self.models[m.label] = m
 
     def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
