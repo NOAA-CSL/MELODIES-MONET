@@ -659,8 +659,9 @@ class analysis:
                 m = model()
                 m.label = mod
                 if 'variables' in self.control_dict['model'][mod].keys():
-                    m.variable_dict \
-                        = self.control_dict['model'][mod]['variables']
+                    m.variable_dict = self.control_dict['model'][mod]['variables']
+                if 'plot_kwargs' in self.control_dict['model'][mod].keys():
+                    m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
                 m.obj = model_datasets[mod]
                 self.models[m.label] = m
 
@@ -707,7 +708,7 @@ class analysis:
                 o = observation()
                 o.obs = obs
                 o.label = obs
-                o.obs_type = 'grid_data'
+                o.type = 'grid_data'
                 o.obj = obs_datasets[obs]
                 self.obs[o.label] = o
 
