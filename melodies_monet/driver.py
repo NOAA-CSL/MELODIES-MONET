@@ -434,7 +434,8 @@ class analysis:
         self.read = None
         self.grid_data = False  # Default to False
         self.obs_regridder = None
-        self.obs_target = None
+        self.model_regridder = None
+        self.target_grid = None
 
     def __repr__(self):
         return (
@@ -587,7 +588,8 @@ class analysis:
         None
         """
         from .util import regrid_util
-        self.obs_regridder, self.obs_target = regrid_util.setup_obs_regridder(self.control_dict)
+        self.obs_regridder, self.target_grid \
+            = regrid_util.setup_regridder(self.control_dict)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
