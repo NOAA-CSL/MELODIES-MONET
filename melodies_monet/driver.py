@@ -652,13 +652,14 @@ class analysis:
             from .util import read_grid_util
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model reading %s' % date_str)
-            model_datasets = read_grid_util.read_grid_models(
+            filename, model_datasets = read_grid_util.read_grid_models(
                 self.control_dict, date_str)
             print(model_datasets)
             for mod in model_datasets:
                 m = model()
                 m.model = mod
                 m.label = mod
+                m.file_str = filename
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
@@ -703,13 +704,14 @@ class analysis:
             print('obs reading %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(self.control_dict)
             print(obs_vars)
-            obs_datasets = read_grid_util.read_grid_obs(
+            filename, obs_datasets = read_grid_util.read_grid_obs(
                 self.control_dict, obs_vars, date_str)
             print(obs_datasets)
             for obs in obs_vars:
                 o = observation()
                 o.obs = obs
                 o.label = obs
+                o.file = filename
                 o.type = 'grid_data'
                 o.obj = obs_datasets[obs]
                 self.obs[o.label] = o
