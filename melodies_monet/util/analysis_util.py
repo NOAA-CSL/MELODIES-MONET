@@ -68,9 +68,9 @@ def get_obs_vars(config):
     """
     obs_vars_subset = dict()
 
-    for model_name in config['model']:
+    for model_name in config['grid_model']:
 
-        mapping = config['model'][model_name]['mapping']
+        mapping = config['grid_model'][model_name]['mapping']
 
         for obs_name in mapping:
             obs_vars = config['grid_obs'][obs_name]['variables']

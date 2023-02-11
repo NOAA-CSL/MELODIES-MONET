@@ -17,7 +17,7 @@ grid_obs:
         scale: 0.001
         units: none
 
-model:
+grid_model:
   MERRA2:
     data_format: netcdf
     datadir: $HOME/Data/MERRA2_TOTEXTTAU

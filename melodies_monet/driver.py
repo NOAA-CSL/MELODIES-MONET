@@ -648,6 +648,14 @@ class analysis:
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
+        if 'grid_model' in self.control_dict:
+            from .util import read_grid_util
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('grid_model reading %s' % date_str)
+            model_datasets = read_grid_util.read_grid_models(
+                self.control_dict, date_str)
+            print(model_datasets)
+
     def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
@@ -684,8 +692,8 @@ class analysis:
             print('grid_obs reading %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(self.control_dict)
             print(obs_vars)
-            obs_datasets = read_grid_util.read_grid_obs(self.control_dict,
-                obs_vars, date_str)
+            obs_datasets = read_grid_util.read_grid_obs(
+                self.control_dict, obs_vars, date_str)
             print(obs_datasets)
             for obs in obs_vars:
                 o = observation()
