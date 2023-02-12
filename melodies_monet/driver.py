@@ -433,9 +433,9 @@ class analysis:
         self.save = None
         self.read = None
         self.grid_data = False  # Default to False
-        self.obs_regridder = None
-        self.model_regridder = None
         self.target_grid = None
+        self.obs_regridders = None
+        self.model_regridders = None
 
     def __repr__(self):
         return (
@@ -503,9 +503,11 @@ class analysis:
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
 
-        # set grid_data option
+        # set grid_data option and target_grid
         if 'grid_data' in self.control_dict['analysis'].keys():
-            self.grid_data = self.control_dict['analysis']
+            self.grid_data = self.control_dict['analysis']['grid_data']
+        if 'target_grid' in self.control_dict['analysis'].keys():
+            self.target_grid = self.control_dict['analysis']['target_grid']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
@@ -588,8 +590,8 @@ class analysis:
         None
         """
         from .util import regrid_util
-        self.obs_regridder, self.target_grid \
-            = regrid_util.setup_regridder(self.control_dict)
+        self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+        self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 

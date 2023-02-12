@@ -18,16 +18,19 @@ def setup_regridder(config, config_type='obs'):
         config (dict): configuration dictionary
 
     Returns
-        regridder (xe.Regridder): regridder instance
-        ds_target (xr.Dataset): target grid dataset
+        regridder (dict of xe.Regridder): dictionary of regridder instances
     """
-
-    base_file = os.path.expandvars(config[config_type]['regrid']['base_grid'])
-    config_typeds_base = xr.open_dataset(base_file)
-    target_file = os.path.expandvars(config[config_type]['regrid']['target_grid'])
+    target_file = os.path.expandvars(config['analysis']['target_grid'])
     ds_target = xr.open_dataset(target_file)
 
-    regridder = xe.Regridder(ds_base, ds_target, config[config_type]['regrid']['method'])
+    regridder_dict = dict()
 
-    return regridder, ds_target
+    for name in config[config_type]:
+        base_file = os.path.expandvars(config[config_type][name]['regrid']['base_grid'])
+        ds_base = xr.open_dataset(base_file)
+        method = config[config_type][name]['regrid']['method']
+        regridder = xe.Regridder(ds_base, ds_target, method)
+        regridder_dict[name] = regridder
+
+    return regridder_dict
 
