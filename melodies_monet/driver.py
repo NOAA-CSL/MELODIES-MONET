@@ -593,12 +593,9 @@ class analysis:
         None
         """
         from .util import regrid_util
-        print('setup_regridders')
         if self.regrid:
             self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
-            print(self.obs_regridders)
             self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
-            print(self.model_regridders)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
