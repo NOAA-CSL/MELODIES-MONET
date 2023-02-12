@@ -673,7 +673,12 @@ class analysis:
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
-                m.obj = model_datasets[mod]
+                ds_model = model_datasets[mod]
+                if self.regrid:
+                    m.obj = self.model_regridders[mod](ds_model)
+                    # m.obj.to_netcdf(filename_regrid)
+                else:
+                    m.obj = ds_model
                 self.models[m.label] = m
 
     def open_obs(self, time_interval=None):
