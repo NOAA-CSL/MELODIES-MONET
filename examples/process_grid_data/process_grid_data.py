@@ -4,6 +4,8 @@ an = driver.analysis()
 an.control = 'control_grid_data.yaml'
 an.read_control()
 
+an.setup_regridders()
+
 for time_interval in an.time_intervals:
 
     print(time_interval)

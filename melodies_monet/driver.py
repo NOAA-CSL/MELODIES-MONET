@@ -433,6 +433,7 @@ class analysis:
         self.save = None
         self.read = None
         self.grid_data = False  # Default to False
+        self.regrid = False  # Default to False
         self.target_grid = None
         self.obs_regridders = None
         self.model_regridders = None
@@ -590,8 +591,9 @@ class analysis:
         None
         """
         from .util import regrid_util
-        self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
-        self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
+        if self.regrid:
+            self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+            self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
