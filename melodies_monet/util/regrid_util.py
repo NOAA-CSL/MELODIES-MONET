@@ -34,3 +34,19 @@ def setup_regridder(config, config_group='obs'):
 
     return regridder_dict
 
+
+def filename_regrid(filename, regridder):
+    """
+    Construct modified filename for regridded dataset
+
+    Parameters
+        filename (str): filename of dataset
+        regridder (xe.Regridder): regridder instance
+
+    Returns
+        filename_regrid (str): filename of regridded dataset
+    """
+    filename_regrid = filename.replace('.nc', '_regrid.nc')
+
+    return filename_regrid
+
