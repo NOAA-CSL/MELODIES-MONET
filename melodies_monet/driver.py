@@ -675,8 +675,9 @@ class analysis:
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
                 ds_model = model_datasets[mod]
                 if self.regrid:
-                    m.obj = self.model_regridders[mod](ds_model)
-                    # m.obj.to_netcdf(filename_regrid)
+                    regridder = self.model_regridders[mod]
+                    m.obj = regridder(ds_model)
+                    m.obj.to_netcdf(regrid_util.filename_regrid(filename, regridder))
                 else:
                     m.obj = ds_model
                 self.models[m.label] = m
@@ -698,6 +699,7 @@ class analysis:
         """
         from .util import analysis_util
         from .util import read_grid_util
+        from .util import regrid_util
 
         if ('obs' in self.control_dict) and (not self.grid_data):
             for obs in self.control_dict['obs']:
@@ -728,8 +730,9 @@ class analysis:
                 o.type = 'grid_data'
                 ds_obs = obs_datasets[obs]
                 if self.regrid:
-                    o.obj = self.obs_regridders[obs](ds_obs)
-                    # o.obj.to_netcdf(filename_regrid)
+                    regridder = self.obs_regridders[obs]
+                    o.obj = regridder(ds_obs)
+                    o.obj.to_netcdf(regrid_util.filename_regrid(filename, regridder))
                 else:
                     o.obj = ds_obs
                 self.obs[o.label] = o
