@@ -504,9 +504,11 @@ class analysis:
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
 
-        # set grid_data option and target_grid
+        # set grid_data option, regrid option, and target_grid
         if 'grid_data' in self.control_dict['analysis'].keys():
             self.grid_data = self.control_dict['analysis']['grid_data']
+        if 'regrid' in self.control_dict['analysis'].keys():
+            self.regrid = self.control_dict['analysis']['regrid']
         if 'target_grid' in self.control_dict['analysis'].keys():
             self.target_grid = self.control_dict['analysis']['target_grid']
 
@@ -591,9 +593,12 @@ class analysis:
         None
         """
         from .util import regrid_util
+        print('setup_regridders')
         if self.regrid:
             self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+            print(self.obs_regridders)
             self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
+            print(self.model_regridders)
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 

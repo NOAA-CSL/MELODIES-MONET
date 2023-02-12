@@ -10,7 +10,7 @@ import xarray as xr
 import xesmf as xe
 
 
-def setup_regridder(config, config_type='obs'):
+def setup_regridder(config, config_group='obs'):
     """
     Setup regridder for observations or model
 
@@ -25,10 +25,10 @@ def setup_regridder(config, config_type='obs'):
 
     regridder_dict = dict()
 
-    for name in config[config_type]:
-        base_file = os.path.expandvars(config[config_type][name]['regrid']['base_grid'])
+    for name in config[config_group]:
+        base_file = os.path.expandvars(config[config_group][name]['regrid']['base_grid'])
         ds_base = xr.open_dataset(base_file)
-        method = config[config_type][name]['regrid']['method']
+        method = config[config_group][name]['regrid']['method']
         regridder = xe.Regridder(ds_base, ds_target, method)
         regridder_dict[name] = regridder
 
