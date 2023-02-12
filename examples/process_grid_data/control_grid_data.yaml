@@ -5,7 +5,7 @@ analysis:
   output_dir: $HOME/Plots
   debug: True
   grid_data: True
-  regrid: True
+  regrid: False
   target_grid: $HOME/Data/Grids/cam_grid.nc
 
 obs:

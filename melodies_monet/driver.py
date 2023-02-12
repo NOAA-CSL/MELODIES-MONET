@@ -721,7 +721,12 @@ class analysis:
                 o.label = obs
                 o.file = filename
                 o.type = 'grid_data'
-                o.obj = obs_datasets[obs]
+                ds_obs = obs_datasets[obs]
+                if self.regrid:
+                    o.obj = self.obs_regridders[obs](ds_obs)
+                    # o.obj.to_netcdf(filename_regrid)
+                else:
+                    o.obj = ds_obs
                 self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
