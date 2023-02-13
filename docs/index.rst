@@ -47,6 +47,7 @@ MONETIO please refer to:
    background/supported_analyses
    background/supported_plots
    background/supported_stats
+   background/gridded_datasets
    
 .. toctree::
    :hidden:
