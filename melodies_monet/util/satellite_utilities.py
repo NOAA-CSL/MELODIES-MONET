@@ -4,8 +4,28 @@ import xesmf as xe
 import numpy as np
 from datetime import datetime,timedelta
 
+def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
+    '''Calculate model ozone column from model ozone profile in ppv. Move data from model grid 
+        to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
+    '''
+    import xesmf as xe
+    
+    # factor for converting ppv profiles to DU column
+    # also requires conversion of dp from Pa to hPa
+    du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19
+    column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
+    
+    # initialize regrid and apply to column data
+    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
+    mod_col_obsgrid = grid_adjust(column)
+    # Aggregate time-step to daily means
+    daily_mean = mod_col_obsgrid.groupby('time.date').mean()
+    
+    # change dimension name for date to time
+    daily_mean = daily_mean.rename({'date':'time'})
+    return daily_mean
 
-def space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
+def space_and_time_pairing(model_data,obs_data,pair_variables):
     '''Bilinear spatial and temporal satellite pairing code. 
     Assumes model data has (time,pressure,latitude,longitude) dimensions.
     Assumes observation data contains fields named time, pressure, latiutde, and longitude.
@@ -38,7 +58,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
                 interm_var = regridr(model_data[j][f])
                 
                 # apply  time interpolation
-                if f == (mod_nf-1) and has_nth:
+                if f == (mod_nf-1):
                 #    print('last')
                     t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
                     ds[j][:,tindex[t2]] = interm_var[:,t2].values
@@ -49,7 +69,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
 
                     ds[j][:,tindex[tind_2]] += np.expand_dims(tfac1.values,axis=1)*interm_var[:,tind_2].values
                 
-                elif f == (0) and has_1st:
+                elif f == (0):
                 #    print('first')
                     t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
                     ds[j][:,tindex[t2],:] = interm_var[:,t2].values
@@ -67,7 +87,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
                     
                     ds[j][:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*interm_var.values
     return ds
-def omps_nm_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
+def omps_nm_pairing(model_data,obs_data,pair_variables):
     'Pairs UFS-RAQMS ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
 
@@ -78,7 +98,7 @@ def omps_nm_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
     
     du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
     
-    paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables,has_1st,has_nth)
+    paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
     
     # calculate ozone column, no averaging kernel or apriori applied.
     col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
@@ -95,7 +115,7 @@ def omps_nm_pairing(model_data,obs_data,pair_variables,has_1st,has_nth):
                                                                             
                                                                             
 
-def omps_nm_pairing_apriori(model_data,obs_data,has_1st,has_nth):
+def omps_nm_pairing_apriori(model_data,obs_data):
     'Pairs UFS-RAQMS data with OMPS nm. Applies satellite apriori column to model observations.'
 
     import xarray as xr
@@ -120,10 +140,10 @@ def omps_nm_pairing_apriori(model_data,obs_data,has_1st,has_nth):
             # regrid spatially (model lat/lon to satellite swath lat/lon)
             regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear')
             regrid_oz = regridr(model_data['o3vmr'][f])
-            regrid_p = regridr(model_data['pres_pa'][f]) # this one should be pressure variable (for the interpolation).
+            regrid_p = regridr(model_data['pres_pa_mid'][f]) # this one should be pressure variable (for the interpolation).
             sfp = regridr(model_data['surfpres_pa'][f])
             # fixes for observations before/after model time range.
-            if f == (nf-1) and has_nth:
+            if f == (nf-1):
                 t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
                 ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
                 pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
@@ -135,7 +155,7 @@ def omps_nm_pairing_apriori(model_data,obs_data,has_1st,has_nth):
                 ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
                 pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
                 sfc[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
-            elif f == 0 and has_1st:
+            elif f == 0:
                 t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
                 ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
                 pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
