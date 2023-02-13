@@ -460,8 +460,8 @@ class analysis:
         self.output_dir_save = None
         self.output_dir_read = None
         self.debug = False
-        self.save_paired = False
-        self.paired_files = {}
+        self.save = None
+        self.read = None
 
     def __repr__(self):
         return (
