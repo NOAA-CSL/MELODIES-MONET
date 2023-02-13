@@ -132,10 +132,17 @@ def run(
             an.stats()
 
 
+_DATE_FMT_NOTE = (
+    "Date can be in any format accepted by `pandas.date_range()`, "
+    "e.g., 'YYYY-MM-DD', or 'M/D/YYYY'. "
+    "Time other than 0 UTC can be specified by adding trailing ' HH[:MM[:SS]]'."
+)
+
+
 @app.command()
 def get_aeronet(
-    start_date: str = typer.Option(..., "-s", "--start-date", help="Start date."),
-    end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE}"),
     daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
     freq: str = typer.Option("H", "-f", "--freq", help=(
             "Frequency to resample to. "
@@ -266,8 +273,8 @@ def get_aeronet(
 
 @app.command()
 def get_airnow(
-    start_date: str = typer.Option(..., "-s", "--start-date", help="Start date."),
-    end_date: str = typer.Option(..., "-e", "--end-date", help="End date."),
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE}"),
     daily: bool = typer.Option(False, help=(
             "Whether to retrieve the daily averaged data product. "
             "By default, the hourly data is fetched."
