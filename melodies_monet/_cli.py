@@ -150,8 +150,9 @@ def get_aeronet(
         )
     ),
     interp_to: str = typer.Option(None, "--interp-to", help=(
-            "Wavelength(s) to interpolate the AOD values to (micron). "
+            "Wavelength(s) to interpolate the AOD values to (unit: micron). "
             "Separate with commas to specify multiple. "
+            "Examples: '0.55' (550 nm), '0.55,0.7,1.0'. "
             "Note that this functionality requires pytspack."
         )
     ),
