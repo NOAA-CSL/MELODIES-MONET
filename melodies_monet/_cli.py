@@ -167,12 +167,12 @@ def get_aeronet(
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
-            "By default the name is generated like 'AERONET_<product>_<start-date>_<end-date>.nc'"
+            "By default the name is generated like 'AERONET_<product>_<start-date>_<end-date>.nc'."
         )
     ),
     dst: Path = typer.Option(".", "-d", "--dst", help=(
             "Destination directory (to control output location "
-            "if using default `out_name`)."
+            "if using default output file name)."
         )
     ),
     compress: bool = typer.Option(True, help=(
@@ -292,12 +292,12 @@ def get_airnow(
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
-            "By default the name is generated like 'AirNow_<start-date>_<end-date>.nc'"
+            "By default the name is generated like 'AirNow_<start-date>_<end-date>.nc'."
         )
     ),
     dst: Path = typer.Option(".", "-d", "--dst", help=(
             "Destination directory (to control output location "
-            "if using default `out_name`)."
+            "if using default output file name)."
         )
     ),
     compress: bool = typer.Option(True, help=(
