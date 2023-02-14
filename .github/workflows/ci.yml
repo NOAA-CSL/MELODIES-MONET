@@ -67,7 +67,7 @@ jobs:
           cd docs/examples
           melodies-monet --version
           python -m melodies_monet --version
-          melodies-monet control_idealized.yaml
+          melodies-monet run control_idealized.yaml
           cd -
 
   docs:
