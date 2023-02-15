@@ -69,7 +69,8 @@ def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
     # JianHe: select sites with nobs >=18, 75% completeness based on EPA
-    df_rolling_max = df_rolling.groupby("siteid").resample("D", on="time_local").max(min_count=18).reset_index(drop=True).dropna()
+    df_rolling.index = df_rolling.time_local
+    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18).reset_index(drop=True).dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
 
@@ -106,11 +107,23 @@ def new_color_map():
         Orange and blue color map
         
     """
-    top = mpl.cm.get_cmap('Blues_r', 128)
-    bottom = mpl.cm.get_cmap('Oranges', 128)
+    top = mpl.cm.get_cmap("Blues_r", 128)
+    bottom = mpl.cm.get_cmap("Oranges", 128)
+
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
                            bottom(np.linspace(0, 1, 128))))
     return ListedColormap(newcolors, name='OrangeBlue')
+
+# Register the custom cmap
+_cmap_name = "OrangeBlue"
+try:
+    plt.get_cmap(_cmap_name)
+except ValueError:
+    _cmap = new_color_map()
+    try:
+        mpl.colormaps.register(_cmap)  # mpl 3.6+
+    except AttributeError:
+        mpl.cm.register_cmap(cmap=_cmap)  # old method
 
 def map_projection(f):
     """Defines map projection. This needs updating to make it more generic.
@@ -144,7 +157,7 @@ def map_projection(f):
     elif f.model.lower() == 'rrfs':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() in ['cesm_fv','cesm_se']:
+    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
         proj = ccrs.PlateCarree()
     elif f.model.lower() == 'random':
         proj = ccrs.PlateCarree()
@@ -299,7 +312,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -311,7 +324,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     
     if domain_type == 'all':
         latmin= 25.0
@@ -1002,7 +1015,7 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
 
         if domain_type == 'all':
             latmin= 25.0

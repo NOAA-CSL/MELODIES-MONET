@@ -10,6 +10,7 @@ dependencies:
   - monet
   - monetio
   - netcdf4
+  - numpy<1.24
   #
   # Extras
   - pooch

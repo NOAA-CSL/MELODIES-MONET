@@ -16,6 +16,8 @@ Three examples compare AirNow surface observations to model data:
 Other examples:
 
 * :doc:`idealized`
+* :doc:`save_paired_data`
+* :doc:`read_paired_data`
 
 Execution statistics
 --------------------

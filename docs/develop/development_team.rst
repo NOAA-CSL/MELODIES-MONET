@@ -15,11 +15,30 @@ NOAA GSL         Jordan Schnell
 NCAR ACOM        Louisa Emmons, David Fillmore        
 ===============  =============================
 
+Code Reviewers
+--------------
+
+================= =============== ========================================================
+Reviewer          GitHub Username Expertise
+================= =============== ========================================================
+Zachary Moon      zmoon           Docs, Connections to MONET and MONETIO, CI tests
+David Fillmore    dwfncar         Satellite obs, Plots, Stats, Connection to METplus
+Colin Harkins     colin-harkins   Docs, Aircraft obs, Plots, Stats
+Louisa Emmons     lkemmons        Docs, Aircraft obs, Plots, Stats
+Rebecca Schwantes rschwant        Docs, Surface and aircraft obs, Plots, Stats
+================= =============== ========================================================
+
 Development Team Members
 ------------------------
 
 Below is a list of people who have contributed to MELODIES MONET along with 
 their current and future development goals.
+
+**Mackenzie Arnold:**
+I’m a summer intern at CIRES/NOAA GSL working on model verification of smoke-forecast
+models. I plan to help review the code, work to improve the site-specific analysis, add
+in a new capability to interactively view plots for individual surface sites online,
+and help with various other aspects of development. 
 
 **Megan Bela:**
 I am a research scientist at CIRES/NOAA CSL working to improve process-level
@@ -27,6 +46,11 @@ understanding and representations of fire emissions, plume rise, and chemistry
 in regional coupled chemistry-meteorology models. My plans include testing and
 expanding the capability of MELODIES MONET for evaluating simulations with
 research and operational models of fire impacts on air quality and weather.
+
+**Margaret Bruckner:**
+I am a graduate student at the University of Wisconsin-Madison. My development plans
+primarily focus on adding capabilities for comparison of satellite observations to model
+output and expanding data processing options. 
 
 **Rebecca Buchholz:**
 I am a Project Scientist at NCAR/ACOM helping with the development of MELODIES MONET.

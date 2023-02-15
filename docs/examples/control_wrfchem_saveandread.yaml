@@ -17,9 +17,30 @@
 analysis:
   start_time: "2019-09-05-06:00:00" # UTC
   end_time: "2019-09-06-06:00:00" # UTC
-  output_dir: ./output/airnow_wrfchem  # relative to the program using this control file
+  output_dir: ./output/save_and_read  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
+  output_dir_save: ./output/save_and_read #Opt Directory to use for melodies-monet data from 'save' below.
+  #   If not specified, saved melodies-monet data stored in output_dir.
+  output_dir_read: ./output/save_and_read #Opt Directory to use for melodies-monet data from 'read' below.
+  #   If not specified, reads melodies-monet data from output_dir. 
+  #   To not assume any directory for reading (use paths specified under 'read' directly) set output_dir_read: null
   debug: True
+  save:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          prefix: '0905' # use only with method=netcdf
+          # output_name: '0905.pkl' # use only with method=pkl
+          data: 'all'   # 'all' to save out all pairs or ['pair1','pair2',...] to save out specific pairs. With method='pkl' this is ignored and always saves all.
+      # models:
+      # obs:
+  read:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          filenames: {'airnow_RACM_ESRL':['0905_airnow_RACM_ESRL.nc4'],
+          'airnow_RACM_ESRL_VCP':['0905_airnow_RACM_ESRL_VCP.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}. Any wildcards will be expanded
+          # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
+      # models:
+      # obs:
 
 model:
   RACM_ESRL: # model label
