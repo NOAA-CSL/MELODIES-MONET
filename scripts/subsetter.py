@@ -18,9 +18,11 @@ parser.add_argument('--logfile', type=str,
 parser.add_argument('--outdir', type=str,
     default=None,
     help='output directory')
+parser.add_argument('--compress_level', type=int,
+    default=1,
+    help='NetCDF compression level')
 parser.add_argument('--debug', action='store_true',
     help='set logging level to debug')
-# add argument for deflation level
 args = parser.parse_args()
 
 # Setup logging
@@ -32,6 +34,9 @@ with open(args.control, 'r') as f:
     control = yaml.safe_load(f)
 
 logging.debug(control)
+
+# set compression level
+level_str = str(args.compress_level)
 
 for model in control['model']:
     logging.info('processing:' + model)
@@ -65,7 +70,7 @@ for model in control['model']:
             file_out = os.path.join(args.outdir, file_subdirs[-1])
         else:
             file_out = os.path.join(file_subdirs)
-        command = f'ncks -O {var_str} {file_in} {file_out}'
+        command = f'ncks -O -L {level_str} {var_str} {file_in} {file_out}'
         logging.info(command)
         # use subprocess.run(..., check=True)
         os.system(command)
