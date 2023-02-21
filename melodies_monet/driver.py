@@ -514,8 +514,11 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        self.output_dir = os.path.expandvars(
-            self.control_dict['analysis']['output_dir'])
+        if 'output_dir' in self.control_dict['analysis'].keys():
+            self.output_dir = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir'])
+        else:
+            raise Exception('output_dir was not specified and is required. Please set output_dir in the control .yaml. ')
         if 'output_dir_save' in self.control_dict['analysis'].keys():
             self.output_dir_save = os.path.expandvars(
                 self.control_dict['analysis']['output_dir_save'])
