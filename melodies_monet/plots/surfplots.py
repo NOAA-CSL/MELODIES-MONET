@@ -107,8 +107,8 @@ def new_color_map():
         Orange and blue color map
         
     """
-    top = mpl.cm.get_cmap("Blues_r", 128)
-    bottom = mpl.cm.get_cmap("Oranges", 128)
+    top = plt.get_cmap("Blues_r", 128)
+    bottom = plt.get_cmap("Oranges", 128)
 
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
                            bottom(np.linspace(0, 1, 128))))
@@ -710,7 +710,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
+    cmap = plt.get_cmap('Spectral_r',nlevels-1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     # For unstructured grid, we need a more advanced plotting code
