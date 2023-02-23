@@ -86,7 +86,7 @@ def write_ncf(dset, output_name, title='', *, verbose=True):
             if verbose:
                 print("Compressing: {}, original dtype: {}".format(i, dset[i].dtype))
             dset[i] = compress_variable(dset[i])
-        encoding[i] = comp
+            encoding[i] = comp
     dset.attrs['title'] = title
     dset.attrs['format'] = 'NetCDF-4'
     dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')
