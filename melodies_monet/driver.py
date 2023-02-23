@@ -518,7 +518,7 @@ class analysis:
             self.output_dir = os.path.expandvars(
                     self.control_dict['analysis']['output_dir'])
         else:
-            raise Exception('output_dir was not specified and is required. Please set output_dir in the control .yaml. ')
+            raise Exception('output_dir was not specified and is required. Please set analysis.output_dir in the control file.')
         if 'output_dir_save' in self.control_dict['analysis'].keys():
             self.output_dir_save = os.path.expandvars(
                 self.control_dict['analysis']['output_dir_save'])
