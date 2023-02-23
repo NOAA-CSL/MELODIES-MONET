@@ -4,6 +4,26 @@ import xesmf as xe
 import numpy as np
 from datetime import datetime,timedelta
 
+def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
+    '''Calculate model ozone column from model ozone profile in ppv. Move data from model grid 
+        to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
+    '''
+    import xesmf as xe
+    
+    # factor for converting ppv profiles to DU column
+    # also requires conversion of dp from Pa to hPa
+    du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19
+    column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
+    
+    # initialize regrid and apply to column data
+    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
+    mod_col_obsgrid = grid_adjust(column)
+    # Aggregate time-step to daily means
+    daily_mean = mod_col_obsgrid.groupby('time.date').mean()
+    
+    # change dimension name for date to time
+    daily_mean = daily_mean.rename({'date':'time'})
+    return daily_mean
 
 def space_and_time_pairing(model_data,obs_data,pair_variables):
     '''Bilinear spatial and temporal satellite pairing code. 
@@ -120,7 +140,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
             # regrid spatially (model lat/lon to satellite swath lat/lon)
             regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear')
             regrid_oz = regridr(model_data['o3vmr'][f])
-            regrid_p = regridr(model_data['pres_pa'][f]) # this one should be pressure variable (for the interpolation).
+            regrid_p = regridr(model_data['pres_pa_mid'][f]) # this one should be pressure variable (for the interpolation).
             sfp = regridr(model_data['surfpres_pa'][f])
             # fixes for observations before/after model time range.
             if f == (nf-1):

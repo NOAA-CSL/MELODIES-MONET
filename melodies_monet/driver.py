@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
-# from util import write_ncf
+from .util import write_util
 
 __all__ = (
     "pair",
@@ -172,8 +172,8 @@ class observation:
             dataset read in from the associated file (self.file) by the satellite file reader
         """
         try:
-            if self.label == 'omps_limb':
-                self.obj = mio.omps_limb.read_omps_limb(self.file)
+            if self.label == 'omps_l3':
+                self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
             elif self.label == 'omps_nm':
                 self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(self.file)
             elif self.label == 'mopitt_l3':
@@ -309,7 +309,7 @@ class model:
         if 'txt' in self.file_str:
             with open(self.file_str,'r') as f:
                 self.files = f.read().split(' \n')[:-1]
-        print(self.files)
+       
         #    self.files = sort(self.file_str)
 
         if self.file_vert_str is not None:
@@ -483,7 +483,6 @@ class analysis:
             f"    read={self.read!r},\n"
             ")"
         )
-
     def read_control(self, control=None):
         """Read the input yaml file,
         updating various :class:`analysis` instance attributes.
@@ -632,6 +631,13 @@ class analysis:
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                if 'initial_file' in self.control_dict['model'][mod].keys(): 
+                    m.initial_file = self.control_dict['model'][mod]['initial_file']
+                else: m.initial_file = False
+                if 'last_file' in self.control_dict['model'][mod].keys(): 
+                    m.last_file = self.control_dict['model'][mod]['last_file']
+                else: m.last_file = False
+                        
                 if 'mod_kwargs' in self.control_dict['model'][mod].keys():
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
@@ -773,7 +779,7 @@ class analysis:
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     
                     if obs.label == 'omps_nm':
-                        print(model_obj)
+                        
                         from .util import satellite_utilities as sutil
                         if mod.apply_ak == True:
                             keys.append('pres_pa_mid')
@@ -784,8 +790,8 @@ class analysis:
                             keys.append('dp_pa')
                             model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
-                        #paired_data['o3vmr'][(paired_data['o3vmr'] < 150)] = np.nan
-                        paired_data = paired_data.where(paired_data.o3vmr > 0)
+                        
+                        paired_data = paired_data.where((paired_data.o3vmr > 0))
                         p = pair()
                         p.obs = obs.label
                         p.model = mod.label
@@ -794,7 +800,22 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
-
+                elif obs.obs_type.lower() == 'sat_grid_clm':
+                    if obs.label == 'omps_l3':
+                        from .util import satellite_utilities as sutil
+                        # trim obs array to only data within analysis window
+                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        model_obsgrid = sutil.omps_l3_daily_o3_pairing(mod.obj,obs_dat,'o3vmr')
+                        # combine model and observations into paired dataset
+                        obs_dat['o3vmr'] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
+                        p = pair()
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = obs_dat
+                        label = '{}_{}'.format(p.obs,p.model)
+                        self.paired[label] = p
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
@@ -804,7 +825,7 @@ class analysis:
         None
         """
         pass
-
+    
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -880,8 +901,14 @@ class analysis:
                                                                         "sat_grid_sfc", "sat_grid_clm", 
                                                                         "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
-                            pairdf_all = p.obj.swap_dims({'x':'time'})
-
+                            if 'time' not in p.obj.dims and self.obs[obs_to_pair].obs_type.lower() == 'sat_swath_clm':
+                                pairdf_all = p.obj.swap_dims({'x':'time'})
+                            # squash lat/lon dimensions into single dimension
+                            elif self.obs[obs_to_pair].obs_type.lower() == 'sat_grid_clm':
+                                pairdf_all = p.obj.stack(ll=['x','y'])
+                                pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+                            else:
+                                pairdf_all = p.obj
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
                             
@@ -965,7 +992,7 @@ class analysis:
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
                         # MEB: pairdf.empty fails for data left in xarray format. isnull format works.
-                        if pairdf.empty or pairdf[obsvar].isnull().all():
+                        if pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                             continue
 
