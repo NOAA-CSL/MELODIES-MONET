@@ -57,7 +57,7 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         dict_json.pop('obj')
         dset.attrs['dict_json'] = json.dumps(dict_json, indent = 4) 
         dset.attrs['group_name'] = group
-        dset.to_netcdf(output_name)
+        dset.to_netcdf(output_name, encoding=encoding)
 
 def write_ncf(dset, output_name, title='', *, verbose=True):
     """Function to write netcdf4 files with some compression for floats
