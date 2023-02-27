@@ -46,10 +46,10 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         comp = dict(zlib=True, complevel=7)
         encoding = {}
         for i in dset.data_vars.keys():
-            # if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
+            if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
             #     print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
             #     dset[i] = compress_variable(dset[i])
-            encoding[i] = comp
+                encoding[i] = comp
         dset.attrs['title'] = title
         dset.attrs['format'] = 'NetCDF-4'
         dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')
