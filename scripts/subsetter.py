@@ -3,6 +3,7 @@
 #
 import os
 import sys
+import subprocess
 import argparse
 import logging
 import yaml
@@ -47,12 +48,6 @@ for model in control['model']:
         for var in control['model'][model]['required_vars']:
             var_str += var + ','
 
-    """
-    for dataset in control['model'][model]['mapping']:
-        for var in control['model'][model]['mapping'][dataset]:
-            var_str += var + ','
-    """
-    # use ','.join(...)
     for var in control['model'][model]['variables']:
         var_str += var + ','
 
@@ -62,6 +57,7 @@ for model in control['model']:
     file_str = os.path.expandvars(control['model'][model]['files'])
 
     files = sorted(glob(file_str))
+    print(files)
 
     for file_in in files:
         file_subdirs = list(os.path.split(file_in))
@@ -69,9 +65,9 @@ for model in control['model']:
         if args.outdir is not None:
             file_out = os.path.join(args.outdir, file_subdirs[-1])
         else:
-            file_out = os.path.join(file_subdirs)
+            file_out = os.path.join(*tuple(file_subdirs))
         command = f'ncks -O -L {level_str} {var_str} {file_in} {file_out}'
         logging.info(command)
-        # use subprocess.run(..., check=True)
-        os.system(command)
+        # os.system(command)
+        subprocess.run(command.split())
 
