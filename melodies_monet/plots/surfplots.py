@@ -161,8 +161,13 @@ def map_projection(f):
         proj = ccrs.PlateCarree()
     elif f.model.lower() == 'random':
         proj = ccrs.PlateCarree()
-    else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
-        raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
+    else:
+        print(
+            f'NOTE: Projection not defined for model {f.model.lower()!r}. '
+            'Please add to surfplots.py. '
+            'Setting to `ccrs.PlateCarree()`.'
+        )
+        proj = ccrs.PlateCarree()
     return proj
 
 def get_utcoffset(lat,lon):
