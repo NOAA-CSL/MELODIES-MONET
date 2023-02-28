@@ -751,7 +751,8 @@ class analysis:
                         raise Exception("MONET requires an altitude dimension named 'z'") from e
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
-                    print('After pairing: ', paired_data)
+                    if self.debug:
+                        print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.obs = obs.label
