@@ -1406,21 +1406,22 @@ class analysis:
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
-                        if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
-                            raise Exception("For statistics, only one of filter_dict and filter_string can be specified.")
-                        elif 'filter_dict' in stat_dict['data_proc']:
-                            filter_dict = stat_dict['data_proc']['filter_dict']
-                            for column in filter_dict.keys():
-                                filter_vals = filter_dict[column]['value']
-                                filter_op = filter_dict[column]['oper']
-                                if filter_op == 'isin':
-                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
-                                elif filter_op == 'isnotin':
-                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
-                                else:
-                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
-                        elif 'filter_string' in stat_dict['data_proc']:
-                            pairdf_all.query(stat_dict['data_proc']['filter_string'], inplace=True)
+                        if 'data_proc' in stat_dict:
+                            if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
+                                raise Exception("For statistics, only one of filter_dict and filter_string can be specified.")
+                            elif 'filter_dict' in stat_dict['data_proc']:
+                                filter_dict = stat_dict['data_proc']['filter_dict']
+                                for column in filter_dict.keys():
+                                    filter_vals = filter_dict[column]['value']
+                                    filter_op = filter_dict[column]['oper']
+                                    if filter_op == 'isin':
+                                        pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                    elif filter_op == 'isnotin':
+                                        pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                    else:
+                                        pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                            elif 'filter_string' in stat_dict['data_proc']:
+                                pairdf_all.query(stat_dict['data_proc']['filter_string'], inplace=True)
 
                         # Drop sites with greater than X percent NAN values
                         if 'data_proc' in stat_dict:
