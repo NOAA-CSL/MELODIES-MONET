@@ -469,7 +469,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.set_xlabel(df.index.name,fontweight='bold',**text_kwargs)
+    ax.set_xlabel(ax.get_xlabel(),fontweight='bold',**text_kwargs)
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
