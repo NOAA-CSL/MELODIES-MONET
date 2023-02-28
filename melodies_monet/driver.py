@@ -665,6 +665,15 @@ class analysis:
 
                 # maybe set projection
                 proj_in = self.control_dict['model'][mod].get("projection")
+                if proj_in == "None":
+                    print(
+                        f"NOTE: model.{mod}.projection is {proj_in!r} (str), "
+                        "but we assume you want `None` (Python null sentinel). "
+                        "To avoid this warning, "
+                        "update your control file to remove the projection setting "
+                        "or set to `~` or `null` if you want null value in YAML."
+                    )
+                    proj_in = None
                 if proj_in is not None:
                     import cartopy.crs as ccrs
 
