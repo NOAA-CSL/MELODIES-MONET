@@ -794,7 +794,13 @@ class analysis:
         -------
         None
         """
+        import matplotlib.pyplot as plt
+
         from .plots import surfplots as splots, savefig
+
+        # Disable figure count warning
+        initial_max_fig = plt.rcParams["figure.max_open_warning"]
+        plt.rcParams["figure.max_open_warning"] = 0
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -1267,6 +1273,9 @@ class analysis:
                                 print('Warning: Spatial overlay plots are not available yet for regulatory metrics.')
 
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+
+        # Restore figure count warning
+        plt.rcParams["figure.max_open_warning"] = initial_max_fig
 
     def stats(self):
         """Calculate statistics specified in the input yaml file.
