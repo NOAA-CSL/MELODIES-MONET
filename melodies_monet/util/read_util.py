@@ -7,7 +7,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
 
     Parameters
     ----------
-    analysis : class
+    analysis : melodies_monet.driver.analysis
         Instance of the analysis class from driver script.
     filenames : str or iterable
         str or list for reading in pkl. For netCDF, must be dict with format {group1:str or iterable of filenames, group2:...}

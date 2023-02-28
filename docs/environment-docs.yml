@@ -28,6 +28,7 @@ dependencies:
   - sphinx-click
   - sphinx-design
   - sphinx_rtd_theme
+  - sphinx-togglebutton
   #
   - pip
   - pip:
