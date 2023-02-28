@@ -719,7 +719,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     # For unstructured grid, we need a more advanced plotting code
-    # Call an external funtion (Plot_2D)
+    # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
         from .Plot_2D import Plot_2D
         

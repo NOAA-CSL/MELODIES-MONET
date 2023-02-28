@@ -732,7 +732,7 @@ class analysis:
                 
                 ## TODO:  add in ability for simple addition of variables from
 
-                # simplify the objs object with the correct mapping vairables
+                # simplify the objs object with the correct mapping variables
                 obs = self.obs[obs_to_pair]
 
                 # pair the data
@@ -956,7 +956,7 @@ class analysis:
                             print('Warning: no valid obs found for '+domain_name)
                             continue
 
-                        # JianHe: Determine if calcuate regulatory values
+                        # JianHe: Determine if calculate regulatory values
                         cal_reg = obs_plot_dict.get('regulatory', False)
 
                         if cal_reg:
@@ -1203,7 +1203,7 @@ class analysis:
                                 del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                             else:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
-                        # JianHe: need upates to include regulatory option for overlay plots
+                        # JianHe: need updates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -1315,7 +1315,7 @@ class analysis:
             else:
                 obs_plot_dict = {}
 
-            # JianHe: Determine if calcuate regulatory values
+            # JianHe: Determine if calculate regulatory values
             cal_reg = obs_plot_dict.get('regulatory', False)
 
             # Next loop over all of the domains.
