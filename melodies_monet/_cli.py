@@ -130,6 +130,12 @@ def run(
         an = analysis()
         an.control = control
         an.read_control()
+        if debug and not an.debug:
+            typer.secho(
+                f"Setting `analysis.debug` (was {an.debug}) to True since --debug used.",
+                fg=INFO_COLOR,
+            )
+            an.debug = True
 
     with _timer("Opening model(s)"):
         an.open_models()
