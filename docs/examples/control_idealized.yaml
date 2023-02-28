@@ -42,7 +42,7 @@ model:
       test_obs:
         A: "A_obs"
         B: "B_obs"
-    projection: None  # unused
+    projection: ~  # unused
 
 obs:
   test_obs:

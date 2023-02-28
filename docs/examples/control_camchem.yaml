@@ -27,7 +27,7 @@ model:
         #NO2: 'NO2'
         #PM25_TOT: 'PM2.5'
         O3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt 
       color: 'dodgerblue'
       marker: '+'

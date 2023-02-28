@@ -22,7 +22,7 @@ model:
         #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         O3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'magenta'
       marker: 'o'
@@ -40,7 +40,7 @@ model:
         #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         O3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'cyan'
       marker: 's'
@@ -60,7 +60,7 @@ model:
         #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         o3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'goldenrod'
       marker: '^'

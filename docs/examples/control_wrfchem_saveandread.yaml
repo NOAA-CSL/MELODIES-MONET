@@ -54,7 +54,7 @@ model:
       airnow: # specifically for the obs labeled 'airnow'
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
-    projection: None
+    projection: ~
     plot_kwargs: # optional
       color: "magenta"
       marker: "s"
@@ -70,7 +70,7 @@ model:
       airnow:
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
-    projection: None
+    projection: ~
     plot_kwargs:
       color: "gold"
       marker: "o"
