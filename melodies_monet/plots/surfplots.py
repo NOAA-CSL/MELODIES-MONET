@@ -140,6 +140,12 @@ def map_projection(f):
         
     """
     import cartopy.crs as ccrs
+
+    if f.proj is not None:
+        if not isinstance(f.proj, ccrs.Projection):
+            raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
+        return f.proj
+
     if f.model.lower() == 'cmaq':
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)

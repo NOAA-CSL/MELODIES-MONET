@@ -283,6 +283,7 @@ class model:
         self.mapping = None
         self.variable_dict = None
         self.plot_kwargs = None
+        self.proj = None
 
     def __repr__(self):
         return (
@@ -661,7 +662,17 @@ class analysis:
                         m.scrip_file = self.control_dict['model'][mod]['scrip_file']
                     else:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
-                        
+
+                # maybe set projection
+                proj_in = self.control_dict['model'][mod].get("projection")
+                if proj_in is not None:
+                    import cartopy.crs as ccrs
+
+                    if isinstance(proj_in, ccrs.Projection):
+                        m.proj = proj_in
+                    else:
+                        m.proj = ccrs.Projection(proj_in)
+
                 # open the model
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
