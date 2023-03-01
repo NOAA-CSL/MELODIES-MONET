@@ -675,12 +675,18 @@ class analysis:
                     )
                     proj_in = None
                 if proj_in is not None:
-                    import cartopy.crs as ccrs
+                    if isinstance(proj_in, str) and proj_in.startswith("model:"):
+                        from .plots.surfplots import map_projection
 
-                    if isinstance(proj_in, ccrs.Projection):
-                        m.proj = proj_in
+                        mod_name_for_proj = proj_in.split(":")[1].strip()
+                        m.proj = map_projection(m, model_name=mod_name_for_proj)
                     else:
-                        m.proj = ccrs.Projection(proj_in)
+                        import cartopy.crs as ccrs
+
+                        if isinstance(proj_in, ccrs.Projection):
+                            m.proj = proj_in
+                        else:
+                            m.proj = ccrs.Projection(proj_in)
 
                 # open the model
                 m.open_model_files(time_interval=time_interval)

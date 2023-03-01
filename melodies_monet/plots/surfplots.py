@@ -125,51 +125,57 @@ except ValueError:
     except AttributeError:
         mpl.cm.register_cmap(cmap=_cmap)  # old method
 
-def map_projection(f):
-    """Defines map projection. This needs updating to make it more generic.
+def map_projection(m, *, model_name=None):
+    """Define map projection.
     
     Parameters
     ----------
-    f : class
-        model class
-        
+    m : melodies_monet.driver.model
+        Model class instance.
+    model_name : str, optional
+        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+
     Returns
     -------
-    cartopy projection 
-        projection to be used by cartopy in plotting
-        
+    cartopy.crs.Projection
+        Projection to be used by cartopy in plotting.
     """
     import cartopy.crs as ccrs
 
-    if f.proj is not None:
-        if not isinstance(f.proj, ccrs.Projection):
+    if m.proj is not None:
+        if not isinstance(m.proj, ccrs.Projection):
             raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
-        return f.proj
+        return m.proj
 
-    if f.model.lower() == 'cmaq':
+    if model_name is None:
+        mod = m.model.lower()
+    else:
+        mod = model_name
+
+    if mod == 'cmaq':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)
-    elif f.model.lower() == 'wrfchem' or f.model.lower() == 'rapchem':
-        if f.obj.MAP_PROJ == 1:
+            central_longitude=m.obj.XCENT, central_latitude=m.obj.YCENT)
+    elif mod in {'wrfchem', 'rapchem'}:
+        if m.obj.MAP_PROJ == 1:
             proj = ccrs.LambertConformal(
-                central_longitude=f.obj.CEN_LON, central_latitude=f.obj.CEN_LAT)
-        elif f.MAP_PROJ == 6:
+                central_longitude=m.obj.CEN_LON, central_latitude=m.obj.CEN_LAT)
+        elif m.MAP_PROJ == 6:
             #Plate Carree is the equirectangular or equidistant cylindrical
             proj = ccrs.PlateCarree(
-                central_longitude=f.obj.CEN_LON)
+                central_longitude=m.obj.CEN_LON)
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
-    #Need to add the projections you want to use for the other models here.        
-    elif f.model.lower() == 'rrfs':
+    # Need to add the projections you want to use for the other models here.
+    elif mod == 'rrfs':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
+            central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
         proj = ccrs.PlateCarree()
-    elif f.model.lower() == 'random':
+    elif mod == 'random':
         proj = ccrs.PlateCarree()
     else:
         print(
-            f'NOTE: Projection not defined for model {f.model.lower()!r}. '
+            f'NOTE: Projection not defined for model {mod!r}. '
             'Please add to surfplots.py. '
             'Setting to `ccrs.PlateCarree()`.'
         )
