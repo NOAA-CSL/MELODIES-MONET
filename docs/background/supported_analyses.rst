@@ -28,7 +28,7 @@ The 24 hour average PM\ :sub:`2.5` \ metric is calculated based on the following
 
 In order to calculate the regulatory metric, add "regulatory: True" into the input
 YAML file under the "obs" section for each variable that you want to apply the calculation.
-Currently, this option only works for "OZONE" and "PM2.5" variables. There are seperate
+Currently, this option only works for "OZONE" and "PM2.5" variables. There are separate
 plotting characteristics for the regulatory options ("ylabel_reg_plot", "vmin_reg_plot",
 "vmax_reg_plot", and "vdiff_reg_plot") that can also be specified in the input YAML file.
 An example input YAML file that calculates MDA8 ozone and 24 hr PM\ :sub:`2.5` \ is in

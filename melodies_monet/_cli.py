@@ -58,6 +58,25 @@ def _timer(desc=""):
         )
 
 
+@contextmanager
+def _ignore_pandas_numeric_only_futurewarning():
+    """Disable pandas `numeric_only` FutureWarning"""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=FutureWarning,
+            message=(
+                "The default value of numeric_only in DataFrameGroupBy.mean is deprecated. "
+                "In a future version, numeric_only will default to False. "
+                "Either specify numeric_only or select only columns "
+                "which should be valid for the function."
+            ),
+        )
+        yield
+
+
 def _version_callback(value: bool):
     from . import __version__
 
@@ -111,6 +130,12 @@ def run(
         an = analysis()
         an.control = control
         an.read_control()
+        if debug and not an.debug:
+            typer.secho(
+                f"Setting `analysis.debug` (was {an.debug}) to True since --debug used.",
+                fg=INFO_COLOR,
+            )
+            an.debug = True
 
     with _timer("Opening model(s)"):
         an.open_models()
@@ -124,11 +149,11 @@ def run(
         an.pair_data()
 
     if an.control_dict.get("plots") is not None:
-        with _timer("Plotting and saving the figures"):
+        with _timer("Plotting and saving the figures"), _ignore_pandas_numeric_only_futurewarning():
             an.plotting()
 
     if an.control_dict.get("stats") is not None:
-        with _timer("Computing and saving statistics"):
+        with _timer("Computing and saving statistics"), _ignore_pandas_numeric_only_futurewarning():
             an.stats()
 
 
