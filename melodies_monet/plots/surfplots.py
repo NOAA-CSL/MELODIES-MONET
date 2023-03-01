@@ -134,6 +134,8 @@ def map_projection(m, *, model_name=None):
         Model class instance.
     model_name : str, optional
         For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+        If provided, will be used to create a new projection
+        (i.e., an existing ``m.proj`` projection won't be returned).
 
     Returns
     -------
@@ -142,13 +144,16 @@ def map_projection(m, *, model_name=None):
     """
     import cartopy.crs as ccrs
 
-    if m.proj is not None:
-        if not isinstance(m.proj, ccrs.Projection):
-            raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
-        return m.proj
-
     if model_name is None:
         mod = m.model.lower()
+        if m.proj is not None:
+            if isinstance(m.proj, str) and m.proj.startswith("model:"):
+                mod_name_for_proj = m.proj.split(":")[1].strip()
+                return map_projection(m, model_name=mod_name_for_proj)
+            elif isinstance(m.proj, ccrs.Projection):
+                return m.proj
+            else:
+                raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
     else:
         mod = model_name
 

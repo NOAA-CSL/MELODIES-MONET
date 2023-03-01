@@ -676,10 +676,7 @@ class analysis:
                     proj_in = None
                 if proj_in is not None:
                     if isinstance(proj_in, str) and proj_in.startswith("model:"):
-                        from .plots.surfplots import map_projection
-
-                        mod_name_for_proj = proj_in.split(":")[1].strip()
-                        m.proj = map_projection(m, model_name=mod_name_for_proj)
+                        m.proj = proj_in
                     else:
                         import cartopy.crs as ccrs
 
