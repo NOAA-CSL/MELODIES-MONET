@@ -107,8 +107,8 @@ def new_color_map():
         Orange and blue color map
         
     """
-    top = mpl.cm.get_cmap("Blues_r", 128)
-    bottom = mpl.cm.get_cmap("Oranges", 128)
+    top = plt.get_cmap("Blues_r", 128)
+    bottom = plt.get_cmap("Oranges", 128)
 
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
                            bottom(np.linspace(0, 1, 128))))
@@ -125,44 +125,66 @@ except ValueError:
     except AttributeError:
         mpl.cm.register_cmap(cmap=_cmap)  # old method
 
-def map_projection(f):
-    """Defines map projection. This needs updating to make it more generic.
+def map_projection(m, *, model_name=None):
+    """Define map projection.
     
     Parameters
     ----------
-    f : class
-        model class
-        
+    m : melodies_monet.driver.model
+        Model class instance.
+    model_name : str, optional
+        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+        If provided, will be used to create a new projection
+        (i.e., an existing ``m.proj`` projection won't be returned).
+
     Returns
     -------
-    cartopy projection 
-        projection to be used by cartopy in plotting
-        
+    cartopy.crs.Projection
+        Projection to be used by cartopy in plotting.
     """
     import cartopy.crs as ccrs
-    if f.model.lower() == 'cmaq':
+
+    if model_name is None:
+        mod = m.model.lower()
+        if m.proj is not None:
+            if isinstance(m.proj, str) and m.proj.startswith("model:"):
+                mod_name_for_proj = m.proj.split(":")[1].strip()
+                return map_projection(m, model_name=mod_name_for_proj)
+            elif isinstance(m.proj, ccrs.Projection):
+                return m.proj
+            else:
+                raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
+    else:
+        mod = model_name
+
+    if mod == 'cmaq':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)
-    elif f.model.lower() == 'wrfchem' or f.model.lower() == 'rapchem':
-        if f.obj.MAP_PROJ == 1:
+            central_longitude=m.obj.XCENT, central_latitude=m.obj.YCENT)
+    elif mod in {'wrfchem', 'rapchem'}:
+        if m.obj.MAP_PROJ == 1:
             proj = ccrs.LambertConformal(
-                central_longitude=f.obj.CEN_LON, central_latitude=f.obj.CEN_LAT)
-        elif f.MAP_PROJ == 6:
+                central_longitude=m.obj.CEN_LON, central_latitude=m.obj.CEN_LAT)
+        elif m.MAP_PROJ == 6:
             #Plate Carree is the equirectangular or equidistant cylindrical
             proj = ccrs.PlateCarree(
-                central_longitude=f.obj.CEN_LON)
+                central_longitude=m.obj.CEN_LON)
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
-    #Need to add the projections you want to use for the other models here.        
-    elif f.model.lower() == 'rrfs':
+    # Need to add the projections you want to use for the other models here.
+    elif mod == 'rrfs':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
+            central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
         proj = ccrs.PlateCarree()
-    elif f.model.lower() == 'random':
+    elif mod == 'random':
         proj = ccrs.PlateCarree()
-    else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
-        raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
+    else:
+        print(
+            f'NOTE: Projection not defined for model {mod!r}. '
+            'Please add to surfplots.py. '
+            'Setting to `ccrs.PlateCarree()`.'
+        )
+        proj = ccrs.PlateCarree()
     return proj
 
 def get_utcoffset(lat,lon):
@@ -464,7 +486,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.set_xlabel(df.index.name,fontweight='bold',**text_kwargs)
+    ax.set_xlabel(ax.get_xlabel(),fontweight='bold',**text_kwargs)
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
@@ -710,11 +732,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
+    cmap = plt.get_cmap('Spectral_r',nlevels-1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     # For unstructured grid, we need a more advanced plotting code
-    # Call an external funtion (Plot_2D)
+    # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
         from .Plot_2D import Plot_2D
         

@@ -1043,7 +1043,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'blue'
       marker: 'o'
@@ -1114,7 +1114,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'dodgerblue'
       marker: '^'
@@ -1185,7 +1185,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'slateblue'
       marker: '^'
@@ -1256,7 +1256,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'darkgreen'
       marker: 's'
@@ -1328,7 +1328,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'springgreen'
       marker: 's'
@@ -1400,7 +1400,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'limegreen'
       marker: '^'
@@ -1472,7 +1472,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'forestgreen'
       marker: '^'
@@ -1520,7 +1520,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt 
       color: 'red'
       marker: 'o'
@@ -1570,7 +1570,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt 
       color: 'coral'
       marker: 'o'
@@ -1616,7 +1616,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'magenta'
       marker: 'x'
@@ -1662,7 +1662,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt 
       color: 'darkred'
       marker: '^'
@@ -1709,7 +1709,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'violet'
       marker: '^'
@@ -1760,7 +1760,7 @@ if [[ "${species}" == "TEMP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'orange'
       marker: '^'
@@ -1811,7 +1811,7 @@ if [[ "${species}" == "TEMP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'darkorange'
       marker: '^'
@@ -1868,7 +1868,7 @@ if [[ "${species}" == "AOD_550" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'cyan'
       marker: '^'
@@ -1910,7 +1910,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'blueviolet'
       marker: 'x'
@@ -1952,7 +1952,7 @@ if [[ "${species}" == "OZONE" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'mediumorchid'
       marker: 'o'
@@ -2020,7 +2020,7 @@ if [[ "${species}" == "AOD_550" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt 
       color: 'hotpink'
       marker: 'o'
@@ -2059,7 +2059,7 @@ if [[ "${species}" == "TEMP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'peru'
       marker: '^'
@@ -2131,7 +2131,7 @@ if [[ "${species}" == "PRECIP" ]]; then
 EOF
 fi
 cat << EOF >> control.yaml.${todays_date}
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'teal'
       marker: 'o'
