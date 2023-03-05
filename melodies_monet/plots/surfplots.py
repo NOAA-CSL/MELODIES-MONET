@@ -69,7 +69,8 @@ def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
     # JianHe: select sites with nobs >=18, 75% completeness based on EPA
-    df_rolling_max = df_rolling.groupby("siteid").resample("D", on="time_local").max(min_count=18).reset_index(drop=True).dropna()
+    df_rolling.index = df_rolling.time_local
+    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18).reset_index(drop=True).dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
 
@@ -106,50 +107,84 @@ def new_color_map():
         Orange and blue color map
         
     """
-    top = mpl.cm.get_cmap('Blues_r', 128)
-    bottom = mpl.cm.get_cmap('Oranges', 128)
+    top = plt.get_cmap("Blues_r", 128)
+    bottom = plt.get_cmap("Oranges", 128)
+
     newcolors = np.vstack((top(np.linspace(0, 1, 128)),
                            bottom(np.linspace(0, 1, 128))))
     return ListedColormap(newcolors, name='OrangeBlue')
 
-def map_projection(f):
-    """Defines map projection. This needs updating to make it more generic.
+# Register the custom cmap
+_cmap_name = "OrangeBlue"
+try:
+    plt.get_cmap(_cmap_name)
+except ValueError:
+    _cmap = new_color_map()
+    try:
+        mpl.colormaps.register(_cmap)  # mpl 3.6+
+    except AttributeError:
+        mpl.cm.register_cmap(cmap=_cmap)  # old method
+
+def map_projection(m, *, model_name=None):
+    """Define map projection.
     
     Parameters
     ----------
-    f : class
-        model class
-        
+    m : melodies_monet.driver.model
+        Model class instance.
+    model_name : str, optional
+        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+        If provided, will be used to create a new projection
+        (i.e., an existing ``m.proj`` projection won't be returned).
+
     Returns
     -------
-    cartopy projection 
-        projection to be used by cartopy in plotting
-        
+    cartopy.crs.Projection
+        Projection to be used by cartopy in plotting.
     """
     import cartopy.crs as ccrs
-    if f.model.lower() == 'cmaq':
+
+    if model_name is None:
+        mod = m.model.lower()
+        if m.proj is not None:
+            if isinstance(m.proj, str) and m.proj.startswith("model:"):
+                mod_name_for_proj = m.proj.split(":")[1].strip()
+                return map_projection(m, model_name=mod_name_for_proj)
+            elif isinstance(m.proj, ccrs.Projection):
+                return m.proj
+            else:
+                raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
+    else:
+        mod = model_name
+
+    if mod == 'cmaq':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)
-    elif f.model.lower() == 'wrfchem' or f.model.lower() == 'rapchem':
-        if f.obj.MAP_PROJ == 1:
+            central_longitude=m.obj.XCENT, central_latitude=m.obj.YCENT)
+    elif mod in {'wrfchem', 'rapchem'}:
+        if m.obj.MAP_PROJ == 1:
             proj = ccrs.LambertConformal(
-                central_longitude=f.obj.CEN_LON, central_latitude=f.obj.CEN_LAT)
-        elif f.MAP_PROJ == 6:
+                central_longitude=m.obj.CEN_LON, central_latitude=m.obj.CEN_LAT)
+        elif m.MAP_PROJ == 6:
             #Plate Carree is the equirectangular or equidistant cylindrical
             proj = ccrs.PlateCarree(
-                central_longitude=f.obj.CEN_LON)
+                central_longitude=m.obj.CEN_LON)
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
-    #Need to add the projections you want to use for the other models here.        
-    elif f.model.lower() == 'rrfs':
+    # Need to add the projections you want to use for the other models here.
+    elif mod == 'rrfs':
         proj = ccrs.LambertConformal(
-            central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
-    elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
+            central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
         proj = ccrs.PlateCarree()
-    elif f.model.lower() == 'random':
+    elif mod == 'random':
         proj = ccrs.PlateCarree()
-    else: #Let's change this tomorrow to just plot as lambert conformal if nothing provided.
-        raise NotImplementedError('Projection not defined for new model. Please add to surfplots.py')
+    else:
+        print(
+            f'NOTE: Projection not defined for model {mod!r}. '
+            'Please add to surfplots.py. '
+            'Setting to `ccrs.PlateCarree()`.'
+        )
+        proj = ccrs.PlateCarree()
     return proj
 
 def get_utcoffset(lat,lon):
@@ -299,7 +334,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -311,7 +346,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     
     if domain_type == 'all':
         latmin= 25.0
@@ -451,7 +486,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.set_xlabel(df.index.name,fontweight='bold',**text_kwargs)
+    ax.set_xlabel(ax.get_xlabel(),fontweight='bold',**text_kwargs)
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
@@ -697,11 +732,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
+    cmap = plt.get_cmap('Spectral_r',nlevels-1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     # For unstructured grid, we need a more advanced plotting code
-    # Call an external funtion (Plot_2D)
+    # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
         from .Plot_2D import Plot_2D
         
@@ -1002,7 +1037,7 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap=new_color_map(), edgecolor='k',linewidth=.8)
+            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
 
         if domain_type == 'all':
             latmin= 25.0

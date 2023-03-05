@@ -1,0 +1,85 @@
+analysis:
+  start_time: '2019-06'
+  end_time:   '2019-08'
+  freq: 'MS'
+  output_dir: $HOME/Plots/CARMA
+
+obs:
+  MOD08_M3:
+    data_format: gridded_eos
+    datadir: $HOME/Data/MOD08_M3
+    filestr: MOD08_M3.AYYYYDDD.061.*.hdf
+    # filestr: MOD08_M3.AYYYYDDD.061.*.nc
+    variables:
+      AOD_550_Dark_Target_Deep_Blue_Combined_Mean_Mean:
+        fillvalue: -9999
+        scale: 0.001
+        units: none
+        plot_params:
+          name: 'Terra MODIS AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.7
+          nlevel: 15
+
+model:
+  MAM4:
+    # datadir: /glade/campaign/acom/acom-climate/tilmes/CARMA/...
+    data_format: cesm
+    datadir: $HOME/Data/CARMA/FCnudged_f09.mam.mar27.2000_2021.001/atm/hist
+    filestr: FCnudged_f09.mam.mar27.2000_2021.001.cam.h0.YYYY-MM.nc
+    variables:
+      AODdnMODE1:
+        plot_params:
+          name: 'MAM4 Accumulation Mode AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.7
+          nlevel: 15
+      AODdnMODE2:
+        plot_params:
+          name: 'MAM4 Aitken Mode AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.1
+          nlevel: 11
+      AODdnMODE3:
+        plot_params:
+          name: 'MAM4 Coarse Mode AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.7
+          nlevel: 15
+      AODVIS:
+        plot_params:
+          name: 'MAM4 AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.7
+          nlevel: 15
+    combine:
+      AODVIS:
+        - AODdnMODE1
+        - AODdnMODE2
+        - AODdnMODE3
+    mapping:
+      MOD08_M3:
+        AODVIS: AOD_550_Dark_Target_Deep_Blue_Combined_Mean_Mean
+
+  CARMA:
+    # datadir: /glade/scratch/tilmes/archive/
+    datadir: $HOME/Data/CARMA/FCnudged_f09.carma_trop_stratv05.2000_2020.001/atm/hist
+    data_format: cesm
+    filestr: FCnudged_f09.carma_trop_stratv05.2000_2020.001.cam.h0.YYYY-MM.nc
+    variables:
+      AODVIS:
+        plot_params:
+          name: 'CARMA AOD 550 nm  YYYY M_ABBR'
+          range_min: 0.0
+          range_max: 0.7
+          nlevel: 15
+    mapping:
+      MOD08_M3:
+        AODVIS: AOD_550_Dark_Target_Deep_Blue_Combined_Mean_Mean
+
+
+# plots:
+#     spatial:
+#         monthly_climo:
+
+#    time_series:

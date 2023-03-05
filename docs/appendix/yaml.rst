@@ -162,6 +162,21 @@ See :doc:`../tutorial/downloading_obs` for more details.
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
 
+**data_proc:** This section stores all of the data processing information.
+   
+   * **filter_dict:** This is a dictionary used to filter the observation data 
+     prior to pairing. The keys of the dictionary should be columns of 
+     of the paired dataset which will be used in filtering. If there are 
+     multiple keys, this will loop over all of them. The value of the dict  
+     should be another dict with keys 'value' and 'oper'. 'value' can be 
+     a single value or list of values used when filtering the data. 
+     'oper' is the operation used when comparing the dataset values.  
+     Examples of operations are ==, !=, >, >=, etc. Additionally, when 
+     comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
+     by values in the list or not in the list, respectively. 
+     Example: {'state_name':{'oper':'isin','value':['CO']}, 
+     'WS':{'oper':'<','value':1}} 
+
 **variables:** This is all optional. For each observational variable you can 
 include the following information to handle unit conversions, min/max values, 
 NaNs, and add optional plotting information. The obs_min, obs_max, and 
@@ -285,7 +300,35 @@ observation label is first and the model label is second
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
 
 **data_proc:** This section stores all of the data processing information.
-
+   
+   * **filter_dict:** This is a dictionary used to filter the paired data sent 
+     to the plotting routine. The keys of the dictionary should be columns of 
+     of the paired dataset which will be used in filtering. If there are 
+     multiple keys, this will loop over all of them. The value of the dict  
+     should be another dict with keys 'value' and 'oper'. 'value' can be 
+     a single value or list of values used when filtering the data. 
+     'oper' is the operation used when comparing the dataset values.  
+     Examples of operations are ==, !=, >, >=, etc. Additionally, when 
+     comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
+     by values in the list or not in the list, respectively. 
+     This cannot be specified if 'filter_string' is specified.
+     Example: {'state_name':{'oper':'isin','value':['CO']}, 
+     'WS':{'oper':'<','value':1}} 
+   * **filter_string:** This is a string used to filter the paired data sent 
+     to the plotting routine. The result is the same as using filter_dict.
+     This uses the pandas query method on the paired dataset.
+     This cannot be specified if 'filter_dict' is specified.
+     This option is only available for surface and aircraft observations. 
+     For satellite observations, use the 'filter_dict' option instead.
+     Example: state_name in ['CO'] and WS < 1
+   * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
+     'pct_cutoff' and 'times'. If specified, removes all instances of 
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used. This calculation occurs 
+     over the entire analysis window and prior to calculating the regulatory metrics.
    * **rem_obs_nan:** If True, remove all points where model or obs variable is 
      NaN. If False, remove only points where model variable is NaN.
    * **set_axis:** If = True, use the axis constraints described in the 
@@ -350,3 +393,35 @@ where domain_type is equal to domain_name.
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
+
+**data_proc:** This section stores all of the data processing information.
+   
+   * **filter_dict:** This is a dictionary used to filter the paired data sent 
+     to the stats routine. The keys of the dictionary should be columns of 
+     of the paired dataset which will be used in filtering. If there are 
+     multiple keys, this will loop over all of them. The value of the dict  
+     should be another dict with keys 'value' and 'oper'. 'value' can be 
+     a single value or list of values used when filtering the data. 
+     'oper' is the operation used when comparing the dataset values.  
+     Examples of operations are ==, !=, >, >=, etc. Additionally, when 
+     comparing to a list, "oper" can be set to "isin" or "isnotin" to filter 
+     by values in the list or not in the list, respectively. 
+     This cannot be specified if 'filter_string' is specified.
+     Example: {'state_name':{'oper':'isin','value':['CO']}, 
+     'WS':{'oper':'<','value':1}} 
+   * **filter_string:** This is a string used to filter the paired data sent 
+     to the statistics routine. The result is the same as using filter_dict.
+     This uses the pandas query method on the paired dataset.
+     This cannot be specified if 'filter_dict' is specified.
+     This option is only available for surface and aircraft observations. 
+     For satellite observations, use the 'filter_dict' option instead.
+     Example: state_name in ['CO'] and WS < 1
+   * **rem_obs_by_nan_pct:** Specify as dictionary with keys 'group_var', 
+     'pct_cutoff' and 'times'. If specified, removes all instances of 
+     'group_var' where there are > 'pct_cutoff' % NaN values. For example, 
+     with airnow sites, setting 'group_var' to 'siteid' will remove all 
+     sites with > pct_cutoff NaN values. Setting 'times' to 'hourly' will 
+     only look at values at the beginning of each hour. Set 'times' to ''
+     if all times should be used. This calculation occurs 
+     over the entire analysis window and prior to calculating the regulatory metrics.
+

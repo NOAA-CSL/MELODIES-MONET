@@ -113,7 +113,7 @@ environment for running and developing MELODIES MONET.
 .. note::
    In the recent past, downloading a lot of dependent packages at once
    with conda on Hera led to stalling.
-   To overcome this challange, try installing packages individually::
+   To overcome this challenge, try installing packages individually::
   
         $ conda create --name melodies-monet python=3.9
         $ conda activate melodies-monet

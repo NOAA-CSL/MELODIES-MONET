@@ -46,10 +46,10 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         comp = dict(zlib=True, complevel=7)
         encoding = {}
         for i in dset.data_vars.keys():
-            # if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
+            if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
             #     print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
             #     dset[i] = compress_variable(dset[i])
-            encoding[i] = comp
+                encoding[i] = comp
         dset.attrs['title'] = title
         dset.attrs['format'] = 'NetCDF-4'
         dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')
@@ -57,9 +57,9 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         dict_json.pop('obj')
         dset.attrs['dict_json'] = json.dumps(dict_json, indent = 4) 
         dset.attrs['group_name'] = group
-        dset.to_netcdf(output_name)
+        dset.to_netcdf(output_name, encoding=encoding)
 
-def write_ncf(dset, output_name, title=''):
+def write_ncf(dset, output_name, title='', *, verbose=True):
     """Function to write netcdf4 files with some compression for floats
 
     Parameters
@@ -77,14 +77,16 @@ def write_ncf(dset, output_name, title=''):
     """
     import pandas as pd
 
-    print('Writing:', output_name)
+    if verbose:
+        print('Writing:', output_name)
     comp = dict(zlib=True, complevel=7)
     encoding = {}
     for i in dset.data_vars.keys():
         if is_float_dtype(dset[i]):  # (dset[i].dtype != 'object') & (i != 'time') & (i != 'time_local') :
-            print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
+            if verbose:
+                print("Compressing: {}, original dtype: {}".format(i, dset[i].dtype))
             dset[i] = compress_variable(dset[i])
-        encoding[i] = comp
+            encoding[i] = comp
     dset.attrs['title'] = title
     dset.attrs['format'] = 'NetCDF-4'
     dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')
