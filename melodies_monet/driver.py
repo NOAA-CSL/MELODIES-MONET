@@ -176,9 +176,11 @@ class observation:
     def drop_unused(self):
 
         # append timestamps and other site info to list of mapped variables
+        # also any vars that end in '_region'
         used_vars = list(self.variable_dict.keys()) \
-            + ['time_local', 'utcoffset', 'units',
-               'site', 'state_name', 'epa_region']
+            + ['time', 'time_local', 'utcoffset', 'units',
+               'site', 'siteid', 'state_name', 'epa_region',
+               'cmsa_name', 'msa_code', 'msa_name']
 
         # drop unused variables
         print()
