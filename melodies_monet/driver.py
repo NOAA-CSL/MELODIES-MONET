@@ -680,6 +680,9 @@ class analysis:
                 if proj_in is not None:
                     if isinstance(proj_in, str) and proj_in.startswith("model:"):
                         m.proj = proj_in
+                    elif isinstance(proj_in, str) and proj_in.startswith("ccrs."):
+                        import cartopy.crs as ccrs
+                        m.proj = eval(proj_in)
                     else:
                         import cartopy.crs as ccrs
 
