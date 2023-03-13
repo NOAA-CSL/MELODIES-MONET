@@ -152,7 +152,7 @@ dict results in {'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0,
 cartopy.crs.Projection due to a the missing .boundary attribute. 
 A string such as 'EPSG:4326' will work.(e.g., projection: 'EPSG:4326').
 
-3) Add a string with a cartopy.crs command to be evaluated when defining the 
+3) Add a string with a ``cartopy.crs`` command to be evaluated when defining the 
 projection used. This string must start with 'ccrs.'. For example, 
 projection: 'ccrs.PlateCarree()'.
 
