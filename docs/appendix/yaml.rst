@@ -145,7 +145,7 @@ correct attributes are applied for your given model dataset.
 
 2) Add a proj4 string or dictionary for cartopy.crs.Projection. Note: If a proj4 
 string or dictionary is used, it must completely define an instance of 
-cartopy.crs.Projection. For example, converting ccrs.PlateCarre() to a proj4 
+cartopy.crs.Projection. For example, converting ccrs.PlateCarree() to a proj4 
 string results in {'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0, 
 'y_0': 0, 'ellps': 'WGS84', 'to_meter': 111319.490793274, 'no_defs': None, 
 'type': 'crs'}, but this is not able to completely define an instance of 
@@ -154,7 +154,7 @@ A string such as 'EPSG:4326' will work.(e.g., projection: 'EPSG:4326').
 
 3) Add a string with a cartopy.crs command to be evaluated when defining the 
 projection used. This string must start with 'ccrs.'. For example, 
-projection: 'ccrs.PlateCarre()'.
+projection: 'ccrs.PlateCarree()'.
 
 **plot_kwargs:** This is optional. If you do not provide this, MELODIES MONET 
 will use a default list of colors. Add a dictionary of plotting characteristics
