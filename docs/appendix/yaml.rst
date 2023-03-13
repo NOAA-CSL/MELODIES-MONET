@@ -143,7 +143,7 @@ models, central longitude and/or central latitude are required, so check the
 map_projection function in melodies_monet/plots/surfplots.py and confirm the 
 correct attributes are applied for your given model dataset.
 
-2) Add a proj4 string or dictionary for cartopy.crs.Projection. Note: If a proj4 
+2) Add a proj4 string or dictionary for ``cartopy.crs.Projection``. Note: If a proj4 
 string or dictionary is used, it must completely define an instance of 
 cartopy.crs.Projection. For example, converting ccrs.PlateCarree() to a proj4 
 dict results in {'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0, 
