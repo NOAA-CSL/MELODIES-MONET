@@ -150,7 +150,7 @@ dict results in ``{'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0,
 but this is not able to completely define an instance of ``cartopy.crs.Projection`` 
 due to the ``.boundary`` attribute not yet being implemented when defining 
 ``cartopy.crs.Projection`` from a proj4 string or dict. 
-A string such as ``'EPSG:4326'`` will work.(e.g., ``projection: 'EPSG:4326'``).
+A string such as ``'EPSG:4326'`` will work (e.g., ``projection: 'EPSG:4326'``).
 
 3) Add a string with a ``cartopy.crs`` command to be evaluated when defining the 
 projection used. This string must start with 'ccrs.'. For example, 
