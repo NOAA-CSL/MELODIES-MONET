@@ -132,30 +132,30 @@ For example, ::
 **projection:** In order to use the default projection for each model as defined 
 in the map_projection function in melodies_monet/plots/surfplots.py either remove 
 the projection setting or set to `~` or `null`. If the model does not have a 
-default projection defined, `ccrs.PlateCarree()` will be used.
+default projection defined, ``ccrs.PlateCarree()`` will be used.
 
 If you would like to override the default projection for a model, you have three 
 options:
 
 1) Specify one of the model preset options (e.g., to use the default RAQMS 
-projection for another model write projection: 'model:raqms'). Note: For certain 
+projection for another model write ``projection: 'model:raqms'``). Note: For certain 
 models, central longitude and/or central latitude are required, so check the 
 map_projection function in melodies_monet/plots/surfplots.py and confirm the 
 correct attributes are applied for your given model dataset.
 
 2) Add a proj4 string or dictionary for ``cartopy.crs.Projection``. Note: If a proj4 
 string or dictionary is used, it must completely define an instance of 
-cartopy.crs.Projection. For example, converting ccrs.PlateCarree() to a proj4 
-dict results in {'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0, 
+``cartopy.crs.Projection``. For example, converting ``ccrs.PlateCarree()`` to a proj4 
+dict results in ``{'proj': 'eqc', 'lat_ts': 0, 'lat_0': 0, 'lon_0': 0, 'x_0': 0, 
 'y_0': 0, 'ellps': 'WGS84', 'to_meter': 111319.490793274, 'no_defs': None, 
-'type': 'crs'}, but this is not able to completely define an instance of 
+'type': 'crs'}``, but this is not able to completely define an instance of 
 ``cartopy.crs.Projection`` due to the ``.boundary`` attribute not yet being implemented 
 when defining ``cartopy.crs.Projection`` from a proj4 string or dict. 
 A string such as ``'EPSG:4326'`` will work.(e.g., ``projection: 'EPSG:4326'``).
 
 3) Add a string with a ``cartopy.crs`` command to be evaluated when defining the 
 projection used. This string must start with 'ccrs.'. For example, 
-projection: 'ccrs.PlateCarree()'.
+``projection: 'ccrs.PlateCarree()'``.
 
 **plot_kwargs:** This is optional. If you do not provide this, MELODIES MONET 
 will use a default list of colors. Add a dictionary of plotting characteristics
