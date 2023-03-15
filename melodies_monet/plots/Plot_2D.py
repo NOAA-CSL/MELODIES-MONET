@@ -675,7 +675,7 @@ class Plot_2D(object):
             
         if self.log_scale:
             #if self.model_type == 'FV':
-            #    # for compability with some matplotlib version
+            #    # for compatibility with some matplotlib version
             try:
                 self.kwd_pcolormesh['norm'] = \
                     matplotlib.colors.SymLogNorm( linthresh=self.linthresh, 
