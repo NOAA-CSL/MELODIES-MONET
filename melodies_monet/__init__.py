@@ -6,7 +6,7 @@ MELODIES MONET
 """
 import sys
 
-__version__ = "0.1.dev"
+__version__ = "0.1.dev1"
 
 _submodules = [
     "driver",
