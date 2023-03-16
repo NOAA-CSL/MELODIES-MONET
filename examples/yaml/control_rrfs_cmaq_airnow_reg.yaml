@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-08-01-12:00:00' #UTC
   end_time: '2019-08-31-12:00:00' #UTC
-  output_dir: /scratch2/BMC/rcm1/jhe/postp/AirNow/outdir_CONUS_v150_a/08/ #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/jhe/postp/AirNow/outdir_CONUS_v150_a/08/ 
   debug: True
 model:
   cmaq_oper: # model label
@@ -22,7 +22,7 @@ model:
         #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         O3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'magenta'
       marker: 'o'
@@ -40,7 +40,7 @@ model:
         #'NO': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         O3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'cyan'
       marker: 's'
@@ -60,7 +60,7 @@ model:
         #'no': 'NO' #Be careful any python commands like no need to be sent in as a string.
         PM25_TOT: 'PM2.5'
         o3: 'OZONE'
-    projection: None
+    projection: ~
     plot_kwargs: #Opt
       color: 'goldenrod'
       marker: '^'
@@ -70,6 +70,8 @@ obs:
     use_airnow: True
     filename: /scratch2/BMC/rcm1/rhs/obs/Surface/MELODIES-MONET/AIRNOW_20190801_20190831.nc
     obs_type: pt_sfc
+    #data_proc:
+    #  filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
     variables: #Opt 
       PM2.5:
         unit_scale: 1
@@ -89,7 +91,7 @@ obs:
         vmin_reg_plot: 0.0 #Opt
         vmax_reg_plot: 22.0 #Opt
         vdiff_reg_plot: 5.0 #Opt
-        #percentile_opt: 50 #Opt, for regulatory calculation of 24hrPM2.5, we simply calculate mean values, no need to set percentile_opt
+        #percentile_opt: 50 #Opt, 5, 50, 95, etc. If not specified, simply calculate mean values. Currently used for "spatial_bias".
       OZONE:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
@@ -160,9 +162,12 @@ plots:
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      ts_avg_window: 'D' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type
@@ -176,6 +181,9 @@ plots:
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
   plot_grp3:
@@ -189,6 +197,9 @@ plots:
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
   plot_grp4:
@@ -202,6 +213,9 @@ plots:
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp5:
@@ -214,6 +228,9 @@ plots:
     domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp6:
@@ -227,6 +244,9 @@ plots:
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
 stats:
@@ -245,3 +265,7 @@ stats:
   domain_type: ['all','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
   domain_name: ['CONUS','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] #List of domain names. If domain_type = all domain_name is used in plot title.
   data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs labeland model is the model_label
+  #data_proc:
+    #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+    #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
+    #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values

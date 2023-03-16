@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/provision-with-micromamba@v12
+        uses: mamba-org/provision-with-micromamba@v14
         with:
           environment-file: docs/environment-docs.yml
           cache-env: true
@@ -67,7 +67,7 @@ jobs:
           cd docs/examples
           melodies-monet --version
           python -m melodies_monet --version
-          melodies-monet control_idealized.yaml
+          melodies-monet run control_idealized.yaml
           cd -
 
   docs:

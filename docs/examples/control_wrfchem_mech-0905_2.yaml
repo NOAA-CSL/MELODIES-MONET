@@ -2,7 +2,7 @@
 # - Any key that is specific for a plot type will begin with `ts` for timeseries, `ty` for taylor.
 # - Some keys/groups are optional.
 # - For now, all plots except time series average over the analysis window.
-# - Seting axis values
+# - Setting axis values
 #   - If set_axis = True in data_proc section of each plot_grp,
 #     the yaxis for the plot will be set based on the values
 #     specified in the obs section for each variable.
@@ -18,7 +18,6 @@ analysis:
   start_time: "2019-09-05-06:00:00" # UTC
   end_time: "2019-09-06-06:00:00" # UTC
   output_dir: ./output/airnow_wrfchem  # relative to the program using this control file
-  # ^ optional; if not specified, plots are stored in code directory (??)
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
 
@@ -34,7 +33,7 @@ model:
       airnow: # specifically for the obs labeled 'airnow'
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
-    projection: None
+    projection: ~
     plot_kwargs: # optional
       color: "magenta"
       marker: "s"
@@ -50,7 +49,7 @@ model:
       airnow:
         PM2_5_DRY: "PM2.5"
         o3: "OZONE"
-    projection: None
+    projection: ~
     plot_kwargs:
       color: "gold"
       marker: "o"

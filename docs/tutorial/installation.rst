@@ -14,7 +14,8 @@ Optional dependencies
 
 - ``netcdf4`` (`from Unidata <https://unidata.github.io/netcdf4-python/>`__; most likely needed for reading model/obs datasets)
 - ``wrf-python`` (needed in order to use the WRF-Chem reader)
-- ``click`` (to use the :doc:`/cli`)
+- ``typer`` (to use the :doc:`/cli`;
+  add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060>`__ fancy tracebacks and ``--help``)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
 
 .. _user-install-instructions:
@@ -33,7 +34,7 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python click pooch
+    $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python typer rich pooch
 
 Now, install the stable branch of MELODIES MONET to the environment::
 
