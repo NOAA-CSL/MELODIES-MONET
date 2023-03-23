@@ -92,7 +92,7 @@ please provide location of ``*.metcro2d.ncf`` files here.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
 **mod_type:** The model type. Options are: "cmaq", "wrfchem", "rrfs", "gsdchem",
-"cesm_fv", and "cesm_se". 
+"cesm_fv", "cesm_se", and "raqms". 
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
 
