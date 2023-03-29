@@ -182,3 +182,33 @@ def xarray_to_class(class_type,group_ds):
         class_dict[group]=c
 
     return class_dict
+
+def read_aircraft_obs_csv(filename,time_var=None):
+    """Function to read .csv formatted aircraft observations.
+
+    Parameters
+    ----------
+    filename : str 
+        Filename of .csv file to be read
+    time_var : optional
+        The variable in the dataset that should be converted to 
+        datetime format, renamed to `time` and set as a dimension.
+        
+    Returns
+    -------
+    ds_out : xarray.Dataset
+        Xarray dataset containing information from .csv file
+
+    """
+    import xarray as xr
+    import pandas as pd
+    
+    df = pd.read_csv(filename)
+    if time_var is not None:
+        df.rename(columns={time_var:'time'},inplace=True)
+        df['time']  = pd.to_datetime(df['time'])
+        
+    df.set_index('time',inplace=True)
+    
+    return xr.Dataset.from_dataframe(df)
+    
