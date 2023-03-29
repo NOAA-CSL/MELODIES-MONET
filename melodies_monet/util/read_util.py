@@ -211,5 +211,3 @@ def read_aircraft_obs_csv(filename,time_var=None):
     df.set_index('time',inplace=True)
     
     return xr.Dataset.from_dataframe(df)
-    
-    
