@@ -164,7 +164,7 @@ def map_projection(m, *, model_name=None):
         if m.obj.MAP_PROJ == 1:
             proj = ccrs.LambertConformal(
                 central_longitude=m.obj.CEN_LON, central_latitude=m.obj.CEN_LAT)
-        elif m.MAP_PROJ == 6:
+        elif m.obj.MAP_PROJ == 6:
             #Plate Carree is the equirectangular or equidistant cylindrical
             proj = ccrs.PlateCarree(
                 central_longitude=m.obj.CEN_LON)
