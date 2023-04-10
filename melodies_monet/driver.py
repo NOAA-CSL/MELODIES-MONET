@@ -243,11 +243,6 @@ class observation:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if 'obs_unit' in d:
-                        unitin = d['obs_unit']
-                        if unitin in {'ppmv', 'ppm'}:
-                            scale = 1000. # convert to ppb
-                            self.obj[v].data *= scale
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -432,11 +427,6 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if 'om2oc_factor' in d:
-                        print('Convert OM to OC here using factor ',d['om2oc_factor'],self.obj[v].data)
-                        scale = d['om2oc_factor']
-                        self.obj[v].data = self.obj[v].data/scale
-
 
 class analysis:
     """The analysis class.
@@ -705,6 +695,9 @@ class analysis:
                 if proj_in is not None:
                     if isinstance(proj_in, str) and proj_in.startswith("model:"):
                         m.proj = proj_in
+                    elif isinstance(proj_in, str) and proj_in.startswith("ccrs."):
+                        import cartopy.crs as ccrs
+                        m.proj = eval(proj_in)
                     else:
                         import cartopy.crs as ccrs
 

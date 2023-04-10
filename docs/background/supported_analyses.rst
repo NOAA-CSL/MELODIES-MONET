@@ -26,7 +26,7 @@ The 24 hour average PM\ :sub:`2.5` \ metric is calculated based on the following
   2) The average PM\ :sub:`2.5` \ value is calculated over a given day
   3) The PM\ :sub:`2.5` \ value is only used for a given day if at least 18 of the 24 possible hours are available
 
-In order to calculate the regulatory metric, add "regulatory: True" into the input
+In order to calculate the regulatory metric, add ``regulatory: True`` into the input
 YAML file under the "obs" section for each variable that you want to apply the calculation.
 Currently, this option only works for "OZONE" and "PM2.5" variables. There are separate
 plotting characteristics for the regulatory options ("ylabel_reg_plot", "vmin_reg_plot",
