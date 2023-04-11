@@ -154,7 +154,7 @@ Either use the ``docs/environment-docs.yml`` file [#env]_
 from the MELODIES MONET repository,
 or add the following packages to your conda environment manually::
 
-    $ conda install -y -c conda-forge sphinx sphinx_rtd_theme myst-nb sphinx-design sphinx-click typer
+    $ conda install -y -c conda-forge sphinx sphinx_rtd_theme myst-nb sphinx-design sphinx-click sphinx-togglebutton typer
 
 The restructured text sources (rst) are located
 in the MELODIES-MONET/docs folders.

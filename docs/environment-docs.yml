@@ -10,7 +10,7 @@ dependencies:
   - monet
   - monetio
   - netcdf4
-  - numpy<1.24
+  - numpy
   - pandas<2
   #
   # Extras
