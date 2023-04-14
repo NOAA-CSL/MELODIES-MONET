@@ -44,6 +44,7 @@ MONETIO please refer to:
    background/introduction
    background/description
    background/supported_datasets
+   background/supported_analyses
    background/supported_plots
    background/supported_stats
    
@@ -78,6 +79,8 @@ MONETIO please refer to:
    examples/airnow_camchem_se
    examples/camchem
    examples/idealized
+   examples/save_paired_data
+   examples/read_paired_data
    
 .. toctree::
    :hidden:

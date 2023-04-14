@@ -11,9 +11,9 @@ Supported Models
    * `CMAQ <https://www.epa.gov/cmaq/>`_
    * `WRF-Chem <https://ruc.noaa.gov/wrf/wrf-chem/>`_
    * `CESM/CAM-chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
-   * RRFS-CMAQ (under development)
-   * GSD-Chem (under development)
-
+   * `RRFS-CMAQ (under development) <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_ 
+   * `RAQMS <http://raqms-ops.ssec.wisc.edu/>`_
+   
 In general, processing requires input to be in netCDF format. For the above 
 models, scripts to configure the model data into a standard format for 
 MELODIES MONET are available. If input datasets are in netCDF format and  
