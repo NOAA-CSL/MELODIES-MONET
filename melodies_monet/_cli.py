@@ -553,6 +553,33 @@ def get_ish_lite(
                 verbose=verbose,
             )
 
+    with _timer("Computing UTC offset for selected ISH-Lite sites"):
+        import datetime
+
+        from timezonefinder import TimezoneFinder
+        from pytz import timezone, utc
+
+        tf = TimezoneFinder(in_memory=True)
+        ref_date = datetime.datetime(2022, 1, 1, 0, 0)
+
+        def get_utc_offset(*, lat, lon):
+            s = tf.timezone_at(lng=lon, lat=lat)
+            assert s is not None
+
+            tz_target = timezone(s)
+            ref_date_tz_target = tz_target.localize(ref_date)
+            ref_date_utc = utc.localize(ref_date)
+            uo_h = (ref_date_utc - ref_date_tz_target).total_seconds() / 3600
+
+            return uo_h
+
+
+        locs = df[["siteid", "latitude", "longitude"]].groupby("siteid").first().reset_index()
+        locs["utcoffset"] = locs.apply(lambda r: get_utc_offset(lat=r.latitude, lon=r.longitude), axis="columns")
+
+        df = df.merge(locs[["siteid", "utcoffset"]], on="siteid", how="left")
+
+
     with _timer("Forming xarray Dataset"):
         df = df.dropna(subset=["latitude", "longitude"])
 
@@ -595,10 +622,9 @@ def get_ish_lite(
             vn = k
             ds[vn].attrs.update(units=u)
 
-        # # TODO: Fill in local time array
-        # # (in the df, not all sites have rows for all times, so we have NaTs at this point)
-        # if not daily:
-        #     ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        ds["time_local"] = ds.time + (ds.utcoffset * 60).astype("timedelta64[m]")
 
         # Expand
         ds = (
