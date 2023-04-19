@@ -471,6 +471,150 @@ def get_airnow(
             ds.to_netcdf(dst / out_name)
 
 
+@app.command()
+def get_ish_lite(
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'ISH-Lite_<start-date>_<end-date>.nc'."
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default output file name)."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download ISH-Lite data using monetio and reformat for MM usage.
+    
+    Note that the data are stored in yearly files by site, so the runtime
+    mostly depennds on the number of unique years that your date range includes.
+    """
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    typer.echo(HEADER)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="H")
+    if verbose:
+        print("Dates:")
+        print(dates)
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"ISH-Lite_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    with _timer("Fetching data with monetio"):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            df = mio.ish_lite.add_data(
+                dates,
+                site="72224400358",
+                resample=False,
+                n_procs=num_workers,
+                verbose=verbose,
+            )
+
+    with _timer("Forming xarray Dataset"):
+        df = df.dropna(subset=["latitude", "longitude"])
+
+        site_vns = [
+            "siteid",
+            "usaf",
+            "wban",
+            "latitude",
+            "longitude",
+            "country",
+            "state",
+        ]
+        # NOTE: time_local not included since it varies in time as well
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .swap_dims(siteid="x")
+        )
+
+        # TODO: units?
+        units = {}
+
+        cols = list(df.columns)
+        ds = (
+            df[cols]
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .swap_dims(siteid="x")
+            .drop_vars(site_vns)
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Add units
+        for k, u in units.items():
+            vn = k
+            ds[vn].attrs.update(units=u)
+
+        # # TODO: Fill in local time array
+        # # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        # if not daily:
+        #     ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
+
+
+
 cli = app
 
 _typer_click_object = typer.main.get_command(app)  # for sphinx-click in docs
