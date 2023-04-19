@@ -480,6 +480,13 @@ def get_airnow(
 def get_ish_lite(
     start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
     end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    country: str = typer.Option(None, "--country",
+        help=(
+            "Two-letter country code (e.g., in order of site count, "
+            "US, RS, CA, AS, BR, IN, CH, NO, JA, UK, FR, ...)."
+        )
+    ),
+    state: str = typer.Option(None, "--state", help="Two-letter state code (e.g., MD, ...)."),
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
@@ -506,7 +513,9 @@ def get_ish_lite(
     """Download ISH-Lite data using monetio and reformat for MM usage.
     
     Note that the data are stored in yearly files by site, so the runtime
-    mostly depennds on the number of unique years that your date range includes.
+    mostly depends on the number of unique years that your date range includes,
+    as well as any site selection narrowing.
+    You can use --country or --state to select groups of sites.
     """
     import warnings
 
@@ -557,7 +566,8 @@ def get_ish_lite(
             )
             df = mio.ish_lite.add_data(
                 dates,
-                site="72224400358",
+                state=state,
+                country=country,
                 resample=False,
                 n_procs=num_workers,
                 verbose=verbose,
