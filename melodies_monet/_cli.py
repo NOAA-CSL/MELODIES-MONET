@@ -349,6 +349,11 @@ def get_airnow(
 
     DEBUG = debug
 
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
     typer.echo(HEADER)
 
     start_date = pd.Timestamp(start_date)
@@ -513,6 +518,11 @@ def get_ish_lite(
     global DEBUG
 
     DEBUG = debug
+
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
 
     typer.echo(HEADER)
 
