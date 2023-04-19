@@ -408,7 +408,7 @@ def get_airnow(
             "state_name",
             "epa_region",
         ]
-        # NOTE: time_local not included since it varies in time as well
+        # NOTE: time_local not included since it varies in time as well as by site
         if daily:
             site_vns.remove("utcoffset")  # not present in the daily data product
 
@@ -516,6 +516,7 @@ def get_ish_lite(
     mostly depends on the number of unique years that your date range includes,
     as well as any site selection narrowing.
     You can use --country or --state to select groups of sites.
+    ISH-Lite is an hourly product.
     """
     import warnings
 
@@ -626,7 +627,7 @@ def get_ish_lite(
             "begin",
             "end",
         ]
-        # NOTE: time_local not included since it varies in time as well
+        # NOTE: time_local not included since it varies in time as well as by site
 
         ds_site = (
             df[site_vns]
