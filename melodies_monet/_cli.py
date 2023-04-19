@@ -603,14 +603,28 @@ def get_ish_lite(
     with _timer("Forming xarray Dataset"):
         df = df.dropna(subset=["latitude", "longitude"])
 
+        df = df.rename(
+            columns={
+                "station name": "station_name",
+                "elev(m)": "elevation",
+            },
+            errors="ignore",
+        )
+
         site_vns = [
             "siteid",
-            "usaf",
-            "wban",
             "latitude",
             "longitude",
             "country",
             "state",
+            "station_name",
+            "usaf",
+            "wban",
+            "icao",
+            "elevation",
+            "utcoffset",
+            "begin",
+            "end",
         ]
         # NOTE: time_local not included since it varies in time as well
 
