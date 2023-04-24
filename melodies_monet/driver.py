@@ -120,6 +120,7 @@ class observation:
         self.data_proc = None
         self.variable_dict = None
         self.resample = None
+        self.time_var = None
 
     def __repr__(self):
         return (
@@ -170,6 +171,10 @@ class observation:
             elif extension in ['.ict', '.icartt']:
                 assert len(files) == 1, "monetio.icartt.add_data can only read one file"
                 self.obj = mio.icartt.add_data(files[0])
+            elif extension in ['.csv']:
+                from .util.read_util import read_aircraft_obs_csv
+                assert len(files) == 1, "MELODIES-MONET can only read one csv file"
+                self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
             else:
                 raise ValueError(f'extension {extension!r} currently unsupported')
         except Exception as e:
@@ -778,6 +783,8 @@ class analysis:
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
                 if 'resample' in self.control_dict['obs'][obs].keys():
                     o.resample = self.control_dict['obs'][obs]['resample']
+                if 'time_var' in self.control_dict['obs'][obs].keys():
+                    o.time_var = self.control_dict['obs'][obs]['time_var']
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
