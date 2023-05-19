@@ -276,7 +276,7 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
     import stratify
     import xarray as xr
 
-    result = stratify.interpolate(levels, vertical.chunk(), da.chunk(), axis=axis,
+    result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
                                  interpolation = interpolation,extrapolation = extrapolation)
     dims = da.dims
     out = xr.DataArray(result, dims=dims)
