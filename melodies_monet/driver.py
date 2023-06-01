@@ -160,7 +160,7 @@ class observation:
         except ValueError:
             print('something happened opening file')
             
-    def open_sat_obs(self):
+    def open_sat_obs(self,time_interval=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
@@ -171,11 +171,16 @@ class observation:
             Fills the object class associated with the equivalent label (self.label) with satellite observation
             dataset read in from the associated file (self.file) by the satellite file reader
         """
+        from .util import time_interval_subset as tsub
+        
         try:
             if self.label == 'omps_l3':
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
             elif self.label == 'omps_nm':
-                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(self.file)
+                if time_interval is not None:
+                    flst = tsub.subset_OMPS_l2(self.file,time_interval)
+                else: flst = self.file
+                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
             elif self.label == 'mopitt_l3':
                 print('Reading MOPITT')
                 self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
@@ -308,9 +313,7 @@ class model:
         # add option to read list of files from text file
         if 'txt' in self.file_str:
             with open(self.file_str,'r') as f:
-                self.files = f.read().split(' \n')[:-1]
-       
-        #    self.files = sort(self.file_str)
+                self.files = f.read().split()
 
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
@@ -337,6 +340,7 @@ class model:
         -------
         None
         """
+        from .util import time_interval_subset as tsub
         print(self.model.lower())
 
         self.glob_files()
@@ -388,11 +392,27 @@ class model:
             self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
-        elif 'raqms' in self.model.lower():
+        # MEB: addition for personal local copy to work with development UFS-RAQMS
+        #      not intended for public versions
+        elif 'fv3raqms' in self.model.lower():
             if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                self.obj = mio.models.fv3raqms.open_mfdataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
+                self.obj = mio.models.fv3raqms.open_dataset(self.files)
+            self.obj = self.obj.rename({'sfcp':'surfpres_pa','dpm':'dp_pa','pdash':'pres_pa_mid'})
+            self.obj['surfpres_pa'] *= 100
+            self.obj['dp_pa'] *= 100
+        elif 'raqms' in self.model.lower():
+            if time_interval is not None:
+                # fill filelist with subset
+                file_sublist = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%H','6H',time_interval)
+            else:
+                # fill filelist with all files
+                file_sublist = self.files
+            if len(self.files) > 1:
+                self.obj = mio.raqms.open_mfdataset(file_sublist,**self.mod_kwargs)
+            else:
+                self.obj = mio.raqms.open_dataset(file_sublist,**self.mod_kwargs)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
@@ -462,6 +482,11 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
+        '''options for regrid from obsgrid to user-specified.
+            Defaults to 1x1degree, single timestep'''
+        self.usergrid_ntime = 1
+        self.usergrid_nlon = 360
+        self.usergrid_nlat = 180
 
     def __repr__(self):
         return (
@@ -542,7 +567,12 @@ class analysis:
             self.time_intervals \
                 = [[time_stamps[n], time_stamps[n+1]]
                     for n in range(len(time_stamps)-1)]
-
+        if 'usergrid_ntime' in self.control_dict['analysis'].keys(): 
+            self.usergrid_ntime = self.control_dict['analysis']['usergrid_ntime']
+        if 'usergrid_nlat' in self.control_dict['analysis'].keys():
+            self.usergrid_nlat = self.control_dict['analysis']['usergrid_nlat']
+        if 'usergrid_nlon' in self.control_dict['analysis'].keys():
+            self.usergrid_nlon = self.control_dict['analysis']['usergrid_nlon']
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -601,8 +631,13 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
                 elif self.read[attr]['method']=='netcdf':
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+                if attr == 'paired':
+                    # initialize model/obs attributes, since needed for plotting and stats
+                    self.open_models(load_files=False)
+                    self.open_obs(load_files=False)
 
-    def open_models(self, time_interval=None):
+
+    def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
 
@@ -610,7 +645,8 @@ class analysis:
         __________
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
-
+        load_files (optional, default True): boolean
+            If False, only populate :attr: dict with yaml file parameters and do not open model files. 
         Returns
         -------
         None
@@ -631,6 +667,7 @@ class analysis:
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                # this initial_file/last_file stuff should be removed. Should move to internal thing for satellite data mapping.
                 if 'initial_file' in self.control_dict['model'][mod].keys(): 
                     m.initial_file = self.control_dict['model'][mod]['initial_file']
                 else: m.initial_file = False
@@ -670,10 +707,11 @@ class analysis:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
                         
                 # open the model
-                m.open_model_files(time_interval=time_interval)
+                if load_files:
+                    m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-    def open_obs(self, time_interval=None):
+    def open_obs(self, time_interval=None, load_files=True):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
         populating the :attr:`obs` dict.
@@ -682,8 +720,9 @@ class analysis:
         __________
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
-
-
+        load_files (optional, default True): boolean
+            If False, only populate :attr: dict with yaml file parameters and do not open obs files. 
+            
         Returns
         -------
         None
@@ -700,11 +739,12 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                if o.obs_type == 'pt_sfc':    
-                    o.open_obs(time_interval=time_interval)
-                elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
-                                    'sat_grid_clm', 'sat_swath_prof']:
-                    o.open_sat_obs()
+                if load_files:
+                    if o.obs_type == 'pt_sfc':    
+                        o.open_obs(time_interval=time_interval)
+                    elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                                        'sat_grid_clm', 'sat_swath_prof']:
+                        o.open_sat_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
@@ -793,6 +833,7 @@ class analysis:
                         
                         paired_data = paired_data.where((paired_data.o3vmr > 0))
                         p = pair()
+                        p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
@@ -809,6 +850,7 @@ class analysis:
                         # combine model and observations into paired dataset
                         obs_dat['o3vmr'] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
                         p = pair()
+                        p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
@@ -826,6 +868,57 @@ class analysis:
         """
         pass
     
+    def regrid_paired(self,pair_label):
+        '''Re-grid observation and model pair data to specified grid
+        '''
+        from .util import grid_util
+        import numpy as np
+        import pandas as pd
+        import xarray as xr
+
+        paired_ds_dims = self.paired[pair_label].obj.dims
+        obs_time = pd.to_datetime(self.paired[pair_label].obj['time'])
+        
+        grid,edge,time_stamps = grid_util.generate_uniform_grid(paired_ds_dims,self.control_dict['analysis']['start_time'],
+                                        self.control_dict['analysis']['end_time'],
+                                        obs_time,self.usergrid_ntime,self.usergrid_nlat,self.usergrid_nlon)
+        pair_ds = self.paired[pair_label].obj
+        vlst = list(pair_ds.variables.keys())
+        # remove lat,lon,time from variable listing to keep only paired variables
+        vlst.remove('latitude')
+        vlst.remove('longitude')
+        vlst.remove('time')
+
+        lons,lats = np.meshgrid(grid['longitude'],grid['latitude'])
+        usergridded = xr.Dataset({},coords={'latitude':(['x','y'],lats),
+                                            'longitude':(['x','y'],lons),
+                                            'time':(['time'],pd.to_datetime(grid['time'],unit='s'))})
+        for v in vlst:
+            # initialize count and data arrays
+            count_grid = np.zeros((self.usergrid_ntime, self.usergrid_nlat, self.usergrid_nlon), 
+                                  dtype=np.int32)
+            data_grid = np.zeros((self.usergrid_ntime, self.usergrid_nlat, self.usergrid_nlon), 
+                                 dtype=np.float32)
+            grid_util.update_data_grid(edge['time_edges'], edge['lat_edges'], edge['lon_edges'],
+                time_stamps.flatten(), pair_ds['latitude'].data.flatten(), pair_ds['longitude'].data.flatten(), 
+                                       pair_ds[v].data.flatten(),count_grid, data_grid)
+            usergridded['not_norm_{}'.format(v)] = (['time','x','y'],data_grid)
+            # normalize data
+            grid_util.normalize_data_grid(count_grid, data_grid)
+            print(data_grid.shape)
+            print(usergridded.dims)
+            usergridded[v] = (['time','x','y'],data_grid)
+            usergridded['counts_{}'.format(v)] = (['time','x','y'],count_grid)
+        p = pair()
+        p.type = self.paired[pair_label].type
+        p.obs = self.paired[pair_label].obs
+        p.model = self.paired[pair_label].model
+        p.model_vars = self.paired[pair_label].model_vars
+        p.obs_vars = self.paired[pair_label].obs_vars
+        p.obj = usergridded
+        label = '{}_grid'.format(pair_label)
+        self.paired[label] = p
+        
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -844,8 +937,8 @@ class analysis:
         -------
         None
         """
-        obs_to_pair = list(self.models[(list(self.models.keys()))[0]].mapping.keys())[0]
-        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
+        pair_keys = list(self.paired.keys())
+        if self.paired[pair_keys[0]].type.lower() == 'pt_sfc': 
             from .plots import surfplots as splots,savefig
         else:
             from .plots import satplots as splots,savefig
@@ -868,7 +961,7 @@ class analysis:
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
-
+            obs_type = pair1.type
             # loop through obs variables
             for obsvar in obs_vars:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
@@ -889,22 +982,22 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
                             
-                        # for pt_sft data, convert to pandas dataframe, format, and trim
-                        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc':
+                        # for pt_sfc data, convert to pandas dataframe, format, and trim
+                        if obs_type == 'pt_sfc':
                             # convert to dataframe
                             pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
                         
                         # keep data in xarray, fix formatting, and trim
-                        elif self.obs[obs_to_pair].obs_type.lower() in ["sat_swath_sfc", "sat_swath_clm", 
+                        elif obs_type in ["sat_swath_sfc", "sat_swath_clm", 
                                                                         "sat_grid_sfc", "sat_grid_clm", 
                                                                         "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
-                            if 'time' not in p.obj.dims and self.obs[obs_to_pair].obs_type.lower() == 'sat_swath_clm':
+                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
                                 pairdf_all = p.obj.swap_dims({'x':'time'})
                             # squash lat/lon dimensions into single dimension
-                            elif self.obs[obs_to_pair].obs_type.lower() == 'sat_grid_clm':
+                            elif obs_type == 'sat_grid_clm':
                                 pairdf_all = p.obj.stack(ll=['x','y'])
                                 pairdf_all = pairdf_all.rename_dims({'ll':'y'})
                             else:
@@ -975,13 +1068,13 @@ class analysis:
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
 
                         # Drop NaNs if using pandas 
-                        if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc':
+                        if obs_type == 'pt_sfc':
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                             else:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        elif self.obs[obs_to_pair].obs_type.lower() in  ["sat_swath_sfc", "sat_swath_clm", 
+                        elif obs_type in  ["sat_swath_sfc", "sat_swath_clm", 
                                                                         "sat_grid_sfc", "sat_grid_clm", 
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
@@ -1055,7 +1148,7 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            if self.obs[obs_to_pair].obs_type.lower() == 'pt_sfc': 
+                            if obs_type == 'pt_sfc': 
                                 pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
                             a_w = grp_dict['data_proc']['ts_avg_window']
                             if p_index == 0:
