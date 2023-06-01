@@ -10,7 +10,8 @@ dependencies:
   - monet
   - monetio
   - netcdf4
-  - numpy<1.24
+  - numpy
+  - pandas<2
   #
   # Extras
   - pooch
@@ -28,6 +29,7 @@ dependencies:
   - sphinx-click
   - sphinx-design
   - sphinx_rtd_theme
+  - sphinx-togglebutton
   #
   - pip
   - pip:

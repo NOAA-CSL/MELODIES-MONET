@@ -2,7 +2,28 @@ analysis:
   start_time: "2019-09-09 00:00"
   end_time: "2019-09-10 00:00"
   output_dir: ./output/idealized
+  # output_dir_save:  # defaults to `output_dir`
+  # output_dir_read:  # defaults to `output_dir`
   debug: True
+  save:
+    paired:
+      method: 'netcdf' # 'netcdf' or 'pkl'
+      prefix: 'asdf' # use only with method=netcdf; don't set if you don't want a fn prefix
+      # output_name: '0905.pkl' # use only with method=pkl
+      data: 'all'
+      # ^ 'all' to save out all pairs or
+      #   ['pair1','pair2',...] to save out specific pairs.
+      #   With method='pkl' this is ignored and always saves all.
+    # models:
+    # obs:
+  read:
+    paired:
+      method: 'netcdf' # 'netcdf' or 'pkl'
+      filenames:
+        test_obs_test_model: 'asdf_test_obs_test_model.nc4'
+      # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
+    # models:
+    # obs:
 
 model:
   test_model:
@@ -21,7 +42,7 @@ model:
       test_obs:
         A: "A_obs"
         B: "B_obs"
-    projection: None  # unused
+    projection: ~  # unused
 
 obs:
   test_obs:

@@ -115,8 +115,9 @@ class observation:
         self.label = None
         self.file = None
         self.obj = None
-        self.type = None
-        self.debug = None
+        """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
+        self.type = 'pt_src'
+        self.data_proc = None
         self.variable_dict = None
 
     def __repr__(self):
@@ -127,6 +128,7 @@ class observation:
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
+            f"    type={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             ")"
         )
@@ -164,13 +166,59 @@ class observation:
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
+        """
+        try:
+            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                if len(files) > 1:
+                    self.obj = xr.open_mfdataset(files)
+                else:
+                    self.obj = xr.open_dataset(files[0])
+            elif extension in ['.ict', '.icarrt']:
+                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                self.obj = mio.icarrt.add_data(files[0])
+            else:
+                raise ValueError(f'extension {extension!r} currently unsupported')
+        except Exception as e:
+            print('something happened opening file:', e)
+            return
 
+        self.mask_and_scale()  # mask and scale values from the control values
+        self.filter_obs()
+        
+    def filter_obs(self):
+        """Filter observations based on filter_dict.
+        
         Returns
         -------
         type
             Fills the object class associated with the equivalent label (self.label) with satellite observation
             dataset read in from the associated file (self.file) by the satellite file reader
         """
+        if self.data_proc is not None:
+            if 'filter_dict' in self.data_proc:
+                filter_dict = self.data_proc['filter_dict']
+                for column in filter_dict.keys():
+                    filter_vals = filter_dict[column]['value']
+                    filter_op = filter_dict[column]['oper']
+                    if filter_op == 'isin':
+                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == 'isnotin':
+                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=True)
+                    elif filter_op == '==':
+                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=True)
+                    elif filter_op == '>':
+                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=True)
+                    elif filter_op == '<':
+                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=True)
+                    elif filter_op == '>=':
+                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=True)
+                    elif filter_op == '<=':
+                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
+                    elif filter_op == '!=':
+                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
+                    else:
+                        raise ValueError(f'Filter operation {filter_op!r} is not supported')
+
         try:
             if self.label == 'omps_l3':
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
@@ -227,11 +275,6 @@ class observation:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if 'obs_unit' in d:
-                        unitin = d['obs_unit']
-                        if unitin in {'ppmv', 'ppm'}:
-                            scale = 1000. # convert to ppb
-                            self.obj[v].data *= scale
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -270,6 +313,7 @@ class model:
         self.mapping = None
         self.variable_dict = None
         self.plot_kwargs = None
+        self.proj = None
 
     def __repr__(self):
         return (
@@ -426,11 +470,6 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if 'om2oc_factor' in d:
-                        print('Convert OM to OC here using factor ',d['om2oc_factor'],self.obj[v].data)
-                        scale = d['om2oc_factor']
-                        self.obj[v].data = self.obj[v].data/scale
-
 
 class analysis:
     """The analysis class.
@@ -509,8 +548,11 @@ class analysis:
         # set analysis time
         self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
         self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
-        self.output_dir = os.path.expandvars(
-            self.control_dict['analysis']['output_dir'])
+        if 'output_dir' in self.control_dict['analysis'].keys():
+            self.output_dir = os.path.expandvars(
+                    self.control_dict['analysis']['output_dir'])
+        else:
+            raise Exception('output_dir was not specified and is required. Please set analysis.output_dir in the control file.')
         if 'output_dir_save' in self.control_dict['analysis'].keys():
             self.output_dir_save = os.path.expandvars(
                 self.control_dict['analysis']['output_dir_save'])
@@ -668,7 +710,32 @@ class analysis:
                         m.scrip_file = self.control_dict['model'][mod]['scrip_file']
                     else:
                         raise ValueError( '"Scrip_file" must be provided for unstructured grid output!' )
-                        
+
+                # maybe set projection
+                proj_in = self.control_dict['model'][mod].get("projection")
+                if proj_in == "None":
+                    print(
+                        f"NOTE: model.{mod}.projection is {proj_in!r} (str), "
+                        "but we assume you want `None` (Python null sentinel). "
+                        "To avoid this warning, "
+                        "update your control file to remove the projection setting "
+                        "or set to `~` or `null` if you want null value in YAML."
+                    )
+                    proj_in = None
+                if proj_in is not None:
+                    if isinstance(proj_in, str) and proj_in.startswith("model:"):
+                        m.proj = proj_in
+                    elif isinstance(proj_in, str) and proj_in.startswith("ccrs."):
+                        import cartopy.crs as ccrs
+                        m.proj = eval(proj_in)
+                    else:
+                        import cartopy.crs as ccrs
+
+                        if isinstance(proj_in, ccrs.Projection):
+                            m.proj = proj_in
+                        else:
+                            m.proj = ccrs.Projection(proj_in)
+
                 # open the model
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
@@ -694,6 +761,8 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict['obs'][obs]['obs_type']
+                if 'data_proc' in self.control_dict['obs'][obs].keys():
+                    o.data_proc = self.control_dict['obs'][obs]['data_proc']
                 o.file = os.path.expandvars(
                     self.control_dict['obs'][obs]['filename'])
                 if 'debug' in self.control_dict['obs'][obs].keys():
@@ -743,7 +812,7 @@ class analysis:
                 
                 ## TODO:  add in ability for simple addition of variables from
 
-                # simplify the objs object with the correct mapping vairables
+                # simplify the objs object with the correct mapping variables
                 obs = self.obs[obs_to_pair]
 
                 # pair the data
@@ -762,7 +831,8 @@ class analysis:
                         raise Exception("MONET requires an altitude dimension named 'z'") from e
                     # now combine obs with
                     paired_data = model_obj.monet.combine_point(obs.obj, radius_of_influence=mod.radius_of_influence, suffix=mod.label)
-                    print('After pairing: ', paired_data)
+                    if self.debug:
+                        print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.obs = obs.label
@@ -850,6 +920,10 @@ class analysis:
             from .plots import surfplots as splots,savefig
         else:
             from .plots import satplots as splots,savefig
+
+        # Disable figure count warning
+        initial_max_fig = plt.rcParams["figure.max_open_warning"]
+        plt.rcParams["figure.max_open_warning"] = 0
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
@@ -974,24 +1048,41 @@ class analysis:
                         # Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                        
+                        # Query with filter options
+                        if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
+                            raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
+                        elif 'filter_dict' in grp_dict['data_proc']:
+                            filter_dict = grp_dict['data_proc']['filter_dict']
+                            for column in filter_dict.keys():
+                                filter_vals = filter_dict[column]['value']
+                                filter_op = filter_dict[column]['oper']
+                                if filter_op == 'isin':
+                                    pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                elif filter_op == 'isnotin':
+                                    pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                else:
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                        elif 'filter_string' in grp_dict['data_proc']:
+                            pairdf_all.query(grp_dict['data_proc']['filter_string'], inplace=True)
 
                         # Drop sites with greater than X percent NAN values
                         if 'rem_obs_by_nan_pct' in grp_dict['data_proc']:
                             grp_var = grp_dict['data_proc']['rem_obs_by_nan_pct']['group_var']
                             pct_cutoff = grp_dict['data_proc']['rem_obs_by_nan_pct']['pct_cutoff']
-
+                            
                             if grp_dict['data_proc']['rem_obs_by_nan_pct']['times'] == 'hourly':
                                 # Select only hours at the hour
                                 hourly_pairdf_all = pairdf_all.reset_index().loc[pairdf_all.reset_index()['time'].dt.minute==0,:]
-
+                                
                                 # calculate total obs count, obs count with nan removed, and nan percent for each group
                                 grp_fullcount = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
-                                grp_nonan_count = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values
-                            else:
+                                grp_nonan_count = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values    
+                            else: 
                                 # calculate total obs count, obs count with nan removed, and nan percent for each group
                                 grp_fullcount = pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
-                                grp_nonan_count = pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values
-
+                                grp_nonan_count = pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values  
+                                
                             grp_pct_nan = 100 - grp_nonan_count.div(grp_fullcount,axis=0)*100
 
                             # make list of sites meeting condition and select paired data by this by this
@@ -1020,7 +1111,7 @@ class analysis:
                             print('Warning: no valid obs found for '+domain_name)
                             continue
 
-                        # JianHe: Determine if calcuate regulatory values
+                        # JianHe: Determine if calculate regulatory values
                         cal_reg = obs_plot_dict.get('regulatory', False)
 
                         if cal_reg:
@@ -1284,7 +1375,7 @@ class analysis:
                                 del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                             else:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
-                        # JianHe: need upates to include regulatory option for overlay plots
+                        # JianHe: need updates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
@@ -1349,6 +1440,9 @@ class analysis:
 
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
 
+        # Restore figure count warning
+        plt.rcParams["figure.max_open_warning"] = initial_max_fig
+
     def stats(self):
         """Calculate statistics specified in the input yaml file.
         
@@ -1396,7 +1490,7 @@ class analysis:
             else:
                 obs_plot_dict = {}
 
-            # JianHe: Determine if calcuate regulatory values
+            # JianHe: Determine if calculate regulatory values
             cal_reg = obs_plot_dict.get('regulatory', False)
 
             # Next loop over all of the domains.
@@ -1464,7 +1558,49 @@ class analysis:
                         # Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                        
+                        # Query with filter options
+                        if 'data_proc' in stat_dict:
+                            if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
+                                raise Exception("For statistics, only one of filter_dict and filter_string can be specified.")
+                            elif 'filter_dict' in stat_dict['data_proc']:
+                                filter_dict = stat_dict['data_proc']['filter_dict']
+                                for column in filter_dict.keys():
+                                    filter_vals = filter_dict[column]['value']
+                                    filter_op = filter_dict[column]['oper']
+                                    if filter_op == 'isin':
+                                        pairdf_all.query(f'{column} == {filter_vals}', inplace=True)
+                                    elif filter_op == 'isnotin':
+                                        pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
+                                    else:
+                                        pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                            elif 'filter_string' in stat_dict['data_proc']:
+                                pairdf_all.query(stat_dict['data_proc']['filter_string'], inplace=True)
 
+                        # Drop sites with greater than X percent NAN values
+                        if 'data_proc' in stat_dict:
+                            if 'rem_obs_by_nan_pct' in stat_dict['data_proc']:
+                                grp_var = stat_dict['data_proc']['rem_obs_by_nan_pct']['group_var']
+                                pct_cutoff = stat_dict['data_proc']['rem_obs_by_nan_pct']['pct_cutoff']
+
+                                if stat_dict['data_proc']['rem_obs_by_nan_pct']['times'] == 'hourly':
+                                    # Select only hours at the hour
+                                    hourly_pairdf_all = pairdf_all.reset_index().loc[pairdf_all.reset_index()['time'].dt.minute==0,:]
+                                    
+                                    # calculate total obs count, obs count with nan removed, and nan percent for each group
+                                    grp_fullcount = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
+                                    grp_nonan_count = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values    
+                                else: 
+                                    # calculate total obs count, obs count with nan removed, and nan percent for each group
+                                    grp_fullcount = pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
+                                    grp_nonan_count = pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values  
+                                
+                                grp_pct_nan = 100 - grp_nonan_count.div(grp_fullcount,axis=0)*100
+                                
+                                # make list of sites meeting condition and select paired data by this by this
+                                grp_select = grp_pct_nan.query(obsvar + ' < ' + str(pct_cutoff)).reset_index()
+                                pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
+                        
                         # Drop NaNs for model and observations in all cases.
                         pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
 

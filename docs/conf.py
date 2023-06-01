@@ -36,6 +36,7 @@ extensions = [
     'myst_nb',
     'sphinx_design',
     'sphinx_click',
+    'sphinx_togglebutton',
 ]
 
 extlinks = {
