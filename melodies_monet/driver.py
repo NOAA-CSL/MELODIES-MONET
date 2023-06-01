@@ -937,8 +937,9 @@ class analysis:
         -------
         None
         """
+        import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
-        if self.paired[pair_keys[0]].type.lower() == 'pt_sfc': 
+        if self.paired[pair_keys[0]].type.lower() == 'pt_sfc':
             from .plots import surfplots as splots,savefig
         else:
             from .plots import satplots as splots,savefig
@@ -1066,6 +1067,29 @@ class analysis:
                         # Query selected points if applicable
                         if domain_type != 'all':
                             pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+
+                        # Drop sites with greater than X percent NAN values
+                        if 'rem_obs_by_nan_pct' in grp_dict['data_proc']:
+                            grp_var = grp_dict['data_proc']['rem_obs_by_nan_pct']['group_var']
+                            pct_cutoff = grp_dict['data_proc']['rem_obs_by_nan_pct']['pct_cutoff']
+
+                            if grp_dict['data_proc']['rem_obs_by_nan_pct']['times'] == 'hourly':
+                                # Select only hours at the hour
+                                hourly_pairdf_all = pairdf_all.reset_index().loc[pairdf_all.reset_index()['time'].dt.minute==0,:]
+
+                                # calculate total obs count, obs count with nan removed, and nan percent for each group
+                                grp_fullcount = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
+                                grp_nonan_count = hourly_pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values
+                            else:
+                                # calculate total obs count, obs count with nan removed, and nan percent for each group
+                                grp_fullcount = pairdf_all[[grp_var,obsvar]].groupby(grp_var).size().rename({0:obsvar})
+                                grp_nonan_count = pairdf_all[[grp_var,obsvar]].groupby(grp_var).count() # counts only non NA values
+
+                            grp_pct_nan = 100 - grp_nonan_count.div(grp_fullcount,axis=0)*100
+
+                            # make list of sites meeting condition and select paired data by this by this
+                            grp_select = grp_pct_nan.query(obsvar + ' < ' + str(pct_cutoff)).reset_index()
+                            pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
                         if obs_type == 'pt_sfc':
