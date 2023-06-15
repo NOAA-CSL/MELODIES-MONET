@@ -35,7 +35,7 @@ Surface Evaluation
 
    **Spatial Bias Exceedance** - Difference plot of model - observations for the number of
    exceedances greater than the regulatory standard within the analysis window with options to specify
-   the domain. This only works for regulatory calculations (regulatory = True) for variables "OZONE" and "PM2.5".
+   the domain. This only works for regulatory calculations (regulatory = True) for variables "OZONE" and "PM2.5" and units must be in ppbv or μg m\ :sup:`-3`\, respectively, after the ``unit_scale`` option in the control file is applied.
    An exceedance occurs when MDA8 ozone is greater than 70 ppbv or 24 hour averaged PM\ :sub:`2.5` \ is
    greater than 35 ug m\ :sup:`-3`\.
      
