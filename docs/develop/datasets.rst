@@ -18,6 +18,6 @@ found in the ``monetio/models`` folder in the MONETIO repository
 `on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
 These include e.g., _cesm_fv_mm.py, _cmaq_mm.py, and _wrfchem_mm.py.
 While a part of the MONETIO repository,
-the MELODIES MONET readers are designated with an _mm.
+the private MELODIES MONET readers are designated with prefix ``_mm``.
 
 Support for additional models is also under developed.
