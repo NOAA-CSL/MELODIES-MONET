@@ -12,7 +12,7 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     
     # factor for converting ppv profiles to DU column
     # also requires conversion of dp from Pa to hPa
-    du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19
+    du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19
     column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
     
     # initialize regrid and apply to column data
@@ -87,7 +87,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
                     
                     ds[j][:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*interm_var.values
     return ds
-def omps_nm_pairing(model_data,obs_data,pair_variables):
+def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
     'Pairs UFS-RAQMS ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
 
@@ -96,37 +96,37 @@ def omps_nm_pairing(model_data,obs_data,pair_variables):
     print('pairing without applying averaging kernel')
 
     
-    du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
-    
+    du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
+    pair_variables = ['dp_pa',ozone_ppbv_varname]
     paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
     
     # calculate ozone column, no averaging kernel or apriori applied.
     col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
-    ds = xr.Dataset({'o3vmr': (['x','y'],col),
-                     'ozone_column':(['x','y'],obs_data.ozone_column.values)
+    ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],col),
+                     'ozone_column':(['time','y'],obs_data.ozone_column.values)
                                },
                     coords={
-                        'longitude':(['x','y'],obs_data['longitude'].values),
-                        'latitude':(['x','y'],obs_data['latitude'].values),
-                        'time':(['x'],obs_data.time.values),
+                        'longitude':(['time','y'],obs_data['longitude'].values),
+                        'latitude':(['time','y'],obs_data['latitude'].values),
+                        'time':(['time'],obs_data.time.values),
                     })    
 
     return ds
                                                                             
                                                                             
 
-def omps_nm_pairing_apriori(model_data,obs_data):
+def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     'Pairs UFS-RAQMS data with OMPS nm. Applies satellite apriori column to model observations.'
 
     import xarray as xr
 
     import pandas as pd
-    du_fac = 1.0e4*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
+    du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
     
     print('pairing with averaging kernel application')
                      
     # Grab necessary shape information
-    nf,nz_m,nx_m,ny_m = model_data['o3vmr'].shape
+    nf,nz_m,nx_m,ny_m = model_data[ozone_ppbv_varname[0]].shape
     nx,ny = obs_data.ozone_column.shape
     ## initialize intermediates for use in calcluating column
     pressure_temp = np.zeros((nz_m,nx,ny))
@@ -139,7 +139,7 @@ def omps_nm_pairing_apriori(model_data,obs_data):
         if len(tindex):
             # regrid spatially (model lat/lon to satellite swath lat/lon)
             regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear')
-            regrid_oz = regridr(model_data['o3vmr'][f])
+            regrid_oz = regridr(model_data[ozone_ppbv_varname[0]][f])
             regrid_p = regridr(model_data['pres_pa_mid'][f]) # this one should be pressure variable (for the interpolation).
             sfp = regridr(model_data['surfpres_pa'][f])
             # fixes for observations before/after model time range.
@@ -208,12 +208,12 @@ def omps_nm_pairing_apriori(model_data,obs_data):
         ap = obs_data.apriori[:,:,i].values
         oz = oz + ap*(1-eff) + (eff)*(add)
  
-    ds = xr.Dataset({'o3vmr': (['x','y'],oz),
-                     'ozone_column':(['x','y'],obs_data.ozone_column.values)
+    ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],oz),
+                     'ozone_column':(['time','y'],obs_data.ozone_column.values)
                                },
                     coords={
-                        'longitude':(['x','y'],obs_data['longitude'].values),
-                        'latitude':(['x','y'],obs_data['latitude'].values),
-                        'time':(['x'],obs_data.time.values),
+                        'longitude':(['time','y'],obs_data['longitude'].values),
+                        'latitude':(['time','y'],obs_data['latitude'].values),
+                        'time':(['time'],obs_data.time.values),
                     })
     return ds
