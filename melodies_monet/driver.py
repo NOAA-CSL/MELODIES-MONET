@@ -930,7 +930,8 @@ class analysis:
         """
         import matplotlib.pyplot as plt
 
-        from .plots import surfplots as splots, savefig
+        from .plots import surfplots as splots, savefig #Added similar line for aircraftplots qzr, see next line
+        from .plots import aircraftplots as airplots #qzr++
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1196,7 +1197,61 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                        if plot_type.lower() == 'boxplot':
+                        #qzr++ Added vertprofile Trial         
+                        if plot_type.lower() == 'vertprofile':
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            # Select altitude variable from the .yaml file
+                            altitude_variable = grp_dict['altitude_variable']
+                            # Define the bins for binning the altitude
+                            bins = grp_dict['vertprofile_bins']
+                            if p_index == 0:
+                                # First plot the observations.
+                                ax = airplots.make_vertprofile(
+                                    pairdf,
+                                    column=obsvar,
+                                    label=p.obs,
+                                    bins=bins,
+                                    altitude_variable=altitude_variable,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                            )
+                            # For all p_index plot the model.
+                            ax = airplots.make_vertprofile(
+                                pairdf,
+                                column=modvar,
+                                label=p.model,
+                                ax=ax,
+                                bins=bins,
+                                altitude_variable=altitude_variable,
+                                ylabel=use_ylabel,
+                                vmin=vmin,
+                                vmax=vmax,
+                                plot_dict=plot_dict,
+                                text_dict=text_dict,
+                                debug=self.debug
+                            )
+                            # At the end save the plot.
+                            if p_index == len(pair_labels) - 1:
+                                savefig(outname + '.png', logo_height=150)
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
+
+                                
+                        elif plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
