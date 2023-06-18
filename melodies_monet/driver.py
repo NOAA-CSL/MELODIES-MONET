@@ -1198,7 +1198,7 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         #qzr++ Added vertprofile Trial         
-                        if plot_type.lower() == 'vertprofile':
+                        elif plot_type.lower() == 'vertprofile':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1225,11 +1225,14 @@ class analysis:
                                     ylabel=use_ylabel,
                                     vmin=vmin,
                                     vmax=vmax,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
                                     debug=self.debug
                             )
+                            
                             # For all p_index plot the model.
                             ax = airplots.make_vertprofile(
                                 pairdf,
@@ -1241,10 +1244,14 @@ class analysis:
                                 ylabel=use_ylabel,
                                 vmin=vmin,
                                 vmax=vmax,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
                                 plot_dict=plot_dict,
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+                            
+                            
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)

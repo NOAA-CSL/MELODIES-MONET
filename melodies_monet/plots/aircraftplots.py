@@ -502,7 +502,9 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     
 ####NEW vertprofile TRY (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
-                     vmin=None, vmax=None, plot_dict=None, fig_dict=None, text_dict=None, debug=False):
+                     vmin=None, vmax=None, 
+                     domain_type=None, domain_name=None,
+                     plot_dict=None, fig_dict=None, text_dict=None, debug=False):
     """Creates altitude profile plot.
     
     Parameters
@@ -524,6 +526,10 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         Min value to use on y-axis.
     vmax : float
         Max value to use on y-axis.
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
     plot_dict : dictionary
         Dictionary containing information about plotting for each pair
         (e.g., color, linestyle, markerstyle).
@@ -566,7 +572,7 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         obs_dict = dict(color='k', linestyle='-', marker='*', linewidth=1.2, markersize=6.)
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the obs_dict here
-            plot_kwargs = {**obs_dict, **plot_dict}
+            plot_kwargs = {**obs_dict, **plot_dict} 
         else:
             plot_kwargs = obs_dict
         # Create the figure
@@ -574,8 +580,8 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
             f, ax = plt.subplots(**fig_dict)    
         else: 
             f, ax = plt.subplots(figsize=(10, 6))
+       
         # Bin the altitude variable and calculate median and interquartiles
-        
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
         # Calculate the midpoints of the altitude bins
         bin_midpoints = altitude_bins.apply(lambda x: x.mid)
@@ -592,13 +598,14 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         
         #breakpoint() #for de-bugging in .py file
         # Plot shaded interquartiles
-        
-        ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_kwargs)
+        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_kwargs)
+        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_kwargs)  #Swap Axes 
         
         # Plot median line
         
-        ax.plot(binmidpoint.values, median.values)#, **plot_kwargs)
-        
+        #ax.plot(binmidpoint.values, median.values),# **plot_kwargs)
+        ax.plot(median.values, binmidpoint.values)#, **plot_kwargs) #Swap Axes 
+                
     
     # If plot has been created, add to the current axes
     else:
@@ -619,24 +626,37 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
         
         #breakpoint() #for de-bugging
-        
-        
+                
         # Plot shaded interquartiles
-        ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)
+        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)
+        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)  #Swap Axes
         
         # Plot median line
-        
-
-        ax.plot(binmidpoint.values, median.values)#, **plot_dict)
-        
+        #ax.plot(binmidpoint.values, median.values)#, **plot_dict)
+        ax.plot(median.values, binmidpoint.values)#, **plot_dict) #Swap Axes
+                
     
     # Set parameters for all plots
-    ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
-    ax.set_xlabel(ax.get_xlabel(), fontweight='bold', **text_kwargs)
-    ax.legend(frameon=False, fontsize=text_kwargs['fontsize'] * 0.8)
-    ax.tick_params(axis='both', length=10.0, direction='inout')
-    ax.tick_params(axis='both', which='minor', length=5.0, direction='out')
-    
+    #ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
+    #ax.set_xlabel(ax.get_xlabel(), fontweight='bold', **text_kwargs)
+    ax.set_ylabel('Altitude (m)', fontweight='bold', **text_kwargs) #Swap Axes
+    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) #Swap Axes
+    #ax.legend(frameon=False, fontsize=text_kwargs['fontsize'] * 0.8)
+    #ax.tick_params(axis='both', length=10.0, direction='inout')
+    #ax.tick_params(axis='both', which='minor', length=5.0, direction='out')
+    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
+    ax.tick_params(axis='both',length=10.0,direction='inout')
+    ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
+    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
+              bbox_to_anchor=(1.0, 0.9), loc='center left')
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax.set_title(domain_name,fontweight='bold',**text_kwargs)         
+                
+    #breakpoint() #debug
+                         
     return ax
 
 
@@ -1074,8 +1094,6 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
-
-# ADD a def make_vert_plot, look at make_timeseries and Qindan's vert plot for building this class
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,

@@ -104,19 +104,19 @@ plots:
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
-      figsize: [10, 8]  # figure size
+      figsize: [10, 14]  # figure size
     default_plot_kwargs:  # Opt to define defaults for all plots. Model kwargs overwrite these.
-      linewidth: 2.0
+      linewidth: 4.0
       markersize: 10.
     text_kwargs:  # Opt
-      fontsize: 14.
+      fontsize: 18.
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: ['CONUS']  # List of domain names. If domain_type = all, domain_name is used in plot title.
     data: ['firexaq_wrfchem_v4.2']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
-    #altitude_variable: 'Pressure_Altitude_YANG' (pressure in hPa)  # Specify the name of the altitude variable (pressure or MSL height) 
+    #altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # Specify the name of the altitude variable (pressure or MSL height) 
     altitude_variable: 'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or 
     #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
     vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # meters
