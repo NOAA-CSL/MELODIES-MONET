@@ -1,7 +1,7 @@
 from melodies_monet import driver
 
 an = driver.analysis()
-an.control = 'control_grid_data.yaml'
+an.control = 'control_time_chunking_with_gridded_data.yaml'
 an.read_control()
 an.setup_regridders()
 
