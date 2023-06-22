@@ -458,7 +458,7 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
-        self.grid_data = False  # Default to False
+        self.time_chunking_with_gridded_data = False  # Default to False
         self.regrid = False  # Default to False
         self.target_grid = None
         self.obs_regridders = None
@@ -533,9 +533,9 @@ class analysis:
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
 
-        # set grid_data option, regrid option, and target_grid
-        if 'grid_data' in self.control_dict['analysis'].keys():
-            self.grid_data = self.control_dict['analysis']['grid_data']
+        # set time_chunking_with_gridded_data option, regrid option, and target_grid
+        if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
+            self.time_chunking_with_gridded_data = self.control_dict['analysis']['time_chunking_with_gridded_data']
         if 'regrid' in self.control_dict['analysis'].keys():
             self.regrid = self.control_dict['analysis']['regrid']
         if 'target_grid' in self.control_dict['analysis'].keys():
@@ -639,7 +639,7 @@ class analysis:
         -------
         None
         """
-        if ('model' in self.control_dict) and (not self.grid_data):
+        if ('model' in self.control_dict) and (not self.time_chunking_with_gridded_data):
             # open each model
             for mod in self.control_dict['model']:
                 # create a new model instance
@@ -710,7 +710,7 @@ class analysis:
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-        if ('model' in self.control_dict) and self.grid_data:
+        if ('model' in self.control_dict) and self.time_chunking_with_gridded_data:
             from .util import read_grid_util
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model reading %s' % date_str)
@@ -755,7 +755,7 @@ class analysis:
         from .util import read_grid_util
         from .util import regrid_util
 
-        if ('obs' in self.control_dict) and (not self.grid_data):
+        if ('obs' in self.control_dict) and (not self.time_chunking_with_gridded_data):
             for obs in self.control_dict['obs']:
                 o = observation()
                 o.obs = obs
@@ -770,7 +770,7 @@ class analysis:
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
-        if ('obs' in self.control_dict) and self.grid_data:
+        if ('obs' in self.control_dict) and self.time_chunking_with_gridded_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('obs reading %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(self.control_dict)
@@ -783,7 +783,7 @@ class analysis:
                 o.obs = obs
                 o.label = obs
                 o.file = filename
-                o.type = 'grid_data'
+                o.type = 'gridded_data'
                 ds_obs = obs_datasets[obs]
                 if self.regrid:
                     regridder = self.obs_regridders[obs]

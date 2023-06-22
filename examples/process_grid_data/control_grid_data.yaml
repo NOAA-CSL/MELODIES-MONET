@@ -4,9 +4,9 @@ analysis:
   time_interval: 'MS'
   output_dir: $HOME/Plots
   debug: True
-  grid_data: True
   regrid: False
   target_grid: $HOME/Data/Grids/cam_grid.nc
+  time_chunking_with_gridded_data: True
 
 obs:
 
