@@ -133,7 +133,7 @@ class observation:
             ")"
         )
 
-    def open_obs(self, time_interval=None):
+    def open_obs(self, time_interval=None, control_dict=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
 
@@ -149,30 +149,42 @@ class observation:
         from glob import glob
         from numpy import sort
         from . import tutorial
+        from .util import analysis_util
+        from .util import read_grid_util
 
-        if self.file.startswith("example:"):
-            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
-            files = [tutorial.fetch_example(example_id)]
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
+
+        if time_chunking_with_gridded_data:
+
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('obs reading %s' % date_str)
+
         else:
-            files = sort(glob(self.file))
-
-        assert len(files) >= 1, "need at least one"
-
-        _, extension = os.path.splitext(files[0])
-        try:
-            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
-                if len(files) > 1:
-                    self.obj = xr.open_mfdataset(files)
-                else:
-                    self.obj = xr.open_dataset(files[0])
-            elif extension in ['.ict', '.icarrt']:
-                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
-                self.obj = mio.icarrt.add_data(files[0])
+            if self.file.startswith("example:"):
+                example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+                files = [tutorial.fetch_example(example_id)]
             else:
-                raise ValueError(f'extension {extension!r} currently unsupported')
-        except Exception as e:
-            print('something happened opening file:', e)
-            return
+                files = sort(glob(self.file))
+
+            assert len(files) >= 1, "need at least one"
+
+            _, extension = os.path.splitext(files[0])
+            try:
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                    if len(files) > 1:
+                        self.obj = xr.open_mfdataset(files)
+                    else:
+                        self.obj = xr.open_dataset(files[0])
+                elif extension in ['.ict', '.icarrt']:
+                    assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                    self.obj = mio.icarrt.add_data(files[0])
+                else:
+                    raise ValueError(f'extension {extension!r} currently unsupported')
+            except Exception as e:
+                print('something happened opening file:', e)
+                return
 
         self.mask_and_scale()  # mask and scale values from the control values
         self.filter_obs()
@@ -639,7 +651,7 @@ class analysis:
         -------
         None
         """
-        if ('model' in self.control_dict) and (not self.time_chunking_with_gridded_data):
+        if 'model' in self.control_dict:
             # open each model
             for mod in self.control_dict['model']:
                 # create a new model instance
@@ -710,31 +722,6 @@ class analysis:
                 m.open_model_files(time_interval=time_interval)
                 self.models[m.label] = m
 
-        if ('model' in self.control_dict) and self.time_chunking_with_gridded_data:
-            from .util import read_grid_util
-            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('model reading %s' % date_str)
-            filename, model_datasets = read_grid_util.read_grid_models(
-                self.control_dict, date_str)
-            print(model_datasets)
-            for mod in model_datasets:
-                m = model()
-                m.model = mod
-                m.label = mod
-                m.file_str = filename
-                m.mapping = self.control_dict['model'][mod]['mapping']
-                if 'variables' in self.control_dict['model'][mod].keys():
-                    m.variable_dict = self.control_dict['model'][mod]['variables']
-                if 'plot_kwargs' in self.control_dict['model'][mod].keys():
-                    m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
-                ds_model = model_datasets[mod]
-                if self.regrid:
-                    regridder = self.model_regridders[mod]
-                    m.obj = regridder(ds_model)
-                    m.obj.to_netcdf(regrid_util.filename_regrid(filename, regridder))
-                else:
-                    m.obj = ds_model
-                self.models[m.label] = m
 
     def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
@@ -755,7 +742,7 @@ class analysis:
         from .util import read_grid_util
         from .util import regrid_util
 
-        if ('obs' in self.control_dict) and (not self.time_chunking_with_gridded_data):
+        if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
                 o.obs = obs
@@ -767,31 +754,9 @@ class analysis:
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs(time_interval=time_interval)
+                o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
 
-        if ('obs' in self.control_dict) and self.time_chunking_with_gridded_data:
-            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('obs reading %s' % date_str)
-            obs_vars = analysis_util.get_obs_vars(self.control_dict)
-            print(obs_vars)
-            filename, obs_datasets = read_grid_util.read_grid_obs(
-                self.control_dict, obs_vars, date_str)
-            print(obs_datasets)
-            for obs in obs_vars:
-                o = observation()
-                o.obs = obs
-                o.label = obs
-                o.file = filename
-                o.type = 'gridded_data'
-                ds_obs = obs_datasets[obs]
-                if self.regrid:
-                    regridder = self.obs_regridders[obs]
-                    o.obj = regridder(ds_obs)
-                    o.obj.to_netcdf(regrid_util.filename_regrid(filename, regridder))
-                else:
-                    o.obj = ds_obs
-                self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
