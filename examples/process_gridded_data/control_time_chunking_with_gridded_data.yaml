@@ -12,7 +12,7 @@ obs:
 
   MOD08_M3:
     data_format: gridded_eos
-    datadir: $HOME/Data/MOD08_M3_nc
+    datadir: $HOME/Data/MOD08_M3
     obs_type: gridded_data
     filename: MOD08_M3.AYYYYDDD.061.*_regrid.nc
     regrid:
@@ -28,8 +28,8 @@ model:
 
   MERRA2:
     data_format: netcdf
-    datadir: $HOME/Data/MERRA2_TOTEXTTAU
-    filename: MERRA2_*.tavgM_2d_aer_Nx.YYYYMM_MM_TOTEXTTAU_regrid.nc4
+    datadir: $HOME/Data/MERRA2
+    filename: subset_MERRA2_*.tavgM_2d_aer_Nx.YYYYMM_MM_regrid.nc4
     regrid:
       base_grid: $HOME/Data/Grids/merra2_grid.nc
       method: bilinear
