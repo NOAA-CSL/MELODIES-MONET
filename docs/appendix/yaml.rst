@@ -362,8 +362,8 @@ observation label is first and the model label is second
      used for averaging and plotting. Options are 'time' for UTC or 'time_local' 
      for local time
    * **ts_avg_window:** This is for timeseries plots only. This is the averaging 
-     window applied to the data. Options are None for no averaging or a pandas 
-     resample rule (e.g., 'H' is hourly, 'D' is daily).
+     window applied to the data. No averaging done if not provided in the yaml file (ts_avg_window is Optional now). Averaging is done if a pandas 
+     resample rule (e.g., 'H' is hourly, 'D' is daily) is specified for ts_avg_window.
    
 Stats
 -----
