@@ -30,9 +30,6 @@ jobs:
           extra-specs: |
             pytest
 
-      - name: Install MM
-        run: python -m pip install -e . --no-deps -v
-
       - if: ${{ matrix.monet == 'dev' }}
         name: Install development versions of monet and monetio
         run: |
