@@ -161,6 +161,11 @@ class observation:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('obs reading %s' % date_str)
 
+            obs_vars = analysis_util.get_obs_vars(self.control_dict)
+            print(obs_vars)
+            filename, obs_datasets = read_grid_util.read_grid_obs(
+                self.control_dict, obs_vars, date_str)
+
         else:
             if self.file.startswith("example:"):
                 example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
