@@ -163,7 +163,7 @@ plots:
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: 'H' # Opt #No averaging is done if ts_avg_window is not specified, averaging is done if list pandas resample rule (e.g., 'H', 'D')
+      ts_avg_window: 'H' # pandas resample rule (e.g., 'H', 'D'). No averaging is done if ts_avg_window is null or not specified.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type
