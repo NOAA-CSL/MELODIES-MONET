@@ -180,11 +180,21 @@ class observation:
         except Exception as e:
             print('something happened opening file:', e)
             return
-
+        
+        self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
         self.resample_data()
         self.filter_obs()
+    
+    def add_coordinates_ground(self):
+        # If ground site
+        if self.obs_type == 'ground':
+            if self.ground_coordinate and isinstance(self.ground_coordinate,dict):
+                self.obj['latitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['latitude']
+                self.obj['longitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['longitude']
+            elif self.ground_coordinate and ~isinstance(self.ground_coordinate,dict): 
+                raise TypeError(f'The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
 
     def rename_vars(self):
         """Rename any variables in observation with rename set.
@@ -785,6 +795,8 @@ class analysis:
                     o.resample = self.control_dict['obs'][obs]['resample']
                 if 'time_var' in self.control_dict['obs'][obs].keys():
                     o.time_var = self.control_dict['obs'][obs]['time_var']
+                if 'ground_coordinate' in self.control_dict['obs'][obs].keys():
+                    o.ground_coordinate = self.control_dict['obs'][obs]['ground_coordinate']
                 o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
@@ -864,7 +876,7 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                     
-                                # if aircraft (aircraft observation)
+                # if aircraft (aircraft observation)
                 elif obs.obs_type.lower() == 'aircraft':
                     from .util.tools import vert_interp
                     # convert this to pandas dataframe unless already done because second time paired this obs
@@ -900,8 +912,9 @@ class analysis:
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 
-                elif obs.obs_type.lower() == 'mobile':
-                    from .util.tools import mobile_pair
+                # If mobile surface data or single ground site surface data
+                elif obs.obs_type.lower() == 'mobile' or obs.obs_type.lower() == 'ground':
+                    from .util.tools import mobile_and_ground_pair
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
@@ -919,11 +932,14 @@ class analysis:
                     #Interpolate based on time in the observations
                     ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
                     
-                    paired_data = mobile_pair(ds_model,obs.obj,keys+mod_vars)
+                    paired_data = mobile_and_ground_pair(ds_model,obs.obj,keys+mod_vars)
                     print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
-                    p.type = 'mobile'
+                    if obs.obs_type.lower() == 'mobile':
+                        p.type = 'mobile'
+                    elif obs.obs_type.lower() == 'ground':
+                        p.type = 'ground'
                     p.radius_of_influence = None
                     p.obs = obs.label
                     p.model = mod.label

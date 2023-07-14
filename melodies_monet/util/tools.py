@@ -320,7 +320,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
 
     return final_df_model
 
-def mobile_pair(ds_model,df_obs, var_name_list):
+def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
     import xarray as xr
     from pandas import merge_asof, Series
     
@@ -338,8 +338,6 @@ def mobile_pair(ds_model,df_obs, var_name_list):
             out = ds_model[var_name]
             out.name = var_name
             var_out_list.append(out)
-    
-    #breakpoint()
     
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
     df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
