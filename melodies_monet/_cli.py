@@ -601,29 +601,13 @@ def get_aqs(
         if daily:
             site_vns.remove("utcoffset")  # not present in the daily data product
 
-        # site_vn_str = [
-        #     "site",  # site name
-        #     "siteid",  # site code (9 or 12 digits/chars)
-        #     #
-        #     "cmsa_name",
-        #     "msa_code",
-        #     "msa_name",
-        #     "state_name",
-        #     "epa_region",
-        # ]
-
-        # df[site_vn_str] = df[site_vn_str].astype("string")
-
         ds_site = (
             df[site_vns]
-            # .replace(["", " ", None], pd.NA)  # TODO: monetio should do?
             .groupby("siteid")
             .first()
             .to_xarray()
             .swap_dims(siteid="x")
         )
-
-        breakpoint()
 
         # Extract units info so we can add as attrs
         unit_suff = "_unit"
@@ -653,8 +637,6 @@ def get_aqs(
         # if not daily:
         #     ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
 
-        breakpoint()
-
         # Expand
         ds = (
             ds
@@ -665,6 +647,8 @@ def get_aqs(
         # Apparently can't have `/` in variable nane
         to_rename = [vn for vn in ds.data_vars if "/" in vn]
         ds = ds.rename_vars({vn: vn.replace("/", "_") for vn in to_rename})
+
+    breakpoint()
 
     with _timer("Writing netCDF file"):
         if compress:
