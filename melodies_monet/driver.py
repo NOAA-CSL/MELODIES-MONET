@@ -188,6 +188,14 @@ class observation:
         self.filter_obs()
     
     def add_coordinates_ground(self):
+        """Add latitude and longitude coordinates to data when the observation type is ground and 
+        ground_coordinate is specified
+        
+        Returns
+        -------
+        None
+        """
+        
         # If ground site
         if self.obs_type == 'ground':
             if self.ground_coordinate and isinstance(self.ground_coordinate,dict):
