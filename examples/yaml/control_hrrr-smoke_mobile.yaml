@@ -10,12 +10,8 @@ analysis:
   debug: True
 model:
   hrrr-smoke: # model label
-    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
     files: /wrk/users/charkins/megan_mobile_data/HRRR/aqm_HRRR-Smoke_2022091106.nc.subset.nc
     mod_type: random
-    #mod_kwargs: 
-    #  mech: 'racm_esrl_vcp'
-    radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       mobile_fire:
         PM2_5_DRY: 'PM2.5_5min'
@@ -34,25 +30,12 @@ obs:
       'PM2.5_5min':
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-        #nan_value: -777777 # Opt Set this value to NaN
-        #LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
-        #LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+
         ylabel_plot: 'PM2.5 (units?)'
-        vmin_plot: 15.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 55.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        #vdiff_plot: 20.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
-        # nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
       'Temperature_5min':
         unit_scale: 273.15 #Opt Scaling factor 
         unit_scale_method: '+' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-        #nan_value: -777777 # Set this value to NaN
-        #LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
-        #LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
         ylabel_plot: 'Temperature (K)' #Optional to set ylabel so can include units and/or instr etc.
-        #vmin_plot: 0.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        #vmax_plot: 20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        #vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
-        #nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
       'Latitude_5min':
             rename: latitude # name to convert this variable to
             unit_scale: 1 #Opt Scaling factor 
