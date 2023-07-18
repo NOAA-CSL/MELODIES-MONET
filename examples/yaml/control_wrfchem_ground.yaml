@@ -10,12 +10,10 @@ analysis:
   debug: True
 model:
   wrfchem_v4.2: # model label
-    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
     files: /wrk/users/charkins/MM_data/pasadena_ground_ict/corresponding_model/0725/wrfout_d01_2021-07-25_*
     mod_type: 'wrfchem'
     mod_kwargs: 
       mech: 'racm_esrl_vcp'
-    radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       pasadena_ground:
         PM2_5_DRY: "AerComp_OrganicAerosol_PM1" # not correct species pairing but using as example
@@ -34,14 +32,7 @@ obs:
         unit_scale: 1 #Opt Scaling factor 
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         ylabel_plot: 'PM1 (units?)'
-      # 'Latitude_YANG':
-            # rename: latitude # name to convert this variable to
-            # unit_scale: 1 #Opt Scaling factor 
-            # unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-      # 'Longitude_YANG':
-            # rename: longitude # name to convert this variable to
-            # unit_scale: 1 #Opt Scaling factor 
-            # unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+
 plots:
   plot_grp1:
     type: 'timeseries' # plot type
