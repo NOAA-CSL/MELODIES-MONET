@@ -28,6 +28,7 @@ model:
 
   MERRA2:
     data_format: netcdf
+    mod_type: merra2
     datadir: $HOME/Data/MERRA2
     filename: subset_MERRA2_*.tavgM_2d_aer_Nx.YYYYMM_MM_regrid.nc4
     regrid:
