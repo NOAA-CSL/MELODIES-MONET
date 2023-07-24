@@ -161,10 +161,13 @@ class observation:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('obs reading %s' % date_str)
 
-            obs_vars = analysis_util.get_obs_vars(self.control_dict)
+            obs_vars = analysis_util.get_obs_vars(control_dict)
             print(obs_vars)
+            # Need the option for read_grid_obs to read a single dataset
             filename, obs_datasets = read_grid_util.read_grid_obs(
-                self.control_dict, obs_vars, date_str)
+                control_dict, obs_vars, date_str)
+            self.obj = obs_datasets[self.obs]
+            print(self.obj)
 
         else:
             if self.file.startswith("example:"):
