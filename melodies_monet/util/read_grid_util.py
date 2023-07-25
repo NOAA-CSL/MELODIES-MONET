@@ -23,7 +23,7 @@ def read_grid_models(config, date_str):
 
         datadir = config['model'][model_name]['datadir']
         filestr = fill_date_template(
-            config['model'][model_name]['filename'], date_str)
+            config['model'][model_name]['files'], date_str)
         filename = find_file(datadir, filestr)
 
         model_datasets[model_name] = xr.open_dataset(filename)

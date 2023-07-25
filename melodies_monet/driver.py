@@ -359,6 +359,9 @@ class model:
         -------
         None
         """
+        from .util import analysis_util
+        from .util import read_grid_util
+        from .util import regrid_util
 
         time_chunking_with_gridded_data \
             = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
@@ -419,18 +422,13 @@ class model:
             else:
                 self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
         elif time_chunking_with_gridded_data:
-            print('model time chunking')
-            """
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('obs reading %s' % date_str)
-            obs_vars = analysis_util.get_obs_vars(control_dict)
-            print(obs_vars)
-            # Need the option for read_grid_obs to read a single dataset
-            filename, obs_datasets = read_grid_util.read_grid_obs(
-                control_dict, obs_vars, date_str)
-            self.obj = obs_datasets[self.obs]
+            print('model reading %s' % date_str)
+            # Need the option for read_grid_models to read a single dataset
+            filename, model_datasets = read_grid_util.read_grid_models(
+                control_dict, date_str)
+            self.obj = model_datasets[self.model]
             print(self.obj)
-            """
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
