@@ -341,7 +341,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self, time_interval=None):
+    def open_model_files(self, time_interval=None, control_dict=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -359,6 +359,10 @@ class model:
         -------
         None
         """
+
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
 
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
@@ -414,6 +418,19 @@ class model:
                 self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
+        elif time_chunking_with_gridded_data:
+            print('model time chunking')
+            """
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('obs reading %s' % date_str)
+            obs_vars = analysis_util.get_obs_vars(control_dict)
+            print(obs_vars)
+            # Need the option for read_grid_obs to read a single dataset
+            filename, obs_datasets = read_grid_util.read_grid_obs(
+                control_dict, obs_vars, date_str)
+            self.obj = obs_datasets[self.obs]
+            print(self.obj)
+            """
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
@@ -727,7 +744,7 @@ class analysis:
                             m.proj = ccrs.Projection(proj_in)
 
                 # open the model
-                m.open_model_files(time_interval=time_interval)
+                m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
 
 
