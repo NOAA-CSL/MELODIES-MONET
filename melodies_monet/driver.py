@@ -157,10 +157,8 @@ class observation:
                 and control_dict['analysis']['time_chunking_with_gridded_data']
 
         if time_chunking_with_gridded_data:
-
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('obs reading %s' % date_str)
-
+            print('obs time chunk %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(control_dict)
             print(obs_vars)
             # Need the option for read_grid_obs to read a single dataset
@@ -423,11 +421,12 @@ class model:
                 self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
         elif time_chunking_with_gridded_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('model reading %s' % date_str)
+            print('model time chunk %s' % date_str)
             # Need the option for read_grid_models to read a single dataset
             filename, model_datasets = read_grid_util.read_grid_models(
                 control_dict, date_str)
-            self.obj = model_datasets[self.model]
+            print(self.label)
+            self.obj = model_datasets[self.label]
             print(self.obj)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
