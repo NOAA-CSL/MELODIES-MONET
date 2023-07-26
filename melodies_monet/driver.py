@@ -162,7 +162,7 @@ class observation:
             obs_vars = analysis_util.get_obs_vars(control_dict)
             print(obs_vars)
             # Need the option for read_grid_obs to read a single dataset
-            filename, obs_datasets = read_grid_util.read_grid_obs(
+            obs_datasets = read_grid_util.read_grid_obs(
                 control_dict, obs_vars, date_str)
             self.obj = obs_datasets[self.obs]
             print(self.obj)
@@ -423,7 +423,7 @@ class model:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model time chunk %s' % date_str)
             # Need the option for read_grid_models to read a single dataset
-            filename, model_datasets = read_grid_util.read_grid_models(
+            model_datasets = read_grid_util.read_grid_models(
                 control_dict, date_str)
             print(self.label)
             self.obj = model_datasets[self.label]

@@ -28,7 +28,7 @@ def read_grid_models(config, date_str):
 
         model_datasets[model_name] = xr.open_dataset(filename)
 
-    return filename, model_datasets
+    return model_datasets
 
 
 def read_grid_obs(config, obs_vars, date_str):
@@ -73,5 +73,5 @@ def read_grid_obs(config, obs_vars, date_str):
 
         obs_datasets[obs_name] = ds_obs
 
-    return filename, obs_datasets
+    return obs_datasets
 
