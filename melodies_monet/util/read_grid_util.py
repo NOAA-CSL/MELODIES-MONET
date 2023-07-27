@@ -6,20 +6,25 @@ from monetio.sat._gridded_eos_mm import read_gridded_eos
 from .analysis_util import fill_date_template, find_file
 
 
-def read_grid_models(config, date_str):
+def read_grid_models(config, date_str, model=None):
     """
     Read grid data models
 
     Parameters
         config (dict): configuration dictionary
         date_str (str yyyy-mm-m_abbr-dd-ddd): date string
+        model: specific model to read
 
     Returns
         model_datasets (dict of xr.Dataset): dictionary of model datasets
     """
     model_datasets = dict()
+    if model is not None:
+        model_list = [model]
+    else:
+        model_list = config['model']
 
-    for model_name in config['model']:
+    for model_name in model_list:
 
         datadir = config['model'][model_name]['datadir']
         filestr = fill_date_template(
@@ -31,7 +36,7 @@ def read_grid_models(config, date_str):
     return model_datasets
 
 
-def read_grid_obs(config, obs_vars, date_str):
+def read_grid_obs(config, obs_vars, date_str, obs=None):
     """
     Read grid data obs
 
@@ -40,16 +45,21 @@ def read_grid_obs(config, obs_vars, date_str):
         obs_vars (dict of dict):
             nested dictionary keyed by obs set name and obs variable name
         date_str (str yyyy-mm-m_abbr-dd-ddd): date string
+        obs: specific observation to read
 
     Returns
         obs_datasets (dict of xr.Dataset): dictionary of obs datasets
     """
     obs_datasets = dict()
+    if obs is not None:
+        obs_list = [obs]
+    else:
+        obs_list = obs_vars.keys()
 
     yyyy_str, mm_str, m_abbr_str, dd_str, ddd_str \
         = tuple(date_str.split('-'))
 
-    for obs_name in obs_vars:
+    for obs_name in obs_list:
 
         data_format = config['obs'][obs_name]['data_format']
         datadir = config['obs'][obs_name]['datadir']

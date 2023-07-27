@@ -163,7 +163,7 @@ class observation:
             print(obs_vars)
             # Need the option for read_grid_obs to read a single dataset
             obs_datasets = read_grid_util.read_grid_obs(
-                control_dict, obs_vars, date_str)
+                control_dict, obs_vars, date_str, obs=self.obs)
             self.obj = obs_datasets[self.obs]
             print(self.obj)
 
@@ -424,7 +424,7 @@ class model:
             print('model time chunk %s' % date_str)
             # Need the option for read_grid_models to read a single dataset
             model_datasets = read_grid_util.read_grid_models(
-                control_dict, date_str)
+                control_dict, date_str, model=self.label)
             print(self.label)
             self.obj = model_datasets[self.label]
             print(self.obj)
