@@ -14,6 +14,7 @@ def read_grid_models(config, date_str, model=None):
         config (dict): configuration dictionary
         date_str (str yyyy-mm-m_abbr-dd-ddd): date string
         model: specific model to read
+            optional, if not specified all model in config['models'] will be read
 
     Returns
         model_datasets (dict of xr.Dataset): dictionary of model datasets
@@ -46,6 +47,7 @@ def read_grid_obs(config, obs_vars, date_str, obs=None):
             nested dictionary keyed by obs set name and obs variable name
         date_str (str yyyy-mm-m_abbr-dd-ddd): date string
         obs: specific observation to read
+            optional, if not specified all obs in obs_vars will be read
 
     Returns
         obs_datasets (dict of xr.Dataset): dictionary of obs datasets
