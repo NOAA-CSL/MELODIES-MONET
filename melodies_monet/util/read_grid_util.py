@@ -18,8 +18,11 @@ def read_grid_models(config, date_str, model=None):
 
     Returns
         model_datasets (dict of xr.Dataset): dictionary of model datasets
+        filenames (dict of str): dictionary of filenames
     """
     model_datasets = dict()
+    filenames = dict()
+
     if model is not None:
         model_list = [model]
     else:
@@ -33,8 +36,9 @@ def read_grid_models(config, date_str, model=None):
         filename = find_file(datadir, filestr)
 
         model_datasets[model_name] = xr.open_dataset(filename)
+        filenames[model_name] = filename
 
-    return model_datasets
+    return model_datasets, filenames
 
 
 def read_grid_obs(config, obs_vars, date_str, obs=None):
@@ -51,8 +55,11 @@ def read_grid_obs(config, obs_vars, date_str, obs=None):
 
     Returns
         obs_datasets (dict of xr.Dataset): dictionary of obs datasets
+        filenames (dict of str): dictionary of filenames
     """
     obs_datasets = dict()
+    filenames = dict()
+
     if obs is not None:
         obs_list = [obs]
     else:
@@ -84,6 +91,7 @@ def read_grid_obs(config, obs_vars, date_str, obs=None):
             ds_obs = xr.open_dataset(filename)
 
         obs_datasets[obs_name] = ds_obs
+        filenames[obs_name] = filename
 
-    return obs_datasets
+    return obs_datasets, filenames
 

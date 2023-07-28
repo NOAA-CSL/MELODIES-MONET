@@ -161,11 +161,10 @@ class observation:
             print('obs time chunk %s' % date_str)
             obs_vars = analysis_util.get_obs_vars(control_dict)
             print(obs_vars)
-            # Need the option for read_grid_obs to read a single dataset
-            obs_datasets = read_grid_util.read_grid_obs(
+            obs_datasets, filenames = read_grid_util.read_grid_obs(
                 control_dict, obs_vars, date_str, obs=self.obs)
+            print(filenames)
             self.obj = obs_datasets[self.obs]
-            print(self.obj)
 
         else:
             if self.file.startswith("example:"):
@@ -422,12 +421,10 @@ class model:
         elif time_chunking_with_gridded_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model time chunk %s' % date_str)
-            # Need the option for read_grid_models to read a single dataset
-            model_datasets = read_grid_util.read_grid_models(
+            model_datasets, filenames = read_grid_util.read_grid_models(
                 control_dict, date_str, model=self.label)
-            print(self.label)
+            print(filenames)
             self.obj = model_datasets[self.label]
-            print(self.obj)
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
