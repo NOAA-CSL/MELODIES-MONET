@@ -436,6 +436,21 @@ class model:
             #self.obj.monet.scrip = self.obj_scrip
         # MEB: addition for personal local copy to work with development UFS-RAQMS
         #      not intended for public versions
+        elif 'fv3raqms' in self.model.lower():
+            if time_interval is not None:
+                # fill filelist with subset
+                print('subsetting to interval')
+                file_sublist = tsub.subset_model_filelist(self.files,'%Y%m%d%H','6H',time_interval)
+            else:
+                # fill filelist with all files
+                file_sublist = self.files
+            if len(file_sublist) > 1:
+                self.obj = mio.models.fv3raqms.open_mfdataset(file_sublist,**self.mod_kwargs)
+            else:
+                self.obj = mio.models.fv3raqms.open_dataset(file_sublist)
+            self.obj = self.obj.rename({'sfcp':'surfpres_pa','dpm':'dp_pa','pdash':'pres_pa_mid'})
+            #self.obj['surfpres_pa'] *= 100
+            #self.obj['dp_pa'] *= 100
         elif 'raqms' in self.model.lower():
             if time_interval is not None:
                 # fill filelist with subset
