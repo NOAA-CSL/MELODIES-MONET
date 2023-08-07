@@ -22,229 +22,8 @@ from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
+from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory,calc_8hr_rolling_max_v1,calc_default_colors,new_color_map,map_projection,get_utcoffset,make_timeseries,make_taylor,calculate_boxplot,make_boxplot
 
-def make_24hr_regulatory(df, col=None):
-    """Calculates 24-hour averages
-    
-    Parameters
-    ----------
-    df : dataframe
-        Model/obs pair of hourly data
-    col : str
-        Column label of observation variable to apply the calculation 
-    Returns
-    -------
-    dataframe
-        dataframe with applied calculation
-        
-    """
-    #return calc_24hr_ave(df, col)
-    return calc_24hr_ave_v1(df, col)
-
-def calc_24hr_ave_v1(df, col=None):
-    df.index = df.time_local
-    # select sites with nobs >=18, 75% completeness
-    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=18)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
-    df = df.reset_index(drop=True)
-    return df.merge(df_24hr_ave, on=["siteid", "time_local"])
-
-def make_8hr_regulatory(df, col=None):
-    """Calculates 8-hour rolling average daily
-    
-    Parameters
-    ----------
-    df : dataframe
-        Model/obs pair of hourly data
-    col : str
-        Column label of observation variable to apply the calculation 
-    Returns
-    -------
-    dataframe
-        dataframe with applied calculation
-        
-    """
-    #return calc_8hr_rolling_max(df, col, window=8)
-    return calc_8hr_rolling_max_v1(df, col, window=8)
-
-def calc_8hr_rolling_max_v1(df, col=None, window=None):
-    df.index = df.time_local
-    df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
-    # JianHe: select sites with nobs >=18, 75% completeness based on EPA
-    df_rolling.index = df_rolling.time_local
-    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18).reset_index(drop=True).dropna()
-    df = df.reset_index(drop=True)
-    return df.merge(df_rolling_max, on=["siteid", "time_local"])
-
-def calc_default_colors(p_index):
-    """List of default colors, lines, and markers to use if user does not 
-    specify them in the input yaml file.
-    
-    Parameters
-    ----------
-    p_index : integer
-        Number of pairs in analysis class
-    
-    Returns
-    -------
-    list
-        List of dictionaries containing default colors, lines, and 
-        markers to use for plotting for the number of pairs in analysis class
-        
-    """
-    x = [dict(color='b', linestyle='--',marker='x'),
-         dict(color='g', linestyle='-.',marker='o'),
-         dict(color='r', linestyle=':',marker='v'),
-         dict(color='c', linestyle='--',marker='^'),
-         dict(color='m', linestyle='-.',marker='s')]
-    #Repeat these 5 instances over and over if more than 5 lines.
-    return x[p_index % 5]
-
-def new_color_map():
-    """Creates new color map for difference plots
-    
-    Returns
-    -------
-    colormap
-        Orange and blue color map
-        
-    """
-    top = plt.get_cmap("Blues_r", 128)
-    bottom = plt.get_cmap("Oranges", 128)
-
-    newcolors = np.vstack((top(np.linspace(0, 1, 128)),
-                           bottom(np.linspace(0, 1, 128))))
-    return ListedColormap(newcolors, name='OrangeBlue')
-
-# Register the custom cmap
-_cmap_name = "OrangeBlue"
-try:
-    plt.get_cmap(_cmap_name)
-except ValueError:
-    _cmap = new_color_map()
-    try:
-        mpl.colormaps.register(_cmap)  # mpl 3.6+
-    except AttributeError:
-        mpl.cm.register_cmap(cmap=_cmap)  # old method
-
-def map_projection(m, *, model_name=None):
-    """Define map projection.
-    
-    Parameters
-    ----------
-    m : melodies_monet.driver.model
-        Model class instance.
-    model_name : str, optional
-        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
-        If provided, will be used to create a new projection
-        (i.e., an existing ``m.proj`` projection won't be returned).
-
-    Returns
-    -------
-    cartopy.crs.Projection
-        Projection to be used by cartopy in plotting.
-    """
-    import cartopy.crs as ccrs
-
-    if model_name is None:
-        mod = m.model.lower()
-        if m.proj is not None:
-            if isinstance(m.proj, str) and m.proj.startswith("model:"):
-                mod_name_for_proj = m.proj.split(":")[1].strip()
-                return map_projection(m, model_name=mod_name_for_proj)
-            elif isinstance(m.proj, ccrs.Projection):
-                return m.proj
-            else:
-                raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
-    else:
-        mod = model_name
-
-    if mod == 'cmaq':
-        proj = ccrs.LambertConformal(
-            central_longitude=m.obj.XCENT, central_latitude=m.obj.YCENT)
-    elif mod in {'wrfchem', 'rapchem'}:
-        if m.obj.MAP_PROJ == 1:
-            proj = ccrs.LambertConformal(
-                central_longitude=m.obj.CEN_LON, central_latitude=m.obj.CEN_LAT)
-        elif m.MAP_PROJ == 6:
-            #Plate Carree is the equirectangular or equidistant cylindrical
-            proj = ccrs.PlateCarree(
-                central_longitude=m.obj.CEN_LON)
-        else:
-            raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
-    # Need to add the projections you want to use for the other models here.
-    elif mod == 'rrfs':
-        proj = ccrs.LambertConformal(
-            central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
-    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
-        proj = ccrs.PlateCarree()
-    elif mod == 'random':
-        proj = ccrs.PlateCarree()
-    else:
-        print(
-            f'NOTE: Projection not defined for model {mod!r}. '
-            'Please add to surfplots.py. '
-            'Setting to `ccrs.PlateCarree()`.'
-        )
-        proj = ccrs.PlateCarree()
-    return proj
-
-def get_utcoffset(lat,lon):
-    """get UTC offset in hour based on a point (lat/lon)
-
-    Parameters
-    ----------
-    lat : 
-        Latitude (deg; -90. to 90.)
-    lon :
-        Longitude (deg; -180. to 180.)
-        
-    Returns
-    -------
-    UTC offset in hour
-
-    """
-    import datetime, pytz
-    from datetime import datetimee, timezone
-    import pytz
-    from timezonefinder import TimezoneFinder
-
-    tf = TimezoneFinder()
-
-    timezone_str = tf.timezone_at(lng=lon, lat=lat)
-
-    if timezone_str is None:
-        #print('None timezone: ', lat, lon)
-        if lon > -100.0:
-            timezone_str = 'America/New_York'
-        else:
-            timezone_str = 'America/Los_Angeles'
-
-        tz = pytz.timezone(timezone_str)
-        d=datetime.utcnow()
-        uos = tz.utcoffset(d, is_dst=False)
-        utchour = uos.seconds/60.0/60.0
-        utcday = uos.days
-
-    elif timezone_str.startswith({'Etc','GMT'}):
-        #print('Ocean timezone: ', timezone_str)
-        tz = pytz.timezone(timezone_str)
-        d=datetime.utcnow()
-        uos = tz.utcoffset(d, is_dst=False)
-        utchour = uos.seconds/60.0/60.0
-        utcday = uos.days
-
-    else:
-        #print('Land timezone: ', timezone_str)
-        tz = pytz.timezone(timezone_str)
-        d=datetime.utcnow()
-        uos = tz.utcoffset(d, is_dst=True)
-        utchour = uos.seconds/60.0/60.0
-        utcday = uos.days
-
-    if utcday < 0:
-       utchour = (24-utchour)*(-1) # Local - UTC
-
-    return utchour
 
 
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
@@ -383,123 +162,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
     
-def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_window=None, ylabel=None,
-                    vmin = None, vmax = None,
-                    domain_type=None, domain_name=None,
-                    plot_dict=None, fig_dict=None, text_dict=None,debug=False):
-    """Creates timeseries plot. 
-    
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        model/obs paired data to plot
-    df_reg : pandas.DataFrame
-        model/obs paired regulatory data to plot
-    column : str
-        Column label of variable to plot
-    label : str
-        Name of variable to use in plot legend 
-    ax : ax
-        matplotlib ax from previous occurrence so can overlay obs and model 
-        results on the same plot
-    avg_window : rule 
-        Pandas resampling rule (e.g., 'H', 'D')
-    ylabel : str
-        Title of y-axis
-    vmin : real number
-        Min value to use on y-axis
-    vmax : real number
-        Max value to use on y-axis
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    plot_dict : dictionary
-        Dictionary containing information about plotting for each pair 
-        (e.g., color, linestyle, markerstyle)   
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    ax 
-        matplotlib ax such that driver.py can iterate to overlay multiple models on the 
-        same plot
-        
-    """
-    if debug == False:
-        plt.ioff()
-    #First define items for all plots
-    #set default text size
-    def_text = dict(fontsize=14)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column
-    if label is not None:
-        plot_dict['label'] = label
-    if vmin is not None and vmax is not None:
-        plot_dict['ylim'] = [vmin,vmax]
-    #scale the fontsize for the x and y labels by the text_kwargs
-    plot_dict['fontsize'] = text_kwargs['fontsize']*0.8
-    
-    #Then, if no plot has been created yet, create a plot and plot the obs.
-    if ax is None: 
-        #First define the colors for the observations.
-        obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=1.2, markersize=6.)
-        if plot_dict is not None:
-            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-            plot_kwargs = {**obs_dict, **plot_dict}
-        else:
-            plot_kwargs = obs_dict
-        # create the figure
-        if fig_dict is not None:
-            f,ax = plt.subplots(**fig_dict)    
-        else: 
-            f,ax = plt.subplots(figsize=(10,6))
-        # plot the line
-        if df_reg is not None:
-            ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
-        else:
-            if avg_window is None:
-                ax = df[column].plot(ax=ax, **plot_kwargs)
-            else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)
-    
-    # If plot has been created add to the current axes.
-    else:
-        # this means that an axis handle already exists and use it to plot the model output.
-        if df_reg is not None:
-            ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_dict)
-        else:
-            if avg_window is None:
-                ax = df[column].plot(ax=ax, legend=True, **plot_dict)
-            else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict)    
-    
-    #Set parameters for all plots
-    ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.set_xlabel(ax.get_xlabel(),fontweight='bold',**text_kwargs)
-    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
-    ax.tick_params(axis='both',length=10.0,direction='inout')
-    ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
-    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
-              bbox_to_anchor=(1.0, 0.9), loc='center left')
-    if domain_type is not None and domain_name is not None:
-        if domain_type == 'epa_region':
-            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        else:
-            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
-    return ax
-    
+
 ####NEW vertprofile TRY (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
@@ -595,16 +258,32 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
 
         # Calculate the mean of bin_midpoints grouped by altitude bins
         binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
+
+        ##try this
+        plot_kwargs_fillbetween = plot_kwargs.copy()
+        del plot_kwargs_fillbetween['marker']
+        del plot_kwargs_fillbetween['markersize']
+        del plot_kwargs_fillbetween['fontsize']
+
+        
+
+        ax.fill_betweenx(binmidpoint.values,q1.values, q3.values, alpha=0.3, ** plot_kwargs_fillbetween)
         
         #breakpoint() #for de-bugging in .py file
         # Plot shaded interquartiles
-        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_kwargs)
-        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_kwargs)  #Swap Axes 
+        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs)
+        #ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs)
+        ##ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#,legend=True, **plot_kwargs)  #Swap Axes 
         
         # Plot median line
         
-        #ax.plot(binmidpoint.values, median.values),# **plot_kwargs)
-        ax.plot(median.values, binmidpoint.values)#, **plot_kwargs) #Swap Axes 
+        #ax.plot(binmidpoint.values, median.values, **plot_kwargs)
+        #ax.plot( median.values,binmidpoint.values, **plot_kwargs)
+        ##ax.plot(median.values, binmidpoint.values)#,legend=True, **plot_kwargs) #Swap Axes 
+        median_line_df= pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+
+        #ax= median_line_df.plot(ax=ax, legend=True, **plot_kwargs)
+        ax= median_line_df.plot(x='median',y='binmidpoint',ax=ax, legend=True, **plot_kwargs)
                 
     
     # If plot has been created, add to the current axes
@@ -626,14 +305,25 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
         
         #breakpoint() #for de-bugging
+        #try this (colin) Try with plot_kwargs only first Line 602
+        #plot_kwargs_fillbetween = plot_kwargs.copy()
+        #del plot_kwargs_fillbetween['marker']
+        plot_kwargs_fillbetween = plot_dict.copy()
+        del plot_kwargs_fillbetween['marker']
+        del plot_kwargs_fillbetween['markersize']
+        del plot_kwargs_fillbetween['fontsize']
                 
         # Plot shaded interquartiles
         #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)
-        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)  #Swap Axes
+        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs_fillbetween)#,legend=True, **plot_dict)  #Swap Axes
         
         # Plot median line
         #ax.plot(binmidpoint.values, median.values)#, **plot_dict)
-        ax.plot(median.values, binmidpoint.values)#, **plot_dict) #Swap Axes
+        ##ax.plot(median.values, binmidpoint.values)#,legend=True, **plot_dict) #Swap Axes
+        median_line_df= pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+
+        #ax= median_line_df.plot(ax=ax, legend=True, **plot_kwargs)
+        ax= median_line_df.plot(x='median',y='binmidpoint',ax=ax, legend=True, **plot_dict)
                 
     
     # Set parameters for all plots
@@ -655,130 +345,12 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         else:
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)         
                 
-    #breakpoint() #debug
+    breakpoint() #debug
                          
     return ax
 
 
 
-
-def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, label_m='Model', 
-                dia=None, ylabel=None, ty_scale=1.5,
-                domain_type=None, domain_name=None,
-                plot_dict=None, fig_dict=None, text_dict=None,debug=False):
-    """Creates taylor plot. Note sometimes model values are off the scale 
-    on this plot. This will be fixed soon.
-    
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        model/obs paired data to plot
-    df_reg : pandas.DataFrame
-        model/obs paired regulatory data to plot
-    column_o : str
-        Column label of observational variable to plot
-    label_o : str
-        Name of observational variable to use in plot legend
-    column_m : str
-        Column label of model variable to plot
-    label_m : str
-        Name of model variable to use in plot legend 
-    dia : dia
-        matplotlib ax from previous occurrence so can overlay obs and model 
-        results on the same plot
-    ylabel : str
-        Title of x-axis
-    ty_scale : real
-        Scale to apply to taylor plot to control the plotting range
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    plot_dict : dictionary
-        Dictionary containing information about plotting for each pair 
-        (e.g., color, linestyle, markerstyle)   
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    class 
-        Taylor diagram class defined in MONET
-        
-    """
-    #First define items for all plots
-    if debug == False:
-        plt.ioff()
-        
-    #set default text size
-    def_text = dict(fontsize=14.0)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column_o
-    #Then, if no plot has been created yet, create a plot and plot the first pair.
-
-    if dia is None:
-        # create the figure
-        if fig_dict is not None:
-            f = plt.figure(**fig_dict)
-        else:
-            f = plt.figure(figsize=(12,10))
-        sns.set_style('ticks')
-        # plot the line
-        if df_reg is not None:
-            dia = td(df_reg[column_o+'_reg'].std(), scale=ty_scale, fig=f,
-                               rect=111, label=label_o)
-            plt.grid(linewidth=1, alpha=.5)
-            cc = corrcoef(df_reg[column_o+'_reg'].values, df_reg[column_m+'_reg'].values)[0, 1]
-            dia.add_sample(df_reg[column_m+'_reg'].std(), cc, zorder=9, label=label_m, **plot_dict)
-        else:
-            dia = td(df[column_o].std(), scale=ty_scale, fig=f,
-                               rect=111, label=label_o)
-            plt.grid(linewidth=1, alpha=.5)
-            cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
-            dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
-
-    else:
-        # If plot has been created add to the current axes.
-        if df_reg is not None:
-            # this means that an axis handle already exists and use it to plot another model
-            cc = corrcoef(df_reg[column_o+'_reg'].values, df_reg[column_m+'_reg'].values)[0, 1]
-            dia.add_sample(df_reg[column_m+'_reg'].std(), cc, zorder=9, label=label_m, **plot_dict)
-        else:
-            cc = corrcoef(df[column_o].values, df[column_m].values)[0, 1]
-            dia.add_sample(df[column_m].std(), cc, zorder=9, label=label_m, **plot_dict)
-
-    #Set parameters for all plots
-    contours = dia.add_contours(colors='0.5')
-    plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
-    plt.grid(alpha=.5)
-    plt.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
-               bbox_to_anchor=(0.75, 0.93), loc='center left')
-    if domain_type is not None and domain_name is not None:
-        if domain_type == 'epa_region':
-            plt.title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        else:
-            plt.title(domain_name,fontweight='bold',**text_kwargs)
-    ax = plt.gca()
-    ax.axis["left"].label.set_text('Standard Deviation: '+ylabel)
-    ax.axis["top"].label.set_text('Correlation')
-    ax.axis["left"].label.set_fontsize(text_kwargs['fontsize'])
-    ax.axis["top"].label.set_fontsize(text_kwargs['fontsize'])
-    ax.axis["left"].label.set_fontweight('bold')
-    ax.axis["top"].label.set_fontweight('bold')
-    ax.axis["top"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
-    ax.axis["left"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
-    ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
-    return dia
 
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
@@ -946,154 +518,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
-def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
-    """Combines data into acceptable format for box-plot
-    
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        model/obs paired data to plot
-    df_reg : pandas.DataFrame
-        model/obs paired regulatory data to plot
-    column : str
-        Column label of variable to plot
-    label : str
-        Name of variable to use in plot legend
-    comb_bx: dataframe
-        dataframe containing information to create box-plot from previous 
-        occurrence so can overlay multiple model results on plot
-    label_bx: list
-        list of string labels to use in box-plot from previous occurrence so 
-        can overlay multiple model results on plot
-    Returns
-    -------
-    dataframe, list
-        dataframe containing information to create box-plot
-        list of string labels to use in box-plot
-        
-    """
-    if comb_bx is None and label_bx is None:
-        comb_bx = pd.DataFrame()
-        label_bx = []
-        #First define the colors for the observations.
-        obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
-        if plot_dict is not None:
-            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-            plot_kwargs = {**obs_dict, **plot_dict}
-        else:
-            plot_kwargs = obs_dict
-    else:
-        plot_kwargs = plot_dict
-    #For all, a column to the dataframe and append the label info to the list.
-    plot_kwargs['column'] = column
-    plot_kwargs['label'] = label
-    if df_reg is not None:
-        comb_bx[label] = df_reg[column+'_reg']
-    else:
-        comb_bx[label] = df[column]
-    label_bx.append(plot_kwargs)
-    
-    return comb_bx, label_bx
-    
-def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
-                 domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
-    
-    """Creates box-plot. 
-    
-    Parameters
-    ----------
-    comb_bx: dataframe
-        dataframe containing information to create box-plot from 
-        calculate_boxplot
-    label_bx: list
-        list of string labels to use in box-plot from calculate_boxplot
-    ylabel : str
-        Title of y-axis
-    vmin : real number
-        Min value to use on y-axis
-    vmax : real number
-        Max value to use on y-axis
-    outname : str
-        file location and name of plot (do not include .png)
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    plot_dict : dictionary
-        Dictionary containing information about plotting for each pair 
-        (e.g., color, linestyle, markerstyle)   
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    plot 
-        box plot
-        
-    """
-    if debug == False:
-        plt.ioff()
-    #First define items for all plots
-    #set default text size
-    def_text = dict(fontsize=14)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = label_bx[0]['column']
-    
-    #Fix the order and palate colors
-    order_box = []
-    pal = {}
-    for i in range(len(label_bx)):
-        order_box.append(label_bx[i]['label'])
-        pal[label_bx[i]['label']] = label_bx[i]['color']
-        
-    #Make plot
-    if fig_dict is not None:
-        f,ax = plt.subplots(**fig_dict)    
-    else: 
-        f,ax = plt.subplots(figsize=(8,8))
-    #Define characteristics of boxplot.
-    boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
-    lineprops = {'color': 'k', 'linewidth': 1.5}
-    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
-                  'whiskerprops': lineprops, 'capprops': lineprops,
-                  'fliersize' : 2.0, 
-                  'flierprops': dict(marker='*', 
-                                     markerfacecolor='blue', 
-                                     markeredgecolor='none',
-                                     markersize = 6.0),
-                  'width': 0.75, 'palette': pal,
-                  'order': order_box,
-                  'showmeans': True, 
-                  'meanprops': {'marker': ".", 'markerfacecolor': 'black', 
-                                'markeredgecolor': 'black',
-                               'markersize': 20.0}}
-    sns.set_style("whitegrid")
-    sns.set_style("ticks")
-    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), **boxplot_kwargs)
-    ax.set_xlabel('')
-    ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
-    if domain_type is not None and domain_name is not None:
-        if domain_type == 'epa_region':
-            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        else:
-            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
-    if vmin is not None and vmax is not None:
-        ax.set_ylim(ymin = vmin, ymax = vmax)
-    
-    plt.tight_layout()
-    savefig(outname + '.png', loc=4, logo_height=100)
+
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
