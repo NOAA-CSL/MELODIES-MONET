@@ -19,6 +19,7 @@ from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Rectangle
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
@@ -163,11 +164,11 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     savefig(outname + '.png', loc=4, logo_height=120)
     
 
-####NEW vertprofile TRY (qzr++)
+####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
-                     plot_dict=None, fig_dict=None, text_dict=None, debug=False):
+                     plot_dict=None, fig_dict=None, text_dict=None, debug=False, interquartile_style=None):
     """Creates altitude profile plot.
     
     Parameters
@@ -202,6 +203,8 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         Dictionary containing information about text.
     debug : bool
         Whether to plot interactively (True) or not (False). Flag for submitting jobs to supercomputer turn off interactive mode.
+    interquartile_style= str
+        Whether the vertical profile uses shading or box style for interquartile range
         
     Returns
     -------
@@ -228,7 +231,9 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         plot_dict['ylim'] = [vmin, vmax]
     # Scale the fontsize for the x and y labels by the text_kwargs
     plot_dict['fontsize'] = text_kwargs['fontsize'] * 0.8
-    
+
+      
+                         
     # Then, if no plot has been created yet, create a plot and plot the obs
     if ax is None: 
         # First define the colors for the observations
@@ -256,34 +261,97 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
+        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
+        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
+        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+        
         # Calculate the mean of bin_midpoints grouped by altitude bins
         binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
 
-        ##try this
+        ##Plotting vertprofile starts
         plot_kwargs_fillbetween = plot_kwargs.copy()
         del plot_kwargs_fillbetween['marker']
         del plot_kwargs_fillbetween['markersize']
         del plot_kwargs_fillbetween['fontsize']
 
+       
+        # Copy the plot_kwargs outside the loop
+        plot_kwargs_fillbox = plot_kwargs.copy()
         
 
-        ax.fill_betweenx(binmidpoint.values,q1.values, q3.values, alpha=0.3, ** plot_kwargs_fillbetween)
+        # Define box properties for transparency
+        boxprops = {
+            'facecolor': 'none',  # Transparent facecolor
+        }
+
+        # Track labels that have been added to the legend
+        labels_added_to_legend = set()
         
-        #breakpoint() #for de-bugging in .py file
         # Plot shaded interquartiles
-        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs)
-        #ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs)
-        ##ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3)#,legend=True, **plot_kwargs)  #Swap Axes 
+        plot_kwargs_fillbetween['label'] = f"{label} (interquartile 25th-75th percentile range)"
+        if interquartile_style == 'shading':
+            ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs_fillbetween)
         
-        # Plot median line
-        
-        #ax.plot(binmidpoint.values, median.values, **plot_kwargs)
-        #ax.plot( median.values,binmidpoint.values, **plot_kwargs)
-        ##ax.plot(median.values, binmidpoint.values)#,legend=True, **plot_kwargs) #Swap Axes 
-        median_line_df= pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+        # For interquartile_style == 'box' case
+        elif interquartile_style == 'box':
+            box_data = []
+            for idx in range(len(q1)):
+                # Create a dictionary for each box with the required statistics
+                box_data.append({
+                    'med': median.values[idx],
+                    'q1': q1.values[idx],
+                    'q3': q3.values[idx],
+                    'whislo': p10.values[idx],
+                    'whishi': p90.values[idx],
+                    'fliers': []
+                })        
+            
+            # Creating a vertical boxplot for each bin
+            for idx, data in enumerate(box_data):                
+                # Get the color for the label from plot_kwargs or use a default color
+                color = plot_kwargs_fillbox.get('color', 'black')
+                                                        
+                # Determine if the label should be added to the legend (only once for each label)
+                legend_label = label if idx == 0 else None
 
+                # Box properties
+                boxprops = {
+                    'facecolor': 'none',  # Transparent face color
+                    'edgecolor': color,   # Edge color matching the median line color
+                    'linewidth': 2        # Thickness of the box
+                }
+
+                # Whisker properties
+                whiskerprops = {
+                'color': color,       # Whisker color
+                'linewidth': 2        # Thickness of the whiskers
+                }
+
+                # Median line properties
+                medianprops = {
+                    'color': 'none'       # Transparent color for median line
+                }
+
+                capprops = {'color': color, 'linewidth': 2} # Whisker end bar properties
+
+                # Create the box plot
+                ax.bxp([data], vert=False, positions=[binmidpoint.values[idx]],
+                       widths=500, meanline=True, patch_artist=True, 
+                       boxprops=boxprops, whiskerprops=whiskerprops, medianprops=medianprops,
+                      capprops=capprops)
+
+                # Optional: Add a legend entry for the box (only once)
+                if legend_label and idx == 0:
+                    box_legend_artist = Rectangle((0, 0), 1, 1, facecolor='none', edgecolor=color, linewidth=2)
+                    ax.legend([box_legend_artist], [f"{legend_label} (box-whisker)"], loc='upper left')
+            
+
+        plot_kwargs['label'] = f"{label} (median)"
+        median_line_df = pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+        ax = median_line_df.plot(x='median', y='binmidpoint', ax=ax, legend=True, **plot_kwargs)
         #ax= median_line_df.plot(ax=ax, legend=True, **plot_kwargs)
-        ax= median_line_df.plot(x='median',y='binmidpoint',ax=ax, legend=True, **plot_kwargs)
+        
                 
     
     # If plot has been created, add to the current axes
@@ -301,44 +369,108 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
+        # Calculate the 10th, 90th, 5th, and 95th percentiles
+        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
+        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
+        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+
         # Calculate the mean of bin_midpoints grouped by altitude bins
         binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
-        
-        #breakpoint() #for de-bugging
-        #try this (colin) Try with plot_kwargs only first Line 602
-        #plot_kwargs_fillbetween = plot_kwargs.copy()
-        #del plot_kwargs_fillbetween['marker']
+          
         plot_kwargs_fillbetween = plot_dict.copy()
         del plot_kwargs_fillbetween['marker']
         del plot_kwargs_fillbetween['markersize']
-        del plot_kwargs_fillbetween['fontsize']
-                
-        # Plot shaded interquartiles
-        #ax.fill_between(binmidpoint.values, q1.values, q3.values, alpha=0.3)#, **plot_dict)
-        ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs_fillbetween)#,legend=True, **plot_dict)  #Swap Axes
+        del plot_kwargs_fillbetween['fontsize']  
         
-        # Plot median line
-        #ax.plot(binmidpoint.values, median.values)#, **plot_dict)
-        ##ax.plot(median.values, binmidpoint.values)#,legend=True, **plot_dict) #Swap Axes
-        median_line_df= pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+        # Copy the plot_kwargs outside the loop
+        plot_kwargs_fillbox = plot_dict.copy()
+        
+        # Define box properties for transparency
+        boxprops = {
+            'facecolor': 'none',  # Transparent facecolor
+        }
 
-        #ax= median_line_df.plot(ax=ax, legend=True, **plot_kwargs)
-        ax= median_line_df.plot(x='median',y='binmidpoint',ax=ax, legend=True, **plot_dict)
-                
+        # Track labels that have been added to the legend
+        labels_added_to_legend = set()
+        
+        plot_kwargs_fillbetween['label'] = f"{label} (interquartile 25th-75th percentile range)"
+        if interquartile_style == 'shading':
+            ax.fill_betweenx(binmidpoint.values, q1.values, q3.values, alpha=0.3, **plot_kwargs_fillbetween)
+        # For interquartile_style == 'box' case
+        elif interquartile_style == 'box':
+            box_data = []
+            for idx in range(len(q1)):
+                # Create a dictionary for each box with the required statistics
+                box_data.append({
+                    'med': median.values[idx],
+                    'q1': q1.values[idx],
+                    'q3': q3.values[idx],
+                    'whislo': p10.values[idx],
+                    'whishi': p90.values[idx],
+                    'fliers': []
+                })
+
+            # Creating a vertical boxplot for each bin
+            for idx, data in enumerate(box_data):
+                # Get the color for the label from plot_kwargs or use a default color
+                color = plot_kwargs_fillbox.get('color', 'black')
+
+                # Determine if the label should be added to the legend (only once for each label)
+                legend_label = label if idx == 0 else None
+
+                # Box properties
+                boxprops = {
+                    'facecolor': 'none',  # Transparent face color
+                    'edgecolor': color,   # Edge color matching the median line color
+                    'linewidth': 2        # Thickness of the box
+                }
+
+                # Whisker properties
+                whiskerprops = {
+                'color': color,       # Whisker color
+                'linewidth': 2        # Thickness of the whiskers
+                }
+
+                # Median line properties
+                medianprops = {
+                    'color': 'none'       # Transparent color for median line
+                }
+
+                capprops = {'color': color, 'linewidth': 2} # Whisker end bar properties
+
+                # Create the box plot
+                ax.bxp([data], vert=False, positions=[binmidpoint.values[idx]],
+                       widths=500, meanline=True, patch_artist=True, 
+                       boxprops=boxprops, whiskerprops=whiskerprops, medianprops=medianprops,
+                      capprops=capprops)
+
+                # Optional: Add a legend entry for the box (only once)
+                if legend_label and idx == 0:
+                    box_legend_artist = Rectangle((0, 0), 1, 1, facecolor='none', edgecolor=color, linewidth=2)
+                    ax.legend([box_legend_artist], [f"{legend_label} (box-whisker)"], loc='upper left')
+            
+        # Plot median line
+        plot_dict['label'] = f"{label} (median)"
+        median_line_df = pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
+        ax = median_line_df.plot(x='median', y='binmidpoint', ax=ax, legend=True, **plot_dict)
+        
     
+    # Add text to legend (adjust the x and y coordinates to place the text below the legend)
+    plt.text(1.12, 0.7, 'Bounds of box: Interquartile range\nWhiskers: 10th and 90th percentiles', transform=ax.transAxes, fontsize=text_kwargs['fontsize']*0.8)
+                         
     # Set parameters for all plots
     #ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
     #ax.set_xlabel(ax.get_xlabel(), fontweight='bold', **text_kwargs)
     ax.set_ylabel('Altitude (m)', fontweight='bold', **text_kwargs) #Swap Axes
     ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) #Swap Axes
-    #ax.legend(frameon=False, fontsize=text_kwargs['fontsize'] * 0.8)
-    #ax.tick_params(axis='both', length=10.0, direction='inout')
-    #ax.tick_params(axis='both', which='minor', length=5.0, direction='out')
+    
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
-    ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
-              bbox_to_anchor=(1.0, 0.9), loc='center left')
+    #Adjust label position                         
+    ax.legend(frameon=False, fontsize=text_kwargs['fontsize']*0.8, bbox_to_anchor=(1.1, 0.9), loc='center left')
+
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)

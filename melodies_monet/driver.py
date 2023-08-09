@@ -947,10 +947,27 @@ class analysis:
         #     1) a singular plot type
         #     2) multiple paired datasets or model datasets depending on the plot type
         #     3) kwargs for creating the figure ie size and marker (note the default for obs is 'x')
+
+        # Loop through the plot_dict items
         for grp, grp_dict in plot_dict.items():
+            
+            # Read the interquartile_style argument (for vertprofile plot type) if it exists
+            if grp_dict.get('type') == 'vertprofile':
+                interquartile_style = grp_dict.get('data_proc', {}).get('interquartile_style', 'shading')
+            else:
+                interquartile_style = None
+
             pair_labels = grp_dict['data']
-            # get the plot type
+            # Get the plot type
             plot_type = grp_dict['type']
+
+        
+        ##for grp, grp_dict in plot_dict.items():
+            ##pair_labels = grp_dict['data']
+            # get the plot type
+            ##plot_type = grp_dict['type']
+
+          
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1036,6 +1053,8 @@ class analysis:
                             use_percentile = obs_plot_dict['percentile_opt']
                         else:
                             use_percentile = None
+
+                        
 
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
@@ -1264,7 +1283,8 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
-                                    debug=self.debug
+                                    debug=self.debug,
+                                    interquartile_style=interquartile_style 
                             )
                             
                             # For all p_index plot the model.
@@ -1282,7 +1302,8 @@ class analysis:
                                 domain_name=domain_name,
                                 plot_dict=plot_dict,
                                 text_dict=text_dict,
-                                debug=self.debug
+                                debug=self.debug,
+                                interquartile_style=interquartile_style 
                             )
                             
                             
