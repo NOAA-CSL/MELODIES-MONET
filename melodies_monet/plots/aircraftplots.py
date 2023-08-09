@@ -170,7 +170,26 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
     
+####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
+def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs):
+    ax2 = ax.twinx()
+    ax2.plot(pairdf.index, pairdf[altitude_variable], color='g', label='Altitude (m)')
+    ax2.set_ylabel('Altitude (m)', color='g', fontweight='bold', fontsize=text_kwargs['fontsize'])
+    ax2.tick_params(axis='y', labelcolor='g', labelsize=text_kwargs['fontsize'] * 0.8)
+    ax2.set_ylim(0, max(pairdf[altitude_variable]) + altitude_ticks)
+    ax2.set_xlim(ax.get_xlim())
+    ax2.yaxis.set_ticks(np.arange(0, max(pairdf[altitude_variable]) + altitude_ticks, altitude_ticks))
 
+    # Extract the current legend and add a custom legend for the altitude line
+    lines, labels = ax.get_legend_handles_labels()
+    lines.append(ax2.get_lines()[0])
+    labels.append('Altitude (m)')
+    ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], bbox_to_anchor=(1.15, 0.9), loc='center left')
+
+    return ax
+
+
+                          
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 

@@ -1222,31 +1222,14 @@ class analysis:
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined
 
 
-                            # If the observation type is aircraft, add a secondary y-axis for altitude qzr++
-                            if grp_dict['data_proc'].get('altitude_variable'):
-                                altitude_variable = grp_dict['data_proc']['altitude_variable']
-                                altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
-                                ax2 = ax.twinx()
-                                ax2.plot(pairdf.index, pairdf[altitude_variable], color='g', label='Altitude (m)')
-                                ax2.set_ylabel('Altitude (m)', color='g', fontsize=text_kwargs['fontsize'])  # Use font size from YAML
-                                ax2.tick_params(axis='y', labelcolor='g', labelsize=text_kwargs['fontsize'] * 0.8)  # Adjust tick label font size
-                                ax2.set_ylim(0, max(pairdf[altitude_variable]) + 500)  # Set y-axis limits
-                                ax2.set_xlim(ax.get_xlim())
-                                ax2.yaxis.set_ticks(np.arange(0, max(pairdf[altitude_variable]) + 500, altitude_ticks))  # Set custom tick intervals
-
-                            # Extract the current legend and add a custom legend for the altitude line
-                            lines, labels = ax.get_legend_handles_labels()
-                            lines.append(ax2.get_lines()[0])
-                            labels.append('Altitude (m)')
-                            ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], bbox_to_anchor=(1.15, 0.9), loc='center left')
-
-
-
+                            
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                #if obs.obs_type.lower() == 'aircraft': #didn't work
-                                #    airplots.add_yax2_altitude()
-                                #else:
+                                #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                if grp_dict['data_proc'].get('altitude_variable'):
+                                    altitude_variable = grp_dict['data_proc']['altitude_variable']
+                                    altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
+                                    ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs) 
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                                 
