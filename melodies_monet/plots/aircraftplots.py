@@ -20,12 +20,19 @@ sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Rectangle
+from matplotlib.ticker import FuncFormatter
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
 from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory,calc_8hr_rolling_max_v1,calc_default_colors,new_color_map,map_projection,get_utcoffset,make_timeseries,make_taylor,calculate_boxplot,make_boxplot
 
 
+# Define a custom formatting function
+def custom_yaxis_formatter(x, pos):
+    if x == int(x):
+        return str(int(x))
+    else:
+        return str(x)
 
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
@@ -458,13 +465,11 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     
     # Add text to legend (adjust the x and y coordinates to place the text below the legend)
     plt.text(1.12, 0.7, 'Bounds of box: Interquartile range\nWhiskers: 10th and 90th percentiles', transform=ax.transAxes, fontsize=text_kwargs['fontsize']*0.8)
-                         
+    # Apply the custom formatter to the y-axis (round off y-axis tick labels if after decimal its just zero)
+    ax.yaxis.set_major_formatter(FuncFormatter(custom_yaxis_formatter))                     
     # Set parameters for all plots
-    #ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
-    #ax.set_xlabel(ax.get_xlabel(), fontweight='bold', **text_kwargs)
-    ax.set_ylabel('Altitude (m)', fontweight='bold', **text_kwargs) #Swap Axes
-    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) #Swap Axes
-    
+    ax.set_ylabel('Altitude (m)', fontweight='bold', **text_kwargs) 
+    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) 
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
