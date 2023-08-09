@@ -27,7 +27,7 @@ from ..plots import savefig
 from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory,calc_8hr_rolling_max_v1,calc_default_colors,new_color_map,map_projection,get_utcoffset,make_timeseries,make_taylor,calculate_boxplot,make_boxplot
 
 
-# Define a custom formatting function
+# Define a custom formatting function 
 def custom_yaxis_formatter(x, pos):
     if x == int(x):
         return str(int(x))
@@ -171,7 +171,27 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     savefig(outname + '.png', loc=4, logo_height=120)
     
 ####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
-def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs):
+def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs): 
+    """Creates secondary y-axis (altitude) for timeseries plot.
+    
+    Parameters
+    ----------
+    ax : ax
+        Matplotlib ax from previous occurrences so it can overlay obs and model results on the same plot.
+    pairdf : pandas.DataFrame
+        Model/obs paired data to plot.
+    text_kwargs : dictionary
+        Dictionary containing information about text.
+    altitude_variable : str
+        Altitude variable in th paired df to be plotted on the secondary y-axis,  e.g., 'MSL_GPS_Altitude_YANG'
+    altitude_ticks : float or int
+        Altitude tick interval in meters for the secondary y-axis, for altitude (m) for instance, can be for pressure (if chosen as altitude_variable) 
+                
+    Returns
+    -------
+    ax : ax
+        Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
+    """
     ax2 = ax.twinx()
     ax2.plot(pairdf.index, pairdf[altitude_variable], color='g', label='Altitude (m)')
     ax2.set_ylabel('Altitude (m)', color='g', fontweight='bold', fontsize=text_kwargs['fontsize'])
@@ -188,8 +208,7 @@ def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs
 
     return ax
 
-
-                          
+                              
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
@@ -209,7 +228,8 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         Matplotlib ax from previous occurrence so it can overlay obs and model results on the same plot.
     bins : int or array-like
         Bins for binning the altitude variable.
-    altitude_variable: The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
+    altitude_variable: str
+        The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
     ylabel : str
         Title of y-axis.
     vmin : float

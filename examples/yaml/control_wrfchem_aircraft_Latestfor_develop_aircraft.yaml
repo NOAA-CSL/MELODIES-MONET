@@ -108,7 +108,8 @@ plots:
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       ts_avg_window: #'H' # pandas resample rule (e.g., 'H', 'D'). No averaging is done if ts_avg_window is null or not specified.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
-
+      vmin2: #0  #Optional
+      vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
@@ -129,6 +130,9 @@ plots:
     altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or 
     #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
     vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # meters
+    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
+    vmin: #0  #Optional
+    vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
   plot_grp3:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
