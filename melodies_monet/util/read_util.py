@@ -136,20 +136,15 @@ def read_analysis_ncf(filenames,xr_kws={}):
 
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
-                
                 group_name1 =  ds_out.attrs['group_name']
-                
-                #ds_out = ds_out.reset_index()
+
             else:
                 ds_append = xr.open_dataset(file,**xr_kws)
-                #ds_append = ds_append.reset_index()
-                
                 # Test if all the files have the same group to prevent merge issues
-
                 if group_name1 != ds_append.attrs['group_name']:
                     raise Exception('The group names are not consistent between the netcdf files being read.') 
                 else:
-                    ds_out = xr.concat([ds_out,ds_append],dim='time',join='right')
+                    ds_out = xr.merge([ds_out,ds_append])
             
     return ds_out
 

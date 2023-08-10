@@ -12,7 +12,6 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy import corrcoef
@@ -349,7 +348,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
             cmap="OrangeBlue", edgecolor='k',linewidth=.8)
     
-    if domain_type == 'all' and domain_name == 'CONUS':
+    if domain_type == 'all':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -363,8 +362,6 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         lonmin= math.floor(min(df.longitude))
         latmax= math.ceil(max(df.latitude))
         lonmax= math.ceil(max(df.longitude))
-        from metpy.plots import USCOUNTIES
-        ax.add_feature(USCOUNTIES.with_scale('500k'),edgecolor='grey')
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
     
     if 'extent' not in map_kwargs:
@@ -498,26 +495,6 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-        elif domain_type == 'site':
-            from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-            import cartopy.mpl.geoaxes
-            def_map = dict(states=True,figsize=[10, 5])
-            if fig_dict is not None:
-                map_kwargs = {**def_map, **fig_dict}
-            else:
-                map_kwargs = def_map
-
-            #If not specified use the PlateCarree projection
-            if 'crs' not in map_kwargs:
-                map_kwargs['crs'] = ccrs.PlateCarree()
-  
-            axins = inset_axes(ax,width='30%',height='30%',axes_class=cartopy.mpl.geoaxes.GeoAxes,axes_kwargs=dict(map_projection=map_kwargs['crs']))
-            axins.plot(df[['longitude']],df[['latitude']],'.')
-            axins.add_feature(cfeature.STATES)
-            axins.add_feature(cfeature.COASTLINE)
-            axins.set_extent((np.max(df[['longitude']].values)-2,np.max(df[['longitude']].values)+2,
-                              np.max(df[['latitude']].values)-2,np.max(df[['latitude']].values)+2))
-            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
         else:
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
