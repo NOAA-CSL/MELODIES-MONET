@@ -5,12 +5,12 @@ import numpy as np
 from datetime import datetime,timedelta
 
 def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
-    '''Calculate model ozone column from model ozone profile in ppv. Move data from model grid 
+    '''Calculate model ozone column from model ozone profile in ppbv. Move data from model grid 
         to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
     '''
     import xesmf as xe
     
-    # factor for converting ppv profiles to DU column
+    # factor for converting ppbv profiles to DU column
     # also requires conversion of dp from Pa to hPa
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19
     column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
@@ -88,7 +88,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
                     ds[j][:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*interm_var.values
     return ds
 def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
-    'Pairs UFS-RAQMS ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
+    'Pairs model ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
 
     import pandas as pd
@@ -116,12 +116,12 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
                                                                             
 
 def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
-    'Pairs UFS-RAQMS data with OMPS nm. Applies satellite apriori column to model observations.'
+    'Pairs model ozone mixing ratio data with OMPS nm. Applies satellite apriori column to model observations.'
 
     import xarray as xr
 
     import pandas as pd
-    du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppv to dobson
+    du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
     
     print('pairing with averaging kernel application')
                      

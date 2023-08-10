@@ -137,6 +137,7 @@ def read_analysis_ncf(filenames,xr_kws={}):
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
                 group_name1 =  ds_out.attrs['group_name']
+
             else:
                 ds_append = xr.open_dataset(file,**xr_kws)
                 # Test if all the files have the same group to prevent merge issues

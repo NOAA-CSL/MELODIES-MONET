@@ -434,8 +434,6 @@ class model:
             self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip
-        # MEB: addition for personal local copy to work with development UFS-RAQMS
-        #      not intended for public versions
         elif 'raqms' in self.model.lower():
             if time_interval is not None:
                 # fill filelist with subset
@@ -687,8 +685,6 @@ class analysis:
                 # set the model label in the dictionary and model class instance
                 if "apply_ak" in self.control_dict['model'][mod].keys():
                     m.apply_ak = self.control_dict['model'][mod]['apply_ak']
-                else:
-                    m.apply_ak = False
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -863,6 +859,7 @@ class analysis:
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
+                # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     
                     if obs.label == 'omps_nm':
@@ -890,6 +887,7 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+                # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     if obs.label == 'omps_l3':
                         from .util import satellite_utilities as sutil
@@ -1008,7 +1006,6 @@ class analysis:
                             else:
                                 pairdf_all = p.obj
                             # Select only the analysis time window.
-                            print(pairdf_all.dims)
                             pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
                             
                         # Determine the default plotting colors.
