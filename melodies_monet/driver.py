@@ -179,6 +179,7 @@ class observation:
             if self.label == 'omps_l3':
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
             elif self.label == 'omps_nm':
+                print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
                 else: flst = self.file
