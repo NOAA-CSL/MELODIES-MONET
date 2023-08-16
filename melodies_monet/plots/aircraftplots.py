@@ -396,9 +396,6 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         plot_kwargs['label'] = f"{label} (median)"
         median_line_df = pd.DataFrame(data={'median': median.values, 'binmidpoint': binmidpoint.values})
         ax = median_line_df.plot(x='median', y='binmidpoint', ax=ax, legend=True, **plot_kwargs)
-        #ax= median_line_df.plot(ax=ax, legend=True, **plot_kwargs)
-        
-                
     
     # If plot has been created, add to the current axes
     else:
