@@ -499,8 +499,9 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         ax = median_line_df.plot(x='median', y='binmidpoint', ax=ax, legend=True, **plot_dict)
         
     
-    # Add text to legend (adjust the x and y coordinates to place the text below the legend)
-    plt.text(1.12, 0.7, 'Bounds of box: Interquartile range\nWhiskers: 10th and 90th percentiles', transform=ax.transAxes, fontsize=text_kwargs['fontsize']*0.8)
+    if interquartile_style == 'box':
+        # Add text to legend (adjust the x and y coordinates to place the text below the legend)
+        plt.text(1.12, 0.7, 'Bounds of box: Interquartile range\nWhiskers: 10th and 90th percentiles', transform=ax.transAxes, fontsize=text_kwargs['fontsize']*0.8)
     # Apply the custom formatter to the y-axis (round off y-axis tick labels if after decimal its just zero)
     ax.yaxis.set_major_formatter(FuncFormatter(custom_yaxis_formatter))                     
     # Set parameters for all plots
