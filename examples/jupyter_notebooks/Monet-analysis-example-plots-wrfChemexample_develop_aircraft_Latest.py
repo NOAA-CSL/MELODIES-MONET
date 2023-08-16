@@ -2,7 +2,7 @@ from melodies_monet import driver
 
 an = driver.analysis()
 
-an.control = '../yaml/control_wrfchem_aircraft_fromcharkincontrol_wrfchem_aircraft_vertprofile_Test_QZR.yaml'
+an.control = '../examples/yaml/control_wrfchem_aircraft_Latestfor_develop_aircraft.yaml'
 
 an.read_control() 
 
