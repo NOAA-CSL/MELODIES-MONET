@@ -126,8 +126,8 @@ plots:
       rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
       interquartile_style: 'shading' # or 'box'
-    #altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # Specify the name of the altitude variable (pressure or MSL height) 
-    altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or 
+    #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
+    altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
     #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
     vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # meters
     #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
