@@ -1182,14 +1182,23 @@ class analysis:
                             else:
                                 a_w = None
 
-                            #Steps needed to subset if secondary y-axis (altitude_variable) limits are provided, as make_timeseries from surfaceplots.py already plots the whole df
-                            # Extract altitude (secondary y-axis) limits (if provided)
-                            vmin2 = grp_dict['data_proc'].get('vmin2', None)
-                            vmax2 = grp_dict['data_proc'].get('vmax2', None)
+                            #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, as make_timeseries from surfaceplots.py already plots the whole df
+                            # Extract altitude (secondary y-axis) limits (done using filter_dict)  
+                            filter_criteria = grp_dict['data_proc']['altitude_yax2'].get('filter_dict', {})
+                            for column, condition in filter_criteria.items():
+                                operation = condition['oper']
+                                value = condition['value']
+                                
+                                if operation == "between" and isinstance(value, list) and len(value) == 2:
+                                    pairdf = pairdf[pairdf[column].between(value[0], value[1])]
+                          
+                            #vmin2 and vmax2 approach commented out to subset paired df as per secondary y-axis limits
+                            ##vmin2 = grp_dict['data_proc'].get('vmin2', None)
+                            ##vmax2 = grp_dict['data_proc'].get('vmax2', None)
                             # Subset the data based on vmin2 and vmax2 if provided
-                            if vmin2 is not None and vmax2 is not None:
-                                altitude_variable = grp_dict['data_proc']['altitude_variable']
-                                pairdf = pairdf[(pairdf[altitude_variable] >= vmin2) & (pairdf[altitude_variable] <= vmax2)]
+                            ##if vmin2 is not None and vmax2 is not None:
+                              ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
+                              ## pairdf = pairdf[(pairdf[altitude_variable] >= vmin2) & (pairdf[altitude_variable] <= vmax2)]
 
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if p_index == 0:
@@ -1230,16 +1239,26 @@ class analysis:
 
                             # Extract text_kwargs from the appropriate plot group
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
-                          
+
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
-                                if grp_dict['data_proc'].get('altitude_variable'):
-                                    altitude_variable = grp_dict['data_proc']['altitude_variable']
-                                    altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
-                                    ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
+                                # Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                if 'altitude_yax2' in grp_dict['data_proc'] and 'altitude_variable' in grp_dict['data_proc']['altitude_yax2']:
+                                    altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+                                    ax = airplots.add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs)
                                 savefig(outname + '.png', logo_height=150)
-                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
+                            # At the end save the plot.
+                            ##if p_index == len(pair_labels) - 1:
+                                #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                
+                                #Older approach without 'altitude_yax2' control list in YAML now commented out
+                                ##if grp_dict['data_proc'].get('altitude_variable'):
+                                  ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
+                                  ##  altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
+                                  ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
+                                ##savefig(outname + '.png', logo_height=150)
+                                ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
