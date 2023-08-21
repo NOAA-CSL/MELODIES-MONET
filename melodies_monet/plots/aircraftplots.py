@@ -171,7 +171,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     savefig(outname + '.png', loc=4, logo_height=120)
     
 ####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
-def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs): 
+def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs): 
+
     """Creates secondary y-axis (altitude) for timeseries plot.
     
     Parameters
@@ -182,10 +183,8 @@ def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs
         Model/obs paired data to plot.
     text_kwargs : dictionary
         Dictionary containing information about text.
-    altitude_variable : str
-        Altitude variable in th paired df to be plotted on the secondary y-axis,  e.g., 'MSL_GPS_Altitude_YANG'
-    altitude_ticks : float or int
-        Altitude tick interval in meters for the secondary y-axis, for altitude (m) for instance, can be for pressure (if chosen as altitude_variable) 
+    altitude_yax2: dictionary
+        Secondary y-axis (altitude) control options, including altitude_variable, altitude_ticks, etc.
                 
     Returns
     -------
@@ -193,20 +192,31 @@ def add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
     ax2 = ax.twinx()
-    ax2.plot(pairdf.index, pairdf[altitude_variable], color='g', label='Altitude (m)')
-    ax2.set_ylabel('Altitude (m)', color='g', fontweight='bold', fontsize=text_kwargs['fontsize'])
-    ax2.tick_params(axis='y', labelcolor='g', labelsize=text_kwargs['fontsize'] * 0.8)
-    ax2.set_ylim(0, max(pairdf[altitude_variable]) + altitude_ticks)
+    
+    # Fetch altitude parameters from altitude_yax2
+    altitude_variable = altitude_yax2['altitude_variable']
+    altitude_ticks = altitude_yax2['altitude_ticks']
+    plot_kwargs_y2 = altitude_yax2.get('plot_kwargs_y2', {})
+    ylabel2 = altitude_yax2.get('ylabel2', 'Altitude')
+
+    # Plot altitude
+    ax2.plot(pairdf.index, pairdf[altitude_variable], **plot_kwargs_y2, label=ylabel2)
+    
+    # Set labels, ticks, and limits
+    ax2.set_ylabel(ylabel2, fontweight='bold', fontsize=text_kwargs['fontsize'], color=plot_kwargs_y2.get('color', 'g'))
+    ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), labelsize=text_kwargs['fontsize'] * 0.8)
+    ax2.set_ylim(pairdf[altitude_variable].min(), pairdf[altitude_variable].max() + altitude_ticks)
     ax2.set_xlim(ax.get_xlim())
-    ax2.yaxis.set_ticks(np.arange(0, max(pairdf[altitude_variable]) + altitude_ticks, altitude_ticks))
+    ax2.yaxis.set_ticks(np.arange(0, pairdf[altitude_variable].max() + altitude_ticks, altitude_ticks))
 
     # Extract the current legend and add a custom legend for the altitude line
     lines, labels = ax.get_legend_handles_labels()
     lines.append(ax2.get_lines()[0])
-    labels.append('Altitude (m)')
+    labels.append(ylabel2)
     ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], bbox_to_anchor=(1.15, 0.9), loc='center left')
 
     return ax
+
 
                               
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
@@ -524,317 +534,5 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     return ax
 
 
-
-
-def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vmin=None,
-                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
-        
-    """Creates spatial overlay plot. 
-    
-    Parameters
-    ----------
-    df : dataframe
-        model/obs pair data to plot
-    vmodel: dataarray
-        slice of model data to plot
-    column_o : str
-        Column label of observation variable to plot
-    label_o : str
-        Name of observation variable to use in plot title 
-    column_m : str
-        Column label of model variable to plot
-    label_m : str
-        Name of model variable to use in plot title
-    ylabel : str
-        Title of colorbar axis
-    vmin : real number
-        Min value to use on colorbar axis
-    vmax : real number
-        Max value to use on colorbar axis
-    nlevels: integer
-        Number of levels used in colorbar axis
-    proj: cartopy projection
-        cartopy projection to use in plot
-    outname : str
-        file location and name of plot (do not include .png)
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    plot 
-        spatial overlay plot
-        
-    """
-    if debug == False:
-        plt.ioff()
-        
-    def_map = dict(states=True,figsize=[15, 8])
-    if fig_dict is not None:
-        map_kwargs = {**def_map, **fig_dict}
-    else:
-        map_kwargs = def_map
-  
-    #set default text size
-    def_text = dict(fontsize=20)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-        
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column_o
-    
-    #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean()
-    
-    #Take the mean over time for the model output
-    vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
-    
-    #Determine the domain
-    if domain_type == 'all':
-        latmin= 25.0
-        lonmin=-130.0
-        latmax= 50.0
-        lonmax=-60.0
-        title_add = domain_name + ': '
-    elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-        title_add = 'EPA Region ' + domain_name + ': '
-    else:
-        latmin= math.floor(min(df.latitude))
-        lonmin= math.floor(min(df.longitude))
-        latmax= math.ceil(max(df.latitude))
-        lonmax= math.ceil(max(df.longitude))
-        title_add = domain_name + ': '
-    
-    #Map the model output first.
-    cbar_kwargs = dict(aspect=15,shrink=.8)
-    
-    #Add options that this could be included in the fig_kwargs in yaml file too.
-    if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax] 
-    if 'crs' not in map_kwargs:
-        map_kwargs['crs'] = proj
-    
-    #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
-    #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
-    #First determine colorbar, so can use the same for both contourf and scatter
-    if vmin == None and vmax == None:
-        vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
-        vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
-        
-    if nlevels == None:
-        nlevels = 21
-    
-    clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = plt.get_cmap('Spectral_r',nlevels-1)
-    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
-        
-    # For unstructured grid, we need a more advanced plotting code
-    # Call an external function (Plot_2D)
-    if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from .Plot_2D import Plot_2D
-        
-        fig = plt.figure( figsize=fig_dict['figsize'] )
-        ax = fig.add_subplot(1,1,1,projection=proj)
-        
-        p2d = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
-                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-                       ax=ax, state=fig_dict['states'] )
-    else:
-        #I add extend='both' here because the colorbar is setup to plot the values outside the range
-        ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
-                                    robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
-    
-    
-    plt.gcf().canvas.draw() 
-    plt.tight_layout(pad=0)
-    plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
-     
-    ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
-                    transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
-                    cmap=cmap)
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
-    
-    #Uncomment these lines if you update above just to verify colorbars are identical.
-    #Also specify plot above scatter = ax.axes.scatter etc.
-    #cbar = ax.figure.get_axes()[1] 
-    #plt.colorbar(scatter,ax=ax)
-    
-    #Update colorbar
-    # Call below only for structured grid cases
-    if not vmodel.attrs.get('mio_has_unstructured_grid',False):
-        f = plt.gcf()
-        model_ax = f.get_axes()[0]
-        cax = f.get_axes()[1]
-        #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-        position_m = model_ax.get_position()
-        position_c = cax.get_position()
-        cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-        cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-        cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
-    
-    #plt.tight_layout(pad=0)
-    savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
-    return ax
-    
-
-
-def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                      label_m=None, ylabel = None,  vdiff=None,
-                      outname = 'plot',
-                      domain_type=None, domain_name=None, fig_dict=None,
-                      text_dict=None,debug=False):
-#comment it out for aircraft for now (maybe not needed, as plotting controlled by .yaml file)
-    """Creates surface spatial bias plot. 
-    
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        model/obs paired data to plot
-    column_o : str
-        Column label of observation variable to plot
-    label_o : str
-        Name of observation variable to use in plot title 
-    column_m : str
-        Column label of model variable to plot
-    label_m : str
-        Name of model variable to use in plot title
-    ylabel : str
-        Title of colorbar axis
-    vdiff : float
-        Min and max value to use on colorbar axis
-    outname : str
-        file location and name of plot (do not include .png)
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    fig_dict : dict
-        Dictionary containing information about figure
-    text_dict : dict
-        Dictionary containing information about text
-    debug : bool
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-        
-    Returns
-    -------
-    plot 
-        surface bias plot
-    """
-    if debug == False:
-        plt.ioff()
-
-    def_map = dict(states=True,figsize=[10, 5])
-    if fig_dict is not None:
-        map_kwargs = {**def_map, **fig_dict}
-    else:
-        map_kwargs = def_map
-
-    #If not specified use the PlateCarree projection
-    if 'crs' not in map_kwargs:
-        map_kwargs['crs'] = ccrs.PlateCarree()
-
-    #set default text size
-    def_text = dict(fontsize=20)
-    if text_dict is not None:
-        text_kwargs = {**def_text, **text_dict}
-    else:
-        text_kwargs = def_text
-
-    # set ylabel to column if not specified.
-    if ylabel is None:
-        ylabel = column_o
-
-    # calculate exceedance
-    if column_o == 'OZONE_reg':
-        df_mean=df.groupby(['siteid'],as_index=False).quantile(0.95) #concentrations not used in plotting, get the correct format for plotting
-        # get the exceedance days for each site
-        df_counto = df[df[column_o]> 70.].groupby(['siteid'],as_index=False)[column_o].count()
-        df_countm = df[df[column_m]> 70.].groupby(['siteid'],as_index=False)[column_m].count()     
-        ylabel2 = 'O3'  
- 
-    elif column_o == 'PM2.5_reg':
-        df_mean=df.groupby(['siteid'],as_index=False).mean() #concentrations not used in plotting, get the correct format for plotting
-        # get the exceedance days for each site
-        df_counto = df[df[column_o]> 35.].groupby(['siteid'],as_index=False)[column_o].count()
-        df_countm = df[df[column_m]> 35.].groupby(['siteid'],as_index=False)[column_m].count()
-        ylabel2 = 'PM2.5'
-
-    else:
-        print('Error: unable to calculate exceedance for '+column_o)
-
-    # combine dataframes
-    df_combine = df_counto.set_index(['siteid']).join(df_countm.set_index(['siteid']),on=(['siteid']),how='outer').reset_index()
-    df_combine[column_o]=df_combine[column_o].fillna(0)
-    df_combine[column_m]=df_combine[column_m].fillna(0)
-    
-    #df_reg = df_mean.reset_index(drop=True).merge(df_combine.reset_index(drop=True),on=['siteid']).rename(index=str,columns={column_o+'_y':column_o+'_day',column_m+'_y':column_m+'_day'})
-    #print(df_reg)
-
-    # get the format correct in df_reg for the plotting 
-    df_reg = (
-        df_mean.merge(df_combine, on='siteid')
-        .rename(index=str, columns={column_o+'_y': column_o+'_day', column_m+'_y': column_m+'_day'})
-        .reset_index(drop=True)
-    )
-
-    if not df_reg.empty:
-        #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
-        #and then uses -1*val_max value for the minimum.
-        ax = monet.plots.sp_scatter_bias(
-            df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
-
-        if domain_type == 'all':
-            latmin= 25.0
-            lonmin=-130.0
-            latmax= 50.0
-            lonmax=-60.0
-            plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-        elif domain_type == 'epa_region' and domain_name is not None:
-            latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-            plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-        else:
-            latmin= math.floor(min(df.latitude))
-            lonmin= math.floor(min(df.longitude))
-            latmax= math.ceil(max(df.latitude))
-            lonmax= math.ceil(max(df.longitude))
-            plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-
-        if 'extent' not in map_kwargs:
-            map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
-        ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
-
-        #Update colorbar
-        f = plt.gcf()
-        model_ax = f.get_axes()[0]
-        cax = f.get_axes()[1]
-        #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-        position_m = model_ax.get_position()
-        position_c = cax.get_position()
-        cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-        cax.set_ylabel(ylabel2+ ' exceedance days',fontweight='bold',**text_kwargs)
-        cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)
-
-        #plt.tight_layout(pad=0)
-        savefig(outname + '_exceedance.png', loc=4, logo_height=120)
-    else:
-        print('No exceedance found!')
 
 
