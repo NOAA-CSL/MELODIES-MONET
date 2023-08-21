@@ -102,14 +102,28 @@ plots:
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
-      altitude_variable: altitude  
-      altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
+      #See 'altitde_yax2' list below for secondary y-axis options
+      #altitude_variable: altitude  
+      #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       ts_avg_window: #'H' # pandas resample rule (e.g., 'H', 'D'). No averaging is done if ts_avg_window is null or not specified.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
-      vmin2: #0  #Optional
-      vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
+      #vmin2, vmax2 filter not needed as filter_dict option added in 'altitude_yax2' to subset the paireddf as per altitude secondary-axis limits
+      #vmin2: #0  #Optional
+      #vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
+      altitude_yax2:
+        altitude_variable: altitude
+        altitude_ticks: 1000
+        ylabel2: Altitude (m)
+        plot_kwargs_y2:
+          color: g
+        altitude_unit: m
+        altitude_scaling_factor: 1
+        filter_dict:
+          altitude:
+            oper: "between"
+            value: [0, 5000]
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
