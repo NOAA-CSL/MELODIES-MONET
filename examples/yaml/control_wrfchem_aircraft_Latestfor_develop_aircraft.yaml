@@ -120,10 +120,10 @@ plots:
           color: g
         altitude_unit: m
         altitude_scaling_factor: 1
-        filter_dict:
+        filter_dict: #Default is min and max if filter_dict doesn't define the options below (or if they are commented out)
           altitude:
             oper: "between"
-            value: [0, 5000]
+            value: [2000,8000] # values are [vmin_y2, vmax_y2] 
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
