@@ -171,7 +171,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     savefig(outname + '.png', loc=4, logo_height=120)
     
 ####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
-def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs): 
+def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2): 
 
     """Creates secondary y-axis (altitude) for timeseries plot.
     
@@ -185,6 +185,7 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs):
         Dictionary containing information about text.
     altitude_yax2: dictionary
         Secondary y-axis (altitude) control options, including altitude_variable, altitude_ticks, etc.
+    vmin_y2, vmax_y2: the value[0], value[1] respectively defined in filter_dict in altitude_yax2 in YAML control option 
                 
     Returns
     -------
@@ -198,16 +199,17 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs):
     altitude_ticks = altitude_yax2['altitude_ticks']
     plot_kwargs_y2 = altitude_yax2.get('plot_kwargs_y2', {})
     ylabel2 = altitude_yax2.get('ylabel2', 'Altitude')
-
+    
     # Plot altitude
     ax2.plot(pairdf.index, pairdf[altitude_variable], **plot_kwargs_y2, label=ylabel2)
     
     # Set labels, ticks, and limits
     ax2.set_ylabel(ylabel2, fontweight='bold', fontsize=text_kwargs['fontsize'], color=plot_kwargs_y2.get('color', 'g'))
     ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), labelsize=text_kwargs['fontsize'] * 0.8)
-    ax2.set_ylim(pairdf[altitude_variable].min(), pairdf[altitude_variable].max() + altitude_ticks)
+    ax2.set_ylim(vmin_y2, vmax_y2) 
     ax2.set_xlim(ax.get_xlim())
-    ax2.yaxis.set_ticks(np.arange(0, pairdf[altitude_variable].max() + altitude_ticks, altitude_ticks))
+    start_tick = max(0, vmin_y2 - altitude_ticks)
+    ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
 
     # Extract the current legend and add a custom legend for the altitude line
     lines, labels = ax.get_legend_handles_labels()
@@ -216,7 +218,6 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs):
     ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], bbox_to_anchor=(1.15, 0.9), loc='center left')
 
     return ax
-
 
                               
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
