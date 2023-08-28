@@ -930,7 +930,8 @@ class analysis:
         """
         import matplotlib.pyplot as plt
 
-        from .plots import surfplots as splots, savefig
+        from .plots import surfplots as splots, savefig #Added similar line for aircraftplots qzr, see next line
+        from .plots import aircraftplots as airplots #qzr++
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -946,10 +947,27 @@ class analysis:
         #     1) a singular plot type
         #     2) multiple paired datasets or model datasets depending on the plot type
         #     3) kwargs for creating the figure ie size and marker (note the default for obs is 'x')
+
+        # Loop through the plot_dict items
         for grp, grp_dict in plot_dict.items():
+            
+            # Read the interquartile_style argument (for vertprofile plot type) if it exists
+            if grp_dict.get('type') == 'vertprofile':
+                interquartile_style = grp_dict.get('data_proc', {}).get('interquartile_style', 'shading')
+            else:
+                interquartile_style = None
+
             pair_labels = grp_dict['data']
-            # get the plot type
+            # Get the plot type
             plot_type = grp_dict['type']
+
+        
+        ##for grp, grp_dict in plot_dict.items():
+            ##pair_labels = grp_dict['data']
+            # get the plot type
+            ##plot_type = grp_dict['type']
+
+          
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1035,6 +1053,8 @@ class analysis:
                             use_percentile = obs_plot_dict['percentile_opt']
                         else:
                             use_percentile = None
+
+                        
 
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
@@ -1156,7 +1176,51 @@ class analysis:
                                 vmax = None
                             # Select time to use as index.
                             pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                            a_w = grp_dict['data_proc']['ts_avg_window']
+                            # Specify ts_avg_window if noted in yaml file. #qzr++
+                            if 'ts_avg_window' in grp_dict['data_proc'].keys():
+                                a_w = grp_dict['data_proc']['ts_avg_window']
+                            else:
+                                a_w = None
+
+                            #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
+                            #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
+                            altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+
+                            # Extract vmin_y2 and vmax_y2 from filter_dict
+                            # Check if 'filter_dict' exists and 'altitude' is a key in filter_criteria
+                            # Extract vmin_y2 and vmax_y2 from filter_dict
+                            filter_criteria = altitude_yax2.get('filter_dict', None)  # filter_dict options commented out for default min max secondary axis
+                            
+                            if filter_criteria and 'altitude' in filter_criteria:
+                                vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
+                            else:
+                                vmin_y2 = pairdf['altitude'].min()
+                                vmax_y2 = pairdf['altitude'].max()
+
+                                
+                            # Check if filter_criteria exists and is not None
+                            if filter_criteria:
+                                for column, condition in filter_criteria.items():
+                                    operation = condition['oper']
+                                    value = condition['value']
+                                    
+                                    if operation == "between" and isinstance(value, list) and len(value) == 2:
+                                        pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
+                            #Debug
+                            #print(f"vmin_y2: {vmin_y2}, vmax_y2: {vmax_y2}")
+                            #print(pairdf['altitude'].min(), pairdf['altitude'].max())
+
+
+                          
+                            #vmin2 and vmax2 approach commented out to subset paired df as per secondary y-axis limits
+                            ##vmin2 = grp_dict['data_proc'].get('vmin2', None)
+                            ##vmax2 = grp_dict['data_proc'].get('vmax2', None)
+                            # Subset the data based on vmin2 and vmax2 if provided
+                            ##if vmin2 is not None and vmax2 is not None:
+                              ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
+                              ## pairdf = pairdf[(pairdf[altitude_variable] >= vmin2) & (pairdf[altitude_variable] <= vmax2)]
+
+                            # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
@@ -1192,11 +1256,95 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+
+                            # Extract text_kwargs from the appropriate plot group
+                            text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
+
+                            # At the end save the plot.
+                            if p_index == len(pair_labels) - 1:
+                                # Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                if 'altitude_yax2' in grp_dict['data_proc'] and 'altitude_variable' in grp_dict['data_proc']['altitude_yax2']:
+                                    altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+                                    ax = airplots.add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2)
+                                savefig(outname + '.png', logo_height=150)
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
+                                
+                            # At the end save the plot.
+                            ##if p_index == len(pair_labels) - 1:
+                                #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                
+                                #Older approach without 'altitude_yax2' control list in YAML now commented out
+                                ##if grp_dict['data_proc'].get('altitude_variable'):
+                                  ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
+                                  ##  altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
+                                  ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
+                                ##savefig(outname + '.png', logo_height=150)
+                                ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                                
+                        #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
+                        elif plot_type.lower() == 'vertprofile':
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            # Select altitude variable from the .yaml file
+                            altitude_variable = grp_dict['altitude_variable']
+                            # Define the bins for binning the altitude
+                            bins = grp_dict['vertprofile_bins']
+                            if p_index == 0:
+                                # First plot the observations.
+                                ax = airplots.make_vertprofile(
+                                    pairdf,
+                                    column=obsvar,
+                                    label=p.obs,
+                                    bins=bins,
+                                    altitude_variable=altitude_variable,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug,
+                                    interquartile_style=interquartile_style 
+                            )
+                            
+                            # For all p_index plot the model.
+                            ax = airplots.make_vertprofile(
+                                pairdf,
+                                column=modvar,
+                                label=p.model,
+                                ax=ax,
+                                bins=bins,
+                                altitude_variable=altitude_variable,
+                                ylabel=use_ylabel,
+                                vmin=vmin,
+                                vmax=vmax,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
+                                plot_dict=plot_dict,
+                                text_dict=text_dict,
+                                debug=self.debug,
+                                interquartile_style=interquartile_style 
+                            )
+                            
+                            
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
-                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                        if plot_type.lower() == 'boxplot':
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
+
+                                
+                        elif plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
