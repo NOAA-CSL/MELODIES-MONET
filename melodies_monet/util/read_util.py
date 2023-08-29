@@ -208,6 +208,9 @@ def read_aircraft_obs_csv(filename,time_var=None):
         df.rename(columns={time_var:'time'},inplace=True)
         df['time']  = pd.to_datetime(df['time'])
         
+    # Sort the values based on time
+    df.sort_values(by='time',inplace=True,ignore_index=True)
+        
     df.set_index('time',inplace=True)
     
     return xr.Dataset.from_dataframe(df)

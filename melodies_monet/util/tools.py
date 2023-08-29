@@ -320,3 +320,31 @@ def vert_interp(ds_model,df_obs,var_name_list):
 
     return final_df_model
 
+def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
+    import xarray as xr
+    from pandas import merge_asof, Series
+    
+    var_out_list = []
+    # Extract just the surface level data from correct model variables
+    # if there is a z dimension, extract the surface, otherwise assume data is at surface and issue warning
+    if 'z' in ds_model.dims:
+        for var_name in var_name_list:
+            out = ds_model[var_name].isel(z=0)
+            out.name = var_name
+            var_out_list.append(out)
+    else:
+        print('WARNING: No z dimension in model, assuming all data at surface.')
+        for var_name in var_name_list:
+            out = ds_model[var_name]
+            out.name = var_name
+            var_out_list.append(out)
+    
+    df_model = xr.merge(var_out_list).to_dataframe().reset_index()
+    df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
+
+    final_df_model = merge_asof(df_obs, df_model, 
+                            by=['latitude', 'longitude'], 
+                            on='time', direction='nearest')
+
+    return final_df_model
+
