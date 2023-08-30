@@ -588,6 +588,7 @@ def get_aqs(
         ]
         df = df.drop(columns=v_vns).drop_duplicates()
         # TODO: maybe better to get long fmt and drop these first and then pivot
+        # TODO: option to average duplicate measurements at same site instead of keeping first?
 
         site_vns = [
             "siteid",
