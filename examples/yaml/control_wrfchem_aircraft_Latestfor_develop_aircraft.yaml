@@ -148,6 +148,42 @@ plots:
     vmin: #0  #Optional
     vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
   plot_grp3:
+    type: 'scatter_density'
+    fig_kwargs:
+      figsize: [10, 10]
+    default_plot_kwargs:
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False #True
+      vmin_x: #0
+      vmax_x: #100
+      vmin_y: #0
+      vmax_y: #100
+    color_map: #'RdBu_r' # Default Colormap for the density plot can be used. Options include:
+                        # 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+                        # 'jet', 'hot', 'cool', 'spring', 'summer', 'autumn', 'winter',
+                        # 'RdBu_r', 'seismic', 'coolwarm',
+                        # 'Blues', 'BuGn', 'YlOrRd', 'Greys'
+        #To use a custom colormap: Use the following options otherwise use the above default color_map(s) AND COMMENT THESE
+        colors: ['royalblue', 'cyan', 'yellow', 'orange']
+        over: 'red'
+        under: 'blue'
+    xlabel: 'Model'
+    ylabel: 'Observation'
+    title: 'Scatter Density Plot'
+    fill: True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
+    shade_lowest: True #False      # Set to True if you want to shade the lowest contour (if fill=TRUE for KDE plots)
+    # Add other seaborn.kdeplot keyword arguments here as needed
+    vcenter: #0  # Central value for TwoSlopeNorm
+    extensions: ['min', 'max']  # Extensions for the colorbar  
+  plot_grp4:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8,8] # figure size if multiple plots
@@ -162,7 +198,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
-  plot_grp4:
+  plot_grp5:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 

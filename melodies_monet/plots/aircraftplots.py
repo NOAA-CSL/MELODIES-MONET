@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
@@ -535,5 +535,137 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     return ax
 
 
+##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, **kwargs):
+    
+    """  
+    Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
+
+    Parameters
+    --------
+
+    df: dataframe
+        Paired DataFrame containing the model and observation data to plot
+    obs_var: str
+        obs variable name in mapped pairs
+    mod_var: str
+        model variable name in mapped pairs
+    ax: Matplotlib axis from a previous occurrence to overlay obs and model results on the same plot
+    color_map: str
+        Colormap for the density (optional)
+    xlabel: str
+        Label for the x-axis (optional)
+    ylabel: str
+        Label for the y-axis (optional)
+    title: str
+        Title for the plot (optional)
+    fill: bool
+        Fill set to True for seaborn kde plot
+    **kwargs: dict 
+        Additional keyword arguments for customization
+
+    Returns
+    -------
+    ax : ax
+        Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
+    """
+
+    # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
+    # Determine the normalization based on vcenter
+    vcenter = kwargs.get('vcenter', None)
+    
+    if vcenter is not None:
+        norm = TwoSlopeNorm(vcenter=vcenter, vmin=vmin_x, vmax=vmax_x)
+    else:
+        norm = None  # This means we'll use a default linear normalization
+
+    extensions = kwargs.get('extensions', None)  # Extract extensions for the colorbar
+    
+    # Check if the color_map key from the YAML file provides a dictionary 
+    # (indicating a custom colormap) or just a string (indicating a built-in colormap like 'magma', 'viridis' etc.).
+    color_map_config = color_map
+
+    #print(f"Color Map Config: {color_map_config}") #Debugging
+    
+    if isinstance(color_map_config, dict):
+        colors = color_map_config['colors']
+        over = color_map_config.get('over', None)
+        under = color_map_config.get('under', None)
+        
+        cmap = (mpl.colors.ListedColormap(colors)
+                .with_extremes(over=over, under=under))
+    else:
+        cmap = plt.get_cmap(color_map_config)
+
+    # Debug print statement to check the colormap configuration
+    #print(f"Using colormap: {cmap}") #Debugging
+
+    if isinstance(cmap, mpl.colors.ListedColormap):
+        cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
+
+
+    # Check if 'ax' is None and create a new subplot if needed
+    if ax is None:
+        fig, ax = plt.subplots()
+        
+    x_data = df[mod_var]
+    y_data = df[obs_var]
+
+    if fill:  # For KDE plot
+        #print("Generating KDE plot...")
+    
+        # Check the type of the colormap and set Seaborn's palette accordingly
+        if isinstance(cmap, mpl.colors.ListedColormap):
+            sns.set_palette(cmap.colors)
+        elif isinstance(cmap, mpl.colors.LinearSegmentedColormap):
+            # If it's a LinearSegmentedColormap, extract N colors from the colormap
+            N = 256
+            sns.set_palette([cmap(i) for i in range(N)])
+    
+        # Create the KDE fill plot using seaborn
+        plot = sns.kdeplot(x=x_data.dropna(), y=y_data.dropna(), cmap=cmap, norm=norm, fill=True, ax=ax, 
+                           **{k: v for k, v in kwargs.items() if k in sns.kdeplot.__code__.co_varnames})
+        colorbar_label = 'Density'
+        
+        # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
+        mappable = ax.collections[0]
+        mappable.set_cmap(cmap)
+        
+    else:  # For scatter plot using matplotlib
+        #print("Generating scatter plot...")
+        plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
+                           **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
+        units = ylabel[ylabel.find("(")+1: ylabel.find(")")]
+        colorbar_label = units  # Units for scatter plot
+        mappable = plot
+
+    
+    # Set plot labels and titles
+    if xlabel:
+        plt.xlabel(xlabel, fontweight='bold')
+    if ylabel:
+        plt.ylabel(ylabel, fontweight='bold')
+    if title:
+        plt.title(title, fontweight='bold')
+    if vmin_x is not None:
+        plt.xlim(left=vmin_x)
+    if vmax_x is not None:
+        plt.xlim(right=vmax_x)
+    if vmin_y is not None:
+        plt.ylim(bottom=vmin_y)
+    if vmax_y is not None:
+        plt.ylim(top=vmax_y)
+
+    
+    # Handle the colorbar using the mappable object
+    if extensions:
+        cbar = plt.colorbar(mappable, extend='both', ax=ax)  # Extends the colorbar at both ends
+    else:
+        cbar = plt.colorbar(mappable, ax=ax)
+    cbar.set_label(colorbar_label)
+
+    plt.show()
+
+    return ax
 
 

@@ -1403,7 +1403,87 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
-                                
+
+                        elif plot_type.lower() == 'scatter_density':
+                            #print(f"Processing scatter_density for group {grp}")  # Debugging
+                            scatter_density_config = grp_dict 
+
+                            #print(f"scatter_density_config contents: {scatter_density_config}") #Debugging
+
+                            
+                            # Extract relevant parameters from the configuration
+                            color_map = scatter_density_config.get('color_map', 'viridis')
+                            fill = scatter_density_config.get('fill', False)
+                            print(f"Value of fill after reading from scatter_density_config: {fill}") #Debugging
+
+                            
+                            vmin_x = scatter_density_config.get('vmin_x', None)
+                            vmax_x = scatter_density_config.get('vmax_x', None)
+                            vmin_y = scatter_density_config.get('vmin_y', None)
+                            vmax_y = scatter_density_config.get('vmax_y', None)
+                                                    
+                            # Accessing the correct model and observation configuration/labels/variables
+                            model_data_string = grp_dict['data'][0]
+                            obs_label, model_label = model_data_string.split('_')[0], "_".join(model_data_string.split('_')[1:])
+                            
+                            try:
+                                mapping = self.control_dict['model'][model_label]['mapping'][obs_label]
+                            except KeyError:
+                                print(f"Error: Mapping not found for model label '{model_label}' with observation label '{obs_label}' in scatter_density plot")
+                                continue  # Skip this iteration if mapping is not found
+                            
+                            obs_config = self.control_dict['obs'][obs_label]['variables'] # Accessing the correct observation configuration
+
+                            
+                            # Extract ylabel_plot for units extraction
+                            ylabel_plot = obs_config.get(obsvar, {}).get('ylabel_plot', f"{obsvar} (units)")
+                            title = ylabel_plot
+                            units = ylabel_plot[ylabel_plot.find("(")+1 : ylabel_plot.find(")")]
+                            xlabel = f"Model {modvar} ({units})"
+                            ylabel = f"Observation {obsvar} ({units})"
+
+                            #print(f"Value of fill before calling make_scatter_density_plot: {fill}")  # Debugging
+
+                            
+                            # Exclude keys from kwargs that are being passed explicitly
+                            excluded_keys = ['color_map', 'fill', 'vmin_x', 'vmax_x', 'vmin_y', 'vmax_y', 'xlabel', 'ylabel', 'title', 'data']
+                            kwargs = {key: value for key, value in scatter_density_config.items() if key not in excluded_keys}
+                            if 'shade_lowest' in kwargs:
+                                kwargs['thresh'] = 0
+                                del kwargs['shade_lowest']
+
+
+
+                            #print("Final kwargs before calling function:", kwargs) #Debugging
+
+                            
+                            if p_index == 0:
+                                ax = airplots.make_scatter_density_plot(
+                                    pairdf,
+                                    mod_var=modvar,
+                                    obs_var=obsvar,
+                                    color_map=color_map,
+                                    xlabel=xlabel,
+                                    ylabel=ylabel,
+                                    title=title,
+                                    fill=fill,
+                                    vmin_x=vmin_x,
+                                    vmax_x=vmax_x,
+                                    vmin_y=vmin_y,
+                                    vmax_y=vmax_y,
+                                    **kwargs                            
+                                )
+
+                            
+                            # Save the plot only once, after processing all pairs
+                            if p_index == len(pair_labels) - 1:
+                                print(f"Saving scatter density plot to {outname + '.png'}...") # Debugging print statement
+                                plt.savefig(outname + '.png')
+                                plt.close() # Close the current figure
+
+
+                        
+                        
                         elif plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
