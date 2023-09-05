@@ -669,3 +669,82 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
     return ax
 
 
+##NEW Violin plot test
+def make_violin_plot(comb_violin, ylabel=None, vmin=None, vmax=None, outname='plot',
+                     domain_type=None, domain_name=None,
+                     plot_dict=None, fig_dict=None, text_dict=None, debug=False,
+                     obs_label=None, model_label=None):  
+    
+
+    
+    
+    """Creates violin plot. 
+    
+    Parameters
+    ----------
+    comb_violin: dataframe
+        dataframe containing information to create violin plot.
+    ylabel : str
+        Title of y-axis
+    vmin : real number
+        Min value to use on y-axis
+    vmax : real number
+        Max value to use on y-axis
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)   
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+    obs_label, model_label : str
+        String for obs and model label(s) for x axis labels
+        
+    Returns
+    -------
+    plot 
+        violin plot
+        
+    """
+    
+    # Setup the plot aesthetics
+    if fig_dict:
+        plt.figure(**fig_dict)
+    if not debug:
+        plt.ioff()
+    
+    # Create the violin plot
+    color = plot_dict.get('color', None) if plot_dict else None
+    
+    sns.violinplot(data=comb_violin, palette=color)
+
+    
+    # Setup the axes labels and limits
+    # Bold x and y axis labels
+    plt.xlabel(None, weight='bold')  # Removing x label but making it bold for uniformity
+    plt.ylabel(ylabel, weight='bold')
+
+    if vmin and vmax:
+        plt.ylim(vmin, vmax)
+
+    # Setup the plot title based on domain_type and domain_name
+    if domain_type and domain_name:
+        plt.title(f"Violin Plot for {domain_type} - {domain_name}")
+    
+    # Save the plot
+    plt.savefig(f"{outname}.png", dpi=300, bbox_inches='tight')
+    
+    # If debug is on, show the plot
+    if debug:
+        plt.show()
+
+    plt.close()

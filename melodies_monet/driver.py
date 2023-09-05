@@ -1403,7 +1403,63 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
+                        elif plot_type.lower() == 'violin':
 
+                            # Set y-axis limits
+                            if set_yaxis:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+
+                            # For p_index = 0 create the obs violin plot data array.
+                            if p_index == 0:
+                                comb_violin = pd.DataFrame()
+                            
+                            # Extract the labels
+                            data_labels = grp_dict.get('data', [])
+                            if data_labels:
+                                parts = data_labels[0].split('_')
+                                obs_label = parts[0]
+                                model_label = '_'.join(parts[1:])
+                            else:
+                                raise ValueError("No data labels found for the violin plot.")
+                            
+                            # Assign the observation and model data to comb_violin using the extracted labels
+                            comb_violin[obs_label] = pairdf[obsvar].dropna()
+                            comb_violin[model_label] = pairdf[modvar].dropna()
+                            
+                            # Drop duplicates
+                            comb_violin = comb_violin.drop_duplicates()
+
+                            
+                            
+                            # For the last p_index make the plot.
+                            if p_index == len(pair_labels) - 1:
+                                plot_kwargs = {
+                                    "comb_violin": comb_violin,
+                                    "ylabel": use_ylabel,
+                                    "vmin": vmin,
+                                    "vmax": vmax,
+                                    "outname": outname,
+                                    "domain_type": domain_type,
+                                    "domain_name": domain_name,
+                                    "plot_dict": obs_dict,
+                                    "fig_dict": fig_dict,
+                                    "text_dict": text_dict,
+                                    "debug": self.debug,
+                                    "obs_label": obs_label,   # e.g., firexaq
+                                    "model_label": model_label  # e.g., wrfchem_v4.2
+                                }
+                                airplots.make_violin_plot(**plot_kwargs)
+                        
+                            # Clear info for next plot
+                            del (comb_violin, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
+                        
                         elif plot_type.lower() == 'scatter_density':
                             #print(f"Processing scatter_density for group {grp}")  # Debugging
                             scatter_density_config = grp_dict 
@@ -1481,7 +1537,7 @@ class analysis:
                                 plt.savefig(outname + '.png')
                                 plt.close() # Close the current figure
 
-
+                        
                         
                         
                         elif plot_type.lower() == 'boxplot':
@@ -1571,6 +1627,10 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
                                 del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                       
+
+                        
+                        
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():

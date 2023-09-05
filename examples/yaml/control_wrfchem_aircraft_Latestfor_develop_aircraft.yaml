@@ -147,7 +147,22 @@ plots:
     #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
     vmin: #0  #Optional
     vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+
   plot_grp3:
+    type: 'violin'
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 25.
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2']
+    data_proc:
+      rem_obs_nan: True 
+      set_axis: False
+
+    
+  plot_grp4:
     type: 'scatter_density'
     fig_kwargs:
       figsize: [10, 10]
@@ -178,12 +193,12 @@ plots:
     xlabel: 'Model'
     ylabel: 'Observation'
     title: 'Scatter Density Plot'
-    fill: True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
+    fill: False #True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
     shade_lowest: True #False      # Set to True if you want to shade the lowest contour (if fill=TRUE for KDE plots)
     # Add other seaborn.kdeplot keyword arguments here as needed
     vcenter: #0  # Central value for TwoSlopeNorm
     extensions: ['min', 'max']  # Extensions for the colorbar  
-  plot_grp4:
+  plot_grp5:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8,8] # figure size if multiple plots
@@ -198,7 +213,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
-  plot_grp5:
+  plot_grp6:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
@@ -226,4 +241,5 @@ stats:
   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
   data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+
 
