@@ -535,6 +535,11 @@ def get_openaq(
             dst = p.parent
             out_name = p.name
 
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
     with _timer("Fetching data with monetio"):
         # with warnings.catch_warnings():
         #     warnings.filterwarnings(
