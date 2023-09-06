@@ -555,6 +555,11 @@ def get_openaq(
         good = (df.time >= start_date) & (df.time <= end_date)
         df = df[good]
 
+        # Drop times not on the hour
+        good = df.time == df.time.dt.floor("H")
+        typer.secho(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.", fg=INFO_COLOR)
+        df = df[good]
+
         # Address time-wise non-unique site IDs
         # Some (most?) are just slightly different lat/lon
         # But seems like a few are actual time-wise lat/lon duplicates
