@@ -541,19 +541,19 @@ def get_openaq(
         ProgressBar().register()
 
     with _timer("Fetching data with monetio"):
-        # with warnings.catch_warnings():
-        #     warnings.filterwarnings(
-        #         "ignore",
-        #         message="The (error|warn)_bad_lines argument has been deprecated"
-        #     )
-        #     df = mio.openaq.add_data(
-        #         dates,
-        #         n_procs=num_workers,
-        #     )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            df = mio.openaq.add_data(
+                dates,
+                n_procs=num_workers,
+            )
 
-        # FIXME: local testing only
-        df = pd.read_csv("openaq_2019-08.csv.gz", index_col=0, parse_dates=["time", "time_local"])
-        df["utcoffset"] = pd.to_timedelta(df["utcoffset"])  # str in the CSV
+        # # FIXME: local testing only
+        # df = pd.read_csv("openaq_2019-08.csv.gz", index_col=0, parse_dates=["time", "time_local"])
+        # df["utcoffset"] = pd.to_timedelta(df["utcoffset"])  # str in the CSV
 
         # Remove dates outside of requested range
         # TODO: fix in monetio?
@@ -562,7 +562,7 @@ def get_openaq(
 
         # Drop times not on the hour
         good = df.time == df.time.dt.floor("H")
-        typer.secho(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.", fg=INFO_COLOR)
+        typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
         df = df[good]
 
         # Address time-wise non-unique site IDs
@@ -574,25 +574,6 @@ def get_openaq(
     with _timer("Forming xarray Dataset"):
         df = df.drop(columns=["index"], errors="ignore")
         df = df.dropna(subset=["latitude", "longitude"])
-
-        # ['index',
-        # 'time',
-        # 'latitude',
-        # 'longitude',
-        # 'sourceName',
-        # 'sourceType',
-        # 'city',
-        # 'country',
-        # 'utcoffset',
-        # 'bc_umg3',  # TODO: should be "ugm3"
-        # 'co_ppm',
-        # 'no2_ppm',
-        # 'o3_ppm',
-        # 'pm10_ugm3',
-        # 'pm25_ugm3',
-        # 'so2_ppm',
-        # 'siteid',
-        # 'time_local']
 
         site_vns = [
             "siteid",  # based on country and lat/lon
@@ -645,8 +626,6 @@ def get_openaq(
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
-
-        breakpoint()
 
     with _timer("Writing netCDF file"):
         if compress:
