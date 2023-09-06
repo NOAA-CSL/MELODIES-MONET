@@ -536,81 +536,98 @@ def get_openaq(
             out_name = p.name
 
     with _timer("Fetching data with monetio"):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message="The (error|warn)_bad_lines argument has been deprecated"
-            )
-            df = mio.openaq.add_data(
-                dates,
-                n_procs=num_workers,
-            )
+        # with warnings.catch_warnings():
+        #     warnings.filterwarnings(
+        #         "ignore",
+        #         message="The (error|warn)_bad_lines argument has been deprecated"
+        #     )
+        #     df = mio.openaq.add_data(
+        #         dates,
+        #         n_procs=num_workers,
+        #     )
+
+        # FIXME: local testing only
+        df = pd.read_csv("openaq_2019-08.csv.gz", index_col=0, parse_dates=["time", "time_local"])
+        df["utcoffset"] = pd.to_timedelta(df["utcoffset"])  # str in the CSV
+
+        # Remove dates outside of requested range
+        # TODO: fix in monetio?
+        good = (df.time >= start_date) & (df.time <= end_date)
+        df = df[good]
+
+        # Address time-wise non-unique site IDs
+        # Some (most?) are just slightly different lat/lon
+        # But seems like a few are actual time-wise lat/lon duplicates
+        # TODO: fix in monetio (maybe OpenAQ *has* site IDs? or can just make them up)
+        df = df.drop_duplicates(["time", "siteid"])
 
     with _timer("Forming xarray Dataset"):
+        df = df.drop(columns=["index"], errors="ignore")
         df = df.dropna(subset=["latitude", "longitude"])
 
+        # ['index',
+        # 'time',
+        # 'latitude',
+        # 'longitude',
+        # 'sourceName',
+        # 'sourceType',
+        # 'city',
+        # 'country',
+        # 'utcoffset',
+        # 'bc_umg3',  # TODO: should be "ugm3"
+        # 'co_ppm',
+        # 'no2_ppm',
+        # 'o3_ppm',
+        # 'pm10_ugm3',
+        # 'pm25_ugm3',
+        # 'so2_ppm',
+        # 'siteid',
+        # 'time_local']
+
         site_vns = [
-            "site",
-            "siteid",
-            "utcoffset",
+            "siteid",  # based on country and lat/lon
             "latitude",
             "longitude",
-            "cmsa_name",
-            "msa_code",
-            "msa_name",
-            "state_name",
-            "epa_region",
+            "utcoffset",
+            "city",
+            "country",  # 2-char codes
+            "sourceName",
+            "sourceType",  # "government"
         ]
         # NOTE: time_local not included since it varies in time as well
 
-        # site_vn_str = [
-        #     "site",  # site name
-        #     "siteid",  # site code (9 or 12 digits/chars)
-        #     #
-        #     "cmsa_name",
-        #     "msa_code",
-        #     "msa_name",
-        #     "state_name",
-        #     "epa_region",
-        # ]
-
-        # df[site_vn_str] = df[site_vn_str].astype("string")
-
         ds_site = (
             df[site_vns]
-            # .replace(["", " ", None], pd.NA)  # TODO: monetio should do?
             .groupby("siteid")
             .first()
             .to_xarray()
             .swap_dims(siteid="x")
         )
 
-        # Extract units info so we can add as attrs
-        unit_suff = "_unit"
-        unit_cols = [n for n in df.columns if n.endswith(unit_suff)]
-        assert (df[unit_cols].nunique() == 1).all()
-        units = df[unit_cols][~df[unit_cols].isnull()].iloc[0].to_dict()
-
-        cols = [n for n in df.columns if not n.endswith(unit_suff)]
         ds = (
-            df[cols]
+            df.drop(columns=[vn for vn in site_vns if vn not in ["siteid"]])
             .set_index(["time", "siteid"])
             .to_xarray()
             .swap_dims(siteid="x")
-            .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
             .assign(x=range(ds_site.dims["x"]))
         )
 
-        # Add units
-        for k, u in units.items():
-            vn = k[:-len(unit_suff)]
-            ds[vn].attrs.update(units=u)
+        # Rename species vars and add units as attr
+        nice_us = {"ppm": "ppmv", "ugm3": "ug m-3"}
+        for vn0 in [n for n in df.columns if n.endswith(("_ppm", "_ugm3", "_umg3"))]:
+            i_last_underscore = vn0.rfind("_")
+            vn, u = vn0[:i_last_underscore], vn0[i_last_underscore + 1:]
+            if u == "umg3":
+                u = "ugm3"
+            nice_u = nice_us[u]
+            ds[vn0].attrs.update(units=nice_u)
+            ds = ds.rename_vars({vn0: vn})
 
         # Fill in local time array
         # (in the df, not all sites have rows for all times, so we have NaTs at this point)
-        ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
+        ds["time_local"] = ds.time + ds.utcoffset
 
         # Expand
         ds = (
@@ -619,13 +636,13 @@ def get_openaq(
             .transpose("time", "y", "x")
         )
 
+        breakpoint()
+
     with _timer("Writing netCDF file"):
         if compress:
             write_ncf(ds, dst / out_name, verbose=verbose)
         else:
             ds.to_netcdf(dst / out_name)
-
-
 
 cli = app
 
