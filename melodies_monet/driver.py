@@ -170,6 +170,7 @@ class observation:
                 elif extension in ['.ict', '.icarrt']:
                     self.obj = mio.icarrt.add_data(self.file)
                 self.mask_and_scale()  # mask and scale values from the control values
+                self.filter_obs()
         except ValueError:
             print('something happened opening file')
             
