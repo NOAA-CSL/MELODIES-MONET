@@ -162,7 +162,6 @@ class observation:
         _, extension = os.path.splitext(files[0]) 
         try:
             if os.path.isfile(self.file):
-                _, extension = os.path.splitext(self.file)
                 if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
                     if len(glob(self.file)) > 1:
                         self.obj = xr.open_mfdataset(sort(glob(self.file)))
