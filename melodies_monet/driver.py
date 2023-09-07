@@ -221,7 +221,9 @@ class observation:
                 print('Reading TROPOMI L2 NO2')
                 self.obj = tropomi_l2_no2.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            else: print('file reader not implemented for {} observation'.format(self.label))
+            else:
+                print('file reader not implemented for {} observation'.format(self.sat_type))
+                raise ValueError
         except ValueError as e:
             print('something happened opening file:', e)
             return
