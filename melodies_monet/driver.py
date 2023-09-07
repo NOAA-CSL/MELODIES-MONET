@@ -148,7 +148,18 @@ class observation:
         """
         from glob import glob
         from numpy import sort
- 
+        
+        from . import tutorial
+
+        if self.file.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+            files = [tutorial.fetch_example(example_id)]
+        else:
+            files = sort(glob(self.file))
+
+        assert len(files) >= 1, "need at least one"
+
+        _, extension = os.path.splitext(files[0]) 
         try:
             if os.path.isfile(self.file):
                 _, extension = os.path.splitext(self.file)
