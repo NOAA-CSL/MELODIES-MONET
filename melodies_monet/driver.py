@@ -222,8 +222,9 @@ class observation:
                 self.obj = tropomi_l2_no2.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
-        except ValueError:
-            print('something happened opening file')
+        except ValueError as e:
+            print('something happened opening file:', e)
+            return
         
     def filter_obs(self):
         """Filter observations based on filter_dict.
