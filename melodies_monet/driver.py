@@ -117,6 +117,7 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
 
@@ -188,10 +189,10 @@ class observation:
         from .util import time_interval_subset as tsub
         
         try:
-            if self.label == 'omps_l3':
+            if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
-            elif self.label == 'omps_nm':
+            elif self.sat_type == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
@@ -207,15 +208,15 @@ class observation:
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
                     
-            elif self.label == 'mopitt_l3':
+            elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
                 self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
-            elif self.label == 'modis_l2':
+            elif self.sat_type == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            elif self.label == 'tropomi_l2_no2':
+            elif self.sat_type == 'tropomi_l2_no2':
                 from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = tropomi_l2_no2.read_trpdataset(
@@ -795,6 +796,8 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'sat_type' in self.control_dict['obs'][obs].keys():
+                    o.sat_type = self.control_dict['obs'][obs]['sat_type']
                 if load_files:
                     if o.obs_type == 'pt_sfc':    
                         o.open_obs(time_interval=time_interval)
