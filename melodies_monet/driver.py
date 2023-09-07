@@ -166,7 +166,8 @@ class observation:
                 if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
                     if len(glob(self.file)) > 1:
                         self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                    self.obj = xr.open_dataset(self.file)
+                    else:
+                        self.obj = xr.open_dataset(self.file[0])
                 elif extension in ['.ict', '.icarrt']:
                     self.obj = mio.icarrt.add_data(self.file)
                 self.mask_and_scale()  # mask and scale values from the control values
