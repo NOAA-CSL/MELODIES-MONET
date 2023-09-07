@@ -150,6 +150,7 @@ class observation:
         from glob import glob
         from numpy import sort
         
+        # CHECK
         from . import tutorial
 
         if self.file.startswith("example:"):
@@ -233,9 +234,7 @@ class observation:
         
         Returns
         -------
-        type
-            Fills the object class associated with the equivalent label (self.label) with satellite observation
-            dataset read in from the associated file (self.file) by the satellite file reader
+            None
         """
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
@@ -371,7 +370,8 @@ class model:
             self.files = sort(glob(self.file_str))
  
         # add option to read list of files from text file
-        if 'txt' in self.file_str:
+        _, extension = os.path.splitext(self.file_str)
+        if extension.lower() == '.txt':
             with open(self.file_str,'r') as f:
                 self.files = f.read().split()
 
@@ -675,8 +675,10 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
                 if attr == 'paired':
                     # initialize model/obs attributes, since needed for plotting and stats
-                    self.open_models(load_files=False)
-                    self.open_obs(load_files=False)
+                    if not self.models:
+                        self.open_models(load_files=False)
+                    if not self.obs:
+                        self.open_obs(load_files=False)
 
 
     def open_models(self, time_interval=None,load_files=True):
