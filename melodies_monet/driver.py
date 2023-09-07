@@ -804,11 +804,11 @@ class analysis:
                 if 'sat_type' in self.control_dict['obs'][obs].keys():
                     o.sat_type = self.control_dict['obs'][obs]['sat_type']
                 if load_files:
-                    if o.obs_type == 'pt_sfc':    
-                        o.open_obs(time_interval=time_interval)
-                    elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                    if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
                         o.open_sat_obs(time_interval=time_interval)
+                    else:
+                        o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
