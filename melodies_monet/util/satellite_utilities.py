@@ -95,6 +95,9 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
     
     print('pairing without applying averaging kernel')
 
+    if len(ozone_ppbv_varname) != 1:
+        print('ozone_ppbv_varname has more than one entry')
+
     
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
     pair_variables = ['dp_pa',ozone_ppbv_varname]
