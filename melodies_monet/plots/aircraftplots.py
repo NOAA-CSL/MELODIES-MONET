@@ -312,19 +312,19 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         bin_midpoints = altitude_bins.apply(lambda x: x.mid)
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
-        median = df.groupby(altitude_bins)[column].median()
-        q1 = df.groupby(altitude_bins)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median()
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
-        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
-        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
-        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
         
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
 
         ##Plotting vertprofile starts
         plot_kwargs_fillbetween = plot_kwargs.copy()
@@ -417,20 +417,20 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         # can be .groupby(bin_midpoints) as well (qzr)
-        median = df.groupby(altitude_bins)[column].median()
-        q1 = df.groupby(altitude_bins)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median()
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
         # Calculate the 10th, 90th, 5th, and 95th percentiles
-        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
-        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
-        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
 
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
           
         plot_kwargs_fillbetween = plot_dict.copy()
         del plot_kwargs_fillbetween['marker']
@@ -669,7 +669,7 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
     return ax
 
 
-##NEW Violin plot test
+##NEW Violin plot 
 def make_violin_plot(comb_violin, ylabel=None, vmin=None, vmax=None, outname='plot',
                      domain_type=None, domain_name=None,
                      plot_dict=None, fig_dict=None, text_dict=None, debug=False,
@@ -723,15 +723,18 @@ def make_violin_plot(comb_violin, ylabel=None, vmin=None, vmax=None, outname='pl
         plt.ioff()
     
     # Create the violin plot
-    color = plot_dict.get('color', None) if plot_dict else None
-    
-    sns.violinplot(data=comb_violin, palette=color)
-
+    colors = plot_dict.get('color', None) if plot_dict else None
+    sns.violinplot(data=comb_violin, palette=colors)
     
     # Setup the axes labels and limits
-    # Bold x and y axis labels
-    plt.xlabel(None, weight='bold')  # Removing x label but making it bold for uniformity
-    plt.ylabel(ylabel, weight='bold')
+    # Adjust the font size and weight of the x and y axis labels
+    plt.tick_params(axis='both', which='major', labelsize=14) # Adjust labelsize for tick labels
+    
+    plt.xlabel(None, weight='bold', fontsize=18)  # Adjust fontsize as needed,# Removing x label but making it bold for uniformity
+    plt.ylabel(ylabel, weight='bold', fontsize=18)  # Adjust fontsize as needed
+    plt.legend().set_visible(False)
+
+     
 
     if vmin and vmax:
         plt.ylim(vmin, vmax)
