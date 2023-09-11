@@ -150,7 +150,6 @@ class observation:
         from glob import glob
         from numpy import sort
         
-        # CHECK
         from . import tutorial
 
         if self.file.startswith("example:"):
@@ -175,6 +174,9 @@ class observation:
                 self.filter_obs()
         except ValueError:
             print('something happened opening file')
+
+        self.mask_and_scale()  # mask and scale values from the control values
+        self.filter_obs()
             
     def open_sat_obs(self,time_interval=None):
         """Methods to opens satellite data observations. 
