@@ -162,22 +162,19 @@ class observation:
 
         _, extension = os.path.splitext(files[0]) 
         try:
-            if os.path.isfile(self.file):
-                if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
-                    if len(glob(self.file)) > 1:
-                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                    else:
-                        self.obj = xr.open_dataset(self.file[0])
-                elif extension in ['.ict', '.icarrt']:
-                    self.obj = mio.icarrt.add_data(self.file)
-                self.mask_and_scale()  # mask and scale values from the control values
-                self.filter_obs()
+            if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
+                if len(glob(self.file)) > 1:
+                    self.obj = xr.open_mfdataset(sort(glob(self.file)))
+                else:
+                    self.obj = xr.open_dataset(self.file[0])
+            elif extension in ['.ict', '.icarrt']:
+                self.obj = mio.icarrt.add_data(self.file)
         except ValueError:
             print('something happened opening file')
 
         self.mask_and_scale()  # mask and scale values from the control values
         self.filter_obs()
-            
+
     def open_sat_obs(self,time_interval=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
