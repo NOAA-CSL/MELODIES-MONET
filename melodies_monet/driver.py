@@ -204,9 +204,9 @@ class observation:
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
             elif self.label == 'tropomi_l2_no2':
-                from monetio import tropomi_l2_no2
+                #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
-                self.obj = tropomi_l2_no2.read_trpdataset(
+                self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
             else: print('file reader not implemented for {} observation'.format(self.label))
         except ValueError:
@@ -862,8 +862,7 @@ class analysis:
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
                 # TODO: add other network types / data types where (ie flight, satellite etc)
                 # if sat_swath_clm (satellite l2 column products)
-                elif obs.obs_type.lower() == 'sat_swath_clm':
-                    
+                elif obs.obs_type.lower() == 'sat_swath_clm':                
                     if obs.label == 'omps_nm':
                         
                         from .util import satellite_utilities as sutil
@@ -889,6 +888,25 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
+                    if obs.label == 'tropomi_l2_no2':
+                        from .util import sat_l2_swath_utility as sutil
+
+                        if mod.apply_ak == True:
+                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                        else:
+                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+
+                        p = pair()
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data 
+                        label = '{}_{}'.format(p.obs,p.model)
+                        self.paired[label] = p
+
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     if obs.label == 'omps_l3':
@@ -907,6 +925,7 @@ class analysis:
                         p.obj = obs_dat
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
