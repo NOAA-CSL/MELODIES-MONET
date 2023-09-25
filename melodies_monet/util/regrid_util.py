@@ -7,7 +7,6 @@ file: regrid_util.py
 """
 import os
 import xarray as xr
-import xesmf as xe
 
 
 def setup_regridder(config, config_group='obs'):
@@ -20,6 +19,12 @@ def setup_regridder(config, config_group='obs'):
     Returns
         regridder (dict of xe.Regridder): dictionary of regridder instances
     """
+    try:
+        import xesmf as xe
+    except ImportError as e:
+        print('regrid_util: xesmf module not found')
+        raise
+
     target_file = os.path.expandvars(config['analysis']['target_grid'])
     ds_target = xr.open_dataset(target_file)
 
