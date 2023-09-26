@@ -371,54 +371,9 @@ class model:
         for obs_map in self.mapping:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
-        if 'cmaq' in self.model.lower():
-            print('**** Reading CMAQ model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.files_vert is not None:
-                self.mod_kwargs.update({'fname_vert' : self.files_vert})
-            if self.files_surf is not None:
-                self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            if len(self.files) > 1:
-                self.mod_kwargs.update({'concatenate_forecasts' : True})
-            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'wrfchem' in self.model.lower():
-            print('**** Reading WRF-Chem model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'rrfs' in self.model.lower():
-            print('**** Reading RRFS-CMAQ model output...')
-            if self.files_pm25 is not None:
-                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'gsdchem' in self.model.lower():
-            print('**** Reading GSD-Chem model output...')
-            if len(self.files) > 1:
-                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        elif 'cesm_fv' in self.model.lower():
-            print('**** Reading CESM FV model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        # CAM-chem-SE grid or MUSICAv0
-        elif 'cesm_se' in self.model.lower(): 
-            print('**** Reading CESM SE model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.scrip_file.startswith("example:"):
-                from . import tutorial
-                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                self.scrip_file = tutorial.fetch_example(example_id)
-            self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
-            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj.monet.scrip = self.obj_scrip
-        elif 'raqms' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
-        elif time_chunking_with_gridded_data:
+
+        # move above
+        if time_chunking_with_gridded_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model time chunk %s' % date_str)
             model_datasets, filenames = read_grid_util.read_grid_models(
@@ -426,11 +381,59 @@ class model:
             print(filenames)
             self.obj = model_datasets[self.label]
         else:
-            print('**** Reading Unspecified model output. Take Caution...')
-            if len(self.files) > 1:
-                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+            if 'cmaq' in self.model.lower():
+                print('**** Reading CMAQ model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.files_vert is not None:
+                    self.mod_kwargs.update({'fname_vert' : self.files_vert})
+                if self.files_surf is not None:
+                    self.mod_kwargs.update({'fname_surf' : self.files_surf})
+                if len(self.files) > 1:
+                    self.mod_kwargs.update({'concatenate_forecasts' : True})
+                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'wrfchem' in self.model.lower():
+                print('**** Reading WRF-Chem model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'rrfs' in self.model.lower():
+                print('**** Reading RRFS-CMAQ model output...')
+                if self.files_pm25 is not None:
+                    self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'gsdchem' in self.model.lower():
+                print('**** Reading GSD-Chem model output...')
+                if len(self.files) > 1:
+                    self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+            elif 'cesm_fv' in self.model.lower():
+                print('**** Reading CESM FV model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            # CAM-chem-SE grid or MUSICAv0
+            elif 'cesm_se' in self.model.lower(): 
+                print('**** Reading CESM SE model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.scrip_file.startswith("example:"):
+                    from . import tutorial
+                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                    self.scrip_file = tutorial.fetch_example(example_id)
+                self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
+                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj.monet.scrip = self.obj_scrip
+            elif 'raqms' in self.model.lower():
+                if len(self.files) > 1:
+                    self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
+                print('**** Reading Unspecified model output. Take Caution...')
+                if len(self.files) > 1:
+                    self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
 
     def mask_and_scale(self):
