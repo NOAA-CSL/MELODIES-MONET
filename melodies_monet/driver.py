@@ -179,12 +179,17 @@ class observation:
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
+        Fills the object class associated with the equivalent label (self.label) with satellite observation
+        dataset read in from the associated file (self.file) by the satellite file reader
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
-        type
-            Fills the object class associated with the equivalent label (self.label) with satellite observation
-            dataset read in from the associated file (self.file) by the satellite file reader
+        None
         """
         from .util import time_interval_subset as tsub
         
