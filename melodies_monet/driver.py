@@ -1222,7 +1222,7 @@ class analysis:
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
                             else:
-                                a_w = None
+                                a_w = None  
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
