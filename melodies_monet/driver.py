@@ -1217,15 +1217,13 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            if obs_type == 'pt_sfc': 
-                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
                                 
                             # Specify ts_avg_window if noted in yaml file. 
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
                             else:
                                 a_w = None
-                                
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
