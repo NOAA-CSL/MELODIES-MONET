@@ -1218,7 +1218,6 @@ class analysis:
                                 vmax = None
                             # Select time to use as index.
                             pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                                
                             # Specify ts_avg_window if noted in yaml file. 
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
