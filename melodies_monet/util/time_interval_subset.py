@@ -1,3 +1,6 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 def subset_model_filelist(all_files,timeformat,timestep,timeinterval):
     '''Subset model filelist to within a given time interval. 
     Filename requirements:
