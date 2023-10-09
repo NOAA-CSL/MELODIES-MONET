@@ -16,6 +16,7 @@ analysis:
       filenames: 
         {tropomi_l2_no2_wrfchem_v4.2: ['201907_tropomi_l2_no2_wrfchem_v4.2.nc4']}
 
+
 obs:
   tropomi_l2_no2:
     debug: True
@@ -82,4 +83,3 @@ model:
 stats:
   rmse: True
   mse: True
-   
