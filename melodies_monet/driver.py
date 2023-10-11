@@ -133,7 +133,7 @@ class observation:
             ")"
         )
 
-    def open_obs(self, time_interval=None):
+    def open_obs(self, time_interval=None, control_dict=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
 
@@ -149,30 +149,47 @@ class observation:
         from glob import glob
         from numpy import sort
         from . import tutorial
+        from .util import analysis_util
+        from .util import read_grid_util
 
-        if self.file.startswith("example:"):
-            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
-            files = [tutorial.fetch_example(example_id)]
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
+
+        if time_chunking_with_gridded_data:
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('obs time chunk %s' % date_str)
+            obs_vars = analysis_util.get_obs_vars(control_dict)
+            print(obs_vars)
+            obs_datasets, filenames = read_grid_util.read_grid_obs(
+                control_dict, obs_vars, date_str, obs=self.obs)
+            print(filenames)
+            self.obj = obs_datasets[self.obs]
+
         else:
-            files = sort(glob(self.file))
-
-        assert len(files) >= 1, "need at least one"
-
-        _, extension = os.path.splitext(files[0])
-        try:
-            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
-                if len(files) > 1:
-                    self.obj = xr.open_mfdataset(files)
-                else:
-                    self.obj = xr.open_dataset(files[0])
-            elif extension in ['.ict', '.icarrt']:
-                assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
-                self.obj = mio.icarrt.add_data(files[0])
+            if self.file.startswith("example:"):
+                example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+                files = [tutorial.fetch_example(example_id)]
             else:
-                raise ValueError(f'extension {extension!r} currently unsupported')
-        except Exception as e:
-            print('something happened opening file:', e)
-            return
+                files = sort(glob(self.file))
+
+            assert len(files) >= 1, "need at least one"
+
+            _, extension = os.path.splitext(files[0])
+            try:
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                    if len(files) > 1:
+                        self.obj = xr.open_mfdataset(files)
+                    else:
+                        self.obj = xr.open_dataset(files[0])
+                elif extension in ['.ict', '.icarrt']:
+                    assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                    self.obj = mio.icarrt.add_data(files[0])
+                else:
+                    raise ValueError(f'extension {extension!r} currently unsupported')
+            except Exception as e:
+                print('something happened opening file:', e)
+                return
 
         self.mask_and_scale()  # mask and scale values from the control values
         self.filter_obs()
@@ -321,7 +338,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self, time_interval=None):
+    def open_model_files(self, time_interval=None, control_dict=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -339,6 +356,13 @@ class model:
         -------
         None
         """
+        from .util import analysis_util
+        from .util import read_grid_util
+        from .util import regrid_util
+
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
 
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
@@ -347,59 +371,69 @@ class model:
         for obs_map in self.mapping:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
-        if 'cmaq' in self.model.lower():
-            print('**** Reading CMAQ model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.files_vert is not None:
-                self.mod_kwargs.update({'fname_vert' : self.files_vert})
-            if self.files_surf is not None:
-                self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            if len(self.files) > 1:
-                self.mod_kwargs.update({'concatenate_forecasts' : True})
-            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'wrfchem' in self.model.lower():
-            print('**** Reading WRF-Chem model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'rrfs' in self.model.lower():
-            print('**** Reading RRFS-CMAQ model output...')
-            if self.files_pm25 is not None:
-                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'gsdchem' in self.model.lower():
-            print('**** Reading GSD-Chem model output...')
-            if len(self.files) > 1:
-                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        elif 'cesm_fv' in self.model.lower():
-            print('**** Reading CESM FV model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        # CAM-chem-SE grid or MUSICAv0
-        elif 'cesm_se' in self.model.lower(): 
-            print('**** Reading CESM SE model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.scrip_file.startswith("example:"):
-                from . import tutorial
-                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                self.scrip_file = tutorial.fetch_example(example_id)
-            self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
-            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj.monet.scrip = self.obj_scrip
-        elif 'raqms' in self.model.lower():
-            if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
+
+        # move above
+        if time_chunking_with_gridded_data:
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('model time chunk %s' % date_str)
+            model_datasets, filenames = read_grid_util.read_grid_models(
+                control_dict, date_str, model=self.label)
+            print(filenames)
+            self.obj = model_datasets[self.label]
         else:
-            print('**** Reading Unspecified model output. Take Caution...')
-            if len(self.files) > 1:
-                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+            if 'cmaq' in self.model.lower():
+                print('**** Reading CMAQ model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.files_vert is not None:
+                    self.mod_kwargs.update({'fname_vert' : self.files_vert})
+                if self.files_surf is not None:
+                    self.mod_kwargs.update({'fname_surf' : self.files_surf})
+                if len(self.files) > 1:
+                    self.mod_kwargs.update({'concatenate_forecasts' : True})
+                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'wrfchem' in self.model.lower():
+                print('**** Reading WRF-Chem model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'rrfs' in self.model.lower():
+                print('**** Reading RRFS-CMAQ model output...')
+                if self.files_pm25 is not None:
+                    self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'gsdchem' in self.model.lower():
+                print('**** Reading GSD-Chem model output...')
+                if len(self.files) > 1:
+                    self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+            elif 'cesm_fv' in self.model.lower():
+                print('**** Reading CESM FV model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            # CAM-chem-SE grid or MUSICAv0
+            elif 'cesm_se' in self.model.lower(): 
+                print('**** Reading CESM SE model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.scrip_file.startswith("example:"):
+                    from . import tutorial
+                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                    self.scrip_file = tutorial.fetch_example(example_id)
+                self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
+                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj.monet.scrip = self.obj_scrip
+            elif 'raqms' in self.model.lower():
+                if len(self.files) > 1:
+                    self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
+                print('**** Reading Unspecified model output. Take Caution...')
+                if len(self.files) > 1:
+                    self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
 
     def mask_and_scale(self):
@@ -458,6 +492,11 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
+        self.time_chunking_with_gridded_data = False  # Default to False
+        self.regrid = False  # Default to False
+        self.target_grid = None
+        self.obs_regridders = None
+        self.model_regridders = None
 
     def __repr__(self):
         return (
@@ -527,6 +566,14 @@ class analysis:
             self.save = self.control_dict['analysis']['save']
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
+
+        # set time_chunking_with_gridded_data option, regrid option, and target_grid
+        if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
+            self.time_chunking_with_gridded_data = self.control_dict['analysis']['time_chunking_with_gridded_data']
+        if 'regrid' in self.control_dict['analysis'].keys():
+            self.regrid = self.control_dict['analysis']['regrid']
+        if 'target_grid' in self.control_dict['analysis'].keys():
+            self.target_grid = self.control_dict['analysis']['target_grid']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
@@ -600,6 +647,18 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
                 elif self.read[attr]['method']=='netcdf':
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+
+    def setup_regridders(self):
+        """Create an obs xesmf.Regridder from base and target grids specified in the control_dict
+
+        Returns
+        -------
+        None
+        """
+        from .util import regrid_util
+        if self.regrid:
+            self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+            self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -682,8 +741,9 @@ class analysis:
                             m.proj = ccrs.Projection(proj_in)
 
                 # open the model
-                m.open_model_files(time_interval=time_interval)
+                m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
+
 
     def open_obs(self, time_interval=None):
         """Open all observations listed in the input yaml file and create an 
@@ -700,6 +760,10 @@ class analysis:
         -------
         None
         """
+        from .util import analysis_util
+        from .util import read_grid_util
+        from .util import regrid_util
+
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
@@ -712,8 +776,9 @@ class analysis:
                     self.control_dict['obs'][obs]['filename'])
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs(time_interval=time_interval)
+                o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
