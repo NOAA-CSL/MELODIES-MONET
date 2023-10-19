@@ -117,7 +117,6 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
-        self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
 
@@ -149,55 +148,38 @@ class observation:
         """
         from glob import glob
         from numpy import sort
-        
-        from . import tutorial
-
-        if self.file.startswith("example:"):
-            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
-            files = [tutorial.fetch_example(example_id)]
-        else:
-            files = sort(glob(self.file))
-
-        assert len(files) >= 1, "need at least one"
-
-        _, extension = os.path.splitext(files[0]) 
+ 
         try:
-            if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
-                if len(glob(self.file)) > 1:
-                    self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                else:
-                    self.obj = xr.open_dataset(self.file[0])
-            elif extension in ['.ict', '.icarrt']:
-                self.obj = mio.icarrt.add_data(self.file)
+            if os.path.isfile(self.file):
+                _, extension = os.path.splitext(self.file)
+                if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
+                    if len(glob(self.file)) > 1:
+                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
+                    self.obj = xr.open_dataset(self.file)
+                elif extension in ['.ict', '.icarrt']:
+                    self.obj = mio.icarrt.add_data(self.file)
+                self.mask_and_scale()  # mask and scale values from the control values
         except ValueError:
             print('something happened opening file')
-
-        self.mask_and_scale()  # mask and scale values from the control values
-        self.filter_obs()
-
+            
     def open_sat_obs(self,time_interval=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
-        Fills the object class associated with the equivalent label (self.label) with satellite observation
-        dataset read in from the associated file (self.file) by the satellite file reader
-
-        Parameters
-        __________
-        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
-            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
-        None
+        type
+            Fills the object class associated with the equivalent label (self.label) with satellite observation
+            dataset read in from the associated file (self.file) by the satellite file reader
         """
         from .util import time_interval_subset as tsub
         
         try:
-            if self.sat_type == 'omps_l3':
+            if self.label == 'omps_l3':
                 print('Reading OMPS L3')
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
-            elif self.sat_type == 'omps_nm':
+            elif self.label == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
@@ -213,33 +195,31 @@ class observation:
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
                     
-            elif self.sat_type == 'mopitt_l3':
+            elif self.label == 'mopitt_l3':
                 print('Reading MOPITT')
                 self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
-            elif self.sat_type == 'modis_l2':
+            elif self.label == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
-
             elif self.label == 'tropomi_l2_no2':
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            else:
-                print('file reader not implemented for {} observation'.format(self.sat_type))
-                raise ValueError
-        except ValueError as e:
-            print('something happened opening file:', e)
-            return
+            else: print('file reader not implemented for {} observation'.format(self.label))
+        except ValueError:
+            print('something happened opening file')
         
     def filter_obs(self):
         """Filter observations based on filter_dict.
         
         Returns
         -------
-            None
+        type
+            Fills the object class associated with the equivalent label (self.label) with satellite observation
+            dataset read in from the associated file (self.file) by the satellite file reader
         """
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
@@ -375,8 +355,7 @@ class model:
             self.files = sort(glob(self.file_str))
  
         # add option to read list of files from text file
-        _, extension = os.path.splitext(self.file_str)
-        if extension.lower() == '.txt':
+        if 'txt' in self.file_str:
             with open(self.file_str,'r') as f:
                 self.files = f.read().split()
 
@@ -680,10 +659,8 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
                 if attr == 'paired':
                     # initialize model/obs attributes, since needed for plotting and stats
-                    if not self.models:
-                        self.open_models(load_files=False)
-                    if not self.obs:
-                        self.open_obs(load_files=False)
+                    self.open_models(load_files=False)
+                    self.open_obs(load_files=False)
 
 
     def open_models(self, time_interval=None,load_files=True):
@@ -806,14 +783,12 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                if 'sat_type' in self.control_dict['obs'][obs].keys():
-                    o.sat_type = self.control_dict['obs'][obs]['sat_type']
                 if load_files:
-                    if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                    if o.obs_type == 'pt_sfc':    
+                        o.open_obs(time_interval=time_interval)
+                    elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
                         o.open_sat_obs(time_interval=time_interval)
-                    else:
-                        o.open_obs(time_interval=time_interval)
                 self.obs[o.label] = o
 
     def pair_data(self, time_interval=None):
@@ -916,13 +891,22 @@ class analysis:
 
                     if obs.label == 'tropomi_l2_no2':
                         from .util import sat_l2_swath_utility as sutil
+                        from .util import cal_mod_no2col as mutil
+
+                        # calculate model no2 trop. columns. M.Li
+                        model_obj = mutil.cal_model_no2columns(mod.obj)
 
                         if mod.apply_ak == True:
                             paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
                         else:
                             paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
 
+                        self.models[model_label].obj = model_obj
+
                         p = pair()
+
+                        paired_data = paired_data.reset_index("y") # for saving
+
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
@@ -930,7 +914,9 @@ class analysis:
                         p.obs_vars = obs_vars
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
+
                         self.paired[label] = p
+                        
 
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
@@ -1028,6 +1014,10 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+
+                        # Adjust the modvar for satelitte no2 paring
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = 'no2trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         if obs_type == 'pt_sfc':
@@ -1042,8 +1032,7 @@ class analysis:
                                                                         "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
                             
-                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
-                                
+                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':                            
                                 pairdf_all = p.obj.swap_dims({'x':'time'})
                             # squash lat/lon dimensions into single dimension
                             elif obs_type == 'sat_grid_clm':
@@ -1168,6 +1157,7 @@ class analysis:
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
                             pairdf = pairdf_all
+
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
@@ -1237,12 +1227,9 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                            # Specify ts_avg_window if noted in yaml file. 
-                            if 'ts_avg_window' in grp_dict['data_proc'].keys():
-                                a_w = grp_dict['data_proc']['ts_avg_window']
-                            else:
-                                a_w = None  
+                            if obs_type == 'pt_sfc': 
+                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            a_w = grp_dict['data_proc']['ts_avg_window']
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
@@ -1283,6 +1270,11 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         if plot_type.lower() == 'boxplot':
+                            # squeeze the xarray for boxplot, M.Li
+                            if obs_type in  ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc", "sat_grid_clm", "sat_swath_prof"]:
+                                pairdf_sel = pairdf.squeeze()
+                            else: 
+                                pairdf_sel = pairdf
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1295,11 +1287,12 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
+
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
-                                                                             label=p.obs, plot_dict=obs_dict)
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=obsvar, 
+                                                                            label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=modvar, label=p.model,
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
                             # For the last p_index make the plot.
@@ -1399,7 +1392,7 @@ class analysis:
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             splots.make_spatial_bias_gridded(
-                                p.obj,
+                                pairdf, # revised to pairdf, M.Li
                                 column_o=obsvar,
                                 label_o=p.obs,
                                 column_m=modvar,
@@ -1469,7 +1462,6 @@ class analysis:
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
                             try:
-                                self.models[p.model].obj.sizes['z']
                                 if self.models[p.model].obj.sizes['z'] > 1: #Select only surface values.
                                     vmodel = self.models[p.model].obj.isel(z=0).expand_dims('z',axis=1).loc[
                                         dict(time=slice(self.start_time, self.end_time))] 
@@ -1619,8 +1611,18 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
 
+                        # for satellite no2 trop. columns paired data, M.Li
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = 'no2trpcol'                      
+
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                        # handle different dimensions, M.Li
+                        if ('y' in p.obj.dims) and ('x' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
+                        elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])
+                        else:
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]

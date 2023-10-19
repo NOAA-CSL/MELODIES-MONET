@@ -4,9 +4,7 @@
 import xesmf as xe
 import numpy as np
 import xarray as xr
-import pandas as pd
 from datetime import datetime
-from collections import OrderedDict
 
 import logging
 numba_logger = logging.getLogger('numba')
@@ -14,16 +12,13 @@ numba_logger.setLevel(logging.WARNING)
 
 def trp_interp_swatogrd(obsobj, modobj):
 
-    from datetime import datetime
-
-
     """
     interpolate sat swath to model grid
     
     Parameters
     ------
     obsobj  : satellite swath data
-    modobj  : model data
+    modobj  : model data (with no2 col calculated)
     
     Output
     ------
@@ -34,11 +29,6 @@ def trp_interp_swatogrd(obsobj, modobj):
     # daily averaged sate data at model grids
     no2_modgrid_avg=xr.Dataset()
 
-    # revised modobj with more variables
-    modobj = model_columns(modobj)
-    print(' mobel obj: ', modobj)
-    print(' trpomi obj: ', obsobj)
-
     # model grids attributes
     nt, nz, ny, nx  = modobj['no2col'].shape # time, z, y, x, no2 columns at molec cm^-2
     modlat = modobj.coords['latitude']
@@ -48,36 +38,34 @@ def trp_interp_swatogrd(obsobj, modobj):
     ntime  = len(list(obsobj.keys()))
 
     no2_nt = np.zeros([ntime, ny, nx], dtype=np.float32)
+    no2_nt[:,:,:] = np.nan
     no2_mod = np.zeros([ntime, ny, nx], dtype=np.float32)
+    no2_mod[:,:,:] = np.nan
 
     for nd in range(ntime):
-        datetime = list(obsobj.keys())[nd]
-        # get model no2 trop. columns
-        modobj_tm = modobj.sel(time=((modobj.time.dt.strftime("%Y-%m-%d") == datetime) & (modobj.time.dt.hour >= 13)
-            & (modobj.time.dt.hour <= 14)))['no2col'].values
-        no2col_satm = np.nanmean(modobj_tm, axis = 0)
+        days = list(obsobj.keys())[nd]
+        # --- model
+        # get model no2 trop. columns at 13:00 - 14:00 localtime
+        modobj_tm = modobj.where((modobj['localtime'].dt.strftime("%Y-%m-%d") == days) & (modobj['localtime'].dt.hour >= 13.0)
+           & (modobj['localtime'].dt.hour <= 14.0), drop=False)
+
+        no2col_satm = np.nanmean(modobj_tm['no2col'].values, axis = 0)
         
         # sum up tropopause
         no2_mod[nd, :,:] = np.nansum(no2col_satm[0:49,:,:], axis=0)
 
-    del(modobj)
 
-
-    # loop over all datetime
-    for nd in range(ntime):
-
-        datetime = list(obsobj.keys())[nd]
-
+        # --- TROPOMI
         # number of swath
-        nswath = len(obsobj[datetime])
+        nswath = len(obsobj[days])
 
         # array for all swaths
         no2_modgrid_all = np.zeros([ny, nx, nswath], dtype=np.float32)
 
         for ns in range(nswath):
-            satlon = obsobj[datetime][ns]['lon']
-            satlat = obsobj[datetime][ns]['lat']
-            satno2 = obsobj[datetime][ns]['nitrogendioxide_tropospheric_column']
+            satlon = obsobj[days][ns]['lon']
+            satlat = obsobj[days][ns]['lat']
+            satno2 = obsobj[days][ns]['nitrogendioxide_tropospheric_column']
 
             # regridding from swath grid to model grids
             grid_in = {'lon':satlon.values, 'lat':satlat.values}
@@ -87,7 +75,7 @@ def trp_interp_swatogrd(obsobj, modobj):
             
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2) # , keep_attrs=True
-            print('Done with TROPOMI regridding', datetime, ns)
+            print('Done with TROPOMI regridding', days, ns)
 
             #regridder.destroy()
             del(regridder)
@@ -99,14 +87,18 @@ def trp_interp_swatogrd(obsobj, modobj):
         # daily averaged no2 trop. columns at model grids
         no2_nt[nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
 
+    # exclude 0.0 and negative values for model
+    no2_mod = np.where(no2_mod <= 0.0, np.nan, no2_mod)
+
+    del(modobj)
     del(obsobj)
  
     no2_modgrid_avg = xr.Dataset(
         data_vars = dict(
-            no2sat=(["time", "x", "y"],no2_nt),
+            nitrogendioxide_tropospheric_column=(["time", "x", "y"],no2_nt),
+            no2trpcol=(["time", "x", "y"],no2_mod),
             latitude=(["x", "y"],modlat.values),
-            longitude=(["x", "y"],modlon.values),
-            no2mod = (["time", "x", "y"],no2_mod )
+            longitude=(["x", "y"],modlon.values)
             ),
         coords = dict(
             time=time,
@@ -115,12 +107,14 @@ def trp_interp_swatogrd(obsobj, modobj):
         attrs=dict(description="daily tropomi data at model grids"),
         )
 
+    # change dims to "time" x "y" (multi-index)
+    no2_modgrid_avg = no2_modgrid_avg.rename_dims({'y':'ll'})
+    no2_modgrid_avg = no2_modgrid_avg.stack(y=['x','ll'])
+
     return no2_modgrid_avg
 
 
 def trp_interp_swatogrd_ak(obsobj, modobj):
-
-    from datetime import datetime
 
     """
     interpolate sat swath to model grid applied with averaging kernel
@@ -128,7 +122,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     Parameters
     ------
     obsobj  : satellite swath data
-    modobj  : model data
+    modobj  : model data (with no2 col calculated)
     
     Output
     ------
@@ -138,9 +132,6 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     
     # daily averaged sate data at model grids
     no2_modgrid_avg=xr.Dataset()
-
-    # revised modobj with more variables
-    modobj = model_columns(modobj)
 
     # model grids attributes
     nt, nz, ny, nx  = modobj['no2'].shape
@@ -153,45 +144,47 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     ntime  = len(list(obsobj.keys()))
 
     no2_nt = np.zeros([ntime, ny, nx], dtype=np.float32)
+    no2_nt[:,:,:] = np.nan
     no2_mod = np.zeros([ntime, ny, nx], dtype=np.float32)
+    no2_mod[:,:,:] = np.nan
 
 
-    # loop over all datetime
+    # loop over all days
     for nd in range(ntime):
 
-        datetime = list(obsobj.keys())[nd]
+        days = list(obsobj.keys())[nd]
 
         # --- model ---
-        # get model no2 trop. columns
-        modobj_tm = modobj.sel(time=((modobj.time.dt.strftime("%Y-%m-%d") == datetime) & (modobj.time.dt.hour >= 13)
-            & (modobj.time.dt.hour <= 14)))
+        # get model no2 trop. columns at 13:00 - 14:00 localtime
+        modobj_tm = modobj.where((modobj['localtime'].dt.strftime("%Y-%m-%d") == days) & (modobj['localtime'].dt.hour >= 13.0)
+           & (modobj['localtime'].dt.hour <= 14.0), drop=False)
         no2col_satm = np.nanmean(modobj_tm['no2col'].values, axis = 0)
-        
+              
         # sum up tropopause, needs to be revised to tropopause
         no2_mod[nd, :,:] = np.nansum(no2col_satm[0:49,:,:], axis=0)
 
         # --- tropomi ---
         # number of swath
-        nswath = len(obsobj[datetime])
+        nswath = len(obsobj[days])
 
         # array for all swaths
         no2_modgrid_all = np.zeros([ny, nx, nswath], dtype=np.float32)
 
         for ns in range(nswath):
-            satlon = obsobj[datetime][ns]['lon']
-            satlat = obsobj[datetime][ns]['lat']
-            satno2 = obsobj[datetime][ns]['nitrogendioxide_tropospheric_column']            
+            satlon = obsobj[days][ns]['lon']
+            satlat = obsobj[days][ns]['lat']
+            satno2 = obsobj[days][ns]['nitrogendioxide_tropospheric_column']            
 
             grid_sat = {'lon':satlon.values, 'lat':satlat.values}
             grid_mod= {'lon':modlon.values, 'lat':modlat.values}
 
             # -- applying averaging kernel ---
             # trop. amf in standard product
-            tamf_org   = obsobj[datetime][ns]['air_mass_factor_troposphere']
-            amf_total  = obsobj[datetime][ns]['air_mass_factor_total']
-            troppres   = obsobj[datetime][ns]['troppres'] # TM5 tropopause pressure, Pa 
-            tpreslev   = obsobj[datetime][ns]['preslev']
-            scatwts    = obsobj[datetime][ns]['averaging_kernel']
+            tamf_org   = obsobj[days][ns]['air_mass_factor_troposphere']
+            amf_total  = obsobj[days][ns]['air_mass_factor_total']
+            troppres   = obsobj[days][ns]['troppres'] # TM5 tropopause pressure, Pa 
+            tpreslev   = obsobj[days][ns]['preslev']
+            scatwts    = obsobj[days][ns]['averaging_kernel']
 
             nysat, nxsat, nzsat = scatwts.shape
 
@@ -211,10 +204,6 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
                 wrfpres[:,:,l] = regridder_ms(tmpvalue)
                 tmpvalue[:,:]  = modvalue_no2[l,:,:]
                 wrfno2[:,:,l]  = regridder_ms(tmpvalue)            
-
-
-            print('checking wrfpres', np.nanmin(wrfpres),np.nanmax(wrfpres) )
-            print('checking wrfpres', np.nanmin(modvalue_pb2),np.nanmax(modvalue_pb2) )
 
             # convert from aks to trop.aks
             for l in range(nzsat):
@@ -236,21 +225,30 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
         # daily averaged no2 trop. columns at model grids
         no2_nt[nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
 
+    # exclude 0.0 and negative values for model
+    no2_mod = np.where(no2_mod <= 0.0, np.nan, no2_mod)
+
+    del(modobj)
+    del(obsobj)
 
     no2_modgrid_avg = xr.Dataset(
         data_vars = dict(
-            no2sat=(["time", "x", "y"],no2_nt),
+            nitrogendioxide_tropospheric_column=(["time", "x", "y"],no2_nt),
             latitude=(["x", "y"],modlat.values),
             longitude=(["x", "y"],modlon.values),
-            no2mod = (["time", "x", "y"],no2_mod)
-            #ratio=(["time", "x", "y"],ratio_nt)
+            no2trpcol = (["time", "x", "y"],no2_mod)
             ),
         coords = dict(
             time=time,
             lon=(["x", "y"], modlon.values),
             lat=(["x", "y"], modlat.values)),
-        attrs=dict(description="daily tropomi data at model grids"),
+        attrs=dict(description="daily tropomi data at model grids,passing at localtime 13:30"),
         )
+
+    # change dims to "time" x "y" (multi-index)
+    no2_modgrid_avg = no2_modgrid_avg.rename_dims({'y':'ll'})
+    no2_modgrid_avg = no2_modgrid_avg.stack(y=['x','ll'])
+
     return no2_modgrid_avg
 
 
@@ -298,13 +296,6 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
         f = interpolate.interp1d(np.log10(vertical_pres[:]),vertical_scatw[:], fill_value="extrapolate")# relationship between pressure to avk
         wrfavk[yy,xx,:] = f(np.log10(vertical_wrfp[:])) #wrf-chem averaging kernel
 
-        #if vertical_pres[0] != 0.0:
-            #print(yy, xx, satlon[yy,xx], satlat[yy,xx])
-            #print('pres', vertical_pres, len(vertical_pres))
-            #print('scatw', vertical_scatw, len(vertical_scatw))
-            #print('wrfp', vertical_wrfp, len(vertical_wrfp))
-            #print('wrfavk', wrfavk[yy,xx,:])
-
 
     for l in range(nz-1):
         # check if it's within tropopause
@@ -341,57 +332,3 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
 
     return ratio 
 
-def model_columns(modobj):
-    from datetime import tzinfo, timedelta
-
-    # calculate the no2 tropospheric vertical columns and pressure from wrf-chem
-    # local time averaged between 13:00 - 14:00
-    no2    = modobj['no2']
-    ph     = modobj['PH']
-    phb    = modobj['PHB']
-    pb     = modobj['PB']
-    tdata  = modobj['T']
-    pdata  = modobj['P']
-    time   = modobj.coords['time']
-    modlon = modobj.coords['longitude']
-
-    # presure: base state + PB (KSMP)
-    nt, nz, ny, nx = no2.shape
-    pb2  = np.zeros([nt, nz, ny, nx],dtype=np.float)
-    pb2  = pdata + pb
-
-    # convert the perturbation potential temperature (from 300K reference) to temp
-    tb = np.zeros([nt, nz, ny, nx],dtype=np.float)
-    tb =(300.0+tdata)*((pb2/1.0e5)**0.286)
-
-    modobj['PB2'] = xr.DataArray(pb2)
-    modobj['TB']  = xr.DataArray(tb) 
-
-    no2col = np.zeros([nt, nz, ny, nx], dtype = np.float32)
-    value = np.zeros([nt, ny, nx], dtype = np.float32)
-
-    # average between 13:00 and 14:00 localtime
-    localtm   = np.zeros([nt,ny,nx], dtype='datetime64[s]')
-    tdlist    = np.zeros([ny], dtype=np.int32)
-    tdlt      = np.zeros([ny, nx], dtype='timedelta64[ms]')
-
-    for xx in range(nx):
-         tdlist[:] = np.array(modlon[:,xx]/15.0).astype(int)
-         tdlt[:,xx] = pd.TimedeltaIndex(tdlist, 'h')
-
-    for tt in range(nt):
-        localtm[tt,:,:] = pd.Timestamp(time.values[tt]) + tdlt[:,:]
-
-    modobj['localtime'] = xr.DataArray(localtm, dims=["time", "y", "x"])
-
-    # convert to ppm
-    no2 = no2 / 1000.0
-    for vl in range(nz):
-        ad = pb2[:,vl,:,:] * (28.97e-3)/(8.314*tb[:,vl,:,:])
-        zh = ((ph[:,vl+1,:,:] + phb[:,vl+1,:,:]) - (ph[:,vl,:,:]+phb[:,vl,:,:]))/9.81
-        value[:,:,:]= no2[:,vl,:,:]*zh[:,:,:]*6.022e23/(28.97e-3)*1e-10*ad[:,:,:] # timex y x x
-        no2col[:,vl,:,:] = value[:,:,:]
-
-    modobj['no2col'] = xr.DataArray(no2col,dims=["time", "z", "y","x"])
-
-    return modobj

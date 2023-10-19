@@ -22,23 +22,31 @@ an.control_dict
 # --- model ---
 an.open_models()
 an.models
-an.models['wrfchem_v4.2'].obj
+#an.models['wrfchem_v4.2'].obj
 
 # --- paring ---
 an.pair_data()
 paired_obs = an.paired['tropomi_l2_no2_wrfchem_v4.2'].obj
+model = an.models['wrfchem_v4.2'].obj
 
 # --- plotting ---
 #lat     = paired_obs['latitude']
 #lon     = paired_obs['longitude']
 #no2grid = paired_obs['no2'][0,:,:]
 
-#print(paired_obs)
+
+paired_obs_stack = paired_obs.set_index(x=("ll", "y")).unstack("x")
+
 lat = an.models['wrfchem_v4.2'].obj.coords['latitude']
 lon = an.models['wrfchem_v4.2'].obj.coords['longitude']
-no2grid = paired_obs['no2sat'].values
+
+print('!!! paired obs stack', paired_obs_stack)
+
+no2grid = paired_obs_stack['nitrogendioxide_tropospheric_column']
 no2grid = no2grid[0,:,:]
-#print(no2grid, np.nanmin(no2grid), np.nanmax(no2grid))
+ind_x = paired_obs.coords['x']
+ind_y = paired_obs.coords['ll']
+print(no2grid, np.nanmin(no2grid), np.nanmax(no2grid))
 
 fig = plt.figure(figsize=(20,10))
 ax = plt.axes(projection=ccrs.PlateCarree())
@@ -50,11 +58,11 @@ fig.savefig('/Users/mengli/Work/melodies-monet/outdata/paried_trp_no2_20190715.p
 #print('paired_obs', paired_obs)
 
 #print(paired_obs)
-lat = an.models['wrfchem_v4.2'].obj.coords['latitude']
-lon = an.models['wrfchem_v4.2'].obj.coords['longitude']
-no2grid = paired_obs['no2mod'].values
-no2grid = no2grid[0,:,:]
-#print(no2grid, np.nanmin(no2grid), np.nanmax(no2grid))
+#lat = an.models['wrfchem_v4.2'].obj.coords['latitude']
+#lon = an.models['wrfchem_v4.2'].obj.coords['longitude']
+print('an models', an.models['wrfchem_v4.2'].obj)
+no2grid = an.models['wrfchem_v4.2'].obj['no2trpcol'][1,0,:,:]
+print(no2grid, np.nanmin(no2grid), np.nanmax(no2grid))
 
 fig = plt.figure(figsize=(20,10))
 ax = plt.axes(projection=ccrs.PlateCarree())
@@ -69,5 +77,5 @@ print('paired_obs', paired_obs)
 an.save_analysis()
 
 # --- read saved paired data ---
-an.read_analysis()
-an.paired['tropomi_l2_no2_wrfchem_v4.2'].obj
+#an.read_analysis()
+#an.paired['tropomi_l2_no2_wrfchem_v4.2'].obj
