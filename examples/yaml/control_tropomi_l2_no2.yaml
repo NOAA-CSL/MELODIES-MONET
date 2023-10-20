@@ -22,6 +22,7 @@ obs:
     filename: /Users/mengli/Work/melodies-monet/obsdata/tropomi_no2/20190715/*
     #filename: /Volumes/Meng/TROPOMI/20190715/*
     obs_type: sat_swath_clm
+    sat_type: 'tropomi_l2_no2'
     variables:
         qa_value:
             quality_flag_min: 0.7
@@ -68,7 +69,7 @@ model:
     files: /Users/mengli/Work/melodies-monet/modeldata/wrfchem/0715/*
     #files: /Volumes/Meng/WRF_Chem/0715/*
     mod_type: 'wrfchem'
-    apply_ak: False
+    apply_ak: True
     mod_kwargs: 
       mech: 'racm_esrl_vcp'
     mapping: #model species name : obs species name

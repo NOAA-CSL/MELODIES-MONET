@@ -34,7 +34,7 @@ def trp_interp_swatogrd(obsobj, modobj):
     modlat = modobj.coords['latitude']
     modlon = modobj.coords['longitude']
 
-    time   = [ datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
+    time   = [ datetime.strptime(x + ' 13','%Y-%m-%d %H') for x in obsobj.keys()]
     ntime  = len(list(obsobj.keys()))
 
     no2_nt = np.zeros([ntime, ny, nx], dtype=np.float32)
@@ -140,7 +140,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
 
     tmpvalue = np.zeros([ny, nx], dtype = np.float)
 
-    time   = [ datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
+    time   = [ datetime.strptime(x + ' 13','%Y-%m-%d %H') for x in obsobj.keys()]
     ntime  = len(list(obsobj.keys()))
 
     no2_nt = np.zeros([ntime, ny, nx], dtype=np.float32)
@@ -260,8 +260,6 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
 
     nume             = np.zeros([nsaty, nsatx], dtype=np.float32)
     deno             = np.zeros([nsaty, nsatx], dtype=np.float32)
-    amf_wrfchem      = np.zeros([nsaty, nsatx], dtype=np.float32)
-    amf_wrfchem[:,:] = np.nan
     wrfavk           = np.zeros([nsaty, nsatx, nz], dtype = np.float32)
     wrfavk[:,:,:]    = np.nan
     wrfavk_scl       = np.zeros([nsaty, nsatx], dtype=np.float32) 
@@ -289,15 +287,19 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     for llb in range(len(lb[0])):
         yy = lb[0][llb]
         xx = lb[1][llb]
-        vertical_pres = tpreslev[yy,xx,:]
+        vertical_pres  = tpreslev[yy,xx,:]
         vertical_scatw = scatw[yy,xx,:]
-        vertical_wrfp = wrfpreslayer[yy,xx,:]
+        vertical_wrfp  = wrfpreslayer[yy,xx,:]
 
         f = interpolate.interp1d(np.log10(vertical_pres[:]),vertical_scatw[:], fill_value="extrapolate")# relationship between pressure to avk
         wrfavk[yy,xx,:] = f(np.log10(vertical_wrfp[:])) #wrf-chem averaging kernel
 
 
     for l in range(nz-1):
+
+        # initialize
+        tmpvalue_sat[:,:] = np.nan
+
         # check if it's within tropopause
         preminus[:,:]         = wrfpreslayer[:,:,l] - troppres[:,:]
 
