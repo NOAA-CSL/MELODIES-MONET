@@ -1244,21 +1244,31 @@ class analysis:
 
                             #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
                             #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
-                            altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+                            ##altitude_yax2 = grp_dict['data_proc']['altitude_yax2']  
+                            #Edit below to accomodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
+                            altitude_yax2 = grp_dict['data_proc'].get('altitude_yax2', {})
 
                             # Extract vmin_y2 and vmax_y2 from filter_dict
                             # Check if 'filter_dict' exists and 'altitude' is a key in filter_criteria
                             # Extract vmin_y2 and vmax_y2 from filter_dict
-                            filter_criteria = altitude_yax2.get('filter_dict', None)  # filter_dict options commented out for default min max secondary axis
+                            ##filter_criteria = altitude_yax2.get('filter_dict', None)  # Better structure for filter_dict (min and max secondary axis) to be optional below
+                            filter_criteria = (
+                                altitude_yax2.get('filter_dict', None)
+                                if isinstance(altitude_yax2, dict)
+                                else None
+                            )
+                            
                             
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
-                            else:
+                            elif:
                                 vmin_y2 = pairdf['altitude'].min()
                                 vmax_y2 = pairdf['altitude'].max()
+                            else:
+                                vmin_y2 = vmax_y2 = None
 
                                 
-                            # Check if filter_criteria exists and is not None
+                            # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
                             if filter_criteria:
                                 for column, condition in filter_criteria.items():
                                     operation = condition['oper']
