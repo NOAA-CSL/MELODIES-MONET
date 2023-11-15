@@ -146,7 +146,14 @@ def run(
         an.open_obs()
 
     with _timer("Pairing"):
-        an.pair_data()
+        if an.read is not None:
+            an.read_analysis()
+        else:
+            an.pair_data()
+
+    if an.save is not None:
+        with _timer("Saving paired datasets"):
+            an.save_analysis()
 
     if an.control_dict.get("plots") is not None:
         with _timer("Plotting and saving the figures"), _ignore_pandas_numeric_only_futurewarning():
