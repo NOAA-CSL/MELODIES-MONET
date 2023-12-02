@@ -783,7 +783,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
     return ax
     
-def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+
+###############################################################################
+#This is BEIMING modified 'calculate_boxplot',added region_bx as another output
+###############################################################################
+def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
     """Combines data into acceptable format for box-plot
     
     Parameters
@@ -804,14 +808,16 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
         can overlay multiple model results on plot
     Returns
     -------
-    dataframe, list
+    dataframe, list, dataframe           
         dataframe containing information to create box-plot
         list of string labels to use in box-plot
+        dataframe containing informaiton for regions to help create multi-box-plot
         
     """
+    region_bx = pd.DataFrame()                   #BEIMING 1
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
-        label_bx = []
+        label_bx = [] 
         #First define the colors for the observations.
         obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
         if plot_dict is not None:
@@ -827,12 +833,114 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
     if df_reg is not None:
         comb_bx[label] = df_reg[column+'_reg']
     else:
-        comb_bx[label] = df[column]
+        comb_bx[label] = df[column] 
+        region_bx['EPA_regions']=df['epa_region']  #BEIMING 2 
     label_bx.append(plot_kwargs)
     
-    return comb_bx, label_bx
-    
+    return comb_bx, label_bx,region_bx             #BEIMING 3
+
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
+                 domain_type=None, domain_name=None,
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
+
+    """Creates box-plot. 
+
+    Parameters
+    ----------
+    comb_bx: dataframe
+        dataframe containing information to create box-plot from 
+        calculate_boxplot
+    label_bx: list
+        list of string labels to use in box-plot from calculate_boxplot
+    ylabel : str
+        Title of y-axis
+    vmin : real number
+        Min value to use on y-axis
+    vmax : real number
+        Max value to use on y-axis
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)  
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for
+        submitting jobs to supercomputer turn off interactive mode.
+    Returns
+    -------
+    plot 
+        box plot
+    """
+    if debug == False:
+        plt.ioff()
+    #First define items for all plots
+    #set default text size
+    def_text = dict(fontsize=14)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = label_bx[0]['column']
+
+    #Fix the order and palate colors
+    order_box = []
+    pal = {}
+    for i in range(len(label_bx)):
+        order_box.append(label_bx[i]['label'])
+        pal[label_bx[i]['label']] = label_bx[i]['color']
+
+    #Make plot
+    if fig_dict is not None:
+        f,ax = plt.subplots(**fig_dict)
+    else:
+        f,ax = plt.subplots(figsize=(8,8))
+    #Define characteristics of boxplot.
+    boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
+    lineprops = {'color': 'k', 'linewidth': 1.5}
+    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
+                  'whiskerprops': lineprops, 'capprops': lineprops,
+                  'fliersize' : 2.0,
+                  'flierprops': dict(marker='*',
+                                     markerfacecolor='blue',
+                                     markeredgecolor='none',
+                                     markersize = 6.0),
+                  'width': 0.75, 'palette': pal,
+                  'order': order_box,
+                  'showmeans': True,
+                  'meanprops': {'marker': ".", 'markerfacecolor': 'black',
+                                'markeredgecolor': 'black',
+                               'markersize': 20.0}}
+    sns.set_style("whitegrid")
+    sns.set_style("ticks")
+    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), **boxplot_kwargs)
+    ax.set_xlabel('')
+    ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
+    ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
+    if vmin is not None and vmax is not None:
+        ax.set_ylim(ymin = vmin, ymax = vmax)
+
+    plt.tight_layout()
+    savefig(outname + '.png', loc=4, logo_height=100)
+
+#########################################
+#This start BEIMING added 'multi_boxplot'
+#########################################    
+def make_multi_boxplot(comb_bx, label_bx,region_bx, ylabel = None, vmin = None, vmax = None, outname='plot',  #BEIMING
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
@@ -845,6 +953,9 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         calculate_boxplot
     label_bx: list
         list of string labels to use in box-plot from calculate_boxplot
+    region_bx: dataframe
+        dataframe containing information of stations to help create multi-box-plot
+        from calculate_boxplot
     ylabel : str
         Title of y-axis
     vmin : real number
@@ -871,7 +982,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     Returns
     -------
     plot 
-        box plot
+        multi-box plot
         
     """
     if debug == False:
@@ -917,7 +1028,24 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), **boxplot_kwargs)
+# This begins what BEIMING ADDED
+    pm25_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
+    pm25_cmaq54 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
+    pm25_cmaq52 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
+
+    pm25_obs['model'] = 'AirNow'
+    pm25_cmaq54['model'] = 'CMAQv54' 
+    pm25_cmaq52['model'] = 'CMAQv52'
+
+    pm25_obs['Regions'] = region_bx['EPA_regions'].values
+    pm25_cmaq54['Regions'] = region_bx['EPA_regions'].values
+    pm25_cmaq52['Regions'] = region_bx['EPA_regions'].values
+
+    tdf =pd.concat([pm25_obs[['Value','model','Regions']],pm25_cmaq54[['Value','model','Regions']],pm25_cmaq52[['Value','model','Regions']]])
+    acro = ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+
+    sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
+#this ends what BEIMING ADDED  
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -931,6 +1059,10 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+
+
+
+
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
