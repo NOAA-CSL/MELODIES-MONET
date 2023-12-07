@@ -902,6 +902,12 @@ class analysis:
             # get the plot type
             plot_type = grp_dict['type']
 
+            #read-in special settings for multi-boxplot
+            if grp == 'plot_grp6':
+                region_name = grp_dict['region_name'] #BEIMING
+                region_list = grp_dict['region_list'] #BEIMING
+                model_name_list = grp_dict['model_name_list']     
+
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1151,10 +1157,8 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-
-                        ###################################################################################
-                        #This start BEIMING modified box-plot, add another output from 'calcualte_box_plot'
-                        ###################################################################################
+                    
+                     
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1169,10 +1173,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx,region_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,   #BEIMING added region_box as output,not used here
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,   
                                                                                        label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx, region_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  #BEIMING
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  
                                                                                     plot_dict=plot_dict, comb_bx=comb_bx,
                                                                                     label_bx=label_bx)
                             # For the last p_index make the plot.
@@ -1192,7 +1196,7 @@ class analysis:
                                     debug=self.debug
                                 )
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx, region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   #BEIMING
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
                         ####################################### 
                         #This start BEIMING added multi-box-plot
@@ -1211,10 +1215,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx,region_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, #BEIMING
+                                comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, #BEIMING
                                                                              label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx,region_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  #BEIMING 
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,  #BEIMING 
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
 
@@ -1225,6 +1229,8 @@ class analysis:
                                     comb_bx,
                                     label_bx,
                                     region_bx,  #BEIMING 
+                                    region_list = region_list,
+                                    model_name_list=model_name_list,
                                     ylabel=use_ylabel,
                                     vmin=vmin,
                                     vmax=vmax,
