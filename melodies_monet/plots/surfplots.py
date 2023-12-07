@@ -784,10 +784,59 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     return ax
     
 
-###############################################################################
-#This is BEIMING modified 'calculate_boxplot',added region_bx as another output
-###############################################################################
-def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
+def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+    """Combines data into acceptable format for box-plot
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
+    column : str
+        Column label of variable to plot
+    label : str
+        Name of variable to use in plot legend
+    comb_bx: dataframe
+        dataframe containing information to create box-plot from previous 
+        occurrence so can overlay multiple model results on plot
+    label_bx: list
+        list of string labels to use in box-plot from previous occurrence so 
+        can overlay multiple model results on plot
+    Returns
+    -------
+    dataframe, list
+        dataframe containing information to create box-plot
+        list of string labels to use in box-plot
+
+    """
+    if comb_bx is None and label_bx is None:
+        comb_bx = pd.DataFrame()
+        label_bx = []
+        #First define the colors for the observations.
+        obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
+    else:
+        plot_kwargs = plot_dict
+    #For all, a column to the dataframe and append the label info to the list.
+    plot_kwargs['column'] = column
+    plot_kwargs['label'] = label
+    if df_reg is not None:
+        comb_bx[label] = df_reg[column+'_reg']
+    else:
+        comb_bx[label] = df[column]
+    label_bx.append(plot_kwargs)
+
+    return comb_bx, label_bx
+
+####################################################################################
+#This is BEIMING modified 'calculate_multi_boxplot',added region_bx as another output
+#####################################################################################
+def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
     """Combines data into acceptable format for box-plot
     
     Parameters
@@ -834,7 +883,7 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
         comb_bx[label] = df_reg[column+'_reg']
     else:
         comb_bx[label] = df[column] 
-        region_bx['EPA_regions']=df['epa_region']  #BEIMING 2 
+        region_bx['set_regions']=df[region_name[0]]   #BEIMING 2 
     label_bx.append(plot_kwargs)
     
     return comb_bx, label_bx,region_bx             #BEIMING 3
@@ -940,7 +989,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
 #########################################
 #This start BEIMING added 'multi_boxplot'
 #########################################    
-def make_multi_boxplot(comb_bx, label_bx,region_bx, ylabel = None, vmin = None, vmax = None, outname='plot',  #BEIMING
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  #BEIMING
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
@@ -1029,20 +1078,34 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx, ylabel = None, vmin = None, 
     sns.set_style("whitegrid")
     sns.set_style("ticks")
 # This begins what BEIMING ADDED
-    pm25_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
-    pm25_cmaq54 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
-    pm25_cmaq52 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
+    len_combx = len(comb_bx.columns)
+    if len_combx ==  3:
+        data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
+        data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
+        data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
 
-    pm25_obs['model'] = 'AirNow'
-    pm25_cmaq54['model'] = 'CMAQv54' 
-    pm25_cmaq52['model'] = 'CMAQv52'
+        data_obs['model'] = model_name_list[0]
+        data_model1['model'] = model_name_list[1]
+        data_model2['model'] = model_name_list[2]
 
-    pm25_obs['Regions'] = region_bx['EPA_regions'].values
-    pm25_cmaq54['Regions'] = region_bx['EPA_regions'].values
-    pm25_cmaq52['Regions'] = region_bx['EPA_regions'].values
+        data_obs['Regions'] = region_bx['set_regions'].values
+        data_model1['Regions'] = region_bx['set_regions'].values
+        data_model2['Regions'] = region_bx['set_regions'].values
 
-    tdf =pd.concat([pm25_obs[['Value','model','Regions']],pm25_cmaq54[['Value','model','Regions']],pm25_cmaq52[['Value','model','Regions']]])
-    acro = ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+        tdf =pd.concat([data_obs[['Value','model','Regions']],data_model1[['Value','model','Regions']],data_model2[['Value','model','Regions']]])
+    elif len_combx == 2:
+        data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
+        data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
+
+        data_obs['model'] = model_name_list[0]
+        data_model1['model'] = model_name_list[1]
+
+        data_obs['Regions'] = region_bx['set_regions'].values
+        data_model1['Regions'] = region_bx['set_regions'].values
+
+        tdf =pd.concat([data_obs[['Value','model','Regions']],data_model1[['Value','model','Regions']]])
+
+    acro = region_list
 
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
 #this ends what BEIMING ADDED  
