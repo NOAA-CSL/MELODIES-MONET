@@ -1123,6 +1123,262 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
+#======================================================
+#this start scorecard code
+#
+#======================================================
+def scorecard_step1_combine_df(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+    """Combines data into acceptable format for box-plot
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        model/obs paired data to plot
+    df_reg : pandas.DataFrame
+        model/obs paired regulatory data to plot
+    column : str
+        Column label of variable to plot
+    label : str
+        Name of variable to use in plot legend
+    comb_bx: dataframe
+        dataframe containing information to create box-plot from previous 
+        occurrence so can overlay multiple model results on plot
+    label_bx: list
+        list of string labels to use in box-plot from previous occurrence so 
+        can overlay multiple model results on plot
+    Returns
+    -------
+    dataframe, list, dataframe  
+        dataframe containing information to create box-plot
+        list of string labels to use in box-plot
+        dataframe containing informaiton for regions to help create multi-box-plot
+
+    """
+    region_bx = pd.DataFrame()                   #BEIMING 1
+    msa_bx = pd.DataFrame()                      #BEIMING 1
+    if comb_bx is None and label_bx is None:
+        comb_bx = pd.DataFrame()
+        label_bx = []
+        #First define the colors for the observations.
+        obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
+    else:
+        plot_kwargs = plot_dict
+    #For all, a column to the dataframe and append the label info to the list.
+    plot_kwargs['column'] = column
+    plot_kwargs['label'] = label
+    if df_reg is not None:
+        comb_bx[label] = df_reg[column+'_reg']
+    else:
+        comb_bx[label] = df[column]
+        region_bx['set_regions']=df['epa_region']   #BEIMING 2
+        msa_bx['msa_name'] = df['msa_name']              #BEIMING 2
+ 
+    label_bx.append(plot_kwargs)
+
+    return comb_bx, label_bx,region_bx,msa_bx             #BEIMING 3
+
+
+def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx): 
+
+    len_combx = len(comb_bx.columns)
+    data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
+    data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
+    data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
+
+    data_obs['model'] = 'AirNow'
+    data_model1['model'] = 'CMAQv54'
+    data_model2['model'] = 'CMAQv52'
+
+    data_obs['Regions'] = region_bx['set_regions'].values
+    data_model1['Regions'] = region_bx['set_regions'].values
+    data_model2['Regions'] = region_bx['set_regions'].values
+
+    data_obs['msa_name'] = region_bx['msa_name'].values
+    data_model1['msa_name'] = region_bx['msa_name'].values
+    data_model2['msa_name'] = region_bx['msa_name'].values
+
+    output_obs = data_obs.to_xarray.groupby('Regions')   #this is ds1_new
+    output_model1 = data_model1.to_xarray.groupby('Regions')  #this is ds1_new
+    output_model2 = data_model2.to_xarray.groupby('Regions')  #this is ds2_new
+
+    return output_obs, output_model1, output_model2
+
+def scorecard_step3_getLUC(region_name_input,ds_name):
+    msa_here = ds_name[region_name_input]['msa_name']
+    msa_here_array = np.array(msa_here).reshape((1,len(msa_here)))
+    rural_index_list = []
+    urban_index_list = []
+    for i in range(len(msa_here_array[0])):
+        if msa_here_array[0][i] == '':
+            rural_index_list.append(i)
+        else:
+            urban_index_list.append(i)
+    return rural_index_list, urban_index_list
+
+def scorecard_step4_GetRegionLUCDate(variable_name,ds_name):
+    Region_Date_Urban_list = [] #(region * date)
+    Region_Date_Rural_list = [] #(region * date)
+
+    for region in region_list:
+        region_here = ds_name[region] #ds1_new['R1'] ~(2162,85)
+
+        Date_Urban_List = []
+        Date_Rural_List = []
+
+        for date in date_list:
+            date_region_here = region_here[variable_name].loc[date,:] #ds1_new['R1']['PM2.5'].loc['2023-08-01',:]  ~ (72,85)
+
+            rural_index_list_here = scorecard_step3_getLUC(region,ds_name)[0]
+
+            date_region_rural_here = []
+            date_region_urban_here = []
+            for i in range(len(date_region_here[0])): #85
+                if i in rural_index_list_here:
+                    date_region_rural_here.append(date_region_here[:,i])
+                else:
+                    date_region_urban_here.append(date_region_here[:,i])
+
+            date_region_rural_here_array = np.array(date_region_rural_here).reshape((1,len(date_region_rural_here)*len(date_region_rural_here[0])))    
+            date_region_urban_here_array = np.array(date_region_urban_here).reshape((1,len(date_region_urban_here)*len(date_region_urban_here[0])))  
+
+            Date_Urban_List.append(date_region_urban_here_array)  # all date pm2.5
+            Date_Rural_List.append(date_region_rural_here_array)  # all date pm2.5
+
+        Region_Date_Urban_list.append(Date_Urban_List) # all region & data pm2.5
+        Region_Date_Rural_list.append(Date_Rural_List) # all region & data pm2.5
+
+    return Region_Date_Urban_list, Region_Date_Rural_list
+
+def scorecard_step5_KickNan(obs_input,model_input_1,model_input_2):
+    OBS_Region_Date_list_noNan = []
+    MODEL_54_Region_Date_list_noNan = [] #(region, date)
+    MODEL_52_Region_Date_list_noNan = []
+    for kk in range(len(obs_input)):
+        OBS_Region_Date_list_noNan_Date = []
+        MODEL_54_Region_Date_list_noNan_Date = []
+        MODEL_52_Region_Date_list_noNan_Date = []
+
+        for jj in range(len(obs_input[kk])):
+            obs_here_array = obs_input[kk][jj]
+            model_54_here_array = model_input_2[kk][jj]
+            model_52_here_array = model_input_1[kk][jj]
+
+            obs_output = []
+            model_54_output = []
+            model_52_output = []
+            for i in range(len(obs_here_array[0])):
+                if math.isnan(float(obs_here_array[0][i])) == False:
+                    if math.isnan(float(model_54_here_array[0][i])) == False:
+                        obs_output.append(obs_here_array[0][i])
+                        model_54_output.append(model_54_here_array[0][i])
+                        model_52_output.append(model_52_here_array[0][i])
+
+            OBS_Region_Date_list_noNan_Date.append(obs_output)
+            MODEL_54_Region_Date_list_noNan_Date.append(model_54_output)
+            MODEL_52_Region_Date_list_noNan_Date.append(model_52_output)
+        OBS_Region_Date_list_noNan.append(OBS_Region_Date_list_noNan_Date)
+        MODEL_54_Region_Date_list_noNan.append(MODEL_54_Region_Date_list_noNan_Date)
+        MODEL_52_Region_Date_list_noNan.append(MODEL_52_Region_Date_list_noNan_Date)
+
+    return OBS_Region_Date_list_noNan,MODEL_52_Region_Date_list_noNan,MODEL_54_Region_Date_list_noNan
+
+def scorecard_step6_BetterOrWorse(obs_input,model_1_input, model_2_input):
+    v1 = obs_input
+    v2 = model_1_input
+    v3 = model_2_input
+
+    key_word = ''
+    rms_test1 = mean_squared_error(v1,v2, squared=False)
+    rms_test2 = mean_squared_error(v1,v3, squared=False)
+
+    if rms_test1 < rms_test2:
+        key_word= 'worse'
+    elif rms_test1 > rms_test2:
+        key_word = 'better'
+    else:
+        key_word = 'equal'
+    return key_word
+
+
+def scorecard_step7_SigLevel(model_input_1,model_input_2):
+    X1=  np.array(model_input_1)
+    X2=  np.array(model_input_2)
+
+    #confidence interal 95% for model 1
+    mean_X1 = np.mean(X1)
+    STD_X1  = np.std(X1)
+    lower_bd_X1_95 = mean_X1 - 1.96*(STD_X1/(len(X1))**0.5)
+    upper_bd_X1_95 = mean_X1 + 1.96*(STD_X1/(len(X1))**0.5)
+
+    #confidence interal 95% for model 2
+    mean_X2 = np.mean(X2)
+    STD_X2  = np.std(X2)
+    lower_bd_X2_95 = mean_X2 - 1.96*(STD_X2/(len(X2))**0.5)
+    upper_bd_X2_95 = mean_X2 + 1.96*(STD_X2/(len(X2))**0.5)
+
+    #confidence interal 99% for model 1
+    lower_bd_X1_99 = mean_X1 - 2.576*(STD_X1/(len(X1))**0.5)
+    upper_bd_X1_99 = mean_X1 + 2.576*(STD_X1/(len(X1))**0.5)
+
+    #confidence interal 99% for model 2
+    lower_bd_X2_99 = mean_X2 - 2.576*(STD_X2/(len(X2))**0.5)
+    upper_bd_X2_99 = mean_X2 + 2.576*(STD_X2/(len(X2))**0.5)
+
+    #confidence interal 99.9% for model 1
+    lower_bd_X1_999 = mean_X1 - 3.291*(STD_X1/(len(X1))**0.5)
+    upper_bd_X1_999 = mean_X1 + 3.291*(STD_X1/(len(X1))**0.5)
+ 
+    #confidence interal 99.9% for model 2
+    lower_bd_X2_999 = mean_X2 - 3.291*(STD_X2/(len(X2))**0.5)
+    upper_bd_X2_999 = mean_X2 + 3.291*(STD_X2/(len(X2))**0.5)
+
+    key_word = ''
+    if (upper_bd_X1_95 -lower_bd_X2_95)* (upper_bd_X2_95 -lower_bd_X1_95) >= 0:
+        key_word = 'No significant difference'
+    else: #NOT overlap,signidicant difference'
+        if (upper_bd_X1_99 -lower_bd_X2_99)* (upper_bd_X2_99 -lower_bd_X1_99) >= 0:
+            key_word = 'significant difference, with 95% confident'
+        else:
+            if (upper_bd_X1_999 -lower_bd_X2_999)* (upper_bd_X2_999 -lower_bd_X1_999) >= 0:
+                key_word = 'significant difference, with 99% confident'
+            else:
+                key_word = 'significant difference, with 99.9% confident'
+    return key_word
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
