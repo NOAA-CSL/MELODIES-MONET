@@ -903,9 +903,9 @@ class analysis:
             plot_type = grp_dict['type']
 
             #read-in special settings for multi-boxplot
-            if grp == 'plot_grp6':
-                region_name = grp_dict['region_name'] #BEIMING
-                region_list = grp_dict['region_list'] #BEIMING
+            if plot_type == 'multi_boxplot':  #BEIMIGN
+                region_name = grp_dict['region_name'] 
+                region_list = grp_dict['region_list'] 
                 model_name_list = grp_dict['model_name_list']     
 
             # first get the observational obs labels
