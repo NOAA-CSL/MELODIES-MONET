@@ -903,7 +903,7 @@ class analysis:
             plot_type = grp_dict['type']
 
             #read-in special settings for multi-boxplot
-            if grp == 'plot_grp6':
+            if plot_type == 'multi_boxplot':
                 region_name = grp_dict['region_name'] #BEIMING
                 region_list = grp_dict['region_list'] #BEIMING
                 model_name_list = grp_dict['model_name_list']     
