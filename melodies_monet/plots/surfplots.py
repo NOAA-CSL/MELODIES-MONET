@@ -833,9 +833,6 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
 
     return comb_bx, label_bx
 
-####################################################################################
-#This is BEIMING modified 'calculate_multi_boxplot',added region_bx as another output
-#####################################################################################
 def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
     """Combines data into acceptable format for box-plot
     
@@ -863,7 +860,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         dataframe containing informaiton for regions to help create multi-box-plot
         
     """
-    region_bx = pd.DataFrame()                   #BEIMING 1
+    region_bx = pd.DataFrame()                   
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = [] 
@@ -883,10 +880,10 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         comb_bx[label] = df_reg[column+'_reg']
     else:
         comb_bx[label] = df[column] 
-        region_bx['set_regions']=df[region_name[0]]   #BEIMING 2 
+        region_bx['set_regions']=df[region_name[0]]   
     label_bx.append(plot_kwargs)
     
-    return comb_bx, label_bx,region_bx             #BEIMING 3
+    return comb_bx, label_bx,region_bx             
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
@@ -985,11 +982,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
 
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
-
-#########################################
-#This start BEIMING added 'multi_boxplot'
-#########################################    
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  #BEIMING
+  
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
@@ -1077,17 +1071,14 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-# This begins what BEIMING ADDED
     len_combx = len(comb_bx.columns)
     if len_combx ==  3:
         data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
         data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
         data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
-
         data_obs['model'] = model_name_list[0]
         data_model1['model'] = model_name_list[1]
         data_model2['model'] = model_name_list[2]
-
         data_obs['Regions'] = region_bx['set_regions'].values
         data_model1['Regions'] = region_bx['set_regions'].values
         data_model2['Regions'] = region_bx['set_regions'].values
@@ -1096,19 +1087,14 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     elif len_combx == 2:
         data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
         data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
-
         data_obs['model'] = model_name_list[0]
         data_model1['model'] = model_name_list[1]
-
         data_obs['Regions'] = region_bx['set_regions'].values
         data_model1['Regions'] = region_bx['set_regions'].values
-
         tdf =pd.concat([data_obs[['Value','model','Regions']],data_model1[['Value','model','Regions']]])
 
     acro = region_list
-
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
-#this ends what BEIMING ADDED  
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -1122,10 +1108,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
-
-
-
-
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
