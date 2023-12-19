@@ -1198,9 +1198,6 @@ class analysis:
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
-                        ####################################### 
-                        #This start BEIMING added multi-box-plot
-                        ########################################
                         elif plot_type.lower() == 'multi_boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1215,10 +1212,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, #BEIMING
+                                comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,  #BEIMING 
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,   
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
 
@@ -1228,7 +1225,7 @@ class analysis:
                                 splots.make_multi_boxplot(
                                     comb_bx,
                                     label_bx,
-                                    region_bx,  #BEIMING 
+                                    region_bx,  
                                     region_list = region_list,
                                     model_name_list=model_name_list,
                                     ylabel=use_ylabel,
@@ -1243,10 +1240,7 @@ class analysis:
                                     debug=self.debug
                                 )
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #BEIMING
-                        ######################################
-                        #This end BEIMING added multi-box-plot
-                        ######################################
+                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
 
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
