@@ -842,6 +842,8 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         model/obs paired data to plot
     df_reg : pandas.DataFrame
         model/obs paired regulatory data to plot
+    region_name : list of str
+        user input regions of interets to plot
     column : str
         Column label of variable to plot
     label : str
@@ -999,6 +1001,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     region_bx: dataframe
         dataframe containing information of stations to help create multi-box-plot
         from calculate_boxplot
+    model_name_list : list of str
+        list of models and observation sources used for x-labels in plot
     ylabel : str
         Title of y-axis
     vmin : real number
