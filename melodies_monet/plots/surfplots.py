@@ -848,10 +848,10 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         Column label of variable to plot
     label : str
         Name of variable to use in plot legend
-    comb_bx: dataframe
+    comb_bx : dataframe
         dataframe containing information to create box-plot from previous 
         occurrence so can overlay multiple model results on plot
-    label_bx: list
+    label_bx : list
         list of string labels to use in box-plot from previous occurrence so 
         can overlay multiple model results on plot
     Returns
@@ -993,12 +993,12 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     
     Parameters
     ----------
-    comb_bx: dataframe
+    comb_bx : dataframe
         dataframe containing information to create box-plot from 
         calculate_boxplot
-    label_bx: list
+    label_bx : list
         list of string labels to use in box-plot from calculate_boxplot
-    region_bx: dataframe
+    region_bx : dataframe
         dataframe containing information of stations to help create multi-box-plot
         from calculate_boxplot
     model_name_list : list of str
