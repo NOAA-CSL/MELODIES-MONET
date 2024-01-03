@@ -1,0 +1,10 @@
+analysis:
+  start_time: '2024-01-01'
+  end_time:   '2024-01-31'
+  time_interval: '24h'
+  output_dir: $HOME/Plots
+  debug: True
+  regrid: False
+  target_grid: Uniform_180_360
+  time_chunking_with_gridded_data: True
+
