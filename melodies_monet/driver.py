@@ -913,6 +913,8 @@ class analysis:
                 region_list = grp_dict['region_list']
                 region_name = grp_dict['region_name']
                 urban_rural_name = grp_dict['urban_rural_name']
+                urban_rural_differentiate_value = grp_dict['urban_rural_differentiate_value']
+                better_or_worse_method = grp_dict['better_or_worse_method']
                 model_name_list = grp_dict['model_name_list']
 
             # first get the observational obs labels
@@ -1274,9 +1276,9 @@ class analysis:
       
                                 #split by region, data, and urban/rural
                                 datelist = splots.GetDateList(self.start_time,self.end_time)
-                                OBS_Region_Date_Urban_list, OBS_Region_Date_Rural_list = splots.scorecard_step4_GetRegionLUCDate(ds_name=output_obs,region_list=region_list,datelist=datelist)
-                                MODEL1_Region_Date_Urban_list, MODEL1_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model1,region_list=region_list,datelist=datelist)
-                                MODEL2_Region_Date_Urban_list, MODEL2_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model2,region_list=region_list,datelist=datelist)
+                                OBS_Region_Date_Urban_list, OBS_Region_Date_Rural_list = splots.scorecard_step4_GetRegionLUCDate(ds_name=output_obs,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
+                                MODEL1_Region_Date_Urban_list, MODEL1_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model1,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
+                                MODEL2_Region_Date_Urban_list, MODEL2_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model2,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
                                 #print('finish step3')
                                 #Kick Nan values
                                 OBS_Region_Date_Urban_list_noNan,MODEL1_Region_Date_Urban_list_noNan,MODEL2_Region_Date_Urban_list_noNan = splots.scorecard_step5_KickNan(obs_input=OBS_Region_Date_Urban_list,
@@ -1293,7 +1295,8 @@ class analysis:
                                                                                     model2_urban_input = MODEL2_Region_Date_Urban_list_noNan,
                                                                                     obs_rural_input    = OBS_Region_Date_Rural_list_noNan, 
                                                                                     model1_rural_input = MODEL1_Region_Date_Rural_list_noNan,
-                                                                                    model2_rural_input = MODEL2_Region_Date_Rural_list_noNan)
+                                                                                    model2_rural_input = MODEL2_Region_Date_Rural_list_noNan,
+                                                                                    better_or_worse_method = better_or_worse_method)
                                 #print('finish step5')
                                 #plot the scorecard
                                 splots.scorecard_step9_makeplot(output_matrix=Output_matrix,
@@ -1303,7 +1306,10 @@ class analysis:
                                                          outname=outname,
                                                          domain_type=domain_type,
                                                          domain_name=domain_name,
-                                                         fig_dict=fig_dict)
+                                                         fig_dict=fig_dict,
+                                                         text_dict=text_dict,
+                                                         datelist=datelist,
+                                                         better_or_worse_method = better_or_worse_method)
 
                                 #print('finish step6')
                                 #Clear info for next plot.
