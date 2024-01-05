@@ -989,7 +989,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
 #########################################
 #This start BEIMING added 'multi_boxplot'
 #########################################    
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  #BEIMING
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', 
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
@@ -1127,7 +1127,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
 #this start scorecard code
 #
 #======================================================
-def scorecard_step1_combine_df(df, df_reg=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
+def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_name=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot
 
     Parameters
@@ -1154,8 +1154,9 @@ def scorecard_step1_combine_df(df, df_reg=None, column=None, label=None, plot_di
         dataframe containing informaiton for regions to help create multi-box-plot
 
     """
-    region_bx = pd.DataFrame()                   #BEIMING 1
-    msa_bx = pd.DataFrame()                      #BEIMING 1
+    region_bx = pd.DataFrame()                   
+    msa_bx = pd.DataFrame()                      
+    time_bx = pd.DataFrame()               
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = []
@@ -1168,6 +1169,7 @@ def scorecard_step1_combine_df(df, df_reg=None, column=None, label=None, plot_di
             plot_kwargs = obs_dict
     else:
         plot_kwargs = plot_dict
+
     #For all, a column to the dataframe and append the label info to the list.
     plot_kwargs['column'] = column
     plot_kwargs['label'] = label
@@ -1175,139 +1177,178 @@ def scorecard_step1_combine_df(df, df_reg=None, column=None, label=None, plot_di
         comb_bx[label] = df_reg[column+'_reg']
     else:
         comb_bx[label] = df[column]
-        region_bx['set_regions']=df['epa_region']   #BEIMING 2
-        msa_bx['msa_name'] = df['msa_name']              #BEIMING 2
- 
+        region_bx['set_regions']=df[region_name[0]]                
+        msa_bx['set_urban_rural'] = df[urban_rural_name[0]]            
+        time_bx['set_time'] = df['time']                                 
+   
     label_bx.append(plot_kwargs)
+    return comb_bx, label_bx,region_bx,msa_bx,time_bx            
 
-    return comb_bx, label_bx,region_bx,msa_bx             #BEIMING 3
 
-
-def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx): 
+def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model_name_list=None): 
 
     len_combx = len(comb_bx.columns)
     data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
     data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
     data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
 
-    data_obs['model'] = 'AirNow'
-    data_model1['model'] = 'CMAQv54'
-    data_model2['model'] = 'CMAQv52'
+    data_obs['model']    = model_name_list[0]
+    data_model1['model'] = model_name_list[1]
+    data_model2['model'] = model_name_list[2]
 
     data_obs['Regions'] = region_bx['set_regions'].values
     data_model1['Regions'] = region_bx['set_regions'].values
     data_model2['Regions'] = region_bx['set_regions'].values
 
-    data_obs['msa_name'] = region_bx['msa_name'].values
-    data_model1['msa_name'] = region_bx['msa_name'].values
-    data_model2['msa_name'] = region_bx['msa_name'].values
+    data_obs['urban_rural'] = msa_bx['set_urban_rural'].values
+    data_model1['urban_rural'] = msa_bx['set_urban_rural'].values
+    data_model2['urban_rural'] = msa_bx['set_urban_rural'].values
 
-    output_obs = data_obs.to_xarray.groupby('Regions')   #this is ds1_new
-    output_model1 = data_model1.to_xarray.groupby('Regions')  #this is ds1_new
-    output_model2 = data_model2.to_xarray.groupby('Regions')  #this is ds2_new
+    data_obs['Time'] = time_bx['set_time'].values
+    data_model1['Time'] = time_bx['set_time'].values
+    data_model2['Time'] = time_bx['set_time'].values
+
+    output_obs = data_obs.to_xarray().groupby('Regions')        
+    output_model1 = data_model1.to_xarray().groupby('Regions')  
+    output_model2 = data_model2.to_xarray().groupby('Regions') 
 
     return output_obs, output_model1, output_model2
 
-def scorecard_step3_getLUC(region_name_input,ds_name):
-    msa_here = ds_name[region_name_input]['msa_name']
+from datetime import  datetime,timedelta
+def GetDateList(start_time_input,end_time_input):
+    start_date_str = str(start_time_input).split(' ')[0]
+    end_date_str = str(end_time_input).split(' ')[0]
+    FMT='%Y-%m-%d'
+    start_date = datetime.strptime(start_date_str,FMT)
+    end_date = datetime.strptime(end_date_str,FMT)
+    datelist_output = []
+    for i in range(10000):
+        date_here = start_date + timedelta(days=i)
+        date_here_str = str(date_here).split(' ')[0]
+        if date_here <= end_date:
+           datelist_output.append(date_here_str)
+        else:
+            break
+    return datelist_output
+
+
+
+
+def scorecard_step3_getLUC(region_name_input,ds_name,urban_rural_differentiate_value):
+    msa_here = ds_name[region_name_input]['urban_rural']   #len is (time*#site)
     msa_here_array = np.array(msa_here).reshape((1,len(msa_here)))
+ 
     rural_index_list = []
     urban_index_list = []
+    #print('msa',len(msa_here_array[0]))
     for i in range(len(msa_here_array[0])):
-        if msa_here_array[0][i] == '':
+        if msa_here_array[0][i] == urban_rural_differentiate_value:    #??
             rural_index_list.append(i)
         else:
             urban_index_list.append(i)
     return rural_index_list, urban_index_list
 
-def scorecard_step4_GetRegionLUCDate(variable_name,ds_name):
+
+def scorecard_step4_GetRegionLUCDate(ds_name=None,region_list=None,datelist=None,urban_rural_differentiate_value=None):
     Region_Date_Urban_list = [] #(region * date)
     Region_Date_Rural_list = [] #(region * date)
 
-    for region in region_list:
-        region_here = ds_name[region] #ds1_new['R1'] ~(2162,85)
+    for region in region_list:  #region == 'R1'
+        region_here = ds_name[region] #ds1_new['R1'] ~(time*#site)
+     
+        #get urban/rural index for this region
+        rural_index_list_here = scorecard_step3_getLUC(region,ds_name,urban_rural_differentiate_value)[0]
 
+        #get by date split
         Date_Urban_List = []
         Date_Rural_List = []
+        for date in datelist:
+            date_start_here = datetime.strptime(date+' 00:00:00','%Y-%m-%d %H:%M:%S')
+            date_end_here   = datetime.strptime(date+' 23:59:59','%Y-%m-%d %H:%M:%S')
+       
+            region_date_rural_here = []
+            region_date_urban_here = []
+            for i in range(len(region_here['Time'])):
+                date_here1 = region_here['Time'][i]
+                timestamp = ((date_here1 - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1, 's'))
+                date_here = datetime.utcfromtimestamp(timestamp)  #this function== 1970,1,1 + timestamp(in seconds)
+                if date_here >= date_start_here and date_here <= date_end_here:
+                    if i in rural_index_list_here:
+                        region_date_rural_here.append(region_here['Value'][i])
+                    else:
+                        region_date_urban_here.append(region_here['Value'][i])
 
-        for date in date_list:
-            date_region_here = region_here[variable_name].loc[date,:] #ds1_new['R1']['PM2.5'].loc['2023-08-01',:]  ~ (72,85)
+            region_date_rural_here_array = np.array(region_date_rural_here).reshape((1,len(region_date_rural_here)))    
+            region_date_urban_here_array = np.array(region_date_urban_here).reshape((1,len(region_date_urban_here))) 
 
-            rural_index_list_here = scorecard_step3_getLUC(region,ds_name)[0]
-
-            date_region_rural_here = []
-            date_region_urban_here = []
-            for i in range(len(date_region_here[0])): #85
-                if i in rural_index_list_here:
-                    date_region_rural_here.append(date_region_here[:,i])
-                else:
-                    date_region_urban_here.append(date_region_here[:,i])
-
-            date_region_rural_here_array = np.array(date_region_rural_here).reshape((1,len(date_region_rural_here)*len(date_region_rural_here[0])))    
-            date_region_urban_here_array = np.array(date_region_urban_here).reshape((1,len(date_region_urban_here)*len(date_region_urban_here[0])))  
-
-            Date_Urban_List.append(date_region_urban_here_array)  # all date pm2.5
-            Date_Rural_List.append(date_region_rural_here_array)  # all date pm2.5
+            Date_Urban_List.append(region_date_urban_here_array)  # all date pm2.5
+            Date_Rural_List.append(region_date_rural_here_array)  # all date pm2.5
 
         Region_Date_Urban_list.append(Date_Urban_List) # all region & data pm2.5
         Region_Date_Rural_list.append(Date_Rural_List) # all region & data pm2.5
-
     return Region_Date_Urban_list, Region_Date_Rural_list
 
-def scorecard_step5_KickNan(obs_input,model_input_1,model_input_2):
+def scorecard_step5_KickNan(obs_input=None,model_input_1=None,model_input_2=None):
     OBS_Region_Date_list_noNan = []
-    MODEL_54_Region_Date_list_noNan = [] #(region, date)
-    MODEL_52_Region_Date_list_noNan = []
+    MODEL1_Region_Date_list_noNan = [] #(region, date)
+    MODEL2_Region_Date_list_noNan = []
     for kk in range(len(obs_input)):
         OBS_Region_Date_list_noNan_Date = []
-        MODEL_54_Region_Date_list_noNan_Date = []
-        MODEL_52_Region_Date_list_noNan_Date = []
+        MODEL1_Region_Date_list_noNan_Date = []
+        MODEL2_Region_Date_list_noNan_Date = []
 
         for jj in range(len(obs_input[kk])):
             obs_here_array = obs_input[kk][jj]
-            model_54_here_array = model_input_2[kk][jj]
-            model_52_here_array = model_input_1[kk][jj]
+            model1_here_array = model_input_1[kk][jj]
+            model2_here_array = model_input_2[kk][jj]
 
             obs_output = []
-            model_54_output = []
-            model_52_output = []
+            model1_output = []
+            model2_output = []
             for i in range(len(obs_here_array[0])):
                 if math.isnan(float(obs_here_array[0][i])) == False:
-                    if math.isnan(float(model_54_here_array[0][i])) == False:
+                    if math.isnan(float(model1_here_array[0][i])) == False:
                         obs_output.append(obs_here_array[0][i])
-                        model_54_output.append(model_54_here_array[0][i])
-                        model_52_output.append(model_52_here_array[0][i])
+                        model1_output.append(model1_here_array[0][i])
+                        model2_output.append(model2_here_array[0][i])
 
             OBS_Region_Date_list_noNan_Date.append(obs_output)
-            MODEL_54_Region_Date_list_noNan_Date.append(model_54_output)
-            MODEL_52_Region_Date_list_noNan_Date.append(model_52_output)
+            MODEL1_Region_Date_list_noNan_Date.append(model1_output)
+            MODEL2_Region_Date_list_noNan_Date.append(model2_output)
         OBS_Region_Date_list_noNan.append(OBS_Region_Date_list_noNan_Date)
-        MODEL_54_Region_Date_list_noNan.append(MODEL_54_Region_Date_list_noNan_Date)
-        MODEL_52_Region_Date_list_noNan.append(MODEL_52_Region_Date_list_noNan_Date)
+        MODEL1_Region_Date_list_noNan.append(MODEL1_Region_Date_list_noNan_Date)
+        MODEL2_Region_Date_list_noNan.append(MODEL2_Region_Date_list_noNan_Date)
 
-    return OBS_Region_Date_list_noNan,MODEL_52_Region_Date_list_noNan,MODEL_54_Region_Date_list_noNan
+    return OBS_Region_Date_list_noNan,MODEL1_Region_Date_list_noNan,MODEL2_Region_Date_list_noNan
 
-def scorecard_step6_BetterOrWorse(obs_input,model_1_input, model_2_input):
-    v1 = obs_input
-    v2 = model_1_input
-    v3 = model_2_input
+
+def scorecard_step6_BetterOrWorse(obs_input=None,model1_input=None, model2_input=None,better_or_worse_method=None):
+    v1 = obs_input   #AirNow OBS
+    v2 = model1_input#CMAQ v5.4
+    v3 = model2_input#CMAQ v5.2
 
     key_word = ''
-    rms_test1 = mean_squared_error(v1,v2, squared=False)
-    rms_test2 = mean_squared_error(v1,v3, squared=False)
+    rms_test1 = math.sqrt(np.square(np.subtract(v1,v2)).mean())
+    rms_test2 = math.sqrt(np.square(np.subtract(v1,v3)).mean())
 
-    if rms_test1 < rms_test2:
-        key_word= 'worse'
-    elif rms_test1 > rms_test2:
-        key_word = 'better'
-    else:
-        key_word = 'equal'
+    if better_or_worse_method == 'RMSE':
+        if rms_test1 < rms_test2:
+            key_word= 'better'
+        elif rms_test1 > rms_test2:
+            key_word = 'worse'
+        else:
+            key_word = 'equal'
+    #elif better_or_worse_method = 'IOA':
+
+    #elif better_or_worse_method = 'NMB':
+
+ 
     return key_word
 
 
-def scorecard_step7_SigLevel(model_input_1,model_input_2):
-    X1=  np.array(model_input_1)
-    X2=  np.array(model_input_2)
+def scorecard_step7_SigLevel(model1_input=None,model2_input=None):
+    X1=  np.array(model1_input)
+    X2=  np.array(model2_input)
 
     #confidence interal 95% for model 1
     mean_X1 = np.mean(X1)
@@ -1350,39 +1391,115 @@ def scorecard_step7_SigLevel(model_input_1,model_input_2):
                 key_word = 'significant difference, with 99.9% confident'
     return key_word
 
+def scorecard_step8_OutputMatrix(obs_urban_input=None, model1_urban_input=None,model2_urban_input=None,
+                                 obs_rural_input=None, model1_rural_input=None,model2_rural_input=None,better_or_worse_method =None):
 
+    output_matrix = np.zeros((len(obs_urban_input)+len(obs_rural_input),len(obs_urban_input[0])))
+    for i in range(len(obs_urban_input)+len(obs_rural_input)):# i is region
+        for j in range(len(obs_urban_input[0])):# j is date
+            if i%2 == 0: # this is urban
+                model2_here = model2_urban_input[int(i/2)][j]
+                model1_here = model1_urban_input[int(i/2)][j]
+                OBS_here    = obs_urban_input[int(i/2)][j]
+            else:   # this is rural
+                model2_here = model2_rural_input[int((i-1)/2)][j]
+                model1_here = model1_rural_input[int((i-1)/2)][j]
+                OBS_here    = obs_rural_input[int((i-1)/2)][j]
 
+            if OBS_here == []:
+                output_matrix[i][j] = np.nan  # no values, use Nan
+            else:
+                key_word_BW = scorecard_step6_BetterOrWorse(OBS_here,model1_here, model2_here,better_or_worse_method)  #ORDER: airnow, cmaq_54, cmaq_52
+                key_word_SL = scorecard_step7_SigLevel(model1_here, model2_here)                #ORDER: cmaq_54, cmaq_52
 
+                if key_word_SL == 'No significant difference':
+                    output_matrix[i][j] = 0   #'no significant difference'
 
+                elif key_word_SL == 'significant difference, with 95% confident':
+                    if key_word_BW == 'better':
+                        output_matrix[i][j] = 20  #'95% better'
+                    elif key_word_BW == 'worse':
+                        output_matrix[i][j] = -20 #'95% worse'
+                    else:
+                        output_matrix[i][j] = 0  #'95% equal'
 
+                elif key_word_SL == 'significant difference, with 99% confident':
+                    if key_word_BW == 'better':
+                        output_matrix[i][j] = 50  #'99% better'
+                    elif key_word_BW == 'worse':
+                        output_matrix[i][j] = -50 #'99% worse'
+                    else:
+                        output_matrix[i][j] = 0  #'99% equal'
 
+                else:
+                    if key_word_BW == 'better':
+                        output_matrix[i][j] = 100  #'99.9% better'
+                    elif key_word_BW == 'worse':
+                        output_matrix[i][j] = -100 #'99.9% worse'
+                    else:
+                        output_matrix[i][j] = 0   #'99.9% equal'   
+    return output_matrix
 
+def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,model_name_list=None,outname=None,
+                             domain_type=None, domain_name=None, fig_dict=None,text_dict=None,datelist=None,better_or_worse_method = None):
+    if fig_dict is not None:
+        f,ax = plt.subplots(**fig_dict)
+    else:
+        f,ax = plt.subplots(figsize=(18,10))
 
+    def_text = dict(fontsize=20)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
 
+    #set title and x,y-labels
+    ax.set_xlabel('')
+    ax.set_ylabel('Regions',**text_kwargs)  
+    ax.set_title(column+' '+ model_name_list[1]+' vs. '+model_name_list[2]+' Evaluated against '+model_name_list[0]+
+                 ' OBS \n based on '+better_or_worse_method+' & Signigicant Level', fontweight='bold',**text_kwargs)  
+    #add ticks
+    ax.tick_params(labelsize=20) 
 
+    x_labels = []
+    for i in range(len(datelist)):
+        datelist_x_label = datelist[i][-5:]
+        x_labels.append(datelist_x_label)
+    xtick_location_list = []
+    for i in range(len(datelist)):
+        xtick_location_list.append(i+0.5)
+    ax.set_xticks(xtick_location_list,x_labels,rotation=70)
 
+    y_labels =  region_list 
+    yticks_location_list = []
+    for i in range(len(region_list)):
+        yticks_location_list.append(2*i+1)
+    ax.set_yticks(yticks_location_list,y_labels)
+    plt.gca().invert_yaxis()  #to verse Y axis
 
+    #add another y-axis
+    ax2=ax.secondary_yaxis('right')
+    ax2.tick_params(labelsize=20) 
+    y2_labels =[]
+    for i in range(len(region_list)):
+        y2_labels.append('urban')
+        y2_labels.append('rural')
+    ax2.set_yticks([i+0.5 for i in range(len(region_list)*2)],y2_labels)  
 
+    #plot and set colorbar
+    plot1= plt.pcolormesh(output_matrix,cmap='coolwarm',edgecolor='k',vmin=-100,vmax=100)
+    cb = f.colorbar(plot1,ticks=[-100,-50,-20,0,20,50,100],pad=0.1)
+    cb.ax.set_yticklabels(['99.9% Worse','99% Worse','95% Worse','No Significant Difference',
+                           '95% Better','99% Better','99.9% Better'])
+    cb.ax.tick_params(labelsize=20)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    #save figure
+    plt.tight_layout()
+    savefig(outname + '.png', loc=4, logo_height=100)
+#====================================================
+#This ends BEIMING scorecard
+#
+#====================================================
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
                       outname = 'plot',
