@@ -1321,6 +1321,11 @@ def scorecard_step5_KickNan(obs_input=None,model_input_1=None,model_input_2=None
 
     return OBS_Region_Date_list_noNan,MODEL1_Region_Date_list_noNan,MODEL2_Region_Date_list_noNan
 
+def CalcIOA(v2,v1): #v1 is observation, v2 is prediction
+    ioa_num = np.sum(np.subtract(v1,v2)**2)
+    ioa_det = np.sum((np.abs(np.subtract(v2,np.mean(v1))) + np.abs(np.subtract(v1,np.mean(v1))))**2)
+    ioa = 1 - ioa_num/ioa_det
+    return ioa  
 
 def scorecard_step6_BetterOrWorse(obs_input=None,model1_input=None, model2_input=None,better_or_worse_method=None):
     v1 = obs_input   #AirNow OBS
@@ -1330,6 +1335,15 @@ def scorecard_step6_BetterOrWorse(obs_input=None,model1_input=None, model2_input
     key_word = ''
     rms_test1 = math.sqrt(np.square(np.subtract(v1,v2)).mean())
     rms_test2 = math.sqrt(np.square(np.subtract(v1,v3)).mean())
+    
+    nmb_test1 = np.subtract(v2,v1).sum()/np.sum(v1)
+    nmb_test2 = np.subtract(v3,v1).sum()/np.sum(v1)
+
+    nme_test1 = np.sum(np.abs(np.subtract(v2,v1)))/np.sum(v1)
+    nme_test2 = np.sum(np.abs(np.subtract(v3,v1)))/np.sum(v1)
+
+    ioa_test1 = CalcIOA(v2,v1)
+    ioa_test2 = CalcIOA(v3,v1)
 
     if better_or_worse_method == 'RMSE':
         if rms_test1 < rms_test2:
@@ -1338,10 +1352,30 @@ def scorecard_step6_BetterOrWorse(obs_input=None,model1_input=None, model2_input
             key_word = 'worse'
         else:
             key_word = 'equal'
-    #elif better_or_worse_method = 'IOA':
 
-    #elif better_or_worse_method = 'NMB':
+    elif better_or_worse_method == 'IOA':
+        if ioa_test1 > ioa_test2:
+            key_word = 'better'
+        elif ioa_test1 < ioa_test2:
+            key_word = 'worse'
+        else:
+            key_word = 'equal'
 
+    elif better_or_worse_method == 'NMB':
+        if np.abs(nmb_test1) < np.abs(nmb_test2):
+            key_word = 'better'
+        elif np.abs(nmb_test1) > np.abs(nmb_test2):
+            key_word = 'worse'
+        else:
+            key_word = 'equal'
+
+    elif better_or_worse_method == 'NME':
+        if nme_test1 < nme_test2:
+            key_word = 'better'
+        elif nme_test1 > nme_test2:
+            key_word = 'worse'
+        else:
+            key_word = 'equal'
  
     return key_word
 
