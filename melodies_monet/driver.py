@@ -243,9 +243,9 @@ class observation:
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type == 'tropomi_l2_no2':
-                from monetio import tropomi_l2_no2
+                #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
-                self.obj = tropomi_l2_no2.read_trpdataset(
+                self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
@@ -974,6 +974,37 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
+                    if obs.label == 'tropomi_l2_no2':
+                        from .util import sat_l2_swath_utility as sutil
+                        from .util import cal_mod_no2col as mutil
+
+                        # calculate model no2 trop. columns. M.Li
+                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+
+                        if mod.apply_ak == True:
+                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                        else:
+                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+
+                        self.models[model_label].obj = model_obj
+
+                        p = pair()
+
+                        paired_data = paired_data.reset_index("y") # for saving
+                        paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data_cp 
+                        label = '{}_{}'.format(p.obs,p.model)
+
+                        self.paired[label] = p
+                        
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     if obs.label == 'omps_l3':
@@ -992,6 +1023,7 @@ class analysis:
                         p.obj = obs_dat
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
@@ -1069,6 +1101,10 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+
+                        # Adjust the modvar for satelitte no2 trop. column paring. M.Li
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         if obs_type == 'pt_sfc':
@@ -1278,7 +1314,12 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            # for pt_sfc, pairdf has been converted to dataframe, not for sat types. M.Li
+                            if obs_type == 'pt_sfc':
+                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            else:
+                                pass
+
                             # Specify ts_avg_window if noted in yaml file. 
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
@@ -1324,6 +1365,12 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
                         if plot_type.lower() == 'boxplot':
+                            # squeeze the xarray for boxplot, M.Li
+                            if obs_type in  ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc", "sat_grid_clm", "sat_swath_prof"]:
+                                pairdf_sel = pairdf.squeeze()
+                            else: 
+                                pairdf_sel = pairdf
+
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1337,10 +1384,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=modvar, label=p.model,
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
                             # For the last p_index make the plot.
@@ -1659,9 +1706,18 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+                        # for satellite no2 trop. columns paired data, M.Li
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = modvar + 'trpcol' 
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                        # handle different dimensios, M.Li
+                        if ('y' in p.obj.dims) and ('x' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
+                        elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])
+                        else:
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
