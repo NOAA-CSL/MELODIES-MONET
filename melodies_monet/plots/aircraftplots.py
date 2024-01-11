@@ -670,7 +670,155 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
 
 
 ##NEW Violin plot 
-def make_violin_plot(comb_violin, ylabel=None, vmin=None, vmax=None, outname='plot',
+def calculate_violin(df, column=None, label=None, 
+                     plot_dict=None, comb_violin=None, label_violin=None):
+    """
+    Combines data into an acceptable format for violin plots, similar to calculate_boxplot for box plots.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing the model/obs paired data to plot.
+    column : str
+        Column label of the variable to plot.
+    label : str
+        Name of the variable to use in the plot legend.
+    plot_dict : dict
+        Dictionary containing color information for the plot.
+    comb_violin : pandas.DataFrame
+        DataFrame containing information to create violin plots from previous occurrences,
+        to overlay multiple model results on one plot.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot from previous occurrences,
+        to overlay multiple model results on one plot.
+        
+    Returns
+    -------
+    comb_violin : pandas.DataFrame
+        DataFrame containing information to create violin plots.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot.
+    """
+    if comb_violin is None and label_violin is None:
+        comb_violin = pd.DataFrame()
+        label_violin = []
+    #First define the colors for the observations.
+    obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
+    if plot_dict is not None:
+        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+        plot_kwargs = {**obs_dict, **plot_dict}
+    ##else:
+      ##  plot_kwargs = obs_dict
+    #else:
+    ##plot_kwargs = plot_dict
+    #For all, a column to the dataframe and append the label info to the list.
+    plot_kwargs['column'] = column
+    plot_kwargs['label'] = label
+    ##if df_reg is not None:
+      ##  comb_violin[label] = df_reg[column+'_reg']
+    ##else:
+    comb_violin[label] = df[column]
+    label_violin.append(plot_kwargs)
+    
+    return comb_violin, label_violin
+
+def make_violin_plot(comb_violin, label_violin, outname='plot',
+                     domain_type=None, domain_name=None,
+                     fig_dict=None, text_dict=None, debug=False,
+                     ylabel=None, vmin=None, vmax=None):  
+    """
+    Creates a violin plot using combined data from multiple model/observation datasets.
+
+    Parameters
+    ----------
+    comb_violin : pandas.DataFrame
+        DataFrame containing combined data for all datasets to be plotted.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot.
+    outname : str
+        File location and name of plot (do not include .png).
+    domain_type : str
+        Domain type specified in the input yaml file.
+    domain_name : str
+        Domain name specified in the input yaml file.
+    fig_dict : dict
+        Dictionary containing information about figure properties.
+    text_dict : dict
+        Dictionary containing information about text properties.
+    debug : bool
+        If True, the plot will be shown interactively. Useful for debugging.
+    ylabel : str, optional
+        The label for the y-axis.
+    vmin : float, optional
+        The minimum value for the y-axis.
+    vmax : float, optional
+        The maximum value for the y-axis.
+
+    Returns
+    -------
+    None
+    """
+
+    if not debug:
+        plt.ioff()
+    
+    # Set the order and palette based on label_violin
+    order = [item['label'] for item in label_violin]
+    palette = {item['label']: item['color'] for item in label_violin}
+
+    # Initialize figure
+    if fig_dict is not None:
+        plt.figure(**fig_dict)
+    
+    # Convert the DataFrame to long-form or "tidy" format suitable for sns.violinplot
+    melted_comb_violin = pd.melt(comb_violin, var_name='group', value_name='value')
+    
+    # Create the violin plot
+    #sns.violinplot(y='group', x='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', legend=False)
+    #sns.violinplot(x='group', y='value', data=melted_comb_violin, order=order, palette=palette, cut=0)
+    # Old line
+    # sns.violinplot(y='group', x='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', legend=False)
+    
+    # New line
+    #sns.violinplot(x='group', y='value', data=melted_comb_violin, palette=palette, cut=0, scale='width', inner='quartile')
+    # Correct the deprecation warnings
+    #sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, inner='quartile', density_norm='width')
+    # Updated sns.violinplot call
+    # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
+    sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', scale='width', inner='quartile')
+
+
+
+
+
+    # Set labels and title using text_dict
+    ##if text_dict:
+      ##  plt.xlabel('', weight='bold', fontsize=text_dict.get('fontsize', 14))
+      ##  plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_dict.get('fontsize', 14))
+    # Set labels and title
+    def_text = dict(fontsize=14)
+    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+    plt.xlabel('', weight='bold', fontsize=text_kwargs['fontsize'])
+    plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_kwargs['fontsize'])
+    
+    # Set y-axis limits if provided
+    if vmin is not None and vmax is not None:
+        plt.ylim(vmin, vmax)
+    
+    # Set title
+    if domain_type and domain_name:
+        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold')
+
+    # Finalize and save plot
+    plt.tight_layout()
+    savefig(f"{outname}.png", loc=4, logo_height=100, dpi=300)
+    
+    # Close the plot if not in debug mode
+    if not debug:
+        plt.close()
+
+#****
+def make_violin_plot_OLD(comb_violin, ylabel=None, vmin=None, vmax=None, outname='plot',
                      domain_type=None, domain_name=None,
                      plot_dict=None, fig_dict=None, text_dict=None, debug=False,
                      obs_label=None, model_label=None):  
@@ -744,7 +892,9 @@ def make_violin_plot(comb_violin, ylabel=None, vmin=None, vmax=None, outname='pl
         plt.title(f"Violin Plot for {domain_type} - {domain_name}")
     
     # Save the plot
-    plt.savefig(f"{outname}.png", dpi=300, bbox_inches='tight')
+    plt.tight_layout()
+    savefig(f"{outname}.png", loc=4, logo_height=100, dpi=300)
+    ##plt.savefig(f"{outname}.png", dpi=300, bbox_inches='tight')
     
     # If debug is on, show the plot
     if debug:
