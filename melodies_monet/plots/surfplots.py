@@ -1073,36 +1073,24 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     sns.set_style("ticks")
 
     len_combx = len(comb_bx.columns)
-    if len_combx ==  3:
-        data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
-        data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
-        data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
+ 
+    data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
+    data_obs['model'] = model_name_list[0]
+    data_obs['Regions'] = region_bx['set_regions'].values
 
-        data_obs['model'] = model_name_list[0]
-        data_model1['model'] = model_name_list[1]
-        data_model2['model'] = model_name_list[2]
+    to_concat = []
+    to_concat.append(data_obs[['Value','model','Regions']])
 
-        data_obs['Regions'] = region_bx['set_regions'].values
-        data_model1['Regions'] = region_bx['set_regions'].values
-        data_model2['Regions'] = region_bx['set_regions'].values
-
-        tdf =pd.concat([data_obs[['Value','model','Regions']],data_model1[['Value','model','Regions']],data_model2[['Value','model','Regions']]])
-    elif len_combx == 2:
-        data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
-        data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
-
-        data_obs['model'] = model_name_list[0]
-        data_model1['model'] = model_name_list[1]
-
-        data_obs['Regions'] = region_bx['set_regions'].values
-        data_model1['Regions'] = region_bx['set_regions'].values
-
-        tdf =pd.concat([data_obs[['Value','model','Regions']],data_model1[['Value','model','Regions']]])
+    for i in range(1,len_combx):
+        data_model = comb_bx[comb_bx.columns[i]].to_frame().rename({comb_bx.columns[i]:'Value'},axis=1)
+        data_model['model'] = model_name_list[i]
+        data_model['Regions'] = region_bx['set_regions'].values
+        to_concat.append(data_model[['Value','model','Regions']])
+    
+    tdf =pd.concat(to_concat)
 
     acro = region_list
-
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
-
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
