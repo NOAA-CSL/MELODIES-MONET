@@ -833,9 +833,6 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
 
     return comb_bx, label_bx
 
-####################################################################################
-#This is BEIMING modified 'calculate_multi_boxplot',added region_bx as another output
-#####################################################################################
 def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
     """Combines data into acceptable format for box-plot
     
@@ -863,7 +860,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         dataframe containing informaiton for regions to help create multi-box-plot
         
     """
-    region_bx = pd.DataFrame()                   #BEIMING 1
+    region_bx = pd.DataFrame()                   
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = [] 
@@ -883,10 +880,10 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         comb_bx[label] = df_reg[column+'_reg']
     else:
         comb_bx[label] = df[column] 
-        region_bx['set_regions']=df[region_name[0]]   #BEIMING 2 
+        region_bx['set_regions']=df[region_name[0]]  
     label_bx.append(plot_kwargs)
     
-    return comb_bx, label_bx,region_bx             #BEIMING 3
+    return comb_bx, label_bx,region_bx             
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
@@ -985,10 +982,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
 
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
-
-#########################################
-#This start BEIMING added 'multi_boxplot'
-#########################################    
+  
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', 
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
@@ -1077,7 +1071,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-# This begins what BEIMING ADDED
+
     len_combx = len(comb_bx.columns)
     if len_combx ==  3:
         data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
@@ -1108,7 +1102,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     acro = region_list
 
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
-#this ends what BEIMING ADDED  
+
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -1123,10 +1117,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
-#======================================================
-#this start scorecard code
-#
-#======================================================
 def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_name=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot
 
@@ -1184,7 +1174,6 @@ def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_na
     label_bx.append(plot_kwargs)
     return comb_bx, label_bx,region_bx,msa_bx,time_bx            
 
-
 def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model_name_list=None): 
 
     len_combx = len(comb_bx.columns)
@@ -1231,9 +1220,6 @@ def GetDateList(start_time_input,end_time_input):
             break
     return datelist_output
 
-
-
-
 def scorecard_step3_getLUC(region_name_input,ds_name,urban_rural_differentiate_value):
     msa_here = ds_name[region_name_input]['urban_rural']   #len is (time*#site)
     msa_here_array = np.array(msa_here).reshape((1,len(msa_here)))
@@ -1242,12 +1228,11 @@ def scorecard_step3_getLUC(region_name_input,ds_name,urban_rural_differentiate_v
     urban_index_list = []
     #print('msa',len(msa_here_array[0]))
     for i in range(len(msa_here_array[0])):
-        if msa_here_array[0][i] == urban_rural_differentiate_value:    #??
+        if msa_here_array[0][i] == urban_rural_differentiate_value:    
             rural_index_list.append(i)
         else:
             urban_index_list.append(i)
     return rural_index_list, urban_index_list
-
 
 def scorecard_step4_GetRegionLUCDate(ds_name=None,region_list=None,datelist=None,urban_rural_differentiate_value=None):
     Region_Date_Urban_list = [] #(region * date)
@@ -1318,7 +1303,6 @@ def scorecard_step5_KickNan(obs_input=None,model_input_1=None,model_input_2=None
         OBS_Region_Date_list_noNan.append(OBS_Region_Date_list_noNan_Date)
         MODEL1_Region_Date_list_noNan.append(MODEL1_Region_Date_list_noNan_Date)
         MODEL2_Region_Date_list_noNan.append(MODEL2_Region_Date_list_noNan_Date)
-
     return OBS_Region_Date_list_noNan,MODEL1_Region_Date_list_noNan,MODEL2_Region_Date_list_noNan
 
 def CalcIOA(v2,v1): #v1 is observation, v2 is prediction
@@ -1376,9 +1360,7 @@ def scorecard_step6_BetterOrWorse(obs_input=None,model1_input=None, model2_input
             key_word = 'worse'
         else:
             key_word = 'equal'
- 
     return key_word
-
 
 def scorecard_step7_SigLevel(model1_input=None,model2_input=None):
     X1=  np.array(model1_input)
@@ -1530,10 +1512,7 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
     #save figure
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
-#====================================================
-#This ends BEIMING scorecard
-#
-#====================================================
+
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
                       outname = 'plot',
