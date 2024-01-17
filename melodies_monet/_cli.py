@@ -19,6 +19,8 @@ except ImportError as e:
     )
     raise SystemExit(1)
 
+from typing import Tuple
+
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN
 ERROR_COLOR = typer.colors.BRIGHT_RED
@@ -487,6 +489,13 @@ def get_ish_lite(
         )
     ),
     state: str = typer.Option(None, "--state", help="Two-letter state code (e.g., MD, ...)."),
+    box: Tuple[float, float, float, float] = typer.Option((None, None, None, None), "--box",
+        help=(
+            "Bounding box for site selection. "
+            "[latmin, lonmin, latmax, lonmax] in [-180, 180) format. "
+            "Can't be used if specifying country or state."
+        )
+    ),
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
@@ -515,7 +524,7 @@ def get_ish_lite(
     Note that the data are stored in yearly files by site, so the runtime
     mostly depends on the number of unique years that your date range includes,
     as well as any site selection narrowing.
-    You can use --country or --state to select groups of sites.
+    You can use --country or --state or --box to select groups of sites.
     ISH-Lite is an hourly product.
     """
     import warnings
@@ -543,6 +552,9 @@ def get_ish_lite(
         print("Dates:")
         print(dates)
 
+    if box == (None, None, None, None):
+        box = None
+
     # Set destination and file name
     fmt = r"%Y%m%d"
     if out_name is None:
@@ -567,6 +579,7 @@ def get_ish_lite(
             )
             df = mio.ish_lite.add_data(
                 dates,
+                box=box,
                 state=state,
                 country=country,
                 resample=False,
