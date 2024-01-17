@@ -449,7 +449,6 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         plot_dict['ylim'] = [vmin,vmax]
     #scale the fontsize for the x and y labels by the text_kwargs
     plot_dict['fontsize'] = text_kwargs['fontsize']*0.8
-    
     #Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None: 
         #First define the colors for the observations.
@@ -469,10 +468,17 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
         else:
             if avg_window is None:
-                ax = df[column].plot(ax=ax, **plot_kwargs)
+                ax = df[column].plot(ax=ax, **plot_kwargs)  
             else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)
-    
+                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs) 
+                #df_fix = df[df[column]>5]                    #BEIMING
+                #ax = df_fix[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)   #BEIMING
+                #import math
+                #for i in range(len(np.array(df[column]))):
+                #    if math.isnan(np.array(df[column])[i]) == True:
+                #        print(i)
+                #print(df[column])              #BEIMING
+
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
@@ -482,7 +488,9 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             if avg_window is None:
                 ax = df[column].plot(ax=ax, legend=True, **plot_dict)
             else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict)    
+                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict) 
+                #df_fix = df[df[column]>5]                    #BEIMING
+                #ax = df_fix[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict) #BEIMING   
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
@@ -1529,7 +1537,7 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
 
     #save figure
     plt.tight_layout()
-    savefig(outname + '.png', loc=4, logo_height=100)
+    savefig(outname +'.'+better_or_worse_method+ '.png', loc=4, logo_height=100)  #BEIMING
 #====================================================
 #This ends BEIMING scorecard
 #
