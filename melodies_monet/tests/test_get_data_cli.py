@@ -98,3 +98,19 @@ def test_get_ish_lite_box(tmp_path):
 
     assert ds.time.size == 24
     assert np.unique(ds.state) == ["CO"]
+
+
+def test_get_ish_box(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-ish",
+        "-s", "2023-01-01", "-e", "2023-01-01 23:00",
+        "--box", "39.5", "-105.75", "40.5", "-104.75",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 24
+    assert np.unique(ds.state) == ["CO"]
