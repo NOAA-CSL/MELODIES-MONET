@@ -106,6 +106,10 @@ data (e.g., surf_only: True).
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
 
+**apply_ak:** This is an optional argument used for pairing of satellite data. This
+should be set to True when application of satellite averaging kernels or apriori data 
+to model observations is desired. 
+
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
 variable name is first (i.e., key) and the observation variable name is second 
@@ -362,8 +366,8 @@ observation label is first and the model label is second
      used for averaging and plotting. Options are 'time' for UTC or 'time_local' 
      for local time
    * **ts_avg_window:** This is for timeseries plots only. This is the averaging 
-     window applied to the data. Options are None for no averaging or a pandas 
-     resample rule (e.g., 'H' is hourly, 'D' is daily).
+     window applied to the data. No averaging done if not provided in the yaml file (i.e., ts_avg_window is optional). Averaging is done if a pandas 
+     resample rule (e.g., 'H' is hourly, 'D' is daily) is specified.
    
 Stats
 -----

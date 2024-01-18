@@ -127,16 +127,17 @@ def read_analysis_ncf(filenames,xr_kws={}):
     import xarray as xr
     
     if len(filenames)==1:
-        print('Reading: ', filenames[0])
+        print('Reading:', filenames[0])
         ds_out = xr.open_dataset(filenames[0],**xr_kws)
         
     elif len(filenames)>1:
         for count, file in enumerate(filenames):
-            print('Reading: ', file)
+            print('Reading:', file)
 
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
                 group_name1 =  ds_out.attrs['group_name']
+
             else:
                 ds_append = xr.open_dataset(file,**xr_kws)
                 # Test if all the files have the same group to prevent merge issues

@@ -29,11 +29,11 @@ def test_get_aeronet(tmp_path):
     # since positions may differ due to NaN-lat/lon dropping or such
     ds = xr.open_dataset(tmp_path / fn).squeeze().swap_dims(x="siteid")
     ds0 = ds0_aeronet.sel(time=ds.time).squeeze().swap_dims(x="siteid")
-    # TODO: seems original loading missing value as -1 (on purpose, due to compress routine)
+    # NOTE: -1 in ds0 indicates missing value, due to compress routine
     
     assert not ds.identical(ds0)
     assert ds.time.equals(ds0.time)
-    # assert (np.abs(ds.aod_551nm - ds0.aod_551nm) < 1e-9).all()
+    ds0["aod_551nm"] = ds0["aod_551nm"].where(ds0["aod_551nm"] != -1)
     assert (np.abs(ds.aod_551nm - ds0.aod_551nm).to_series().dropna() < 1e-9).all()
     # - Many more site IDs in ds0 (400 vs 283), and one that is in ds but not ds0
     # - In the above, only two sites
