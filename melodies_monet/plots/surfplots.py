@@ -1085,7 +1085,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
     data_obs['model'] = model_name_list[0]
     data_obs['Regions'] = region_bx['set_regions'].values
-
     to_concat = []
     to_concat.append(data_obs[['Value','model','Regions']])
 
