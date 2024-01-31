@@ -15,6 +15,8 @@ any Python code::
 * |run|_ -- run a control file
 * |get-airnow|_ -- get AirNow data
 * |get-aeronet|_ -- get AERONET data
+* |get-ish|_ -- get ISH data
+* |get-ish-lite|_ -- get ISH-Lite data
 
 .. |run| replace:: ``run``
 .. _run: #melodies-monet-run
@@ -25,6 +27,11 @@ any Python code::
 .. |get-aeronet| replace:: ``get-aeronet``
 .. _get-aeronet: #melodies-monet-get-aeronet
 
+.. |get-ish| replace:: ``get-ish``
+.. _get-ish: #melodies-monet-get-ish
+
+.. |get-ish-lite| replace:: ``get-ish-lite``
+.. _get-ish-lite: #melodies-monet-get-ish-lite
 
 .. click:: melodies_monet._cli:_typer_click_object
    :prog: melodies-monet
