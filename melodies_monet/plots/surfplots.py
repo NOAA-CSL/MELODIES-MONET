@@ -863,7 +863,8 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         
     """
     region_bx = pd.DataFrame()
-    siteid_bx = pd.DataFrame()
+    df_reg_epa = pd.DataFrame()
+    df_short =  pd.DataFrame()
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = [] 
@@ -881,13 +882,9 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
     plot_kwargs['label'] = label
     if df_reg is not None:
         comb_bx[label] = df_reg[column+'_reg']
-        siteid_bx['siteid']=df_reg['siteid']
-        region_list = []
-        for i in range(len(siteid_bx['siteid'])):
-            siteid_here = siteid_bx['siteid'][i]
-            region_here = df[df.siteid == siteid_here][region_name[0]].to_string().replace(' ',',').split(',')[-1]
-            region_list.append(region_here)
-        region_bx = pd.DataFrame(region_list,columns=['set_regions'])
+        df_short = df[['siteid','epa_region']].drop_duplicates()
+        df_reg_epa = df_reg.merge(df_short[['siteid','epa_region']],how='left',on='siteid')
+        region_bx['set_regions'] = df_reg_epa["epa_region"]
     else:
         comb_bx[label] = df[column] 
         region_bx['set_regions']=df[region_name[0]]   
