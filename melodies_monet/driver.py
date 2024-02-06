@@ -917,6 +917,10 @@ class analysis:
                 better_or_worse_method = grp_dict['better_or_worse_method']
                 model_name_list = grp_dict['model_name_list']
 
+            #read-in special settings for csi plot
+            if plot_type == 'csi':
+                threshold_list = grp_dict['threshold_list']
+
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1056,8 +1060,8 @@ class analysis:
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        print('pairdf_all=',pairdf_all)   #BEIMING
-                        print('pairdf=',pairdf)           #BEIMING
+                        #print('pairdf_all=',pairdf_all)   #BEIMING
+                        #print('pairdf=',pairdf)           #BEIMING
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
                         if pairdf.empty or pairdf[obsvar].isnull().all():
@@ -1231,18 +1235,18 @@ class analysis:
                                 comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
                                 
-                                print('0',np.shape(region_bx))
-                                print('0',np.shape(comb_bx)) 
+                                #print('0',np.shape(region_bx))
+                                #print('0',np.shape(comb_bx)) 
                                 
                             # Then add the models to this dataarray.
                             comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model, 
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
                             
-                            print('x',np.shape(region_bx))
-                            print('x',np.shape(comb_bx))  
+                            #print('x',np.shape(region_bx))
+                            #print('x',np.shape(comb_bx))  
                            
-                            print('finish calc multi-boxplot')
+                            #print('finish calc multi-boxplot')
 
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
@@ -1330,6 +1334,29 @@ class analysis:
                         ###########################
                         #This end BEIMING scorecard
                         ###########################
+                        
+                        ###########################
+                        #This start BEIMING CSI plot
+                        ###########################
+                        elif plot_type.lower() == 'csi':
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                print('0')
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,label=p.obs, plot_dict=obs_dict)
+                            
+                            # Then add the models to this dataarray.
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
+                            print('1')
+                            # For the last p_index make the plot.
+                            if p_index == len(pair_labels) - 1:
+                                print(comb_bx)
+                                splots.Plot_CSI(threshold_list_input=threshold_list, comb_bx_input=comb_bx)
+
+                            #Clear info for next plot.
+                            del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
+                        #############################
+                        #This end BEIMING CSI plot
+                        ##############################
 
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:

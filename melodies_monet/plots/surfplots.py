@@ -1538,6 +1538,80 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
 #This ends BEIMING scorecard
 #
 #====================================================
+
+#=====================================================
+#This start BEIMING CSI
+#
+#=====================================================
+
+import math
+def Calc_CSI(threshold_input, model_input, obs_input):
+    n11 = 0
+    n10 = 0
+    n01 = 0
+    n00 = 0
+    for i in range(len(model_input)):
+        if math.isnan(model_input[i])== False and math.isnan(obs_input[i])== False:
+            if model_input[i] >= threshod_input and obs_input[i] >= threshod_input:
+                n11 += 1
+            elif model_input[i] >= threshod_input and obs_input[i] < threshod_input:
+                n10 += 1
+            elif model_input[i] < threshod_input and obs_input[i] >= threshod_input:
+                n01 += 1
+            else:
+                n00 += 1
+    CSI = n11/(n11+n10+n01)
+    print('inside calc csi')
+    return CSI
+
+def Plot_CSI(threshold_list_input, comb_bx_input):
+
+    CSI_output = []
+    threshold_list = threshold_list_input
+    model_input = comb_bx_input[comb_bx_input.columns[1]]
+    obs_input = comb_bx_input[comb_bx_input.columns[0]]
+    print('finish list preparation')
+
+    for i in range(len(threshold_list )):
+        csi_here = Calc_CSI(threshold_list[i], model_input, obs_input)
+        CSI_output.append(csi_here)
+    print('finish calc csi')
+    #Make plot
+    if fig_dict is not None:
+        f,ax = plt.subplots(**fig_dict)   
+    else: 
+        f,ax = plt.subplots(figsize=(8,8))
+    
+    plt.plot(threshold_list,CSI_output,'-*')  #CHANGE THIS ONE, MAIN PROGRAM
+    ax.set_xlabel('Threshod')
+    ax.set_ylabel('CSI (Critical Success Index')
+    ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
+    plt.lim(0,1)
+    print('finish plot csi')
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
+    #save figure
+    plt.tight_layout()
+    savefig(outname +'.png', loc=4, logo_height=100) 
+
+
+#==========================================================
+#This end BEIMING CSI
+#
+#==========================================================
+
+
+
+
+
+
+
+
+
+
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
                       outname = 'plot',
