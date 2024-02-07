@@ -1060,15 +1060,14 @@ class analysis:
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        #print('pairdf_all=',pairdf_all)   #BEIMING
-                        #print('pairdf=',pairdf)           #BEIMING
+                        #print('pairfdf_all',pairdf_all)
+                        #print('pairfdf',pairdf)
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
                         if pairdf.empty or pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                             continue
-                        print('pairfdf_all',pairdf_all)
-                        print('pairfdf',pairdf)
+                        
                         # JianHe: Determine if calculate regulatory values
                         cal_reg = obs_plot_dict.get('regulatory', False)
 
