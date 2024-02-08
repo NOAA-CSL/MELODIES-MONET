@@ -1340,19 +1340,35 @@ class analysis:
                         elif plot_type.lower() == 'csi':
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                print('0')
+                               
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,label=p.obs, plot_dict=obs_dict)
-                            
+                                #print(p_index,np.shape(comb_bx))
                             # Then add the models to this dataarray.
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
-                            print('1')
+                            print(p_index,np.shape(comb_bx))
+                            #splots.Plot_CSI(threshold_list_input=threshold_list,
+                            #                comb_bx_input=comb_bx,
+                            #                plot_dict=plot_dict,
+                            #                fig_dict=fig_dict,
+                            #                text_dict=text_dict,
+                            #                domain_type=domain_type,
+                            #                domain_name=domain_name)
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
-                                print(comb_bx)
-                                splots.Plot_CSI(threshold_list_input=threshold_list, comb_bx_input=comb_bx)
+                                
+                                splots.Plot_CSI(threshold_list_input=threshold_list, 
+                                                comb_bx_input=comb_bx,
+                                                plot_dict=plot_dict,
+                                                fig_dict=fig_dict,
+                                                text_dict=text_dict,
+                                                domain_type=domain_type,
+                                                domain_name=domain_name)
+                                #save figure
+                                plt.tight_layout()
+                                savefig(outname +'.png', loc=4, logo_height=100) 
 
-                            #Clear info for next plot.
-                            del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
+                                #Clear info for next plot.
+                                del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
                         #############################
                         #This end BEIMING CSI plot
                         ##############################
