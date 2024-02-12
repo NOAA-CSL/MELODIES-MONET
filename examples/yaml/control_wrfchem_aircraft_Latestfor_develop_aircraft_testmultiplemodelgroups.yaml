@@ -6,7 +6,7 @@
 analysis:
   start_time: '2019-09-05-12:00:00' #UTC
   end_time: '2019-09-06-00:00:00' #UTC
-  output_dir: /wrk/qrasool/output_testaircraftrhs #/wrk/charkins/melodies_monet/aircraft/analysis #Opt if not specified plots stored in code directory.
+  output_dir: /wrk/qrasool/output_testaircraft_PR189_uptoviolin_multiplemodels #/wrk/charkins/melodies_monet/NOAA_CSL_main/test_pull_189_aircraft/output #/wrk/charkins/melodies_monet/aircraft/analysis #Opt if not specified plots stored in code directory.
   debug: True
 model:
   wrfchem_v4.2: # model label
@@ -36,6 +36,43 @@ model:
       color: 'dodgerblue'
       marker: '^'
       linestyle: ':' 
+  wrfchem_v4.2_test: # model label
+    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    files: /wrk/qrasool/firex_mech_qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/* #/wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    mod_type: 'wrfchem'
+    mod_kwargs: 
+      mech: 'racm_esrl_vcp'
+    radius_of_influence: 12000 #meters
+    mapping: #model species name : obs species name
+      firexaq:
+        no2: NO2_CL_RYERSON
+        'no': 'NO_CL_RYERSON'
+        #PM2_5_DRY: "PM2.5"
+        o3: "O3_CL_RYERSON"
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'temperature_k':
+            rename: temp_model # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'no2':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'no':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'o3':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'goldenrod'
+      marker: 's'
+      linestyle: '-'
+
 obs:
   firexaq: # obs label
     filename: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
@@ -100,7 +137,7 @@ plots:
       fontsize: 18.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       #See 'altitde_yax2' list below for secondary y-axis options
       #altitude_variable: altitude  
@@ -135,7 +172,7 @@ plots:
       fontsize: 18.
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: ['CONUS']  # List of domain names. If domain_type = all, domain_name is used in plot title.
-    data: ['firexaq_wrfchem_v4.2']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
@@ -156,7 +193,7 @@ plots:
       fontsize: 25.
     domain_type: ['all']
     domain_name: ['CONUS']
-    data: ['firexaq_wrfchem_v4.2']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
     data_proc:
       rem_obs_nan: True 
       set_axis: False
@@ -173,7 +210,7 @@ plots:
       fontsize: 18.
     domain_type: ['all']
     domain_name: ['CONUS']
-    data: ['firexaq_wrfchem_v4.2']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
     data_proc:
       rem_obs_nan: True
       set_axis: False #True
@@ -193,7 +230,7 @@ plots:
     xlabel: 'Model'
     ylabel: 'Observation'
     title: 'Scatter Density Plot'
-    fill: False #True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
+    fill: True #True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
     shade_lowest: True #False      # Set to True if you want to shade the lowest contour (if fill=TRUE for KDE plots)
     # Add other seaborn.kdeplot keyword arguments here as needed
     vcenter: #0  # Central value for TwoSlopeNorm
@@ -209,7 +246,7 @@ plots:
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
@@ -221,7 +258,7 @@ plots:
       fontsize: 20.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -240,6 +277,6 @@ stats:
     edges: 'horizontal'
   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-  data: ['firexaq_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+  data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 
 

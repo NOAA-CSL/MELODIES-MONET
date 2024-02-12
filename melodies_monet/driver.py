@@ -1244,21 +1244,30 @@ class analysis:
 
                             #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
                             #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
-                            altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+                            #Edit below to accomodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
+                            altitude_yax2 = grp_dict['data_proc'].get('altitude_yax2', {})
 
                             # Extract vmin_y2 and vmax_y2 from filter_dict
                             # Check if 'filter_dict' exists and 'altitude' is a key in filter_criteria
                             # Extract vmin_y2 and vmax_y2 from filter_dict
-                            filter_criteria = altitude_yax2.get('filter_dict', None)  # filter_dict options commented out for default min max secondary axis
+                            #Better structure for filter_dict (min and max secondary axis) to be optional below
+                            filter_criteria = (
+                                altitude_yax2.get('filter_dict', None)
+                                if isinstance(altitude_yax2, dict)
+                                else None
+                            )
+                            
                             
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
-                            else:
+                            elif filter_criteria is None:
                                 vmin_y2 = pairdf['altitude'].min()
                                 vmax_y2 = pairdf['altitude'].max()
+                            else:
+                                vmin_y2 = vmax_y2 = None
 
                                 
-                            # Check if filter_criteria exists and is not None
+                            # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
                             if filter_criteria:
                                 for column, condition in filter_criteria.items():
                                     operation = condition['oper']
@@ -1403,7 +1412,162 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
-                                
+                        
+                        elif plot_type.lower() == 'violin':
+                            if set_yaxis:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            
+                            # Initialize the combined DataFrame for violin plots and labels/colors list
+                            if p_index == 0:
+                                comb_violin = pd.DataFrame()
+                                label_violin = []
+
+                                                       
+                            # Define a default color for observations
+                            default_obs_color = 'gray'  # Default color for observations
+                            
+                            # Inside your loop for processing each pair
+                            obs_label = p.obs
+                            model_label = p.model
+                            
+                            # Retrieve plot_kwargs for observation
+                            if hasattr(self.obs[p.obs], 'plot_kwargs') and self.obs[p.obs].plot_kwargs is not None:
+                                obs_dict = self.obs[p.obs].plot_kwargs
+                            else:
+                                obs_dict = {'color': default_obs_color}
+                            
+                            # Retrieve plot_kwargs for the model
+                            model_dict = self.models[p.model].plot_kwargs if self.models[p.model].plot_kwargs is not None else {'color': 'blue'} # Fallback color for models, in case it's missing
+                            
+                            # Call calculate_violin for observation data
+                            if p_index ==0:
+                                comb_violin, label_violin = airplots.calculate_violin(
+                                    df=pairdf,
+                                    column=obsvar,
+                                    label=obs_label,
+                                    plot_dict=obs_dict,
+                                    comb_violin=comb_violin,
+                                    label_violin=label_violin
+                                )
+                            
+                            # Call calculate_violin for model data
+                            comb_violin, label_violin = airplots.calculate_violin(
+                                df=pairdf,
+                                column=modvar,
+                                label=model_label,
+                                plot_dict=model_dict,
+                                comb_violin=comb_violin,
+                                label_violin=label_violin
+                            )
+
+                            
+                            # For the last pair, create the violin plot
+                            if p_index == len(pair_labels) - 1:
+                                airplots.make_violin_plot(
+                                    comb_violin=comb_violin,
+                                    label_violin=label_violin,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                            
+                            # Clear the variables for the next plot if needed
+                            if p_index == len(pair_labels) - 1:
+                                del (comb_violin, label_violin, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
+                        
+
+                        elif plot_type.lower() == 'scatter_density':
+                            scatter_density_config = grp_dict
+
+                            
+                            # Extract relevant parameters from the configuration
+                            color_map = scatter_density_config.get('color_map', 'viridis')
+                            fill = scatter_density_config.get('fill', False)
+                            print(f"Value of fill after reading from scatter_density_config: {fill}") #Debugging
+
+                            
+                            vmin_x = scatter_density_config.get('vmin_x', None)
+                            vmax_x = scatter_density_config.get('vmax_x', None)
+                            vmin_y = scatter_density_config.get('vmin_y', None)
+                            vmax_y = scatter_density_config.get('vmax_y', None)
+                                                    
+                            # Accessing the correct model and observation configuration/labels/variables
+                            model_label = p.model
+                            obs_label = p.obs
+                            
+                            try:
+                                mapping = self.control_dict['model'][model_label]['mapping'][obs_label]
+                            except KeyError:
+                                print(f"Error: Mapping not found for model label '{model_label}' with observation label '{obs_label}' in scatter_density plot")
+                                continue  # Skip this iteration if mapping is not found
+                            
+                            obs_config = self.control_dict['obs'][obs_label]['variables'] # Accessing the correct observation configuration
+
+                            
+                            # Extract ylabel_plot for units extraction
+                            ylabel_plot = obs_config.get(obsvar, {}).get('ylabel_plot', f"{obsvar} (units)")
+                            title = ylabel_plot
+                            units = ylabel_plot[ylabel_plot.find("(")+1 : ylabel_plot.find(")")]
+                            xlabel = f"Model {modvar} ({units})"
+                            ylabel = f"Observation {obsvar} ({units})"
+
+                            
+
+                            
+                            # Exclude keys from kwargs that are being passed explicitly
+                            excluded_keys = ['color_map', 'fill', 'vmin_x', 'vmax_x', 'vmin_y', 'vmax_y', 'xlabel', 'ylabel', 'title', 'data']
+                            kwargs = {key: value for key, value in scatter_density_config.items() if key not in excluded_keys}
+                            if 'shade_lowest' in kwargs:
+                                kwargs['thresh'] = 0
+                                del kwargs['shade_lowest']
+
+
+
+                            
+                            # Create the scatter density plot
+                            print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
+                            ax = airplots.make_scatter_density_plot(
+                                pairdf,
+                                mod_var=modvar,
+                                obs_var=obsvar,
+                                color_map=color_map,
+                                xlabel=xlabel,
+                                ylabel=ylabel,
+                                title=title,
+                                fill=fill,
+                                vmin_x=vmin_x,
+                                vmax_x=vmax_x,
+                                vmin_y=vmin_y,
+                                vmax_y=vmax_y,
+                                **kwargs                            
+                            )
+
+                            # Save the scatter density plot for the current pair immediately
+                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+                            print(f"Saving scatter density plot to {outname_pair}...")  # Debugging print statement
+                            plt.savefig(outname_pair)
+                            plt.close()  # Close the current figure
+                            
+
+                        
+                        
+                        
                         elif plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1491,6 +1655,10 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
                                 del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                       
+
+                        
+                        
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():

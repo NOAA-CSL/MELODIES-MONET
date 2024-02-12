@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
@@ -312,19 +312,19 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         bin_midpoints = altitude_bins.apply(lambda x: x.mid)
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
-        median = df.groupby(altitude_bins)[column].median()
-        q1 = df.groupby(altitude_bins)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median()
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
-        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
-        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
-        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
         
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
 
         ##Plotting vertprofile starts
         plot_kwargs_fillbetween = plot_kwargs.copy()
@@ -417,20 +417,20 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         # can be .groupby(bin_midpoints) as well (qzr)
-        median = df.groupby(altitude_bins)[column].median()
-        q1 = df.groupby(altitude_bins)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median()
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
         # Calculate the 10th, 90th, 5th, and 95th percentiles
-        p10 = df.groupby(altitude_bins)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins)[column].quantile(0.90)
-        p5 = df.groupby(altitude_bins)[column].quantile(0.05)
-        p95 = df.groupby(altitude_bins)[column].quantile(0.95)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
 
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
           
         plot_kwargs_fillbetween = plot_dict.copy()
         del plot_kwargs_fillbetween['marker']
@@ -535,5 +535,275 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     return ax
 
 
+##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, **kwargs):
+    
+    """  
+    Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
 
+    Parameters
+    --------
+
+    df: dataframe
+        Paired DataFrame containing the model and observation data to plot
+    obs_var: str
+        obs variable name in mapped pairs
+    mod_var: str
+        model variable name in mapped pairs
+    ax: Matplotlib axis from a previous occurrence to overlay obs and model results on the same plot
+    color_map: str
+        Colormap for the density (optional)
+    xlabel: str
+        Label for the x-axis (optional)
+    ylabel: str
+        Label for the y-axis (optional)
+    title: str
+        Title for the plot (optional)
+    fill: bool
+        Fill set to True for seaborn kde plot
+    **kwargs: dict 
+        Additional keyword arguments for customization
+
+    Returns
+    -------
+    ax : ax
+        Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
+    """
+
+    # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
+    # Determine the normalization based on vcenter
+    vcenter = kwargs.get('vcenter', None)
+    
+    if vcenter is not None:
+        norm = TwoSlopeNorm(vcenter=vcenter, vmin=vmin_x, vmax=vmax_x)
+    else:
+        norm = None  # This means we'll use a default linear normalization
+
+    extensions = kwargs.get('extensions', None)  # Extract extensions for the colorbar
+    
+    # Check if the color_map key from the YAML file provides a dictionary 
+    # (indicating a custom colormap) or just a string (indicating a built-in colormap like 'magma', 'viridis' etc.).
+    color_map_config = color_map
+
+    #print(f"Color Map Config: {color_map_config}") #Debugging
+    
+    if isinstance(color_map_config, dict):
+        colors = color_map_config['colors']
+        over = color_map_config.get('over', None)
+        under = color_map_config.get('under', None)
+        
+        cmap = (mpl.colors.ListedColormap(colors)
+                .with_extremes(over=over, under=under))
+    else:
+        cmap = plt.get_cmap(color_map_config)
+
+    # Debug print statement to check the colormap configuration
+    #print(f"Using colormap: {cmap}") #Debugging
+
+    if isinstance(cmap, mpl.colors.ListedColormap):
+        cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
+
+
+    # Check if 'ax' is None and create a new subplot if needed
+    if ax is None:
+        fig, ax = plt.subplots()
+        
+    x_data = df[mod_var]
+    y_data = df[obs_var]
+
+    if fill:  # For KDE plot
+        #print("Generating KDE plot...")
+    
+        # Check the type of the colormap and set Seaborn's palette accordingly
+        if isinstance(cmap, mpl.colors.ListedColormap):
+            sns.set_palette(cmap.colors)
+        elif isinstance(cmap, mpl.colors.LinearSegmentedColormap):
+            # If it's a LinearSegmentedColormap, extract N colors from the colormap
+            N = 256
+            sns.set_palette([cmap(i) for i in range(N)])
+    
+        # Create the KDE fill plot using seaborn
+        plot = sns.kdeplot(x=x_data.dropna(), y=y_data.dropna(), cmap=cmap, norm=norm, fill=True, ax=ax, 
+                           **{k: v for k, v in kwargs.items() if k in sns.kdeplot.__code__.co_varnames})
+        colorbar_label = 'Density'
+        
+        # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
+        mappable = ax.collections[0]
+        mappable.set_cmap(cmap)
+        
+    else:  # For scatter plot using matplotlib
+        #print("Generating scatter plot...")
+        plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
+                           **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
+        units = ylabel[ylabel.find("(")+1: ylabel.find(")")]
+        colorbar_label = units  # Units for scatter plot
+        mappable = plot
+
+    
+    # Set plot labels and titles
+    if xlabel:
+        plt.xlabel(xlabel, fontweight='bold')
+    if ylabel:
+        plt.ylabel(ylabel, fontweight='bold')
+    if title:
+        plt.title(title, fontweight='bold')
+    if vmin_x is not None:
+        plt.xlim(left=vmin_x)
+    if vmax_x is not None:
+        plt.xlim(right=vmax_x)
+    if vmin_y is not None:
+        plt.ylim(bottom=vmin_y)
+    if vmax_y is not None:
+        plt.ylim(top=vmax_y)
+
+    
+    # Handle the colorbar using the mappable object
+    if extensions:
+        cbar = plt.colorbar(mappable, extend='both', ax=ax)  # Extends the colorbar at both ends
+    else:
+        cbar = plt.colorbar(mappable, ax=ax)
+    cbar.set_label(colorbar_label)
+
+    plt.show()
+
+    return ax
+
+
+##NEW Violin plot 
+def calculate_violin(df, column=None, label=None, 
+                     plot_dict=None, comb_violin=None, label_violin=None):
+    """
+    Combines data into an acceptable format for violin plots, similar to calculate_boxplot for box plots.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing the model/obs paired data to plot.
+    column : str
+        Column label of the variable to plot.
+    label : str
+        Name of the variable to use in the plot legend.
+    plot_dict : dict
+        Dictionary containing color information for the plot.
+    comb_violin : pandas.DataFrame
+        DataFrame containing information to create violin plots from previous occurrences,
+        to overlay multiple model results on one plot.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot from previous occurrences,
+        to overlay multiple model results on one plot.
+        
+    Returns
+    -------
+    comb_violin : pandas.DataFrame
+        DataFrame containing information to create violin plots.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot.
+    """
+    if comb_violin is None and label_violin is None:
+        comb_violin = pd.DataFrame()
+        label_violin = []
+    #First define the colors for the observations.
+    obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
+    if plot_dict is not None:
+        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+        plot_kwargs = {**obs_dict, **plot_dict}
+    ##else:
+      ##  plot_kwargs = obs_dict
+    #else:
+    ##plot_kwargs = plot_dict
+    #For all, a column to the dataframe and append the label info to the list.
+    plot_kwargs['column'] = column
+    plot_kwargs['label'] = label
+    ##if df_reg is not None:
+      ##  comb_violin[label] = df_reg[column+'_reg']
+    ##else:
+    comb_violin[label] = df[column]
+    label_violin.append(plot_kwargs)
+    
+    return comb_violin, label_violin
+
+def make_violin_plot(comb_violin, label_violin, outname='plot',
+                     domain_type=None, domain_name=None,
+                     fig_dict=None, text_dict=None, debug=False,
+                     ylabel=None, vmin=None, vmax=None):  
+    """
+    Creates a violin plot using combined data from multiple model/observation datasets.
+
+    Parameters
+    ----------
+    comb_violin : pandas.DataFrame
+        DataFrame containing combined data for all datasets to be plotted.
+    label_violin : list
+        List of dictionaries with string labels and colors to use in the violin plot.
+    outname : str
+        File location and name of plot (do not include .png).
+    domain_type : str
+        Domain type specified in the input yaml file.
+    domain_name : str
+        Domain name specified in the input yaml file.
+    fig_dict : dict
+        Dictionary containing information about figure properties.
+    text_dict : dict
+        Dictionary containing information about text properties.
+    debug : bool
+        If True, the plot will be shown interactively. Useful for debugging.
+    ylabel : str, optional
+        The label for the y-axis.
+    vmin : float, optional
+        The minimum value for the y-axis.
+    vmax : float, optional
+        The maximum value for the y-axis.
+
+    Returns
+    -------
+    None
+    """
+
+    if not debug:
+        plt.ioff()
+    
+    # Set the order and palette based on label_violin
+    order = [item['label'] for item in label_violin]
+    palette = {item['label']: item['color'] for item in label_violin}
+
+    # Initialize figure
+    if fig_dict is not None:
+        plt.figure(**fig_dict)
+    
+    # Convert the DataFrame to long-form or "tidy" format suitable for sns.violinplot
+    melted_comb_violin = pd.melt(comb_violin, var_name='group', value_name='value')
+    
+    # Create the violin plot
+    
+    # Updated sns.violinplot call
+    # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
+    sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', density_norm='width', inner='quartile')
+
+
+
+
+
+    # Set labels and title using text_dict
+    
+    # Set labels and title
+    def_text = dict(fontsize=14)
+    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+    plt.xlabel('', weight='bold', fontsize=text_kwargs['fontsize'])
+    plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_kwargs['fontsize'])
+    
+    # Set y-axis limits if provided
+    if vmin is not None and vmax is not None:
+        plt.ylim(vmin, vmax)
+    
+    # Set title
+    if domain_type and domain_name:
+        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold')
+
+    # Finalize and save plot
+    plt.tight_layout()
+    savefig(f"{outname}.png", loc=4, logo_height=100, dpi=300)
+    
+    # Close the plot if not in debug mode
+    if not debug:
+        plt.close()
 
