@@ -1449,14 +1449,15 @@ class analysis:
                             model_dict = self.models[p.model].plot_kwargs if self.models[p.model].plot_kwargs is not None else {'color': 'blue'} # Fallback color for models, in case it's missing
                             
                             # Call calculate_violin for observation data
-                            comb_violin, label_violin = airplots.calculate_violin(
-                                df=pairdf,
-                                column=obsvar,
-                                label=obs_label,
-                                plot_dict=obs_dict,
-                                comb_violin=comb_violin,
-                                label_violin=label_violin
-                            )
+                            if p_index ==0:
+                                comb_violin, label_violin = airplots.calculate_violin(
+                                    df=pairdf,
+                                    column=obsvar,
+                                    label=obs_label,
+                                    plot_dict=obs_dict,
+                                    comb_violin=comb_violin,
+                                    label_violin=label_violin
+                                )
                             
                             # Call calculate_violin for model data
                             comb_violin, label_violin = airplots.calculate_violin(
@@ -1489,67 +1490,7 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 del (comb_violin, label_violin, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
 
-                        ###elif plot_type.lower() == 'violin':
-
-                            # Set y-axis limits
-                            ###if set_yaxis:
-                               ### if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                  ###  vmin = obs_plot_dict['vmin_plot']
-                                  ###  vmax = obs_plot_dict['vmax_plot']
-                                ###else:
-                                   ### print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    ###vmin = None
-                                    ###vmax = None
-
-                            # For p_index = 0 create the obs violin plot data array.
-                            ##if p_index == 0:
-                            ###comb_violin = pd.DataFrame()
-
-                            ###obs_label = p.obs
-                            ###model_label = p.model
-
-                            
-                            # Extract the labels
-                            #data_labels = grp_dict.get('data', [])
-                            #if data_labels:
-                             #   parts = data_labels[0].split('_')
-                              #  obs_label = parts[0]
-                              #  model_label = '_'.join(parts[1:])
-                            #else:
-                             #   raise ValueError("No data labels found for the violin plot.")
-                            
-                            # Assign the observation and model data to comb_violin using the extracted labels
-                            ###comb_violin[obs_label] = pairdf[obsvar].dropna()
-                            ###comb_violin[model_label] = pairdf[modvar].dropna()
-                            
-                            # Drop duplicates
-                            ###comb_violin = comb_violin.drop_duplicates()
-
-                            
-                            
-                            # For the last p_index make the plot.
-                            ##if p_index == len(pair_labels) - 1:
-                            ###plot_kwargs = {
-                               ### "comb_violin": comb_violin,
-                               ### "ylabel": use_ylabel,
-                               ### "vmin": vmin,
-                               ### "vmax": vmax,
-                               ### "outname": outname,
-                               ### "domain_type": domain_type,
-                               ### "domain_name": domain_name,
-                               ### "plot_dict": obs_dict,
-                               ### "fig_dict": fig_dict,
-                               ### "text_dict": text_dict,
-                               ### "debug": self.debug,  
-                               ### "obs_label": obs_label,   # e.g., firexaq
-                               ### "model_label": model_label  # e.g., wrfchem_v4.2
-                            ###}
-                            ###airplots.make_violin_plot(**plot_kwargs)
                         
-                            # Clear info for next plot
-                            ##del (comb_violin, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
-                            ###del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
-
 
                         elif plot_type.lower() == 'scatter_density':
                             scatter_density_config = grp_dict
@@ -1566,9 +1507,6 @@ class analysis:
                             vmin_y = scatter_density_config.get('vmin_y', None)
                             vmax_y = scatter_density_config.get('vmax_y', None)
                                                     
-                            # Accessing the correct model and observation configuration/labels/variables
-                            ##model_data_string = grp_dict['data'][0]
-                            ##obs_label, model_label = model_data_string.split('_')[0], "_".join(model_data_string.split('_')[1:])
                             # Accessing the correct model and observation configuration/labels/variables
                             model_label = p.model
                             obs_label = p.obs
@@ -1601,10 +1539,7 @@ class analysis:
 
 
 
-                            #print("Final kwargs before calling function:", kwargs) #Debugging
-
                             
-                            ##if p_index == 0: #Remove as this will do for only one model-obs pair
                             # Create the scatter density plot
                             print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
                             ax = airplots.make_scatter_density_plot(
@@ -1628,11 +1563,7 @@ class analysis:
                             print(f"Saving scatter density plot to {outname_pair}...")  # Debugging print statement
                             plt.savefig(outname_pair)
                             plt.close()  # Close the current figure
-                            # Save the plot only once, after processing all pairs
-                            ##if p_index == len(pair_labels) - 1:
-                              ##  print(f"Saving scatter density plot to {outname + '.png'}...") # Debugging print statement
-                              ##  plt.savefig(outname + '.png')
-                              ##  plt.close() # Close the current figure
+                            
 
                         
                         
