@@ -774,27 +774,17 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     melted_comb_violin = pd.melt(comb_violin, var_name='group', value_name='value')
     
     # Create the violin plot
-    #sns.violinplot(y='group', x='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', legend=False)
-    #sns.violinplot(x='group', y='value', data=melted_comb_violin, order=order, palette=palette, cut=0)
-    # Old line
-    # sns.violinplot(y='group', x='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', legend=False)
     
-    # New line
-    #sns.violinplot(x='group', y='value', data=melted_comb_violin, palette=palette, cut=0, scale='width', inner='quartile')
-    # Correct the deprecation warnings
-    #sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, inner='quartile', density_norm='width')
     # Updated sns.violinplot call
     # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
-    sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', scale='width', inner='quartile')
+    sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', density_norm='width', inner='quartile')
 
 
 
 
 
     # Set labels and title using text_dict
-    ##if text_dict:
-      ##  plt.xlabel('', weight='bold', fontsize=text_dict.get('fontsize', 14))
-      ##  plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_dict.get('fontsize', 14))
+    
     # Set labels and title
     def_text = dict(fontsize=14)
     text_kwargs = {**def_text, **text_dict} if text_dict else def_text
@@ -817,87 +807,3 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     if not debug:
         plt.close()
 
-#****
-def make_violin_plot_OLD(comb_violin, ylabel=None, vmin=None, vmax=None, outname='plot',
-                     domain_type=None, domain_name=None,
-                     plot_dict=None, fig_dict=None, text_dict=None, debug=False,
-                     obs_label=None, model_label=None):  
-    
-
-    
-    
-    """Creates violin plot. 
-    
-    Parameters
-    ----------
-    comb_violin: dataframe
-        dataframe containing information to create violin plot.
-    ylabel : str
-        Title of y-axis
-    vmin : real number
-        Min value to use on y-axis
-    vmax : real number
-        Max value to use on y-axis
-    outname : str
-        file location and name of plot (do not include .png)
-    domain_type : str
-        Domain type specified in input yaml file
-    domain_name : str
-        Domain name specified in input yaml file
-    plot_dict : dictionary
-        Dictionary containing information about plotting for each pair 
-        (e.g., color, linestyle, markerstyle)   
-    fig_dict : dictionary
-        Dictionary containing information about figure
-    text_dict : dictionary
-        Dictionary containing information about text
-    debug : boolean
-        Whether to plot interactively (True) or not (False). Flag for 
-        submitting jobs to supercomputer turn off interactive mode.
-    obs_label, model_label : str
-        String for obs and model label(s) for x axis labels
-        
-    Returns
-    -------
-    plot 
-        violin plot
-        
-    """
-    
-    # Setup the plot aesthetics
-    if fig_dict:
-        plt.figure(**fig_dict)
-    if not debug:
-        plt.ioff()
-    
-    # Create the violin plot
-    colors = plot_dict.get('color', None) if plot_dict else None
-    sns.violinplot(data=comb_violin, palette=colors)
-    
-    # Setup the axes labels and limits
-    # Adjust the font size and weight of the x and y axis labels
-    plt.tick_params(axis='both', which='major', labelsize=14) # Adjust labelsize for tick labels
-    
-    plt.xlabel(None, weight='bold', fontsize=18)  # Adjust fontsize as needed,# Removing x label but making it bold for uniformity
-    plt.ylabel(ylabel, weight='bold', fontsize=18)  # Adjust fontsize as needed
-    plt.legend().set_visible(False)
-
-     
-
-    if vmin and vmax:
-        plt.ylim(vmin, vmax)
-
-    # Setup the plot title based on domain_type and domain_name
-    if domain_type and domain_name:
-        plt.title(f"Violin Plot for {domain_type} - {domain_name}")
-    
-    # Save the plot
-    plt.tight_layout()
-    savefig(f"{outname}.png", loc=4, logo_height=100, dpi=300)
-    ##plt.savefig(f"{outname}.png", dpi=300, bbox_inches='tight')
-    
-    # If debug is on, show the plot
-    if debug:
-        plt.show()
-
-    plt.close()
