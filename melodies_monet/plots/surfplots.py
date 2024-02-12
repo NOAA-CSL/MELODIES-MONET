@@ -1112,6 +1112,73 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
+import math
+def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
+    n11 = 0
+    n10 = 0
+    n01 = 0
+    n00 = 0
+    for i in range(len(model_input)):
+        if math.isnan(model_input[i])== False and math.isnan(obs_input[i])== False:
+            if model_input[i] >= threshold_input and obs_input[i] >= threshold_input:
+                n11 += 1
+            elif model_input[i] >= threshold_input and obs_input[i] < threshold_input:
+                n10 += 1
+            elif model_input[i] < threshold_input and obs_input[i] >= threshold_input:
+                n01 += 1
+            else:
+                n00 += 1
+    CSI = n11/(n11+n10+n01+n00)
+    FAR = n10/(n11+n10)
+    HR  = n11/(n11+n01)
+    if score_name_input == 'Critical Success Index':
+        output_score = CSI
+    elif score_name_input == 'False Alarm Rate':
+        output_score = FAR
+    elif score_name_input == 'Hit Rate':
+        output_score = HR
+    return output_score
+
+def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list):
+    CSI_output = [] 
+    threshold_list = threshold_list_input
+    obs_input = comb_bx_input[comb_bx_input.columns[0]].to_list()
+    len_model = np.shape(comb_bx_input)[1] 
+    for i in range(1,len_model):
+        csi_output_model = []
+        model_input = comb_bx_input[comb_bx_input.columns[i]].to_list()
+        for j in range(len(threshold_list )):
+            csi_here = Calc_Score(score_name_input,threshold_list[j], model_input, obs_input)
+            csi_output_model.append(csi_here)
+        CSI_output.append(csi_output_model)
+    #set default figure size
+    if fig_dict is not None:
+        f,ax = plt.subplots(**fig_dict)
+    else:
+        f,ax = plt.subplots(figsize=(8,8))
+    #set default text size
+    def_text = dict(fontsize=20)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+    #Make Plot
+    for i in range(len(CSI_output)):
+        plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i]) 
+        ax.set_xlabel('Threshold',fontsize = text_kwargs['fontsize']*0.8)
+        ax.set_ylabel(score_name_input,fontsize = text_kwargs['fontsize']*0.8)
+        ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
+        plt.ylim(0,1)
+        plt.legend()
+    #add '>' to xticks
+    labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
+    ax.set_xticklabels(labels)
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
+            
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
                       outname = 'plot',
