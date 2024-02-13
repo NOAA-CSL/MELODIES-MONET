@@ -969,6 +969,11 @@ def get_aqs(
 
     DEBUG = debug
 
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
     typer.echo(HEADER)
 
     start_date = pd.Timestamp(start_date)
