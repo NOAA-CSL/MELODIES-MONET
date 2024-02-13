@@ -930,6 +930,8 @@ def get_aqs(
             "https://aqs.epa.gov/aqsweb/airdata/download_files.html"
         )
     ),
+    # TODO: add 'OZONE'/'O3' to defaults?
+    # TODO: add network selection option once working in monetio
     out_name: str = typer.Option(None, "-o",
         help=(
             "Output file name (or full/relative path). "
@@ -954,9 +956,11 @@ def get_aqs(
     ),
 ):
     """Download EPA AQS data using monetio and reformat for MM usage.
-    
-    IMPORTANT: You may have to downgrade OpenSSL in your Conda environment
-    so that it is major version 1 instead of 3.
+
+    These are archived data, stored in per-year per-parameter files, described at
+    https://aqs.epa.gov/aqsweb/airdata/download_files.html
+
+    Recent-past data are generally not available from this source.
     """
     import warnings
 
