@@ -23,15 +23,12 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: docs/environment-docs.yml
           cache-env: true
           extra-specs: |
             pytest
-
-      - name: Install MM
-        run: python -m pip install -e . --no-deps -v
 
       - if: ${{ matrix.monet == 'dev' }}
         name: Install development versions of monet and monetio
@@ -49,7 +46,7 @@ jobs:
           python -c "import monet;   print('monet.__version__',   getattr(monet, '__version__', '?'))"
 
       - name: pytest
-        run: python -m pytest melodies_monet
+        run: python -m pytest -v melodies_monet
       
       - name: Run docs/examples notebooks as scripts
         run: |
@@ -62,12 +59,33 @@ jobs:
           done
           cd -
 
+      - name: Prepare idealized save/read cases
+        shell: python
+        run: |
+          from copy import deepcopy
+          import yaml
+
+          with open('docs/examples/control_idealized.yaml') as f:
+            ctl = yaml.safe_load(f)
+          assert {'save', 'read'} < ctl['analysis'].keys()
+
+          ctl_save = deepcopy(ctl)
+          del ctl_save['analysis']['read']
+          with open('docs/examples/control_idealized_save.yaml', 'w') as f:
+            yaml.safe_dump(ctl_save, f)
+
+          ctl_read = deepcopy(ctl)
+          del ctl_read['analysis']['save']
+          with open('docs/examples/control_idealized_read.yaml', 'w') as f:
+            yaml.safe_dump(ctl_read, f)
+
       - name: Check CLI works
         run: |
           cd docs/examples
           melodies-monet --version
           python -m melodies_monet --version
-          melodies-monet run control_idealized.yaml
+          melodies-monet run control_idealized_save.yaml
+          melodies-monet run control_idealized_read.yaml
           cd -
 
   docs:
@@ -81,7 +99,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/provision-with-micromamba@v12
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: docs/environment-docs.yml
           cache-env: true

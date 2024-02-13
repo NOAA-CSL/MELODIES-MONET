@@ -74,7 +74,7 @@ these instructions:
 
        $ conda create --name melodies-monet python=3.9
        $ conda activate melodies-monet
-       $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
+       $ conda install -y -c conda-forge pyyaml pandas=1 monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::
@@ -154,7 +154,7 @@ Either use the ``docs/environment-docs.yml`` file [#env]_
 from the MELODIES MONET repository,
 or add the following packages to your conda environment manually::
 
-    $ conda install -y -c conda-forge sphinx sphinx_rtd_theme myst-nb sphinx-design sphinx-click typer
+    $ conda install -y -c conda-forge sphinx sphinx_rtd_theme myst-nb sphinx-design sphinx-click sphinx-togglebutton typer
 
 The restructured text sources (rst) are located
 in the MELODIES-MONET/docs folders.
