@@ -1485,8 +1485,11 @@ class analysis:
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
                             elif filter_criteria is None:
-                                vmin_y2 = pairdf['altitude'].min()
-                                vmax_y2 = pairdf['altitude'].max()
+                                if 'altitude' in pairdf.columns:
+                                    vmin_y2 = pairdf['altitude'].min()
+                                    vmax_y2 = pairdf['altitude'].max()
+                                else:
+                                    vmin_y2 = vmax_y2 = None
                             else:
                                 vmin_y2 = vmax_y2 = None
                             
