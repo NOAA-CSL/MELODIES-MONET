@@ -106,6 +106,10 @@ data (e.g., surf_only: True).
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
 
+**apply_ak:** This is an optional argument used for pairing of satellite data. This
+should be set to True when application of satellite averaging kernels or apriori data 
+to model observations is desired. 
+
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
 variable name is first (i.e., key) and the observation variable name is second 
@@ -280,7 +284,7 @@ For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
-"spatial_overlay", "spatial_bias_exceedance", and "boxplot"
+"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot"
 Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
@@ -318,6 +322,14 @@ siteid, etc.).
 data will be used and the domain_name is used only in the plot title. If 
 domain_type is not equal to all, MELODIES MONET will query all of the data 
 where domain_type is equal to domain_name.
+
+**region_name:** multi-box plot only. user specified variable from which the region information
+will be used to plot. if use 'epa+region' then a total of 61 regions can be choose from.
+
+**region_list:** multi-box plot only. list of regions in the above 'region_name' variable 
+user want to plot.
+
+**model_name_list:** multi-box plot only. list of observation and model names user choose to set as x-labels
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
