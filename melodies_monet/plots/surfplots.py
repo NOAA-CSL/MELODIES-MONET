@@ -1114,11 +1114,10 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
 
 from monet.util.stats import scores as scores_function
 def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
-    n11,n10,n01,n00 = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
-    
-    CSI = n11/(n11+n10+n01+n00)
-    FAR = n10/(n11+n10)
-    HR  = n11/(n11+n01)
+    a,b,c,d = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
+    CSI = a/(a+b+c)
+    FAR = c/(a+c)
+    HR  = a/(a+c)
     if score_name_input == 'Critical Success Index':
         output_score = CSI
     elif score_name_input == 'False Alarm Rate':
