@@ -310,7 +310,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
         var_out_list.append(out)
 
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
-    df_model.pressure_model.fillna(df_model.pressure_obs,inplace=True)
+    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
