@@ -388,8 +388,7 @@ def find_obs_time_bounds(files=[],time_var=None):
         except Exception as e:
             print('something happened opening file:', e)
             return
-            
-        #breakpoint()
+        
         time_min = obs['time'].min()
         time_max = obs['time'].max()
         
@@ -460,8 +459,6 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
             an.control_dict['analysis']['save'][t]={'method':'netcdf','prefix':file,'data':'all'}
             an.save[t]={'method':'netcdf','prefix':file,'data':'all'}
         
-        #print(an.control_dict['analysis']['save'])
-        
         an.open_models()
         an.open_obs()
         an.pair_data()
@@ -475,3 +472,4 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
             an.paired[pair].obj = an.paired[pair].obj.drop(contains_and)
         
         an.save_analysis()
+

@@ -8,19 +8,9 @@ analysis:
   end_time: '2019-09-06-00:00:00' #UTC
   output_dir:  /wrk/charkins/melodies_monet/aircraft/develop_aircraft_looping/output #/wrk/charkins/melodies_monet/aircraft/analysis #Opt if not specified plots stored in code directory.
   debug: True
-  #save:
-  #  paired:
-  #    method: 'netcdf' # 'netcdf' or 'pkl'
-  #    prefix: '0905' # use only with method=netcdf
-  #    # output_name: '0905.pkl' # use only with method=pkl
-  #    data: 'all'   # 'all' to save out all pairs or ['pair1','pair2',...] to save out specific pairs. With method='pkl' this is ignored and always saves all.
-  #    # models:
-  #    # obs:
   
 model:
   wrfchem_v4.2: # model label
-    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
-    #files: /wrk/qrasool/firex_mech_qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/* #/wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
     mod_type: 'wrfchem'
     mod_kwargs: 
       mech: 'racm_esrl_vcp'
@@ -47,7 +37,6 @@ model:
       linestyle: ':' 
 obs:
   firexaq: # obs label
-    #filename: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
     obs_type: aircraft
     resample: '600S' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
     variables: #Opt 
