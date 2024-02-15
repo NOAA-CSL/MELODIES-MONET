@@ -1157,6 +1157,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
         plt.ylim(0,1)
         plt.legend()
+        plt.grid()
     #add '>' to xticks
     labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
     ax.set_xticklabels(labels)
