@@ -1570,29 +1570,29 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
         output_score = FAR
     elif score_name_input == 'Hit Rate':
         output_score = HR
-    print('inside calc csi')
+    #print('inside calc csi')
     return output_score
 
 def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
-    print('1')
+    #print('1')
     obs_input = comb_bx_input[comb_bx_input.columns[0]].to_list()
     len_model = np.shape(comb_bx_input)[1]  # == 3
     #print('len_model=',len_model)
     for i in range(1,len_model):
         csi_output_model = []
         model_input = comb_bx_input[comb_bx_input.columns[i]].to_list()
-        print('2')
+        #print('2')
 
         for j in range(len(threshold_list )):
             csi_here = Calc_Score(score_name_input,threshold_list[j], model_input, obs_input)
             csi_output_model.append(csi_here)
-            print('3')
+            #print('3')
 
         CSI_output.append(csi_output_model)
-    print('4')
+    #print('4')
     #set default figure size
     if fig_dict is not None:
         f,ax = plt.subplots(**fig_dict)   
@@ -1605,7 +1605,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    print('5')
+    #print('5')
     #Make Plot
     
     for i in range(len(CSI_output)):
@@ -1615,6 +1615,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
         plt.ylim(0,1)
         plt.legend()
+        plt.grid()
     #add '>' to xticks
     labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
     ax.set_xticklabels(labels)
