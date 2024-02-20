@@ -116,7 +116,7 @@ class observation:
         self.file = None
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
-        self.type = 'pt_src'
+        self.type = 'pt_src'   #BEIMING
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
@@ -182,9 +182,10 @@ class observation:
 
             _, extension = os.path.splitext(files[0])
             try:
-                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  #BEIMING
                     if len(files) > 1:
-                        self.obj = xr.open_mfdataset(files)
+                        self.obj = xr.open_mfdataset(files)    #BEIMING
+                        print('read in netcdf beiming') 
                     else:
                         self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icartt']:
@@ -526,7 +527,7 @@ class model:
                 print('**** Reading WRF-Chem model output...')
                 self.mod_kwargs.update({'var_list' : list_input_var})
                 self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'rrfs' in self.model.lower():
+            elif 'rrfs' in self.model.lower():  #BEIMING
                 print('**** Reading RRFS-CMAQ model output...')
                 if self.files_pm25 is not None:
                     self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
@@ -907,6 +908,7 @@ class analysis:
                 if load_files:
                     m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
+                print('open_model',self.models[m.label])
 
     def open_obs(self, time_interval=None, load_files=True):
         """Open all observations listed in the input yaml file and create an 
@@ -957,6 +959,7 @@ class analysis:
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+                print('self obs',self.obs[o.label])  #BEIMING
 
 
     def pair_data(self, time_interval=None):
@@ -975,6 +978,7 @@ class analysis:
         None
         """
         pairs = {}  # TODO: unused
+        print('1,in pair data')  #BEIMING
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -983,6 +987,7 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
+                print('1-1,hahaha')
                 if mod.variable_dict is not None:
                     mod_vars = [key for key in mod.variable_dict.keys()]
                 else:
@@ -995,15 +1000,22 @@ class analysis:
                     for ll in lonlat_list:
                         if ll in mod.obj.data_vars:
                             keys += [ll]
+                print('1-2,lolo')
                 if mod.variable_dict is not None:
+                    print('not None',mod.obj)
+                    print(mod.variable_dict)
+                    print('keys',keys)
+                    print('mod_vars',mod_vars)
                     model_obj = mod.obj[keys+mod_vars]
+                    print('1-3,in')
                 else:
                     model_obj = mod.obj[keys]
+                    print('1-3,out')
                 ## TODO:  add in ability for simple addition of variables from
-
+                print('1-4,mamama')
                 # simplify the objs object with the correct mapping variables
                 obs = self.obs[obs_to_pair]
-
+                print('2',obs)
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
@@ -1070,7 +1082,41 @@ class analysis:
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
-                
+                # if ozone (ozone sonder observation)  (BEIMING)
+                elif obs.obs_type.lower() == 'ozone_sonder':
+                    from .util.tools import vert_interp
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
+                    
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs','pressure_obs'])
+
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    print('In pair function, After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.type = 'ozone_sonder'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file 
                 # If mobile surface data or single ground site surface data
                 elif obs.obs_type.lower() == 'mobile' or obs.obs_type.lower() == 'ground':
                     from .util.tools import mobile_and_ground_pair
@@ -1379,7 +1425,7 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground']:
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']:  #BEIMING
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
