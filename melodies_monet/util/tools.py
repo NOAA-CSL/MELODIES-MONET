@@ -462,14 +462,5 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         an.open_models()
         an.open_obs()
         an.pair_data()
-        
-        # TEMPORARY sanitize variable names so can be saved to netcdf
-        for pair in an.paired.keys():
-            datavars = list(an.paired[pair].obj.variables)
-            contains_slash = [name for name in datavars if '/' in name]
-            contains_and = [name for name in datavars if '&' in name]
-            an.paired[pair].obj = an.paired[pair].obj.drop(contains_slash)
-            an.paired[pair].obj = an.paired[pair].obj.drop(contains_and)
-        
         an.save_analysis()
 
