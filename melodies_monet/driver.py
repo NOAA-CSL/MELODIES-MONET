@@ -796,6 +796,7 @@ class analysis:
         None
         """
         pairs = {}  # TODO: unused
+        print('1, in pair data')
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -804,7 +805,7 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
-                
+                print('1-1,hahaha')
                 # unstructured grid check - lon/lat variables should be explicitly added 
                 # in addition to comparison variables
                 if mod.obj.attrs.get("mio_scrip_file", False):
@@ -812,6 +813,10 @@ class analysis:
                     for ll in lonlat_list:
                         if ll in mod.obj.data_vars:
                             keys += [ll]
+                print('1-2,lolo')
+                print('not None',mod.obj)
+                print('keys',keys)
+                print('mod.obj[keys]',mod.obj[keys])
                 model_obj = mod.obj[keys]
                 
                 ## TODO:  add in ability for simple addition of variables from
