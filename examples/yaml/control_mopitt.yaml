@@ -1,0 +1,23 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+#-------------------------------------------------------------------
+analysis:
+  start_time: '2020-08-01'
+  end_time:   '2020-08-03'
+  output_dir: /glade/work/buchholz/melodies-monet/output
+  debug: True
+
+#-------------------------------------------------------------------
+# model:
+      
+#-------------------------------------------------------------------
+obs:    
+  mopitt_l3: # obs label
+    filename: /glade/work/buchholz/data/MOPITT/MOP03JM-2020*
+    obs_type: sat_grid_clm
+    variables: null
+
+

@@ -60,7 +60,7 @@ environment for running and developing MELODIES MONET.
    * You will need a NOAA HPC account to access the RDHPCS wiki link above.
 
    * Both Anaconda/Miniconda will work well for MELODIES MONET. See
-     `conda instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda>`__
+     `conda instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#installing-conda>`__
      to determine, which is the best option for you.
      
    * Pick a directory for your download and run the following wget command with 

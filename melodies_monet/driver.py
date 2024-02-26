@@ -117,6 +117,7 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
 
@@ -133,7 +134,7 @@ class observation:
             ")"
         )
 
-    def open_obs(self, time_interval=None):
+    def open_obs(self, time_interval=None, control_dict=None):
         """Open the observational data, store data in observation pair,
         and apply mask and scaling.
 
@@ -148,37 +149,77 @@ class observation:
         """
         from glob import glob
         from numpy import sort
- 
-        try:
-            if os.path.isfile(self.file):
-                _, extension = os.path.splitext(self.file)
-                if extension in ['.nc', '.ncf', '.netcdf', '.nc4']:
-                    if len(glob(self.file)) > 1:
-                        self.obj = xr.open_mfdataset(sort(glob(self.file)))
-                    self.obj = xr.open_dataset(self.file)
+        
+        from . import tutorial
+        from .util import analysis_util
+        from .util import read_grid_util
+
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
+
+        if time_chunking_with_gridded_data:
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('obs time chunk %s' % date_str)
+            obs_vars = analysis_util.get_obs_vars(control_dict)
+            print(obs_vars)
+            obs_datasets, filenames = read_grid_util.read_grid_obs(
+                control_dict, obs_vars, date_str, obs=self.obs)
+            print(filenames)
+            self.obj = obs_datasets[self.obs]
+
+        else:
+            if self.file.startswith("example:"):
+                example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+                files = [tutorial.fetch_example(example_id)]
+            else:
+                files = sort(glob(self.file))
+
+            assert len(files) >= 1, "need at least one"
+
+            _, extension = os.path.splitext(files[0])
+            try:
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                    if len(files) > 1:
+                        self.obj = xr.open_mfdataset(files)
+                    else:
+                        self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icarrt']:
-                    self.obj = mio.icarrt.add_data(self.file)
-                self.mask_and_scale()  # mask and scale values from the control values
-        except ValueError:
-            print('something happened opening file')
-            
+                    assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
+                    self.obj = mio.icarrt.add_data(files[0])
+                else:
+                    raise ValueError(f'extension {extension!r} currently unsupported')
+            except Exception as e:
+                print('something happened opening file:', e)
+                return
+
+        self.mask_and_scale()  # mask and scale values from the control values
+        self.filter_obs()
+
     def open_sat_obs(self,time_interval=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
+        Fills the object class associated with the equivalent label (self.label) with satellite observation
+        dataset read in from the associated file (self.file) by the satellite file reader
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
 
         Returns
         -------
-        type
-            Fills the object class associated with the equivalent label (self.label) with satellite observation
-            dataset read in from the associated file (self.file) by the satellite file reader
+        None
         """
         from .util import time_interval_subset as tsub
         
         try:
-            if self.label == 'omps_l3':
+            if self.sat_type == 'omps_l3':
+                print('Reading OMPS L3')
                 self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
-            elif self.label == 'omps_nm':
+            elif self.sat_type == 'omps_nm':
+                print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
                 else: flst = self.file
@@ -193,31 +234,32 @@ class observation:
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
                     
-            elif self.label == 'mopitt_l3':
+            elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
                 self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
-            elif self.label == 'modis_l2':
+            elif self.sat_type == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            elif self.label == 'tropomi_l2_no2':
+            elif self.sat_type == 'tropomi_l2_no2':
                 from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = tropomi_l2_no2.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            else: print('file reader not implemented for {} observation'.format(self.label))
-        except ValueError:
-            print('something happened opening file')
+            else:
+                print('file reader not implemented for {} observation'.format(self.sat_type))
+                raise ValueError
+        except ValueError as e:
+            print('something happened opening file:', e)
+            return
         
     def filter_obs(self):
         """Filter observations based on filter_dict.
         
         Returns
         -------
-        type
-            Fills the object class associated with the equivalent label (self.label) with satellite observation
-            dataset read in from the associated file (self.file) by the satellite file reader
+            None
         """
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
@@ -353,7 +395,8 @@ class model:
             self.files = sort(glob(self.file_str))
  
         # add option to read list of files from text file
-        if 'txt' in self.file_str:
+        _, extension = os.path.splitext(self.file_str)
+        if extension.lower() == '.txt':
             with open(self.file_str,'r') as f:
                 self.files = f.read().split()
 
@@ -364,7 +407,7 @@ class model:
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
-    def open_model_files(self, time_interval=None):
+    def open_model_files(self, time_interval=None, control_dict=None):
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
@@ -383,7 +426,15 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
+        from .util import analysis_util
+        from .util import read_grid_util
+        from .util import regrid_util
+
         print(self.model.lower())
+
+        time_chunking_with_gridded_data \
+            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
+                and control_dict['analysis']['time_chunking_with_gridded_data']
 
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
@@ -392,65 +443,68 @@ class model:
         for obs_map in self.mapping:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
-        if 'cmaq' in self.model.lower():
-            print('**** Reading CMAQ model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.files_vert is not None:
-                self.mod_kwargs.update({'fname_vert' : self.files_vert})
-            if self.files_surf is not None:
-                self.mod_kwargs.update({'fname_surf' : self.files_surf})
-            if len(self.files) > 1:
-                self.mod_kwargs.update({'concatenate_forecasts' : True})
-            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'wrfchem' in self.model.lower():
-            print('**** Reading WRF-Chem model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'rrfs' in self.model.lower():
-            print('**** Reading RRFS-CMAQ model output...')
-            if self.files_pm25 is not None:
-                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'gsdchem' in self.model.lower():
-            print('**** Reading GSD-Chem model output...')
-            if len(self.files) > 1:
-                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-        elif 'cesm_fv' in self.model.lower():
-            print('**** Reading CESM FV model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        # CAM-chem-SE grid or MUSICAv0
-        elif 'cesm_se' in self.model.lower(): 
-            print('**** Reading CESM SE model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.scrip_file.startswith("example:"):
-                from . import tutorial
-                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                self.scrip_file = tutorial.fetch_example(example_id)
-            self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
-            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-            #self.obj.monet.scrip = self.obj_scrip
-        elif 'raqms' in self.model.lower():
-            if time_interval is not None:
-                # fill filelist with subset
-                file_sublist = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%H','6H',time_interval)
-            else:
-                # fill filelist with all files
-                file_sublist = self.files
-            if len(self.files) > 1:
-                self.obj = mio.raqms.open_mfdataset(file_sublist,**self.mod_kwargs)
-            else:
-                self.obj = mio.raqms.open_dataset(file_sublist,**self.mod_kwargs)
+
+        if time_chunking_with_gridded_data:
+            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
+            print('model time chunk %s' % date_str)
+            model_datasets, filenames = read_grid_util.read_grid_models(
+                control_dict, date_str, model=self.label)
+            print(filenames)
+            self.obj = model_datasets[self.label]
         else:
-            print('**** Reading Unspecified model output. Take Caution...')
-            if len(self.files) > 1:
-                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+            if 'cmaq' in self.model.lower():
+                print('**** Reading CMAQ model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.files_vert is not None:
+                    self.mod_kwargs.update({'fname_vert' : self.files_vert})
+                if self.files_surf is not None:
+                    self.mod_kwargs.update({'fname_surf' : self.files_surf})
+                if len(self.files) > 1:
+                    self.mod_kwargs.update({'concatenate_forecasts' : True})
+                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'wrfchem' in self.model.lower():
+                print('**** Reading WRF-Chem model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'rrfs' in self.model.lower():
+                print('**** Reading RRFS-CMAQ model output...')
+                if self.files_pm25 is not None:
+                    self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif 'gsdchem' in self.model.lower():
+                print('**** Reading GSD-Chem model output...')
+                if len(self.files) > 1:
+                    self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+            elif 'cesm_fv' in self.model.lower():
+                print('**** Reading CESM FV model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            # CAM-chem-SE grid or MUSICAv0
+            elif 'cesm_se' in self.model.lower(): 
+                print('**** Reading CESM SE model output...')
+                self.mod_kwargs.update({'var_list' : list_input_var})
+                if self.scrip_file.startswith("example:"):
+                    from . import tutorial
+                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                    self.scrip_file = tutorial.fetch_example(example_id)
+                self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
+                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+                #self.obj.monet.scrip = self.obj_scrip
+            elif 'raqms' in self.model.lower():
+                if len(self.files) > 1:
+                    self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
             else:
-                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
+                print('**** Reading Unspecified model output. Take Caution...')
+                if len(self.files) > 1:
+                    self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+                else:
+                    self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
 
     def mask_and_scale(self):
@@ -513,7 +567,12 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
-        
+        self.time_chunking_with_gridded_data = False  # Default to False
+        self.regrid = False  # Default to False
+        self.target_grid = None
+        self.obs_regridders = None
+        self.model_regridders = None
+
     def __repr__(self):
         return (
             f"{type(self).__name__}(\n"
@@ -582,6 +641,14 @@ class analysis:
             self.save = self.control_dict['analysis']['save']
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
+
+        # set time_chunking_with_gridded_data option, regrid option, and target_grid
+        if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
+            self.time_chunking_with_gridded_data = self.control_dict['analysis']['time_chunking_with_gridded_data']
+        if 'regrid' in self.control_dict['analysis'].keys():
+            self.regrid = self.control_dict['analysis']['regrid']
+        if 'target_grid' in self.control_dict['analysis'].keys():
+            self.target_grid = self.control_dict['analysis']['target_grid']
 
         # generate time intervals for time chunking
         if 'time_interval' in self.control_dict['analysis'].keys():
@@ -657,9 +724,22 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
                 if attr == 'paired':
                     # initialize model/obs attributes, since needed for plotting and stats
-                    self.open_models(load_files=False)
-                    self.open_obs(load_files=False)
+                    if not self.models:
+                        self.open_models(load_files=False)
+                    if not self.obs:
+                        self.open_obs(load_files=False)
 
+    def setup_regridders(self):
+        """Create an obs xesmf.Regridder from base and target grids specified in the control_dict
+
+        Returns
+        -------
+        None
+        """
+        from .util import regrid_util
+        if self.regrid:
+            self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+            self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -748,7 +828,7 @@ class analysis:
 
                 # open the model
                 if load_files:
-                    m.open_model_files(time_interval=time_interval)
+                    m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
 
     def open_obs(self, time_interval=None, load_files=True):
@@ -767,6 +847,10 @@ class analysis:
         -------
         None
         """
+        from .util import analysis_util
+        from .util import read_grid_util
+        from .util import regrid_util
+
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
@@ -781,13 +865,16 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'sat_type' in self.control_dict['obs'][obs].keys():
+                    o.sat_type = self.control_dict['obs'][obs]['sat_type']
                 if load_files:
-                    if o.obs_type == 'pt_sfc':    
-                        o.open_obs(time_interval=time_interval)
-                    elif o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                    if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
                         o.open_sat_obs(time_interval=time_interval)
+                    else:
+                        o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
@@ -958,6 +1045,12 @@ class analysis:
             pair_labels = grp_dict['data']
             # get the plot type
             plot_type = grp_dict['type']
+
+            #read-in special settings for multi-boxplot
+            if plot_type == 'multi_boxplot':
+                region_name = grp_dict['region_name'] 
+                region_list = grp_dict['region_list']
+                model_name_list = grp_dict['model_name_list']     
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1191,9 +1284,12 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            if obs_type == 'pt_sfc': 
-                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                            a_w = grp_dict['data_proc']['ts_avg_window']
+                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            # Specify ts_avg_window if noted in yaml file. 
+                            if 'ts_avg_window' in grp_dict['data_proc'].keys():
+                                a_w = grp_dict['data_proc']['ts_avg_window']
+                            else:
+                                a_w = None  
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
@@ -1233,6 +1329,8 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                    
+                     
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1247,12 +1345,12 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
-                                                                             label=p.obs, plot_dict=obs_dict)
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,   
+                                                                                       label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
-                                                                         plot_dict=plot_dict, comb_bx=comb_bx,
-                                                                         label_bx=label_bx)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  
+                                                                                    plot_dict=plot_dict, comb_bx=comb_bx,
+                                                                                    label_bx=label_bx)
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
                                 splots.make_boxplot(
@@ -1270,7 +1368,52 @@ class analysis:
                                     debug=self.debug
                                 )
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
+                        
+                        elif plot_type.lower() == 'multi_boxplot':
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
+                                                                             label=p.obs, plot_dict=obs_dict)
+                            # Then add the models to this dataarray.
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,   
+                                                                         plot_dict=plot_dict, comb_bx=comb_bx,
+                                                                         label_bx=label_bx)
+
+                            # For the last p_index make the plot.
+                            if p_index == len(pair_labels) - 1:
+                             
+                                splots.make_multi_boxplot(
+                                    comb_bx,
+                                    label_bx,
+                                    region_bx,  
+                                    region_list = region_list,
+                                    model_name_list=model_name_list,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                                #Clear info for next plot.
+                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():

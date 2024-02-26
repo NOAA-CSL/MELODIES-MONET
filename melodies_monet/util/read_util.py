@@ -127,12 +127,12 @@ def read_analysis_ncf(filenames,xr_kws={}):
     import xarray as xr
     
     if len(filenames)==1:
-        print('Reading: ', filenames[0])
+        print('Reading:', filenames[0])
         ds_out = xr.open_dataset(filenames[0],**xr_kws)
         
     elif len(filenames)>1:
         for count, file in enumerate(filenames):
-            print('Reading: ', file)
+            print('Reading:', file)
 
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
