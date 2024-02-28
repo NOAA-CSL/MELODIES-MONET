@@ -1,6 +1,8 @@
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# SPDX-License-Identifier: Apache-2.0
+#
 # File started by Maggie Bruckner. 
 # Contains satellite specific pairing operators
-import xesmf as xe
 import numpy as np
 from datetime import datetime,timedelta
 
@@ -8,7 +10,11 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     '''Calculate model ozone column from model ozone profile in ppbv. Move data from model grid 
         to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
     '''
-    import xesmf as xe
+    try:
+        import xesmf as xe
+    except ImportError as e:
+        print('satellite_utilities: xesmf module not found')
+        raise
     
     # factor for converting ppbv profiles to DU column
     # also requires conversion of dp from Pa to hPa
@@ -33,7 +39,11 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
     
     *** need to make setup work for surface/1z fields, as some pairing requires surface pressure field *** 
     '''
-    import xesmf as xe
+    try:
+        import xesmf as xe
+    except ImportError as e:
+        print('satellite_utilities: xesmf module not found')
+        raise
     mod_nf,mod_nz,mod_nx,mod_ny = model_data[pair_variables[0]].shape # assumes model data is structured (time,z,lon,lat). lon/lat dimension order likely unimportant
     obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
     obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation ser
@@ -87,13 +97,16 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
                     
                     ds[j][:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*interm_var.values
     return ds
+
 def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
     'Pairs model ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
     import xarray as xr
-
     import pandas as pd
-    
+ 
     print('pairing without applying averaging kernel')
+
+    if len(ozone_ppbv_varname) != 1:
+        print('ozone_ppbv_varname has more than one entry')
 
     
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
@@ -117,10 +130,14 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
 
 def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     'Pairs model ozone mixing ratio data with OMPS nm. Applies satellite apriori column to model observations.'
-
     import xarray as xr
-
     import pandas as pd
+    try:
+        import xesmf as xe
+    except ImportError as e:
+        print('satellite_utilities: xesmf module not found')
+        raise
+
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
     
     print('pairing with averaging kernel application')

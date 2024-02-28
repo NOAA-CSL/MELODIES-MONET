@@ -34,7 +34,7 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml monet monetio netcdf4 wrf-python typer rich pooch
+    $ conda install -y -c conda-forge pyyaml pandas=1 monet monetio netcdf4 wrf-python typer rich pooch
 
 Now, install the stable branch of MELODIES MONET to the environment::
 

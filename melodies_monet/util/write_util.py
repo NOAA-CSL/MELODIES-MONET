@@ -179,14 +179,14 @@ def compress_variable(da):
         Description of returned object.
 
     """
-    da = da.fillna(-999)
+    da = da.fillna(-1)
     mn, mx = get_min_max(da)
     scale_factor, offset = compute_scale_and_offset(mn, mx, 32, dtype=da.dtype)
     da.data = pack_value(da, scale_factor, offset, dtype=np.int32).data
     da.attrs['scale_factor'] = scale_factor.values
     da.attrs['add_offset'] = offset.values
-    da.attrs['_FillValue'] = -999
-    da.attrs['missing_value'] = -999
+    da.attrs['_FillValue'] = -1
+    da.attrs['missing_value'] = -1
     return da
 
 def write_pkl(obj, output_name):
