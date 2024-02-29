@@ -924,13 +924,13 @@ def get_aqs(
             "By default, the hourly data is fetched."
         )
     ),
-    param: List[str] = typer.Option(["SPEC", "PM2.5", "PM10", "VOC"], "-p", "--params", help=(
+    param: List[str] = typer.Option(["O3", "PM2.5", "PM10"], "-p", "--params", help=(
             "Parameter groups. "
             "Use '-p' more than once to get multiple groups. "
-            "https://aqs.epa.gov/aqsweb/airdata/download_files.html"
+            "Other examples: 'SPEC' (speciated PM2.5), 'PM10SPEC' (speciated PM10), "
+            "'VOC', 'NONOxNOy', 'SO2', 'NO2', 'CO', 'PM2.5_FRM'."
         )
     ),
-    # TODO: add 'OZONE'/'O3' to defaults?
     # TODO: add network selection option once working in monetio
     out_name: str = typer.Option(None, "-o",
         help=(
