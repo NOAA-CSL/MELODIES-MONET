@@ -6,11 +6,126 @@
 import numpy as np
 from datetime import datetime,timedelta
 
+def vertical_regrid(input_press, input_values, output_press):
+    '''
+    This function uses interp1d to regrid vertical layers in a 3D array
+    
+    Function requires:
+        input_press = input pressure levels in hPa and same dimensions as input_values (lon, lat, alt)
+        input_values = Dataarray of input values to be regridded (lon, lat, alt)
+        output_press = output pressure levels in hPa, dimensions are the same as input values, except for the altitude (lon, lat, newalt)
+        
+    Function Returns:
+        regrid_array = the data regridded to the new pressure levels
+
+    '''
+    from scipy import interpolate
+    
+    out_array = np.full_like(output_press,np.nan)
+    for y in range (input_press.shape[0]):
+        # Longitude values
+        for x in range (input_press.shape[1]):
+            xx = input_press[y,x,:]
+            yy = input_values[y,x,:]
+            xnew = output_press[y,x,:]
+            f = interpolate.interp1d(xx, yy, fill_value="extrapolate")
+
+            out_array[y,x,:] = f(xnew)
+    return out_array
+
+def check_timestep(model_data,obs_data):
+    ''' When pairing to level 3 data, model data may need to be aggregated to observation timestep.
+        This function checks if the model data and observation data have the same timestep. Model data 
+        is aggregated to observation timestep. Assumes level 3 data has a monthly or daily timestep and 
+        that the model data is higher frequency or same frequency.
+    '''
+    import xarray as xr
+    import pandas as pd
+    
+    # check if l3 is daily
+    timestep = xr.infer_freq(obs_data.time.dt.round('D'))
+    # if not daily, check if l3 is monthly
+    if timestep != 'D':
+        timestep = xr.infer_freq(pd.to_datetime(obs_data.time.dtstrftime('%Y-%m')))
+    if timestep == 'D' or timestep == 'MS':
+        print('Aggregating model to observation timestep')
+        return model_data.resample(time=timestep).mean()
+    else:
+        print('Timestep check and model resample failed')
+        raise
+
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
+    ''' Calculate model CO column, with MOPITT averaging kernel applied.
+    '''
+    import xarray as xr
+    try:
+        import xesmf as xe
+    except ImportError as e:
+        print('satellite_utilities: xesmf module not found')
+        raise
+    
+    # Aggregate time-step, if needed
+    ## Check if same number of timesteps:
+    if obs_data.time.size == model_data.time.size:
+        model_obstime = model_data
+    elif obs_data.time.size < model_data.time.size and obs_data.time.size >2:
+        model_obstime = check_timestep(model_data,obs_data)
+    elif obs_data.time.size < model_data.time.size and obs_data.time.size < 3:
+        print('Model data and obs data timesteps do not match, and there are not enough observation timesteps to infer the spacing from.')
+        raise
+    elif obs_data.time.size > mod_data.time.size:
+        print('Observation data appears to be a finer time resolution than model data')
+        raise
+    # initialize regridder for horizontal interpolation 
+    # from model grid to MOPITT grid
+    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear')
+    co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
+    pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
+    
+    # enforce dimension order as (time,lat,lon,z)
+    co_model_regrid = co_model_regrid.transpose('time','lon','lat','z')
+    pressure_model_regrid = pressure_model_regrid.transpose('time','lon','lat','z')
+    
+    # vertical regrid of model to satellite
+    co_regrid = xr.full_like(obs_data['pressure'], np.nan)
+    # MEB: loop over time outside of regrid lowers memory usage
+    for t in range(obs_data.time.size):
+        co_regrid[t] = vertical_regrid(pressure_model_regrid[t].values, co_model_regrid[t].values, obs_data['pressure'][t].values)
+    
+    # apply AK
+    ## log apriori and model data
+    log_ap = np.log10(obs_data['apriori_prof'])
+    log_mod = np.log10(co_regrid)
+    diff_arr = log_mod-log_ap
+    ## smooth/apply ak
+    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt')
+    
+    # Add variable name to smoothed model dataarray, combine with obs_data
+    smoothed = smoothed.rename(co_ppbv_varname+'_column_model')
+    ds = xr.merge([smoothed,obs_data]) 
+    
+    # Apply scaling to drop scientific notation (x10^{18} molec/cm2 instead of molec/cm2)
+    ##  Taylor plot doesn't work if don't do this.
+    ds[co_ppbv_varname+'_column_model'] /= 1e18
+    ds[co_ppbv_varname+"_column_model"] = ds[co_ppbv_varname+'_column_model'].assign_attrs(units='$10^{18} molec./cm^{2}$')
+    ds['column'] /= 1e18
+    ds["column"] = ds['column'].assign_attrs(units='$10^{18} molec./cm^{2}$')
+    
+    # rename dims from lon/lat to x/y for consistency with other datasets
+    ds = ds.rename_dims({'lat':'x','lon':'y'})
+    # Makde lat/lon coordinates 2d
+    lat_2d,lon_2d = np.meshgrid(ds.lat,ds.lon)
+    ds['latitude'] = (['y','x'],lat_2d)
+    ds['longitude'] = (['y','x'],lon_2d)
+    ds = ds.reset_coords().set_coords(['latitude','longitude','time','alt'])
+    return ds    
+
 def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     '''Calculate model ozone column from model ozone profile in ppbv. Move data from model grid 
         to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
     '''
     try:
+        import xarray as xr
         import xesmf as xe
     except ImportError as e:
         print('satellite_utilities: xesmf module not found')
@@ -25,11 +140,12 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
     mod_col_obsgrid = grid_adjust(column)
     # Aggregate time-step to daily means
-    daily_mean = mod_col_obsgrid.groupby('time.date').mean()
+    daily_mean = mod_col_obsgrid.groupby('time.date').mean().compute()
     
     # change dimension name for date to time
     daily_mean = daily_mean.rename({'date':'time'})
-    return daily_mean
+    daily_mean = daily_mean.rename(ozone_ppbv_varname)
+    return xr.merge([daily_mean,obs_data])
 
 def space_and_time_pairing(model_data,obs_data,pair_variables):
     '''Bilinear spatial and temporal satellite pairing code. 
