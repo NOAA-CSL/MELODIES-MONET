@@ -85,7 +85,6 @@ class pair:
         ]  # only columns for single site identificaiton
 
         # site only xarray obj (no time dependence)
-
         dfps = dfpsite.loc[:, columns[columns.isin(site_columns)]].set_index(['x']).to_xarray()  # single column index
 
         # now pivot df and convert back to xarray using only non site_columns
@@ -100,8 +99,8 @@ class pair:
             siteid = out.x.values
             out['x'] = range(len(siteid))
             out['siteid'] = (('x'), siteid)
+
         return out
-        #return out
 
 
 class observation:
@@ -395,7 +394,7 @@ class model:
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
-        
+            
         # add option to read list of files from text file
         _, extension = os.path.splitext(self.file_str)
         if extension.lower() == '.txt':
@@ -495,7 +494,7 @@ class model:
                 self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
                 #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-                #self.obj.monet.scrip = self.obj_scrip       
+                #self.obj.monet.scrip = self.obj_scrip      
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
                     self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
@@ -916,9 +915,7 @@ class analysis:
 
                 # simplify the objs object with the correct mapping variables
                 obs = self.obs[obs_to_pair]
-                # trim to analysis window
-                #obs = 
-                
+
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
@@ -992,8 +989,7 @@ class analysis:
                         obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
                         mod_dat = mod.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                         paired_obsgrid = sutil.omps_l3_daily_o3_pairing(mod_dat,obs_dat,keys[0])
-                        # combine model and observations into paired dataset
-                        #obs_dat[keys[0]] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
+                       
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
@@ -1065,7 +1061,7 @@ class analysis:
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
         plt.rcParams["figure.max_open_warning"] = 0
 
-        # first get the plotting dictionary from the yaml file 
+        # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
         # Calculate any items that do not need to recalculate each loop.
         startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
@@ -1131,8 +1127,8 @@ class analysis:
                             #elif obs_type == 'sat_grid_clm':
                             #    pairdf_all = p.obj.stack(ll=['x','y'])
                             #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
-                            #else:
-                            pairdf_all = p.obj
+                            else:
+                                pairdf_all = p.obj
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
                             
@@ -1267,7 +1263,6 @@ class analysis:
                             # Reset use_ylabel for regulatory calculations
                             if 'ylabel_reg_plot' in obs_plot_dict.keys():
                                 use_ylabel = obs_plot_dict['ylabel_reg_plot']
-                                #print(use_ylabel)
                             else:
                                 use_ylabel = None
 
