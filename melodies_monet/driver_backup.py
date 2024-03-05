@@ -182,10 +182,10 @@ class observation:
 
             _, extension = os.path.splitext(files[0])
             try:
-                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  #BEIMING
                     if len(files) > 1:
-                        self.obj = xr.open_mfdataset(files)    
-                        
+                        self.obj = xr.open_mfdataset(files)    #BEIMING
+                        print('read in netcdf beiming') 
                     else:
                         self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icartt']:
@@ -1019,7 +1019,7 @@ class analysis:
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
-                    
+                    print('in pt sfc')
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()
@@ -1092,7 +1092,12 @@ class analysis:
                     #drop any variables where coords NaN
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
  
-                    import datetime 
+                    import datetime
+#                    station_name_os=['Boulder, Colorado']
+#                    cds_os = [2023, 8, 16, 13, 59, 47]
+#                    obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
+#                    obs.obj=obs.obj.loc[datetime.datetime(cds_os[0],cds_os[1],cds_os[2],cds_os[3],cds_os[4],cds_os[5])]
+ 
                     #beiming add site and time pair here 
                     plot_dict_ozone_sonder = self.control_dict['plots']
                     for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
@@ -1307,7 +1312,6 @@ class analysis:
                 cds = grp_dict['compare_date_single']
                 release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
                 altitude_threshold_list = grp_dict['altitude_threshold_list']
-                fill_color_list = grp_dict['fill_color_list']
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1746,8 +1750,6 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 sonderplots.make_vertical_boxplot_os(pairdf,
                                                                      comb_bx,
-                                                                     label_bx=label_bx,
-
                                                                      model_name_list=model_name_list,
                                                                      altitude_range=altitude_range,
                                                                      altitude_method=altitude_method,
@@ -1755,7 +1757,6 @@ class analysis:
                                                                      ozone_range=ozone_range,
                                                                      station_name=station_name,
                                                                      release_time=release_time,
-                                                                     fill_color_list=fill_color_list,
                                                                      plot_dict=plot_dict,
                                                                      fig_dict=fig_dict,
                                                                      text_dict=text_dict)
