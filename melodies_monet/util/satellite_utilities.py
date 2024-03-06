@@ -102,7 +102,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     
     # Add variable name to smoothed model dataarray, combine with obs_data
     smoothed = smoothed.rename(co_ppbv_varname+'_column_model')
-    ds = xr.merge([smoothed,obs_data]) 
+    ds = xr.merge([smoothed,obs_data.copy(deep=True)]) 
     
     # Apply scaling to drop scientific notation (x10^{18} molec/cm2 instead of molec/cm2)
     ##  Taylor plot doesn't work if don't do this.
