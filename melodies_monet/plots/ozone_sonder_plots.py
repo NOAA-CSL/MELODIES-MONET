@@ -60,7 +60,7 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
 
     #Make plot
     if altitude_method[0] =='sea level':
-        ax.plot(O3_OBS,ALT_sl,'-k*',label = 'OBS:'+model_name_list[0])
+        ax.plot(O3_OBS,ALT_sl,'-b*',label = 'OBS:'+model_name_list[0])
         for i in range(len(O3_MODEL_ALL)): 
             ax.plot(O3_MODEL_ALL[i],ALT_sl,**plot_kwargs)
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
@@ -70,7 +70,7 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
         ax.set_ylabel('ALT-sea level (km)')
         ax.set_xlabel('O3 (ppbv)')
     elif altitude_method[0] == 'ground level':
-        ax.plot(O3_OBS,ALT_gl,'-k*',label = 'OBS:'+model_name_list[0])
+        ax.plot(O3_OBS,ALT_gl,'-b*',label = 'OBS:'+model_name_list[0])
         for i in range(len(O3_MODEL_ALL)):
             ax.plot(O3_MODEL_ALL[i],ALT_gl, **plot_kwargs)      
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
