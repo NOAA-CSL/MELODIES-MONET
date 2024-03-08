@@ -1349,12 +1349,12 @@ class analysis:
                             if p_index == 0:
                                
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,label=p.obs, plot_dict=obs_dict)
-                                #print(p_index,np.shape(comb_bx))
+                                print(p_index,np.shape(comb_bx))
                             # Then add the models to this dataarray.
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
-                            #print(p_index,np.shape(comb_bx))
+                            print(p_index,np.shape(comb_bx))
                             if p_index == len(pair_labels) - 1:
-                                #print('final',p_index, len(pair_labels) - 1)
+                                print('final',p_index, len(pair_labels) - 1)
                                 splots.Plot_CSI(score_name_input=score_name,
                                                 threshold_list_input=threshold_list, 
                                                 comb_bx_input=comb_bx,
@@ -1366,7 +1366,7 @@ class analysis:
                                                 model_name_list=model_name_list)
                                 #save figure
                                 plt.tight_layout()
-                                savefig(outname +'.'+score_name+'.png', loc=4, logo_height=100) 
+                                savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
 
                                 #Clear info for next plot.
                                 del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
