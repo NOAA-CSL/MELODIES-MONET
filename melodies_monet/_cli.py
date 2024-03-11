@@ -1045,24 +1045,45 @@ def get_aqs(
             )
 
     with _timer("Forming xarray Dataset"):
-        # Select requested time period (currently monetio doesn't do this)
+        # Select requested time period (older monetio doesn't do this)
         df = df[df.time.between(dates[0], dates[-1], inclusive="both")]
 
         df = df.dropna(subset=["latitude", "longitude"])
 
-        v_vns = [
-            "parameter_code",
-            "poc",  # parameter occurrence code
-            "parameter_name",
-            "mdl",  # method detection limit
-            "uncertainty",
-            "method_type",
-            "method_code",
-            "method_name",
-        ]
+        # Variables associated with a measurement,
+        # currently not properly useful in the wide format.
+        if daily:
+            v_vns = [
+                "parameter_code",
+                "poc",
+                "parameter_name",
+                "sample_duration",
+                "pollutant_standard",
+                "event_type",
+                "observation_count",
+                "observation_percent",
+                "1st_max_value",
+                "1st_max_hour",
+                "aqi",
+                "method_code",
+                "method_name",
+            ]
+        else:
+            v_vns = [
+                "parameter_code",
+                "poc",  # parameter occurrence code
+                "parameter_name",
+                "mdl",  # method detection limit
+                "uncertainty",
+                "method_type",
+                "method_code",
+                "method_name",
+            ]
         df = df.drop(columns=v_vns).drop_duplicates()
         # TODO: may be better to get long fmt and drop these first and then pivot
         # TODO: option to average duplicate measurements at same site instead of keeping first?
+        if "datum" in df:
+            df = df.drop(columns=["datum"])
 
         site_vns = [
             "siteid",
@@ -1072,6 +1093,8 @@ def get_aqs(
             "latitude",
             "longitude",
         ]
+        if daily:
+            site_vns.extend(["local_site_name", "address", "city_name", "msa_name"])
         # NOTE: time_local not included since it varies in time as well
         if not daily:
             df = df.merge(meta, on="siteid", how="left")
@@ -1095,6 +1118,7 @@ def get_aqs(
         ds = (
             df[cols]
             .drop(columns=[vn for vn in site_vns if vn != "siteid"])
+            .drop_duplicates(["time", "siteid"], keep="first")
             .set_index(["time", "siteid"])
             .to_xarray()
             .swap_dims(siteid="x")
