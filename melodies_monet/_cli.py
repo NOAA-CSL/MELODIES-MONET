@@ -1011,17 +1011,22 @@ def get_aqs(
                 "ignore",
                 message="The (error|warn)_bad_lines argument has been deprecated"
             )
-            df = mio.aqs.add_data(
-                dates,
-                param=param,
-                daily=daily,
-                network=None,
-                download=False,
-                local=False,
-                wide_fmt=True,  # column for each variable
-                n_procs=num_workers,
-                meta=False,  # TODO: enable or add option once monetio fixes released
-            )
+            try:
+                df = mio.aqs.add_data(
+                    dates,
+                    param=param,
+                    daily=daily,
+                    network=None,
+                    download=False,
+                    local=False,
+                    wide_fmt=True,  # column for each variable
+                    n_procs=num_workers,
+                    meta=False,  # TODO: enable or add option once monetio fixes released
+                )
+            except KeyError as e:
+                if daily and str(e) == "'time'":
+                    typer.echo("Note that the daily option currently requires monetio >0.2.5")
+                raise
 
     if not daily:
         with _timer("Fetching site metadata"):
