@@ -1050,7 +1050,13 @@ class analysis:
             if plot_type == 'multi_boxplot':
                 region_name = grp_dict['region_name'] 
                 region_list = grp_dict['region_list']
-                model_name_list = grp_dict['model_name_list']     
+                model_name_list = grp_dict['model_name_list']    
+                
+            #read-in special settings for csi plot
+            if plot_type == 'csi':
+                threshold_list = grp_dict['threshold_list']
+                score_name = grp_dict['score_name']
+                model_name_list = grp_dict['model_name_list']
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1413,7 +1419,29 @@ class analysis:
                                 )
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
-
+                                
+                        elif plot_type.lower() == 'csi':
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,label=p.obs, plot_dict=obs_dict)
+                            # Then add the models to this dataarray.
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
+                            if p_index == len(pair_labels) - 1:
+                                splots.Plot_CSI(score_name_input=score_name,
+                                                threshold_list_input=threshold_list,
+                                                comb_bx_input=comb_bx,
+                                                plot_dict=plot_dict,
+                                                fig_dict=fig_dict,
+                                                text_dict=text_dict,
+                                                domain_type=domain_type,
+                                                domain_name=domain_name,
+                                                model_name_list=model_name_list)
+                                #save figure
+                                plt.tight_layout()
+                                savefig(outname +'.png', loc=4, logo_height=100)
+                                #Clear info for next plot.
+                                del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
+                            
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
