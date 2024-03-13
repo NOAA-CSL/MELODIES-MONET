@@ -1,0 +1,17 @@
+# This is an example file for specifying groups of files to loop over when using .util.tools.loop_pairing()
+#
+# First group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
+# each top level group will always consist of only 'model' and 'obs' as groups
+'0722': # file prefix label to be used when saving this group
+  model: 
+    # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
+    wrfchem_v4.2: '/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot/0722/*'
+  obs: 
+    # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
+    firexaq: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190722_R1.ict'
+# Second group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
+'0905': # file prefix label to be used when saving this group
+  model:
+    wrfchem_v4.2: '/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*'
+  obs:
+    firexaq: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
