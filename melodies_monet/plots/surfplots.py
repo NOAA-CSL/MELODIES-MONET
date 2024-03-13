@@ -1543,31 +1543,22 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
 from monet.util.stats import scores as scores_function
 #import math
 def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
-    a = 0
-    b = 0
-    c = 0
-    d = 0
-    for i in range(len(model_input)):
-        if math.isnan(model_input[i])== False and math.isnan(obs_input[i])== False:
-            if model_input[i] >= threshold_input and obs_input[i] >= threshold_input:
-                a += 1
-            elif model_input[i] >= threshold_input and obs_input[i] < threshold_input:
-                b += 1
-            elif model_input[i] < threshold_input and obs_input[i] >= threshold_input:
-                c += 1
-            else:
-                d += 1
+    #a = 0
+    #b = 0
+    #c = 0
+    #d = 0
+    #for i in range(len(model_input)):
+    #    if math.isnan(model_input[i])== False and math.isnan(obs_input[i])== False:
+    #        if model_input[i] >= threshold_input and obs_input[i] >= threshold_input:
+    #            a += 1
+    #        elif model_input[i] >= threshold_input and obs_input[i] < threshold_input:
+    #            b += 1
+    #        elif model_input[i] < threshold_input and obs_input[i] >= threshold_input:
+    #            c += 1
+    #        else:
+    #            d += 1
 
-    #print('begion a b c d',a,b,c,d)
-    #print('obs input',len(obs_input))
-    #print('model input',len(model_input))
-    print('threshold value',threshold_input)
-
-#    max_model = np.max(model_input)
-#    max_obs = np.max(obs_input)
-
-#    a,b,c,d = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
-    print('finish abcd',a,b,c,d)
+    a,b,c,d = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
 
     CSI = np.nan
     FAR = np.nan
@@ -1590,29 +1581,26 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
         output_score = FAR
     elif score_name_input == 'Hit Rate':
         output_score = HR
-    print('inside calc csi')
+   
     return output_score
 
 def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
-    print('1')
+   
     obs_input = comb_bx_input[comb_bx_input.columns[0]].to_list()
     len_model = np.shape(comb_bx_input)[1]  # == 3
-    print('len_model=',len_model)
+   
     for i in range(1,len_model):
         csi_output_model = []
         model_input = comb_bx_input[comb_bx_input.columns[i]].to_list()
-        print('2')
 
         for j in range(len(threshold_list )):
             csi_here = Calc_Score(score_name_input,threshold_list[j], model_input, obs_input)
             csi_output_model.append(csi_here)
-            print('3')
 
         CSI_output.append(csi_output_model)
-    print('4')
     #set default figure size
     if fig_dict is not None:
         f,ax = plt.subplots(**fig_dict)   
@@ -1625,9 +1613,8 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    print('5')
+
     #Make Plot
-    
     for i in range(len(CSI_output)):
         plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])  #CHANGE THIS ONE, MAIN PROGRAM
         ax.set_xlabel('Threshold',fontsize = text_kwargs['fontsize']*0.8)
@@ -1636,11 +1623,10 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         plt.ylim(0,1)
         plt.legend()
         plt.grid()
-        print('6')
+     
     #add '>' to xticks
     labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
     ax.set_xticklabels(labels)
-
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -1650,15 +1636,6 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 #==========================================================
 #This end BEIMING CSI
 #==========================================================
-
-
-
-
-
-
-
-
-
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,
