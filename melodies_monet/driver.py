@@ -694,8 +694,10 @@ class analysis:
             self.control_dict = yaml.safe_load(stream)
 
         # set analysis time
-        self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
-        self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
+        if 'start_time' in self.control_dict['analysis'].keys():
+            self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
+        if 'end_time' in self.control_dict['analysis'].keys():
+            self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = os.path.expandvars(
                     self.control_dict['analysis']['output_dir'])
