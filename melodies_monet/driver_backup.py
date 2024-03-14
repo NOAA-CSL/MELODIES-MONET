@@ -116,7 +116,7 @@ class observation:
         self.file = None
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
-        self.type = 'pt_src'   #BEIMING
+        self.type = 'pt_src'   
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
@@ -182,10 +182,10 @@ class observation:
 
             _, extension = os.path.splitext(files[0])
             try:
-                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  #BEIMING
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  
                     if len(files) > 1:
-                        self.obj = xr.open_mfdataset(files)    #BEIMING
-                        print('read in netcdf beiming') 
+                        self.obj = xr.open_mfdataset(files)    
+                     
                     else:
                         self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icartt']:
@@ -527,7 +527,7 @@ class model:
                 print('**** Reading WRF-Chem model output...')
                 self.mod_kwargs.update({'var_list' : list_input_var})
                 self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'rrfs' in self.model.lower():  #BEIMING
+            elif 'rrfs' in self.model.lower():  
                 print('**** Reading RRFS-CMAQ model output...')
                 if self.files_pm25 is not None:
                     self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
@@ -959,7 +959,7 @@ class analysis:
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
-                #print('self obs',self.obs[o.label])  #BEIMING
+            
 
 
     def pair_data(self, time_interval=None):
@@ -978,7 +978,7 @@ class analysis:
         None
         """
         pairs = {}  # TODO: unused
-        #print('1,in pair data')  #BEIMING
+
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -1083,7 +1083,7 @@ class analysis:
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
-                # if ozone (ozone sonder observation)  (BEIMING)
+           
                 elif obs.obs_type.lower() == 'ozone_sonder':
                     from .util.tools import vert_interp
                     # convert this to pandas dataframe unless already done because second time paired this obs
@@ -1093,11 +1093,6 @@ class analysis:
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
  
                     import datetime
-#                    station_name_os=['Boulder, Colorado']
-#                    cds_os = [2023, 8, 16, 13, 59, 47]
-#                    obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
-#                    obs.obj=obs.obj.loc[datetime.datetime(cds_os[0],cds_os[1],cds_os[2],cds_os[3],cds_os[4],cds_os[5])]
- 
                     #beiming add site and time pair here 
                     plot_dict_ozone_sonder = self.control_dict['plots']
                     for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
@@ -1131,7 +1126,7 @@ class analysis:
                     p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
-                    #print('self.paired[label]',self.paired[label]) #this is the final output. BEIMING
+
 
                     # write_util.write_ncf(p.obj,p.filename) # write out to file 
                 # If mobile surface data or single ground site surface data
@@ -1465,7 +1460,7 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']:  #BEIMING
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']:  
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
@@ -1712,9 +1707,6 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
-                        #####################################
-                        #THIS START BEIMING OZONE SONDER PLOT
-                        #####################################
                         elif plot_type.lower() == 'vertical_single_date':
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
@@ -1738,10 +1730,7 @@ class analysis:
                                 savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
 
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
-                                print('last step')
-                        #========================================
-                        #this start ozone sonder vertical boxplot
-                        #========================================
+
                         elif plot_type.lower() == 'vertical_boxplot_os':
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
@@ -1764,24 +1753,7 @@ class analysis:
                                 plt.tight_layout()
                                 savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
-                                print('last step')
 
-
-
-                        ###################################
-                        #THIS END BEIMING OZONE SONDER PLOT
-                        ###################################
-
-
-
-
-
-
-
-
- 
-
-                 
                         elif plot_type.lower() == 'violin':
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
