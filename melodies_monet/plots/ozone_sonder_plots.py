@@ -55,8 +55,6 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
         plot_kwargs.pop('column')
     else:
         plot_kwargs = obs_dict
-    print('obs dict',obs_dict)
-    print('plot_kwargs',plot_kwargs)
 
     #Make plot
     if altitude_method[0] =='sea level':
