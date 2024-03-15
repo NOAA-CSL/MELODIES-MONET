@@ -1093,7 +1093,7 @@ class analysis:
                     plot_dict_ozone_sonder = self.control_dict['plots']
                     for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
                         plot_type_ozone_sonder = grp_dict_ozone_sonder['type']
-                        if plot_type_ozone_sonder == 'vertical_single_date' or plot_type_ozone_sonder == 'vertical_boxplot_os':
+                        if plot_type_ozone_sonder == 'vertical_single_date' or plot_type_ozone_sonder == 'vertical_boxplot_os' or plot_type_ozone_sonder == 'density_scatter_plot_os':
                            station_name_os = grp_dict_ozone_sonder['station_name']
                            cds_os = grp_dict_ozone_sonder['compare_date_single']
                            obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
@@ -1304,6 +1304,16 @@ class analysis:
                 altitude_threshold_list = grp_dict['altitude_threshold_list']
                 fill_color_list = grp_dict['fill_color_list']
 
+            #read-in special settings for density scatter plot for ozone sonder
+            if plot_type == 'density_scatter_plot_os':
+                model_name_list = grp_dict['model_name_list']
+                altitude_range = grp_dict['altitude_range']
+                altitude_method = grp_dict['altitude_method']
+                station_name = grp_dict['station_name']
+                monet_logo_position = grp_dict['monet_logo_position']
+                cds = grp_dict['compare_date_single']
+                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
+                
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1753,6 +1763,13 @@ class analysis:
                                 savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
 
+                        elif plot_type.lower() == 'density_scatter_plot_os':
+                            plt.figure()
+                            sonderplots.density_scatter_plot_os(pairdf)
+                            plt.tight_layout()
+                            savefig(outname+str(p_index)+".png", loc=1, logo_height=100, dpi=300)
+                            del (pairdf)
+                            
                         elif plot_type.lower() == 'violin':
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
