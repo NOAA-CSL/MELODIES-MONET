@@ -405,7 +405,7 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
 
     Parameters
     ----------
-    control: str
+    control : str
         str containing path to control file.
         
     file_pairs : dict (optional)
@@ -416,7 +416,7 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
                     'obs':{'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'}}
             }
     
-    file_pairs_yaml: str
+    file_pairs_yaml : str
         str containing path to a yaml file with file pairings. 
         Example below
         '0722':
@@ -430,7 +430,7 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
           'obs':
             'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
      
-    save_types: list (optional)
+    save_types : list (optional)
         List containing the types of data to save to netcdf. Can include any of 'paired', 'models', and 'obs'
     
     Returns
