@@ -1046,6 +1046,12 @@ class analysis:
             # get the plot type
             plot_type = grp_dict['type']
 
+            #read-in special settings for multi-boxplot
+            if plot_type == 'multi_boxplot':
+                region_name = grp_dict['region_name'] 
+                region_list = grp_dict['region_list']
+                model_name_list = grp_dict['model_name_list']     
+
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1323,6 +1329,8 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                    
+                     
                         if plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1337,12 +1345,12 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, 
-                                                                             label=p.obs, plot_dict=obs_dict)
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,   
+                                                                                       label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,
-                                                                         plot_dict=plot_dict, comb_bx=comb_bx,
-                                                                         label_bx=label_bx)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  
+                                                                                    plot_dict=plot_dict, comb_bx=comb_bx,
+                                                                                    label_bx=label_bx)
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
                                 splots.make_boxplot(
@@ -1360,7 +1368,52 @@ class analysis:
                                     debug=self.debug
                                 )
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
+                        
+                        elif plot_type.lower() == 'multi_boxplot':
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
+                                                                             label=p.obs, plot_dict=obs_dict)
+                            # Then add the models to this dataarray.
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,   
+                                                                         plot_dict=plot_dict, comb_bx=comb_bx,
+                                                                         label_bx=label_bx)
+
+                            # For the last p_index make the plot.
+                            if p_index == len(pair_labels) - 1:
+                             
+                                splots.make_multi_boxplot(
+                                    comb_bx,
+                                    label_bx,
+                                    region_bx,  
+                                    region_list = region_list,
+                                    model_name_list=model_name_list,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                                #Clear info for next plot.
+                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
