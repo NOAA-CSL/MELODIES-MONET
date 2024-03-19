@@ -1543,30 +1543,12 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
 from monet.util.stats import scores as scores_function
 #import math
 def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
-    #a = 0
-    #b = 0
-    #c = 0
-    #d = 0
-    #for i in range(len(model_input)):
-    #    if math.isnan(model_input[i])== False and math.isnan(obs_input[i])== False:
-    #        if model_input[i] >= threshold_input and obs_input[i] >= threshold_input:
-    #            a += 1
-    #        elif model_input[i] >= threshold_input and obs_input[i] < threshold_input:
-    #            b += 1
-    #        elif model_input[i] < threshold_input and obs_input[i] >= threshold_input:
-    #            c += 1
-    #        else:
-    #            d += 1
-
     a,b,c,d = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
-
     CSI = np.nan
     FAR = np.nan
     HR  = np.nan
-
     sum_1 = a+c
     sum_2 = a+b+c
-
     if sum_1 != 0:  #a+c != 0
         CSI = a/(a+b+c)
         FAR = c/(a+c)
@@ -1574,7 +1556,6 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
     else:           #a+c = 0
         if sum_2 != 0:  #a+b+c != 0
             CSI = a/(a+b+c)
-
     if score_name_input == 'Critical Success Index':
         output_score = CSI
     elif score_name_input == 'False Alarm Rate':
