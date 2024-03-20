@@ -1093,7 +1093,8 @@ class analysis:
                     plot_dict_ozone_sonder = self.control_dict['plots']
                     for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
                         plot_type_ozone_sonder = grp_dict_ozone_sonder['type']
-                        if plot_type_ozone_sonder == 'vertical_single_date' or plot_type_ozone_sonder == 'vertical_boxplot_os' or plot_type_ozone_sonder == 'density_scatter_plot_os':
+                        plot_os_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
+                        if plot_type_ozone_sonder in plot_os_type_list_all:
                            station_name_os = grp_dict_ozone_sonder['station_name']
                            cds_os = grp_dict_ozone_sonder['compare_date_single']
                            obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
@@ -1309,6 +1310,7 @@ class analysis:
                 model_name_list = grp_dict['model_name_list']
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
+                ozone_range = grp_dict['ozone_range']
                 station_name = grp_dict['station_name']
                 monet_logo_position = grp_dict['monet_logo_position']
                 cds = grp_dict['compare_date_single']
@@ -1765,9 +1767,10 @@ class analysis:
 
                         elif plot_type.lower() == 'density_scatter_plot_os':
                             plt.figure()
-                            sonderplots.density_scatter_plot_os(pairdf)
+                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,ozone_range,station_name,altitude_method)
+                            plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
                             plt.tight_layout()
-                            savefig(outname+str(p_index)+".png", loc=1, logo_height=100, dpi=300)
+                            savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
                             del (pairdf)
                             
                         elif plot_type.lower() == 'violin':
