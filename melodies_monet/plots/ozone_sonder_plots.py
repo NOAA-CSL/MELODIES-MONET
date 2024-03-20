@@ -188,29 +188,43 @@ def split_by_threshold(o3_list_input,alt_list_input,threshold_list_input):
         output_list.append(df_here.values)
     return output_list
 
-def density_scatter_plot_os(df):
-    df_short = df[df['altitude']<10]
-    ALT = df_short['altitude']
+def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_method):
+    #release height info,get height of each release site to be substract    
+    df_height = pd.DataFrame({
+         'station':['Boulder, Colorado','Huntsville, Alabama','University of Rhode Island','Trinidad Head, California'],
+         'height':[1.743,0.203,0.021,0.046]
+         })
+    if altitude_method[0] == 'ground level':
+        height_value = df_height.loc[df_height['station']==station_name[0]].values[0][1]
+    elif altitude_method[0] == 'sea level':
+        height_value = 0
+
+    #get o3 model, o3 sonder (obs) and height
+    df_short = df[df['altitude']<altitude_range[1]+height_value]
+    ALT = df_short['altitude']-height_value
     O3_OBS = df_short['o3']
     O3_MODEL = df_short['o3_ave']
 
     #plot scatter and colorbar
-    sc=plt.scatter(O3_OBS,O3_MODEL,c= ALT,vmin=0,vmax=10,cmap = 'jet',edgecolors='k',linewidth=0.5,s = 15)
+    sc=plt.scatter(O3_OBS,O3_MODEL,c= ALT,vmin=altitude_range[0],vmax=altitude_range[1],cmap = 'jet',edgecolors='k',linewidth=0.5,s = 15)
     cb=plt.colorbar(sc)
-    cb.set_label('Ground-level Altitude (km)',fontsize=15)
+    if altitude_method[0] == 'ground level':
+        cb.set_label('Ground Level Altitude (km)',fontsize=15)
+    elif altitude_method[0] == 'sea level':
+        cb.set_label('Sea Level Altitude (km)',fontsize=15)
 
     #add some points to make best fit go entire domain
     slope = np.poly1d(np.polyfit(O3_OBS, O3_MODEL, 1))
     Modify_OBS = O3_OBS.to_list()
-    Modify_OBS.append(0)
+    Modify_OBS.append(ozone_range[0])
     Modify_OBS.sort()
     plt.plot(Modify_OBS, slope(Modify_OBS),color='k',linestyle='-.',label='best fit')
-
+   
     #plot Y=X line
-    plt.axline((100,100),slope=1,color='k',linestyle='-',label='Y=X')
+    plt.axline((ozone_range[1],ozone_range[1]),slope=1,color='k',linestyle='-',label='Y=X')
 
-    plt.xlim(0,100)
-    plt.ylim(0,100)
+    plt.xlim(ozone_range[0],ozone_range[1])
+    plt.ylim(ozone_range[0],ozone_range[1])
     plt.xlabel('O$_3$ Obs (ppbv)')
     plt.ylabel('O$_3$ Model (ppbv)')
     plt.legend()
