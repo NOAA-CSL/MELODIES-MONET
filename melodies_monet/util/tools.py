@@ -409,11 +409,17 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         
     file_pairs : dict (optional)
         Dict containing filenames for obs and models. This should be specified if file_pairs_yaml is not. 
-        An example can be found in examples/jupyter_notebooks/Monet-example_aircraft_pairing_loop.ipynb
+        An example can be found below::
+        
+            file_pairs = {'0722':{'model':{'wrfchem_v4.2':'/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot/0722/*'},
+                          'obs':{'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190722_R1.ict'}},
+                '0905':{'model':{'wrfchem_v4.2':'/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*'},
+                        'obs':{'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'}}
+                }
         
     file_pairs_yaml : str (optional)
         str containing path to a yaml file with file pairings. 
-        An example of the yaml file can be found in examples/yaml/supplementary_yaml/aircraft_looping_file_pairs.yaml
+        An example of the yaml file can be found in ``examples/yaml/supplementary_yaml/aircraft_looping_file_pairs.yaml``
         
     save_types : list (optional)
         List containing the types of data to save to netcdf. Can include any of 'paired', 'models', and 'obs'
