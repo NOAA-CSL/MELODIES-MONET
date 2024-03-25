@@ -185,7 +185,7 @@ class observation:
                 if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  
                     if len(files) > 1:
                         self.obj = xr.open_mfdataset(files)    
-                        
+                     
                     else:
                         self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icartt']:
@@ -695,10 +695,8 @@ class analysis:
             self.control_dict = yaml.safe_load(stream)
 
         # set analysis time
-        if 'start_time' in self.control_dict['analysis'].keys():
-            self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
-        if 'end_time' in self.control_dict['analysis'].keys():
-            self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
+        self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
+        self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = os.path.expandvars(
                     self.control_dict['analysis']['output_dir'])
@@ -961,6 +959,8 @@ class analysis:
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+            
+
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
@@ -978,6 +978,7 @@ class analysis:
         None
         """
         pairs = {}  # TODO: unused
+
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -1018,7 +1019,7 @@ class analysis:
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
-                    
+                    print('in pt sfc')
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()
@@ -1082,7 +1083,7 @@ class analysis:
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
-
+           
                 elif obs.obs_type.lower() == 'ozone_sonder':
                     from .util.tools import vert_interp
                     # convert this to pandas dataframe unless already done because second time paired this obs
@@ -1091,12 +1092,12 @@ class analysis:
                     #drop any variables where coords NaN
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
  
-                    import datetime 
+                    import datetime
+                    #beiming add site and time pair here 
                     plot_dict_ozone_sonder = self.control_dict['plots']
                     for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
                         plot_type_ozone_sonder = grp_dict_ozone_sonder['type']
-                        plot_os_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
-                        if plot_type_ozone_sonder in plot_os_type_list_all:
+                        if plot_type_ozone_sonder == 'vertical_single_date' or plot_type_ozone_sonder == 'vertical_boxplot_os':
                            station_name_os = grp_dict_ozone_sonder['station_name']
                            cds_os = grp_dict_ozone_sonder['compare_date_single']
                            obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
@@ -1125,6 +1126,7 @@ class analysis:
                     p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
+
 
                     # write_util.write_ncf(p.obj,p.filename) # write out to file 
                 # If mobile surface data or single ground site surface data
@@ -1305,19 +1307,7 @@ class analysis:
                 cds = grp_dict['compare_date_single']
                 release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
                 altitude_threshold_list = grp_dict['altitude_threshold_list']
-                fill_color_list = grp_dict['fill_color_list']
 
-            #read-in special settings for density scatter plot for ozone sonder
-            if plot_type == 'density_scatter_plot_os':
-                model_name_list = grp_dict['model_name_list']
-                altitude_range = grp_dict['altitude_range']
-                altitude_method = grp_dict['altitude_method']
-                ozone_range = grp_dict['ozone_range']
-                station_name = grp_dict['station_name']
-                monet_logo_position = grp_dict['monet_logo_position']
-                cds = grp_dict['compare_date_single']
-                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
-                
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1470,7 +1460,7 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']: 
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']:  
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
@@ -1749,8 +1739,6 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 sonderplots.make_vertical_boxplot_os(pairdf,
                                                                      comb_bx,
-                                                                     label_bx=label_bx,
-
                                                                      model_name_list=model_name_list,
                                                                      altitude_range=altitude_range,
                                                                      altitude_method=altitude_method,
@@ -1758,7 +1746,6 @@ class analysis:
                                                                      ozone_range=ozone_range,
                                                                      station_name=station_name,
                                                                      release_time=release_time,
-                                                                     fill_color_list=fill_color_list,
                                                                      plot_dict=plot_dict,
                                                                      fig_dict=fig_dict,
                                                                      text_dict=text_dict)
@@ -1767,14 +1754,6 @@ class analysis:
                                 savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
 
-                        elif plot_type.lower() == 'density_scatter_plot_os':
-                            plt.figure()
-                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,ozone_range,station_name,altitude_method)
-                            plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
-                            plt.tight_layout()
-                            savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
-                            del (pairdf)
-                            
                         elif plot_type.lower() == 'violin':
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
