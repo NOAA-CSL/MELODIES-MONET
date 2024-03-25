@@ -271,3 +271,190 @@ def get_epa_region_df(df):
         df.loc[con, 'EPA_INDEX'] = i + 1
         df.loc[con, 'EPA_ACRO'] = acro
     return df
+
+def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
+    import stratify
+    import xarray as xr
+
+    result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
+                                 interpolation = interpolation,extrapolation = extrapolation)
+    dims = da.dims
+    out = xr.DataArray(result, dims=dims)
+    for i in dims:
+        if i != "z":
+            out[i] = da[i]
+    out.attrs = da.attrs.copy()
+    if len(da.coords) > 0:
+        for i in da.coords:
+            if i != "z":
+                out.coords[i] = da.coords[i]
+    return out
+
+def vert_interp(ds_model,df_obs,var_name_list):
+    import xarray as xr
+    from pandas import merge_asof, Series
+
+    var_out_list = []
+    for var_name in var_name_list:
+        if var_name == 'pressure_model':
+            out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
+                                      ds_model['pressure_model'],axis=1,
+                                      interpolation='linear',extrapolation='nan')
+            #Use extrapolation nan for the pressure so that later you can assign the nan values to the pressure_obs value 
+            #instead of the midpoint of the edge model cells. This is needed for the pairing later on.
+        else:
+            out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
+                                  ds_model['pressure_model'],axis=1,
+                                  interpolation='linear',extrapolation='nearest')
+        out.name = var_name
+        var_out_list.append(out)
+
+    df_model = xr.merge(var_out_list).to_dataframe().reset_index()
+    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
+    df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
+    df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
+
+    final_df_model = merge_asof(df_obs, df_model, 
+                            by=['latitude', 'longitude', 'pressure_obs'], 
+                            on='time', direction='nearest')
+
+    return final_df_model
+
+def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
+    import xarray as xr
+    from pandas import merge_asof, Series
+    
+    var_out_list = []
+    # Extract just the surface level data from correct model variables
+    # if there is a z dimension, extract the surface, otherwise assume data is at surface and issue warning
+    if 'z' in ds_model.dims:
+        for var_name in var_name_list:
+            out = ds_model[var_name].isel(z=0)
+            out.name = var_name
+            var_out_list.append(out)
+    else:
+        print('WARNING: No z dimension in model, assuming all data at surface.')
+        for var_name in var_name_list:
+            out = ds_model[var_name]
+            out.name = var_name
+            var_out_list.append(out)
+    
+    df_model = xr.merge(var_out_list).to_dataframe().reset_index()
+    df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
+
+    final_df_model = merge_asof(df_obs, df_model, 
+                            by=['latitude', 'longitude'], 
+                            on='time', direction='nearest')
+
+    return final_df_model
+
+def find_obs_time_bounds(files=[],time_var=None):
+    """Function to read a series of ict files and print a list of min and max times for each.
+
+    Parameters
+    ----------
+    files : str or iterable
+        str or list of str containing filenames that should be read.
+        
+    time_var : str
+        Optional, variable name that should be assumed to be time when reading aircaft csv files.
+
+    Returns
+    -------
+    bounds : dict
+        Dict containing time bounds for each file.
+
+    """
+    import os 
+    import monetio as mio
+    import xarray as xr
+    
+    if isinstance(files,str):
+        files = [files]
+    
+    bounds = {}
+    for file in files:
+        _, extension = os.path.splitext(files[0])
+        try:
+            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                obs = xr.open_dataset(file)
+            elif extension in ['.ict', '.icartt']:
+                obs = mio.icartt.add_data(file)
+            elif extension in ['.csv']:
+                from .read_util import read_aircraft_obs_csv
+                obs = read_aircraft_obs_csv(filename=file,time_var=time_var)
+            else:
+                raise ValueError(f'extension {extension!r} currently unsupported')
+        except Exception as e:
+            print('something happened opening file:', e)
+            return
+        
+        time_min = obs['time'].min()
+        time_max = obs['time'].max()
+        
+        print('For {}, time bounds are, Min: {}, Max: {}'.format(file,time_min,time_max))
+        bounds[file] = {'Min':time_min,'Max':time_max}
+
+        del obs
+        
+    return bounds
+
+def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired']):
+    """Function to loop over sets of pairings and save them out as multiple netcdf files.
+    
+    Parameters
+    ----------
+    control : str
+        str containing path to control file.
+        
+    file_pairs : dict (optional)
+        Dict containing filenames for obs and models. This should be specified if file_pairs_yaml is not. 
+        An example can be found below::
+        
+            file_pairs = {'0722':{'model':{'wrfchem_v4.2':'/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot/0722/*'},
+                          'obs':{'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190722_R1.ict'}},
+                '0905':{'model':{'wrfchem_v4.2':'/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*'},
+                        'obs':{'firexaq':'/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'}}
+                }
+        
+    file_pairs_yaml : str (optional)
+        str containing path to a yaml file with file pairings. 
+        An example of the yaml file can be found in ``examples/yaml/supplementary_yaml/aircraft_looping_file_pairs.yaml``
+        
+    save_types : list (optional)
+        List containing the types of data to save to netcdf. Can include any of 'paired', 'models', and 'obs'
+    
+    Returns
+    -------
+    None
+
+    """
+    from melodies_monet import driver
+    
+    if file_pairs_yaml:
+        import yaml
+        with open(file_pairs_yaml, 'r') as stream:
+            file_pairs = yaml.safe_load(stream)
+    
+    for file in file_pairs.keys():
+    
+        an = driver.analysis()
+        an.control=control
+        an.read_control()
+    
+        for model in an.control_dict['model']:
+            an.control_dict['model'][model]['files'] = file_pairs[file]['model'][model]
+        for obs in an.control_dict['obs']:
+            an.control_dict['obs'][obs]['filename'] = file_pairs[file]['obs'][obs]
+        
+        an.control_dict['analysis']['save']={}
+        an.save={}
+        for t in save_types:
+            an.control_dict['analysis']['save'][t]={'method':'netcdf','prefix':file,'data':'all'}
+            an.save[t]={'method':'netcdf','prefix':file,'data':'all'}
+        
+        an.open_models()
+        an.open_obs()
+        an.pair_data()
+        an.save_analysis()
+

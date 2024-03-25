@@ -1,0 +1,98 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: '2021-07-25-00:00:00' #UTC
+  end_time: '2021-07-25-23:00:00' #UTC
+  output_dir: /wrk/charkins/melodies_monet/aircraft/develop_aircraft_ground/Output #Opt if not specified plots stored in code directory.
+  debug: True
+model:
+  wrfchem_v4.2: # model label
+    files: /wrk/users/charkins/MM_data/pasadena_ground_ict/corresponding_model/0725/wrfout_d01_2021-07-25_*
+    mod_type: 'wrfchem'
+    mod_kwargs: 
+      mech: 'racm_esrl_vcp'
+    mapping: #model species name : obs species name
+      pasadena_ground:
+        PM2_5_DRY: "AerComp_OrganicAerosol_PM1" # not correct species pairing but using as example
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: '^'
+      linestyle: ':' 
+obs:
+  pasadena_ground: # obs label
+    filename: '/wrk/users/charkins/MM_data/pasadena_ground_ict/20210725/recap-CIT-AMS1-NR-PM1_CITLL_20210725_RB.ict'
+    obs_type: ground
+    ground_coordinate: {'latitude':34.136363,'longitude':-118.126817}
+    #resample: '600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    variables: #Opt 
+      'AerComp_OrganicAerosol_PM1': 
+        unit_scale: 1 #Opt Scaling factor 
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        ylabel_plot: 'PM1 (units?)'
+
+plots:
+  plot_grp1:
+    type: 'timeseries' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+  plot_grp2:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: True #If select True, add ty_scale for each variable in obs.
+  plot_grp3:
+    type: 'boxplot' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 6] # figure size 
+    text_kwargs: #Opt
+      fontsize: 20.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+
+stats:
+  #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  #Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ['MB', 'MdnB','R2', 'RMSE'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
+  #Full calc list ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1','E1', 'IOA', 'AC']
+  round_output: 2 #Opt, defaults to rounding to 3rd decimal place.
+  output_table: False #Always outputs a .txt file. Optional to also output as a table.
+  output_table_kwargs: #Opt 
+    figsize: [7, 3] # figure size 
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: 'horizontal'
+  domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+  domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
