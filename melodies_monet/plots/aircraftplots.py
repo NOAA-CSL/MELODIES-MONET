@@ -776,23 +776,23 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     # Convert the DataFrame to long-form or "tidy" format suitable for sns.violinplot
     melted_comb_violin = pd.melt(comb_violin, var_name='group', value_name='value')
     
+    # Set labels and title using text_dict
+    # Set default text size, modify here for bigger text
+    def_text = dict(fontsize=14)  # can increase fontsize for default text (> 14) 
+    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+
+
     # Create the violin plot
-    
-    # Updated sns.violinplot call
     # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
     sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', density_norm='width', inner='quartile')
 
 
-
-
-
-    # Set labels and title using text_dict
-    
-    # Set labels and title
-    def_text = dict(fontsize=14)
-    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+    # Set labels and title with increased size
     plt.xlabel('', weight='bold', fontsize=text_kwargs['fontsize'])
     plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_kwargs['fontsize'])
+
+    # Increase tick label size
+    plt.tick_params(axis='both', labelsize=text_kwargs['fontsize'])
     
     # Set y-axis limits if provided
     if vmin is not None and vmax is not None:
