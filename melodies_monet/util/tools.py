@@ -458,3 +458,44 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         an.pair_data()
         an.save_analysis()
 
+def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
+    
+    # Convert variables from std to amb
+    
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    Losch = 2.69e25 # loschmidt's number
+    #I checked the more detailed icart files
+    #273 K, 1 ATM (101325 Pa)
+    std_ams = 101325.*6.02214e23/(8.314472*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_ams = Airnum/std_ams
+    
+    for var in convert_vars:
+        ds[var] = ds[var]*convert_std_to_amb_ams
+
+def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
+    
+    # Convert variables from std to amb
+    
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    Losch = 2.69e25 # loschmidt's number
+    #1013 mb, 273 K (101300 Pa)
+    std_bc = 101300.*6.02214e23/(8.314472*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_bc = Airnum/std_bc
+    
+    for var in convert_vars:
+        ds[var] = ds[var]*convert_std_to_amb_bc
+
