@@ -528,13 +528,16 @@ class model:
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
-        vars_for_summing  = []
         if self.variable_summing is not None:
+            vars_for_summing  = []
             for var in self.variable_summing.keys():
                 vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
         list_input_var = []
         for obs_map in self.mapping:
-            list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
+            if self.variable_summing is not None:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+            else:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
         #Only certain models need this option for speeding up i/o.
 
         if time_chunking_with_gridded_data:
