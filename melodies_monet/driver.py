@@ -535,9 +535,9 @@ class model:
         list_input_var = []
         for obs_map in self.mapping:
             if self.variable_summing is not None:
-                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
-            else:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
+            else:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
         if time_chunking_with_gridded_data:
