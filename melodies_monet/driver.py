@@ -1291,6 +1291,7 @@ class analysis:
                 monet_logo_position = grp_dict['monet_logo_position']
                 cds = grp_dict['compare_date_single']
                 release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
+                fill_color_list = grp_dict['fill_color_list']
 
             #read-in special settings for vertical_boxplot
             if plot_type == 'vertical_boxplot_os':
@@ -1315,6 +1316,7 @@ class analysis:
                 monet_logo_position = grp_dict['monet_logo_position']
                 cds = grp_dict['compare_date_single']
                 release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
+                cmap_method = grp_dict['cmap_method']
                 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -1729,6 +1731,7 @@ class analysis:
                                                                       ozone_range=ozone_range,
                                                                       station_name=station_name,
                                                                       release_time=release_time,
+                                                                      fill_color_list=fill_color_list,
                                                                       plot_dict=plot_dict,
                                                                       fig_dict=fig_dict,
                                                                       text_dict=text_dict
@@ -1767,7 +1770,7 @@ class analysis:
 
                         elif plot_type.lower() == 'density_scatter_plot_os':
                             plt.figure()
-                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,ozone_range,station_name,altitude_method)
+                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,ozone_range,station_name,altitude_method,cmap_method)
                             plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
                             plt.tight_layout()
                             savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
