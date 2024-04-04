@@ -21,7 +21,7 @@ from ..plots import savefig
 from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory,calc_8hr_rolling_max_v1,calc_default_colors,new_color_map,map_projection,get_utcoffset,make_timeseries,make_taylor,calculate_boxplot,make_boxplot
 
 #Define ozone sonder, vertical single date plot
-def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,ozone_range,station_name,release_time,plot_dict,fig_dict,text_dict):
+def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,ozone_range,station_name,release_time,fill_color_list,plot_dict,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
     len_combx = np.shape(comb_bx)[1]
@@ -48,19 +48,12 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    #set color style
-    obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=2.0, markersize=5.)
-    if plot_dict is not None:
-        plot_kwargs = {**obs_dict, **plot_dict}
-        plot_kwargs.pop('column')
-    else:
-        plot_kwargs = obs_dict
 
     #Make plot
     if altitude_method[0] =='sea level':
-        ax.plot(O3_OBS,ALT_sl,'-b*',label = 'OBS:'+model_name_list[0])
+        ax.plot(O3_OBS,ALT_sl,'-*',color=fill_color_list[0],label = 'OBS:'+model_name_list[0])
         for i in range(len(O3_MODEL_ALL)): 
-            ax.plot(O3_MODEL_ALL[i],ALT_sl,**plot_kwargs)
+            ax.plot(O3_MODEL_ALL[i],ALT_sl,'-*',color=fill_color_list[i+1],label = 'MOD:'+model_name_list[i+1])
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
         plt.legend()
         plt.ylim(altitude_range[0],altitude_range[1])
@@ -68,9 +61,9 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
         ax.set_ylabel('ALT-sea level (km)')
         ax.set_xlabel('O3 (ppbv)')
     elif altitude_method[0] == 'ground level':
-        ax.plot(O3_OBS,ALT_gl,'-b*',label = 'OBS:'+model_name_list[0])
+        ax.plot(O3_OBS,ALT_gl,'-*',color=fill_color_list[0],label = 'OBS:'+model_name_list[0])
         for i in range(len(O3_MODEL_ALL)):
-            ax.plot(O3_MODEL_ALL[i],ALT_gl, **plot_kwargs)      
+            ax.plot(O3_MODEL_ALL[i],ALT_gl, '-*',color=fill_color_list[i+1],label = 'MOD:'+model_name_list[i+1])     
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
         plt.legend()
         plt.ylim(altitude_range[0],altitude_range[1])
@@ -188,7 +181,7 @@ def split_by_threshold(o3_list_input,alt_list_input,threshold_list_input):
         output_list.append(df_here.values)
     return output_list
 
-def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_method):
+def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_method,cmap_method):
     #release height info,get height of each release site to be substract    
     df_height = pd.DataFrame({
          'station':['Boulder, Colorado','Huntsville, Alabama','University of Rhode Island','Trinidad Head, California'],
@@ -217,6 +210,7 @@ def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_
     slope = np.poly1d(np.polyfit(O3_OBS, O3_MODEL, 1))
     Modify_OBS = O3_OBS.to_list()
     Modify_OBS.append(ozone_range[0])
+    Modify_OBS.append(ozone_range[1])
     Modify_OBS.sort()
     plt.plot(Modify_OBS, slope(Modify_OBS),color='k',linestyle='-.',label='best fit')
    
