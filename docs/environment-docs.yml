@@ -16,6 +16,7 @@ dependencies:
   #
   # Extras
   - pooch
+  - timezonefinder
   - typer
   - wrf-python  # for WRF-Chem reader in monetio
   #

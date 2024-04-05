@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
-# from util import write_ncf
+from .util import write_util
 
 __all__ = (
     "pair",
@@ -117,8 +117,11 @@ class observation:
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
+        self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
+        self.resample = None
+        self.time_var = None
 
     def __repr__(self):
         return (
@@ -130,6 +133,7 @@ class observation:
             f"    type={self.type!r},\n"
             f"    type={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
+            f"    resample={self.resample!r},\n"
             ")"
         )
 
@@ -148,6 +152,7 @@ class observation:
         """
         from glob import glob
         from numpy import sort
+        
         from . import tutorial
         from .util import analysis_util
         from .util import read_grid_util
@@ -182,17 +187,115 @@ class observation:
                         self.obj = xr.open_mfdataset(files)
                     else:
                         self.obj = xr.open_dataset(files[0])
-                elif extension in ['.ict', '.icarrt']:
-                    assert len(files) == 1, "monetio.icarrt.add_data can only read one file"
-                    self.obj = mio.icarrt.add_data(files[0])
+                elif extension in ['.ict', '.icartt']:
+                    assert len(files) == 1, "monetio.icartt.add_data can only read one file"
+                    self.obj = mio.icartt.add_data(files[0])
+                elif extension in ['.csv']:
+                    from .util.read_util import read_aircraft_obs_csv
+                    assert len(files) == 1, "MELODIES-MONET can only read one csv file"
+                    self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
                 else:
                     raise ValueError(f'extension {extension!r} currently unsupported')
             except Exception as e:
                 print('something happened opening file:', e)
                 return
-
+        
+        self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
+        self.rename_vars() # rename any variables as necessary 
+        self.resample_data()
         self.filter_obs()
+
+    def add_coordinates_ground(self):
+        """Add latitude and longitude coordinates to data when the observation type is ground and 
+        ground_coordinate is specified
+        
+        Returns
+        -------
+        None
+        """
+                
+        # If ground site
+        if self.obs_type == 'ground':
+            if self.ground_coordinate and isinstance(self.ground_coordinate,dict):
+                self.obj['latitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['latitude']
+                self.obj['longitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['longitude']
+            elif self.ground_coordinate and ~isinstance(self.ground_coordinate,dict): 
+                raise TypeError(f'The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
+
+    def rename_vars(self):
+        """Rename any variables in observation with rename set.
+        
+        Returns
+        -------
+        None
+        """
+        data_vars = self.obj.data_vars
+        if self.variable_dict is not None:
+            for v in data_vars:
+                if v in self.variable_dict:
+                    d = self.variable_dict[v]
+                    if 'rename' in d:
+                        self.obj = self.obj.rename({v:d['rename']})
+                        self.variable_dict[d['rename']] = self.variable_dict.pop(v)
+
+    def open_sat_obs(self,time_interval=None):
+        """Methods to opens satellite data observations. 
+        Uses in-house python code to open and load observations.
+        Alternatively may use the satpy reader.
+        Fills the object class associated with the equivalent label (self.label) with satellite observation
+        dataset read in from the associated file (self.file) by the satellite file reader
+
+        Parameters
+        __________
+        time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
+            If not None, restrict obs to datetime range spanned by time interval [start, end].
+
+        Returns
+        -------
+        None
+        """
+        from .util import time_interval_subset as tsub
+        
+        try:
+            if self.sat_type == 'omps_l3':
+                print('Reading OMPS L3')
+                self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
+            elif self.sat_type == 'omps_nm':
+                print('Reading OMPS_NM')
+                if time_interval is not None:
+                    flst = tsub.subset_OMPS_l2(self.file,time_interval)
+                else: flst = self.file
+
+                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
+                
+                # couple of changes to move to reader
+                self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
+                self.obj = self.obj.sortby('time') # enforce time in order. 
+                # restrict observation data to time_interval if using
+                # additional development to deal with files crossing intervals needed (eg situtations where orbit start at 23hrs, ends next day).
+                if time_interval is not None:
+                    self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
+                    
+            elif self.sat_type == 'mopitt_l3':
+                print('Reading MOPITT')
+                self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
+            elif self.sat_type == 'modis_l2':
+                from monetio import modis_l2
+                print('Reading MODIS L2')
+                self.obj = modis_l2.read_mfdataset(
+                    self.file, self.variable_dict, debug=self.debug)
+            elif self.sat_type == 'tropomi_l2_no2':
+                from monetio import tropomi_l2_no2
+                print('Reading TROPOMI L2 NO2')
+                self.obj = tropomi_l2_no2.read_trpdataset(
+                    self.file, self.variable_dict, debug=self.debug)
+            else:
+                print('file reader not implemented for {} observation'.format(self.sat_type))
+                raise ValueError
+        except ValueError as e:
+            print('something happened opening file:', e)
+            return
         
     def filter_obs(self):
         """Filter observations based on filter_dict.
@@ -200,7 +303,7 @@ class observation:
         Returns
         -------
         None
-        """
+        """ 
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
                 filter_dict = self.data_proc['filter_dict']
@@ -225,7 +328,7 @@ class observation:
                         self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
                     else:
                         raise ValueError(f'Filter operation {filter_op!r} is not supported')
-
+        
     def mask_and_scale(self):
         """Mask and scale observations, including unit conversions and setting
         detection limits.
@@ -246,6 +349,7 @@ class observation:
                         self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
                     if 'nan_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+                    
                     # Then apply a correction if needed for the units.
                     if 'unit_scale' in d:
                         scale = d['unit_scale']
@@ -260,6 +364,22 @@ class observation:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
+                    
+                    # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
+                    if 'LLOD_value' in d:
+                        self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+
+    def resample_data(self):
+        """Resample the obs df based on the value set in the control file.
+        
+        Returns
+        -------
+        None
+        """ 
+                        
+        ##Resample the data
+        if self.resample is not None:
+            self.obj = self.obj.resample(time=self.resample).mean(dim='time')
 
     def obs_to_df(self):
         """Convert and reformat observation object (:attr:`obj`) to dataframe.
@@ -268,8 +388,10 @@ class observation:
         -------
         None
         """
-        self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
-
+        try:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x', 'y'], axis=1)
+        except KeyError:
+            self.obj = self.obj.to_dataframe().reset_index().drop(['x'], axis=1)
 
 class model:
     """The model class.
@@ -280,6 +402,7 @@ class model:
     def __init__(self):
         """Initialize a :class:`model` object."""
         self.model = None
+        self.apply_ak = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -330,7 +453,13 @@ class model:
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
-            
+ 
+        # add option to read list of files from text file
+        _, extension = os.path.splitext(self.file_str)
+        if extension.lower() == '.txt':
+            with open(self.file_str,'r') as f:
+                self.files = f.read().split()
+
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
@@ -356,9 +485,12 @@ class model:
         -------
         None
         """
+        from .util import time_interval_subset as tsub
         from .util import analysis_util
         from .util import read_grid_util
         from .util import regrid_util
+
+        print(self.model.lower())
 
         time_chunking_with_gridded_data \
             = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
@@ -372,7 +504,6 @@ class model:
             list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
-        # move above
         if time_chunking_with_gridded_data:
             date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
             print('model time chunk %s' % date_str)
@@ -435,6 +566,23 @@ class model:
                 else:
                     self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
+        self.rename_vars() # rename any variables as necessary 
+
+    def rename_vars(self):
+        """Rename any variables in model with rename set.
+        
+        Returns
+        -------
+        None
+        """ 
+        data_vars = self.obj.data_vars
+        if self.variable_dict is not None:
+            for v in data_vars:
+                if v in self.variable_dict:
+                    d = self.variable_dict[v]
+                    if 'rename' in d:
+                        self.obj = self.obj.rename({v:d['rename']})
+                        self.variable_dict[d['rename']] = self.variable_dict.pop(v)
 
     def mask_and_scale(self):
         """Mask and scale model data including unit conversions.
@@ -461,6 +609,10 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
+                    if self.obj[v].units == 'ppv':
+                        print('changing units for {}'.format(v))
+                        self.obj[v].values *= 1e9
+                        self.obj[v].attrs['units'] = 'ppbv'        
 
 class analysis:
     """The analysis class.
@@ -518,7 +670,6 @@ class analysis:
             f"    read={self.read!r},\n"
             ")"
         )
-
     def read_control(self, control=None):
         """Read the input yaml file,
         updating various :class:`analysis` instance attributes.
@@ -531,7 +682,8 @@ class analysis:
 
         Returns
         -------
-        None
+        type
+            Reads the contents of the yaml control file into a dictionary associated with the analysis class.
         """
         import yaml
 
@@ -542,8 +694,10 @@ class analysis:
             self.control_dict = yaml.safe_load(stream)
 
         # set analysis time
-        self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
-        self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
+        if 'start_time' in self.control_dict['analysis'].keys():
+            self.start_time = pd.Timestamp(self.control_dict['analysis']['start_time'])
+        if 'end_time' in self.control_dict['analysis'].keys():
+            self.end_time = pd.Timestamp(self.control_dict['analysis']['end_time'])
         if 'output_dir' in self.control_dict['analysis'].keys():
             self.output_dir = os.path.expandvars(
                     self.control_dict['analysis']['output_dir'])
@@ -588,7 +742,7 @@ class analysis:
             self.time_intervals \
                 = [[time_stamps[n], time_stamps[n+1]]
                     for n in range(len(time_stamps)-1)]
-
+        
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -647,6 +801,12 @@ class analysis:
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='pkl', attr=attr)
                 elif self.read[attr]['method']=='netcdf':
                     read_saved_data(analysis=self,filenames=self.read[attr]['filenames'], method='netcdf', attr=attr)
+                if attr == 'paired':
+                    # initialize model/obs attributes, since needed for plotting and stats
+                    if not self.models:
+                        self.open_models(load_files=False)
+                    if not self.obs:
+                        self.open_obs(load_files=False)
 
     def setup_regridders(self):
         """Create an obs xesmf.Regridder from base and target grids specified in the control_dict
@@ -660,7 +820,7 @@ class analysis:
             self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
             self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
-    def open_models(self, time_interval=None):
+    def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
 
@@ -668,7 +828,8 @@ class analysis:
         __________
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
-
+        load_files (optional, default True): boolean
+            If False, only populate :attr: dict with yaml file parameters and do not open model files. 
         Returns
         -------
         None
@@ -681,10 +842,13 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
+                if "apply_ak" in self.control_dict['model'][mod].keys():
+                    m.apply_ak = self.control_dict['model'][mod]['apply_ak']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
                     m.radius_of_influence = 1e6
+                        
                 if 'mod_kwargs' in self.control_dict['model'][mod].keys():
                     m.mod_kwargs = self.control_dict['model'][mod]['mod_kwargs']    
                 m.label = mod
@@ -703,6 +867,7 @@ class analysis:
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
                 # add variable dict
+
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
@@ -741,11 +906,11 @@ class analysis:
                             m.proj = ccrs.Projection(proj_in)
 
                 # open the model
-                m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
+                if load_files:
+                    m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
 
-
-    def open_obs(self, time_interval=None):
+    def open_obs(self, time_interval=None, load_files=True):
         """Open all observations listed in the input yaml file and create an 
         :class:`observation` instance for each of them,
         populating the :attr:`obs` dict.
@@ -754,8 +919,9 @@ class analysis:
         __________
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
-
-
+        load_files (optional, default True): boolean
+            If False, only populate :attr: dict with yaml file parameters and do not open obs files. 
+            
         Returns
         -------
         None
@@ -774,9 +940,24 @@ class analysis:
                     o.data_proc = self.control_dict['obs'][obs]['data_proc']
                 o.file = os.path.expandvars(
                     self.control_dict['obs'][obs]['filename'])
+                if 'debug' in self.control_dict['obs'][obs].keys():
+                    o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
-                o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
+                if 'resample' in self.control_dict['obs'][obs].keys():
+                    o.resample = self.control_dict['obs'][obs]['resample']
+                if 'time_var' in self.control_dict['obs'][obs].keys():
+                    o.time_var = self.control_dict['obs'][obs]['time_var']
+                if 'ground_coordinate' in self.control_dict['obs'][obs].keys():
+                    o.ground_coordinate = self.control_dict['obs'][obs]['ground_coordinate']
+                if 'sat_type' in self.control_dict['obs'][obs].keys():
+                    o.sat_type = self.control_dict['obs'][obs]['sat_type']
+                if load_files:
+                    if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
+                                        'sat_grid_clm', 'sat_swath_prof']:
+                        o.open_sat_obs(time_interval=time_interval)
+                    else:
+                        o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
 
 
@@ -805,7 +986,12 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
-                print('1-1,hahaha')
+
+                if mod.variable_dict is not None:
+                    mod_vars = [key for key in mod.variable_dict.keys()]
+                else:
+                    mod_vars = []
+                
                 # unstructured grid check - lon/lat variables should be explicitly added 
                 # in addition to comparison variables
                 if mod.obj.attrs.get("mio_scrip_file", False):
@@ -813,12 +999,12 @@ class analysis:
                     for ll in lonlat_list:
                         if ll in mod.obj.data_vars:
                             keys += [ll]
-                print('1-2,lolo')
-                print('not None',mod.obj)
-                print('keys',keys)
-                print('mod.obj[keys]',mod.obj[keys])
-                model_obj = mod.obj[keys]
-                
+
+                if mod.variable_dict is not None:
+                    model_obj = mod.obj[keys+mod_vars]
+                else:
+                    model_obj = mod.obj[keys]
+
                 ## TODO:  add in ability for simple addition of variables from
 
                 # simplify the objs object with the correct mapping variables
@@ -854,8 +1040,128 @@ class analysis:
                     self.paired[label] = p
                     p.obj = p.fix_paired_xarray(dset=p.obj)
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
+                    
+                # if aircraft (aircraft observation)
+                elif obs.obs_type.lower() == 'aircraft':
+                    from .util.tools import vert_interp
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+                    
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
+                    
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs','pressure_obs'])
+                    
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    print('After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.type = 'aircraft'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file
+                
+                # If mobile surface data or single ground site surface data
+                elif obs.obs_type.lower() == 'mobile' or obs.obs_type.lower() == 'ground':
+                    from .util.tools import mobile_and_ground_pair
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+                    
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['latitude','longitude']).set_index('time')
+                    
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs'])
+                    
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    
+                    paired_data = mobile_and_ground_pair(ds_model,obs.obj,keys+mod_vars)
+                    print('After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    if obs.obs_type.lower() == 'mobile':
+                        p.type = 'mobile'
+                    elif obs.obs_type.lower() == 'ground':
+                        p.type = 'ground'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+                
                 # TODO: add other network types / data types where (ie flight, satellite etc)
+                # if sat_swath_clm (satellite l2 column products)
+                elif obs.obs_type.lower() == 'sat_swath_clm':
+                    
+                    if obs.label == 'omps_nm':
+                        
+                        from .util import satellite_utilities as sutil
+                        
+                        #necessary observation index things 
+                        #the along track coordinate dim sometimes needs to be time and other times an unassigned 'x'
+                        obs.obj = obs.obj.swap_dims({'time':'x'})
+                        if mod.apply_ak == True:
+                            model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
+                            
+                            paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
+                        else:
+                            model_obj = mod.obj[keys+['dp_pa']]
+                            paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
+                        paired_data = paired_data.where((paired_data.o3vmr > 0))
+                        p = pair()
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data 
+                        label = '{}_{}'.format(p.obs,p.model)
+                        self.paired[label] = p
+                # if sat_grid_clm (satellite l3 column products)
+                elif obs.obs_type.lower() == 'sat_grid_clm':
+                    if obs.label == 'omps_l3':
+                        from .util import satellite_utilities as sutil
+                        # trim obs array to only data within analysis window
+                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        model_obsgrid = sutil.omps_l3_daily_o3_pairing(mod.obj,obs_dat,'o3vmr')
+                        # combine model and observations into paired dataset
+                        obs_dat['o3vmr'] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
+                        p = pair()
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = obs_dat
+                        label = '{}_{}'.format(p.obs,p.model)
+                        self.paired[label] = p
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
@@ -865,7 +1171,7 @@ class analysis:
         None
         """
         pass
-
+    
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -885,8 +1191,12 @@ class analysis:
         None
         """
         import matplotlib.pyplot as plt
-
-        from .plots import surfplots as splots, savefig
+        pair_keys = list(self.paired.keys())
+        if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
+            from .plots import satplots as splots,savefig
+        else: 
+            from .plots import surfplots as splots, savefig
+            from .plots import aircraftplots as airplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -902,16 +1212,26 @@ class analysis:
         #     1) a singular plot type
         #     2) multiple paired datasets or model datasets depending on the plot type
         #     3) kwargs for creating the figure ie size and marker (note the default for obs is 'x')
+
+        # Loop through the plot_dict items
         for grp, grp_dict in plot_dict.items():
+            
+            # Read the interquartile_style argument (for vertprofile plot type) if it exists
+            if grp_dict.get('type') == 'vertprofile':
+                interquartile_style = grp_dict.get('data_proc', {}).get('interquartile_style', 'shading')
+            else:
+                interquartile_style = None
+
             pair_labels = grp_dict['data']
-            # get the plot type
+            # Get the plot type
             plot_type = grp_dict['type']
 
             #read-in special settings for multi-boxplot
-            if plot_type == 'multi_boxplot':  
+            if plot_type == 'multi_boxplot':
                 region_name = grp_dict['region_name'] 
-                region_list = grp_dict['region_list'] 
+                region_list = grp_dict['region_list']
                 model_name_list = grp_dict['model_name_list']     
+            
 
             #read-in special settings for scorecard
             if plot_type == 'scorecard':
@@ -931,7 +1251,7 @@ class analysis:
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
-
+            obs_type = pair1.type
             # loop through obs variables
             for obsvar in obs_vars:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
@@ -951,13 +1271,30 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
-
-                        # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
-
-                        # Select only the analysis time window.
-                        pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
-
+                            
+                        # for pt_sfc data, convert to pandas dataframe, format, and trim
+                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", 
+                                                                        "sat_grid_sfc", "sat_grid_clm", 
+                                                                        "sat_swath_prof"]:
+                             # convert index to time; setup for sat_swath_clm
+                            
+                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
+                                
+                                pairdf_all = p.obj.swap_dims({'x':'time'})
+                            # squash lat/lon dimensions into single dimension
+                            elif obs_type == 'sat_grid_clm':
+                                pairdf_all = p.obj.stack(ll=['x','y'])
+                                pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+                            else:
+                                pairdf_all = p.obj
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
+                        else:
+                            # convert to dataframe
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            # Select only the analysis time window.
+                            pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
+                            
                         # Determine the default plotting colors.
                         if 'default_plot_kwargs' in grp_dict.keys():
                             if self.models[p.model].plot_kwargs is not None:
@@ -1013,6 +1350,8 @@ class analysis:
                         else:
                             use_percentile = None
 
+                        
+
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
@@ -1059,11 +1398,20 @@ class analysis:
                             # make list of sites meeting condition and select paired data by this by this
                             grp_select = grp_pct_nan.query(obsvar + ' < ' + str(pct_cutoff)).reset_index()
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
-              
-                        # Drop NaNs
-                        if grp_dict['data_proc']['rem_obs_nan'] == True:
-                            # I removed drop=True in reset_index in order to keep 'time' as a column.
-                            pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
+
+                        # Drop NaNs if using pandas 
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground']:
+                            if grp_dict['data_proc']['rem_obs_nan'] == True:
+                                # I removed drop=True in reset_index in order to keep 'time' as a column.
+                                pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
+                            else:
+                                pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
+                        elif obs_type in  ["sat_swath_sfc", "sat_swath_clm", 
+                                                                        "sat_grid_sfc", "sat_grid_clm", 
+                                                                        "sat_swath_prof"]: 
+                            # xarray doesn't need nan drop because its math operations seem to ignore nans
+                            pairdf = pairdf_all
+
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
@@ -1071,7 +1419,8 @@ class analysis:
                         #print('pairfdf',pairdf)
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
-                        if pairdf.empty or pairdf[obsvar].isnull().all():
+                        # MEB: pairdf.empty fails for data left in xarray format. isnull format works.
+                        if pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                             continue
                         
@@ -1135,11 +1484,50 @@ class analysis:
                                 vmax = None
                             # Select time to use as index.
                             pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
-                            # Specify ts_avg_window if noted in yaml file. 
+                            # Specify ts_avg_window if noted in yaml file. #qzr++
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
                             else:
-                                a_w = None  
+                                a_w = None
+
+                            #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
+                            #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
+                            #Edit below to accomodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
+                            altitude_yax2 = grp_dict['data_proc'].get('altitude_yax2', {})
+
+                            # Extract vmin_y2 and vmax_y2 from filter_dict
+                            # Check if 'filter_dict' exists and 'altitude' is a key in filter_criteria
+                            # Extract vmin_y2 and vmax_y2 from filter_dict
+                            #Better structure for filter_dict (min and max secondary axis) to be optional below
+                            filter_criteria = (
+                                altitude_yax2.get('filter_dict', None)
+                                if isinstance(altitude_yax2, dict)
+                                else None
+                            )
+                            
+                            
+                            if filter_criteria and 'altitude' in filter_criteria:
+                                vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
+                            elif filter_criteria is None:
+                                if 'altitude' in pairdf.columns:
+                                    vmin_y2 = pairdf['altitude'].min()
+                                    vmax_y2 = pairdf['altitude'].max()
+                                else:
+                                    vmin_y2 = vmax_y2 = None
+                            else:
+                                vmin_y2 = vmax_y2 = None
+                            
+                                
+                            # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
+                            if filter_criteria:
+                                for column, condition in filter_criteria.items():
+                                    operation = condition['oper']
+                                    value = condition['value']
+                                    
+                                    if operation == "between" and isinstance(value, list) and len(value) == 2:
+                                        pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
+                            
+                            # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = splots.make_timeseries(
@@ -1175,13 +1563,246 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+
+                            # Extract text_kwargs from the appropriate plot group
+                            text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
+
+                            # At the end save the plot.
+                            if p_index == len(pair_labels) - 1:
+                                # Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                if 'altitude_yax2' in grp_dict['data_proc'] and 'altitude_variable' in grp_dict['data_proc']['altitude_yax2']:
+                                    altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
+                                    ax = airplots.add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2)
+                                savefig(outname + '.png', logo_height=150)
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
+                                
+                            # At the end save the plot.
+                            ##if p_index == len(pair_labels) - 1:
+                                #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
+                                
+                                #Older approach without 'altitude_yax2' control list in YAML now commented out
+                                ##if grp_dict['data_proc'].get('altitude_variable'):
+                                  ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
+                                  ##  altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
+                                  ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
+                                ##savefig(outname + '.png', logo_height=150)
+                                ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                                
+                        #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
+                        elif plot_type.lower() == 'vertprofile':
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            # Select altitude variable from the .yaml file
+                            altitude_variable = grp_dict['altitude_variable']
+                            # Define the bins for binning the altitude
+                            bins = grp_dict['vertprofile_bins']
+                            if p_index == 0:
+                                # First plot the observations.
+                                ax = airplots.make_vertprofile(
+                                    pairdf,
+                                    column=obsvar,
+                                    label=p.obs,
+                                    bins=bins,
+                                    altitude_variable=altitude_variable,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug,
+                                    interquartile_style=interquartile_style 
+                            )
+                            
+                            # For all p_index plot the model.
+                            ax = airplots.make_vertprofile(
+                                pairdf,
+                                column=modvar,
+                                label=p.model,
+                                ax=ax,
+                                bins=bins,
+                                altitude_variable=altitude_variable,
+                                ylabel=use_ylabel,
+                                vmin=vmin,
+                                vmax=vmax,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
+                                plot_dict=plot_dict,
+                                text_dict=text_dict,
+                                debug=self.debug,
+                                interquartile_style=interquartile_style 
+                            )
+                            
+                            
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
-                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                    
-                     
-                        if plot_type.lower() == 'boxplot':
+                                del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
+
+                        
+                        elif plot_type.lower() == 'violin':
+                            if set_yaxis:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            
+                            # Initialize the combined DataFrame for violin plots and labels/colors list
+                            if p_index == 0:
+                                comb_violin = pd.DataFrame()
+                                label_violin = []
+
+                                                       
+                            # Define a default color for observations
+                            default_obs_color = 'gray'  # Default color for observations
+                            
+                            # Inside your loop for processing each pair
+                            obs_label = p.obs
+                            model_label = p.model
+                            
+                            # Retrieve plot_kwargs for observation
+                            if hasattr(self.obs[p.obs], 'plot_kwargs') and self.obs[p.obs].plot_kwargs is not None:
+                                obs_dict = self.obs[p.obs].plot_kwargs
+                            else:
+                                obs_dict = {'color': default_obs_color}
+                            
+                            # Retrieve plot_kwargs for the model
+                            model_dict = self.models[p.model].plot_kwargs if self.models[p.model].plot_kwargs is not None else {'color': 'blue'} # Fallback color for models, in case it's missing
+                            
+                            # Call calculate_violin for observation data
+                            if p_index ==0:
+                                comb_violin, label_violin = airplots.calculate_violin(
+                                    df=pairdf,
+                                    column=obsvar,
+                                    label=obs_label,
+                                    plot_dict=obs_dict,
+                                    comb_violin=comb_violin,
+                                    label_violin=label_violin
+                                )
+                            
+                            # Call calculate_violin for model data
+                            comb_violin, label_violin = airplots.calculate_violin(
+                                df=pairdf,
+                                column=modvar,
+                                label=model_label,
+                                plot_dict=model_dict,
+                                comb_violin=comb_violin,
+                                label_violin=label_violin
+                            )
+
+                            
+                            # For the last pair, create the violin plot
+                            if p_index == len(pair_labels) - 1:
+                                airplots.make_violin_plot(
+                                    comb_violin=comb_violin,
+                                    label_violin=label_violin,
+                                    ylabel=use_ylabel,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug
+                                )
+                            
+                            # Clear the variables for the next plot if needed
+                            if p_index == len(pair_labels) - 1:
+                                del (comb_violin, label_violin, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
+                        
+
+                        elif plot_type.lower() == 'scatter_density':
+                            scatter_density_config = grp_dict
+
+                            
+                            # Extract relevant parameters from the configuration
+                            color_map = scatter_density_config.get('color_map', 'viridis')
+                            fill = scatter_density_config.get('fill', False)
+                            print(f"Value of fill after reading from scatter_density_config: {fill}") #Debugging
+
+                            
+                            vmin_x = scatter_density_config.get('vmin_x', None)
+                            vmax_x = scatter_density_config.get('vmax_x', None)
+                            vmin_y = scatter_density_config.get('vmin_y', None)
+                            vmax_y = scatter_density_config.get('vmax_y', None)
+                                                    
+                            # Accessing the correct model and observation configuration/labels/variables
+                            model_label = p.model
+                            obs_label = p.obs
+                            
+                            try:
+                                mapping = self.control_dict['model'][model_label]['mapping'][obs_label]
+                            except KeyError:
+                                print(f"Error: Mapping not found for model label '{model_label}' with observation label '{obs_label}' in scatter_density plot")
+                                continue  # Skip this iteration if mapping is not found
+                            
+                            obs_config = self.control_dict['obs'][obs_label]['variables'] # Accessing the correct observation configuration
+
+                            
+                            # Extract ylabel_plot for units extraction
+                            ylabel_plot = obs_config.get(obsvar, {}).get('ylabel_plot', f"{obsvar} (units)")
+                            title = ylabel_plot
+                            units = ylabel_plot[ylabel_plot.find("(")+1 : ylabel_plot.find(")")]
+                            xlabel = f"Model {modvar} ({units})"
+                            ylabel = f"Observation {obsvar} ({units})"
+
+                            
+
+                            
+                            # Exclude keys from kwargs that are being passed explicitly
+                            excluded_keys = ['color_map', 'fill', 'vmin_x', 'vmax_x', 'vmin_y', 'vmax_y', 'xlabel', 'ylabel', 'title', 'data']
+                            kwargs = {key: value for key, value in scatter_density_config.items() if key not in excluded_keys}
+                            if 'shade_lowest' in kwargs:
+                                kwargs['thresh'] = 0
+                                del kwargs['shade_lowest']
+
+
+
+                            
+                            # Create the scatter density plot
+                            print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
+                            ax = airplots.make_scatter_density_plot(
+                                pairdf,
+                                mod_var=modvar,
+                                obs_var=obsvar,
+                                color_map=color_map,
+                                xlabel=xlabel,
+                                ylabel=ylabel,
+                                title=title,
+                                fill=fill,
+                                vmin_x=vmin_x,
+                                vmax_x=vmax_x,
+                                vmin_y=vmin_y,
+                                vmax_y=vmax_y,
+                                **kwargs                            
+                            )
+
+                            # Save the scatter density plot for the current pair immediately
+                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+                            print(f"Saving scatter density plot to {outname_pair}...")  # Debugging print statement
+                            plt.savefig(outname_pair)
+                            plt.close()  # Close the current figure
+                            
+                        elif plot_type.lower() == 'boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1220,9 +1841,7 @@ class analysis:
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
-                        ################################## 
-                        #This start BEIMING multi-box-plot
-                        ##################################
+
                         elif plot_type.lower() == 'multi_boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1260,7 +1879,7 @@ class analysis:
                                 splots.make_multi_boxplot(
                                     comb_bx,
                                     label_bx,
-                                    region_bx,  #BEIMING 
+                                    region_bx,  
                                     region_list = region_list,
                                     model_name_list=model_name_list,
                                     ylabel=use_ylabel,
@@ -1369,10 +1988,8 @@ class analysis:
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
 
                                 #Clear info for next plot.
-                                del (comb_bx,label_bx,fig_dict,plot_dict,text_dict,obs_dict,obs_plot_dict)
-                        #############################
-                        #This end BEIMING CSI plot
-                        ##############################
+                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+
 
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
@@ -1423,6 +2040,10 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
                                 del (dia, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                       
+
+                        
+                        
                         elif plot_type.lower() == 'spatial_bias':
                             if set_yaxis == True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
@@ -1451,6 +2072,22 @@ class analysis:
                                 text_dict=text_dict,
                                 debug=self.debug
                             )
+                        elif plot_type.lower() == 'gridded_spatial_bias':
+                            splots.make_spatial_bias_gridded(
+                                p.obj,
+                                column_o=obsvar,
+                                label_o=p.obs,
+                                column_m=modvar,
+                                label_m=p.model,
+                                ylabel=use_ylabel,
+                                #vdiff=vdiff,
+                                outname=outname,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
+                                fig_dict=fig_dict,
+                                text_dict=text_dict,
+                                debug=self.debug
+                                )    
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
