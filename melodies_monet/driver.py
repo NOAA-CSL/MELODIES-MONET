@@ -1353,7 +1353,7 @@ class analysis:
                                 elif filter_op == 'isnotin':
                                     pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
                                 else:
-                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True) 
                         elif 'filter_string' in grp_dict['data_proc']:
                             pairdf_all.query(grp_dict['data_proc']['filter_string'], inplace=True)
 
@@ -1554,6 +1554,8 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
                                 
+
+
                             # At the end save the plot.
                             ##if p_index == len(pair_labels) - 1:
                                 #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
@@ -1565,6 +1567,10 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+
+                                                                     
+
+                           
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
@@ -1627,6 +1633,8 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
+
+                        
 
                         
                         elif plot_type.lower() == 'violin':

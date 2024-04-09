@@ -24,6 +24,11 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
+
+import matplotlib.dates as mdates
+from matplotlib.colors import BoundaryNorm
+from matplotlib.colors import Normalize
+
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
@@ -222,7 +227,9 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
     return ax
 
-                              
+
+
+
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
@@ -792,7 +799,8 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_kwargs['fontsize'])
 
     # Increase tick label size
-    plt.tick_params(axis='both', labelsize=text_kwargs['fontsize'])
+    plt.tick_params(axis='both', labelsize=text_kwargs['fontsize']*0.8)
+    
     
     # Set y-axis limits if provided
     if vmin is not None and vmax is not None:
@@ -800,7 +808,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     
     # Set title
     if domain_type and domain_name:
-        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold')
+        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold',fontsize=text_kwargs['fontsize'])
 
     # Finalize and save plot
     plt.tight_layout()
