@@ -236,7 +236,7 @@ def interpolate_and_clean_model_data(time, altitude, model_data):
     """
     Interpolates and cleans model data for creating curtain plots.
 
-    Parameters:
+    Parameters
     ----------
     time : numpy.ndarray
         Array of time points converted to floats (e.g., seconds since the start).
@@ -245,7 +245,7 @@ def interpolate_and_clean_model_data(time, altitude, model_data):
     model_data : numpy.ndarray
         2D array of model data values to be cleaned and interpolated.
 
-    Returns:
+    Returns
     -------
     numpy.ndarray
         The cleaned and interpolated model data.
