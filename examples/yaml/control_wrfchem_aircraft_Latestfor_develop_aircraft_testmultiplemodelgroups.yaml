@@ -161,6 +161,7 @@ plots:
           altitude:
             oper: "between"
             value: [2000,8000] # values are [vmin_y2, vmax_y2] 
+            
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
@@ -197,7 +198,6 @@ plots:
     data_proc:
       rem_obs_nan: True 
       set_axis: False
-
     
   plot_grp4:
     type: 'scatter_density'
@@ -235,7 +235,35 @@ plots:
     # Add other seaborn.kdeplot keyword arguments here as needed
     vcenter: #0  # Central value for TwoSlopeNorm
     extensions: ['min', 'max']  # Extensions for the colorbar  
+
   plot_grp5:
+    type: 'curtain'
+    fig_kwargs:
+      figsize: [12, 8]
+    text_kwargs:
+      fontsize: 18
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      ts_select_time: 'time'
+      #ts_avg_window: # 'H'  #Uncomment to use time averaging
+      altitude_variable: 'altitude'
+      vmin_plot: 1000
+      vmax_plot: 10000
+    # Optionally specify a custom colormap and number of levels
+    ##If want to use standard matplotlib colorscale comment the True option and colors and uncomment the following:
+    ##color_map_custom: True
+    ##colors: ['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
+    color_map_custom: False
+    color_map: 'jet'  # This tells the plotting function to use the built-in 'rainbow' colormap
+    color_levels: 15 #10  # Define the number of distinct colors in the color bar
+    # Optionally specify dynamic color bar ranges based on data
+    dynamic_color_range: True  # New key to use dynamic ranges based on model and obs data
+    
+  plot_grp6:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8,8] # figure size if multiple plots
@@ -250,7 +278,8 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
-  plot_grp6:
+      
+  plot_grp7:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
@@ -262,6 +291,8 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+      
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
@@ -279,4 +310,5 @@ stats:
   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
   data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
 
+  
 

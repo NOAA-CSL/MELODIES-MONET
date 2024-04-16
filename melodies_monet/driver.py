@@ -1568,9 +1568,61 @@ class analysis:
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
 
-                                                                     
+                        
+                        elif plot_type.lower() == 'curtain':
+                            curtain_config = grp_dict
+                            vmin = curtain_config['data_proc'].get('vmin_plot', None)
+                            vmax = curtain_config['data_proc'].get('vmax_plot', None)
+                            
+                            model_label = p.model
+                            obs_label = p.obs
+                        
+                            if 'altitude' in pairdf.columns and vmin is not None and vmax is not None:
+                                pairdf_filtered = pairdf[(pairdf['altitude'] >= vmin) & (pairdf['altitude'] <= vmax)]
+                            else:
+                                pairdf_filtered = pairdf
+                        
+                            try:
+                                model_data_pivot = pairdf_filtered.pivot(index='time', columns='altitude', values=modvar)
+                                obs_data_pivot = pairdf_filtered.pivot(index='time', columns='altitude', values=obsvar)
+                        
+                                # Convert datetime index to float seconds since the first timestamp
+                                time_values = model_data_pivot.index.values
+                                time_as_float = (time_values - time_values[0]).astype('timedelta64[s]').astype(float)
+                                
+                                altitude_values = model_data_pivot.columns.values
+                                model_data_2d = model_data_pivot.values
+                                obs_data_2d = obs_data_pivot.values
+                        
+                                model_data_2d_cleaned = airplots.interpolate_and_clean_model_data(time_as_float, altitude_values, model_data_2d)
+                                #Create Curtain Plots
+                                print(f"Processing curtain plot for model '{model_label}' and observation '{obs_label}'...")
+                        
+                                airplots.make_curtain_plot(
+                                    time=time_values, #time_as_float, #for datetime format on x-axis use time_values
+                                    altitude=altitude_values,
+                                    model_data_2d=model_data_2d_cleaned,
+                                    obs_data_2d=obs_data_2d,
+                                    model_var=modvar,
+                                    obs_var=obsvar,
+                                    grp_dict=curtain_config,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name
+                                )
 
-                           
+                                # Save the scatter density plot for the current pair immediately
+                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+                                print(f"Saving Curtain plot (Model) with Scatter Overlay (Observation) to {outname_pair}...")  # Debugging print statement
+                                plt.savefig(outname_pair)
+                                plt.close()  # Close the current figure
+                                
+                        
+                            except Exception as e:
+                                print(f"Error generating curtain plot for {modvar} vs {obsvar}: {e}")
+
+                            
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
