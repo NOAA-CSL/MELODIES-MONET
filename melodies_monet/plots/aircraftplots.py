@@ -277,7 +277,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_data_2d, model_var, obs
     Generates a curtain plot comparing model data with observations across altitude over time,
     with the ability to customize the appearance through a configuration dictionary.
 
-    Parameters:
+    Parameters
     ----------
     time : numpy.ndarray
         Array of time points, expected to be numerical values suitable for plotting.
@@ -302,7 +302,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_data_2d, model_var, obs
     domain_name : str
         Name of the domain being plotted.
 
-    Returns:
+    Returns
     -------
     None
         Saves the generated plot to a file.
