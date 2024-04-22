@@ -957,7 +957,7 @@ def get_aqs(
 ):
     """Download EPA AQS data using monetio and reformat for MM usage.
 
-    These are archived data, stored in per-year per-parameter files, described at
+    These are archived data, stored in per-year per-parameter-group files, described at
     https://aqs.epa.gov/aqsweb/airdata/download_files.html
 
     Recent-past data are generally not available from this source.
