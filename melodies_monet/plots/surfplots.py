@@ -975,7 +975,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), **boxplot_kwargs)
+    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), hue="variable", **boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
