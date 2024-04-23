@@ -48,6 +48,7 @@ MONETIO please refer to:
    background/supported_plots
    background/supported_stats
    background/time_chunking
+   background/satellite_datasets
    background/gridded_datasets
    
 .. toctree::
