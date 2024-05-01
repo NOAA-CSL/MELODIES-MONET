@@ -319,6 +319,25 @@ data will be used and the domain_name is used only in the plot title. If
 domain_type is not equal to all, MELODIES MONET will query all of the data 
 where domain_type is equal to domain_name.
 
+**region_name:** list of source of regions used in title.
+(e.g., ['epa_region'])
+
+**region_list:** list of regions we will calculate for scorecard. 
+(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+
+**urban_rural_name:** list of only one string input, which is variable used to
+determine wheter urban or rural site. (e.g., ['msa_name'])
+
+**urban_rural_differentiate_value:** string of value used to determine whether 
+variable is rural or urban. (e.g., '').
+
+**better_or_worse_method:** string of method used to determine which models 
+is better compared to observations. (e.g., 'RMSE', 'IOA' ,' NMB', 'NME'). choose
+one only for each time scorecard code run.
+
+**model_name_list:** List of model names used for legend labels.
+(e.g.,  ['AirNow','cmaq_expt','rrfs_13km','wrfchem_v4.2'])
+
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
