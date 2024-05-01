@@ -191,7 +191,7 @@ plots:
   plot_grp6:
     type: "scorecard"
     fig_kwargs:
-      figsize: [8, 6]
+      figsize: [10, 10]
     text_kwargs:
       fontsize: 20.
     domain_type: ["all"]
