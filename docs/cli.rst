@@ -15,6 +15,7 @@ any Python code::
 * |run|_ -- run a control file
 * |get-airnow|_ -- get AirNow data
 * |get-aeronet|_ -- get AERONET data
+* |get-aqs|_ -- get AQS data
 * |get-ish|_ -- get ISH data
 * |get-ish-lite|_ -- get ISH-Lite data
 
@@ -26,6 +27,9 @@ any Python code::
 
 .. |get-aeronet| replace:: ``get-aeronet``
 .. _get-aeronet: #melodies-monet-get-aeronet
+
+.. |get-aqs| replace:: ``get-aqs``
+.. _get-aqs: #melodies-monet-get-aqs
 
 .. |get-ish| replace:: ``get-ish``
 .. _get-ish: #melodies-monet-get-ish
