@@ -331,7 +331,7 @@ user want to plot.
 
 **model_name_list:** 
 for multi-box plot, list of observation and model names user choose to set as x-labels; 
-for csi plot, list of mode names (only) user choose to set as labels.
+for csi plot, list of model names (only) user choose to set as labels.
 
 **threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
 
