@@ -260,7 +260,7 @@ class observation:
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
-                self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
+                self.obj = mio.sat._omps_l3_mm.open_dataset(self.file)
             elif self.sat_type == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
@@ -279,7 +279,8 @@ class observation:
                     
             elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
-                self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
+                self.obj = mio.sat._mopitt_l3_mm.open_dataset(self.file, ['column','pressure_surf','apriori_col',
+                                                                          'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
@@ -453,7 +454,7 @@ class model:
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
- 
+            
         # add option to read list of files from text file
         _, extension = os.path.splitext(self.file_str)
         if extension.lower() == '.txt':
@@ -553,7 +554,7 @@ class model:
                 self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
                 #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-                #self.obj.monet.scrip = self.obj_scrip
+                #self.obj.monet.scrip = self.obj_scrip      
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
                     self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
@@ -1026,6 +1027,7 @@ class analysis:
                         print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
+                    print('saving pair')
                     p.obs = obs.label
                     p.model = mod.label
                     p.model_vars = keys
@@ -1115,13 +1117,15 @@ class analysis:
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     
-                    if obs.label == 'omps_nm':
+                    if obs.sat_type == 'omps_nm':
                         
                         from .util import satellite_utilities as sutil
                         
-                        #necessary observation index things 
-                        #the along track coordinate dim sometimes needs to be time and other times an unassigned 'x'
-                        obs.obj = obs.obj.swap_dims({'time':'x'})
+                        # necessary observation index things 
+                        ## the along track coordinate dim sometimes needs to be time and other times an unassigned 'x'
+                        if 'time' in obs.obj.dims:
+                            obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
+                            obs.obj = obs.obj.swap_dims({'time':'x'})
                         if mod.apply_ak == True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
@@ -1142,22 +1146,46 @@ class analysis:
                         self.paired[label] = p
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
-                    if obs.label == 'omps_l3':
+                    if len(keys) > 1: 
+                        print('Caution: More than 1 variable is included in mapping keys.')
+                        print('Pairing code is calculating a column for {}'.format(keys[0])) 
+                    if obs.sat_type == 'omps_l3':
                         from .util import satellite_utilities as sutil
                         # trim obs array to only data within analysis window
-                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
-                        model_obsgrid = sutil.omps_l3_daily_o3_pairing(mod.obj,obs_dat,'o3vmr')
-                        # combine model and observations into paired dataset
-                        obs_dat['o3vmr'] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
+                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                        mod_dat = mod.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                        paired_obsgrid = sutil.omps_l3_daily_o3_pairing(mod_dat,obs_dat,keys[0])
+                       
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
                         p.obs_vars = obs_vars
-                        p.obj = obs_dat
+                        p.obj = paired_obsgrid
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+                    elif obs.sat_type == 'mopitt_l3':
+                        from .util import satellite_utilities as sutil
+                        if mod.apply_ak: 
+                            model_obj = mod.obj[keys+['pres_pa_mid']]
+                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            # interpolate model to observation, calculate column with averaging kernels applied
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
+                            p = pair()
+                            p.type = obs.obs_type
+                            p.obs = obs.label
+                            p.model = mod.label
+                            p.model_vars = keys
+                            p.model_vars[0] += '_column_model'
+                            p.obs_vars = obs_vars
+                            p.obj = paired
+                            label ='{}_{}'.format(p.obs,p.model)
+                            self.paired[label] = p
+                        else:
+                            print("Pairing without averaging kernel has not been enabled for this dataset")
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
@@ -1167,7 +1195,7 @@ class analysis:
         None
         """
         pass
-    
+   
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -1192,7 +1220,6 @@ class analysis:
             from .plots import satplots as splots,savefig
         else: 
             from .plots import surfplots as splots, savefig
-            from .plots import aircraftplots as airplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1263,9 +1290,10 @@ class analysis:
                                 
                                 pairdf_all = p.obj.swap_dims({'x':'time'})
                             # squash lat/lon dimensions into single dimension
-                            elif obs_type == 'sat_grid_clm':
-                                pairdf_all = p.obj.stack(ll=['x','y'])
-                                pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+                            ## 2024-03 MEB rechecking necessity of this.
+                            #elif obs_type == 'sat_grid_clm':
+                            #    pairdf_all = p.obj.stack(ll=['x','y'])
+                            #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
                             else:
                                 pairdf_all = p.obj
                             # Select only the analysis time window.
@@ -1461,7 +1489,9 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+                            # 2024-03-01 MEB needs to only apply if pandas. fails for xarray
+                            if isinstance(pairdf,pd.core.frame.DataFrame):
+                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
                             # Specify ts_avg_window if noted in yaml file. #qzr++
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
