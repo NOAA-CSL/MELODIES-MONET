@@ -1003,9 +1003,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     savefig(outname + '.png', loc=4, logo_height=100)
   
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
->>>>>>> origin/develop
-                 domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
+                       domain_type=None, domain_name=None,
+                       plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
     """Creates box-plot. 
     
