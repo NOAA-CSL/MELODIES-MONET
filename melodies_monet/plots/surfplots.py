@@ -317,7 +317,6 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column_o
-     
     if ptile is None:
         ylabel = 'Mean '+ylabel
     else:
@@ -347,8 +346,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
             cmap="OrangeBlue", edgecolor='k',linewidth=.8)
-    
-    if domain_type == 'all':
+
+    if domain_type == 'all' and domain_name == 'CONUS':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -363,7 +362,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         latmax= math.ceil(max(df.latitude))
         lonmax= math.ceil(max(df.longitude))
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    
+
     if 'extent' not in map_kwargs:
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
