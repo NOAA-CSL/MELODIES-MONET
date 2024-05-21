@@ -196,7 +196,7 @@ plots:
       fontsize: 20.
     domain_type: ["all"]
     domain_name: ["CONUS"]
-    region_name: ['epa_region'] 
+    region_name: ['epa_region']
     region_list: ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
     urban_rural_name: ['msa_name']
     urban_rural_differentiate_value: ''
@@ -207,6 +207,22 @@ plots:
       rem_obs_nan: True
       set_axis: False
 
+  plot_grp7:
+    type: "multi_boxplot"
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"]
+    domain_name: ["CONUS"]
+    region_name: ['epa_region']
+    region_list: ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10'] 
+    model_name_list: ['AirNow','WRF-Chem','WRF-Chem vcp']
+    data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      
 stats:
   # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   # Wind direction has special calculations for AirNow if obs name is 'WD'

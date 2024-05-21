@@ -317,7 +317,6 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column_o
-     
     if ptile is None:
         ylabel = 'Mean '+ylabel
     else:
@@ -347,8 +346,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
             cmap="OrangeBlue", edgecolor='k',linewidth=.8)
-    
-    if domain_type == 'all':
+
+    if domain_type == 'all' and domain_name == 'CONUS':
         latmin= 25.0
         lonmin=-130.0
         latmax= 50.0
@@ -363,7 +362,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         latmax= math.ceil(max(df.latitude))
         lonmax= math.ceil(max(df.longitude))
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    
+
     if 'extent' not in map_kwargs:
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
@@ -842,14 +841,16 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         model/obs paired data to plot
     df_reg : pandas.DataFrame
         model/obs paired regulatory data to plot
+    region_name : list of str
+        user input regions of interets to plot
     column : str
         Column label of variable to plot
     label : str
         Name of variable to use in plot legend
-    comb_bx: dataframe
+    comb_bx : dataframe
         dataframe containing information to create box-plot from previous 
         occurrence so can overlay multiple model results on plot
-    label_bx: list
+    label_bx : list
         list of string labels to use in box-plot from previous occurrence so 
         can overlay multiple model results on plot
     Returns
@@ -885,7 +886,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
         region_bx['set_regions'] = df_reg_epa["epa_region"]
     else:
         comb_bx[label] = df[column] 
-        region_bx['set_regions']=df[region_name[0]]  
+        region_bx['set_regions']=df[region_name[0]]   
     label_bx.append(plot_kwargs)
     
     return comb_bx, label_bx,region_bx             
@@ -973,7 +974,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), **boxplot_kwargs)
+    sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), hue="variable", **boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -988,7 +989,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
   
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', 
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
                  domain_type=None, domain_name=None,
                  plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
@@ -996,14 +997,16 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     
     Parameters
     ----------
-    comb_bx: dataframe
+    comb_bx : dataframe
         dataframe containing information to create box-plot from 
         calculate_boxplot
-    label_bx: list
+    label_bx : list
         list of string labels to use in box-plot from calculate_boxplot
-    region_bx: dataframe
+    region_bx : dataframe
         dataframe containing information of stations to help create multi-box-plot
         from calculate_boxplot
+    model_name_list : list of str
+        list of models and observation sources used for x-labels in plot
     ylabel : str
         Title of y-axis
     vmin : real number
@@ -1076,9 +1079,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
                                'markersize': 20.0}}
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-
     len_combx = len(comb_bx.columns)
- 
+    
     data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
     data_obs['model'] = model_name_list[0]
     data_obs['Regions'] = region_bx['set_regions'].values
@@ -1090,9 +1092,9 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
         data_model['model'] = model_name_list[i]
         data_model['Regions'] = region_bx['set_regions'].values
         to_concat.append(data_model[['Value','model','Regions']])
-    
-    tdf =pd.concat(to_concat)
 
+    tdf =pd.concat(to_concat)
+    
     acro = region_list
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
     ax.set_xlabel('')

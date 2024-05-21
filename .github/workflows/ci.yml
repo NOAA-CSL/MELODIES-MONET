@@ -59,12 +59,33 @@ jobs:
           done
           cd -
 
+      - name: Prepare idealized save/read cases
+        shell: python
+        run: |
+          from copy import deepcopy
+          import yaml
+
+          with open('docs/examples/control_idealized.yaml') as f:
+            ctl = yaml.safe_load(f)
+          assert {'save', 'read'} < ctl['analysis'].keys()
+
+          ctl_save = deepcopy(ctl)
+          del ctl_save['analysis']['read']
+          with open('docs/examples/control_idealized_save.yaml', 'w') as f:
+            yaml.safe_dump(ctl_save, f)
+
+          ctl_read = deepcopy(ctl)
+          del ctl_read['analysis']['save']
+          with open('docs/examples/control_idealized_read.yaml', 'w') as f:
+            yaml.safe_dump(ctl_read, f)
+
       - name: Check CLI works
         run: |
           cd docs/examples
           melodies-monet --version
           python -m melodies_monet --version
-          melodies-monet run control_idealized.yaml
+          melodies-monet run control_idealized_save.yaml
+          melodies-monet run control_idealized_read.yaml
           cd -
 
   docs:

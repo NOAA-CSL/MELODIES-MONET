@@ -12,6 +12,7 @@ from monet import savefig as monet_savefig
 __all__ = (
     "savefig",
     "surfplots",
+    "aircraftplots",
 )
 
 LOGO_PATH = Path(__file__).parent / "../data/MM_logo.png"
@@ -19,3 +20,4 @@ LOGO_PATH = Path(__file__).parent / "../data/MM_logo.png"
 savefig = partial(monet_savefig, logo=LOGO_PATH, loc=2, decorate=True, bbox_inches="tight", dpi=200)
 
 from . import surfplots
+from . import aircraftplots

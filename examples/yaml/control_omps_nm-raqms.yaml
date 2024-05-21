@@ -1,0 +1,86 @@
+analysis:
+  start_time: '2019-08-01-00:00:00' #UTC
+  end_time: '2019-09-01-00:00:00' #UTC
+  time_interval: '5D'
+  debug: True
+  output_dir: /ships19/aqda/mbruckner/monet_plots
+  save:
+      paired:
+          method: 'netcdf'
+          prefix: 'firex_omps'
+          data: 'all'
+  read:
+      paired:
+          method: 'netcdf'
+          filenames: {'omps_nm_raqms':['firex_omps_*_omps_nm_raqms.nc4']} 
+model:
+  raqms: # model label
+    files: /ships19/aqda/mbruckner/MELODIES-MONET-1/examples/jupyter_notebooks/raqms-files.txt
+    mod_type: 'raqms'
+    apply_ak: True # for satellite comparison, applies averaging kernels/apriori when true. Default to False
+    radius_of_influence: 120000 #meters
+    variables: #Opt
+      o3vmr: # specifying to switch units to ppbv
+        need: True
+    mapping: #model species name : obs species name
+      omps_nm: 
+        o3vmr: ozone_column #The mapping tables need to contain the same species for all models.
+    plot_kwargs: #Opt 
+      color: 'purple'
+      marker: '^'
+      linestyle: 'dotted'
+obs:
+  omps_nm: # obs label
+    filename: /ships19/aqda/mbruckner/OMPS-NPP/O3-daily/2019/nadir_mapper/OMPS-NPP_NMTO3-L2_v2.1_2019m08*t*.h5
+    obs_type: sat_swath_clm
+    sat_type: omps_nm
+    variables: #Opt 
+      ozone_column:
+        ylabel_plot: 'DU'
+      
+plots:
+#  plot_grp1:
+#    type: 'timeseries' # plot type
+#    fig_kwargs: #Opt to define figure options
+#      figsize: [12,6] # figure size if multiple plots
+#    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+#      linewidth: 2.0
+#      markersize: 10.
+#    text_kwargs: #Opt
+#      fontsize: 18.
+#    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+#    domain_name: ['Global'] #List of domain names. If domain_type = all domain_name is used in plot title.
+#    data: ['omps_nm_raqms_grid'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+#    data_proc:
+#      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+#      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+#      ts_avg_window: 'min' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+#      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+  plot_grp2:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Global'] # of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['omps_nm_raqms'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: True #If select True, add ty_scale for each variable in obs.
+  plot_grp3:
+    type: 'gridded_spatial_bias' #'gridded_spatial_bias' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: True
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Global'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['omps_nm_raqms'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: True #If select True, add vdiff_plot for each variable in obs.

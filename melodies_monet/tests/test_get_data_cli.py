@@ -82,3 +82,76 @@ def test_get_airnow_comp(tmp_path):
         ds[vn] = ds[vn].where(~ ((ds[vn] == 0) & (ds0[vn] != 0)))
         # assert (np.abs((ds[vn] - ds0[vn]) / ds0[vn]).to_series().dropna() < 2e-6).all()
         assert (np.abs(ds[vn] - ds0[vn]).to_series().dropna() < 3e-7).all()
+
+
+def test_get_ish_lite_box(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-ish-lite",
+        "-s", "2023-01-01", "-e", "2023-01-01 23:00",
+        "--box", "39.5", "-105.75", "40.5", "-104.75",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 24
+    assert np.unique(ds.state) == ["CO"]
+
+
+def test_get_ish_box(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-ish",
+        "-s", "2023-01-01", "-e", "2023-01-01 23:00",
+        "--box", "39.5", "-105.75", "40.5", "-104.75",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 24
+    assert np.unique(ds.state) == ["CO"]
+
+
+def test_get_aqs_daily(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-aqs",
+        "-s", "2019-08-01", "-e", "2019-08-02",
+        "-p", "O3",
+        "--daily",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 2, "two days"
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"OZONE"}
+
+
+def test_get_aqs_hourly(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-aqs",
+        "-s", "1980-08-01", "-e", "1980-08-01 23:00",
+        "-p", "O3",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 24, "one day"
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"OZONE", "time_local"}
