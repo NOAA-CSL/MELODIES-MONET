@@ -448,7 +448,6 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         plot_dict['ylim'] = [vmin,vmax]
     #scale the fontsize for the x and y labels by the text_kwargs
     plot_dict['fontsize'] = text_kwargs['fontsize']*0.8
-    
     #Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None: 
         #First define the colors for the observations.
@@ -468,10 +467,17 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
         else:
             if avg_window is None:
-                ax = df[column].plot(ax=ax, **plot_kwargs)
+                ax = df[column].plot(ax=ax, **plot_kwargs)  
             else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)
-    
+                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs) 
+                #df_fix = df[df[column]>5]                    #BEIMING
+                #ax = df_fix[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs)   #BEIMING
+                #import math
+                #for i in range(len(np.array(df[column]))):
+                #    if math.isnan(np.array(df[column])[i]) == True:
+                #        print(i)
+                #print(df[column])              #BEIMING
+
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
@@ -481,7 +487,9 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             if avg_window is None:
                 ax = df[column].plot(ax=ax, legend=True, **plot_dict)
             else:
-                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict)    
+                ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict) 
+                #df_fix = df[df[column]>5]                    #BEIMING
+                #ax = df_fix[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict) #BEIMING   
     
     #Set parameters for all plots
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
@@ -864,6 +872,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
     region_bx = pd.DataFrame()
     df_reg_epa = pd.DataFrame()
     df_short =  pd.DataFrame()
+
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = [] 
@@ -881,15 +890,18 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
     plot_kwargs['label'] = label
     if df_reg is not None:
         comb_bx[label] = df_reg[column+'_reg']
+
         df_short = df[['siteid','epa_region']].drop_duplicates()
         df_reg_epa = df_reg.merge(df_short[['siteid','epa_region']],how='left',on='siteid')
         region_bx['set_regions'] = df_reg_epa["epa_region"]
+
     else:
         comb_bx[label] = df[column] 
         region_bx['set_regions']=df[region_name[0]]   
     label_bx.append(plot_kwargs)
     
     return comb_bx, label_bx,region_bx             
+
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
@@ -990,8 +1002,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     savefig(outname + '.png', loc=4, logo_height=100)
   
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
-                 domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
+                       domain_type=None, domain_name=None,
+                       plot_dict=None, fig_dict=None,text_dict=None,debug=False):
     
     """Creates box-plot. 
     
@@ -1094,7 +1106,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
         to_concat.append(data_model[['Value','model','Regions']])
 
     tdf =pd.concat(to_concat)
-    
     acro = region_list
     sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
     ax.set_xlabel('')
@@ -1110,6 +1121,81 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+
+
+from monet.util.stats import scores as scores_function
+def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
+    a,b,c,d = scores_function(obs_input,model_input,threshold_input,maxval=1.0e5)
+    CSI = np.nan
+    FAR = np.nan
+    HR  = np.nan
+    sum_1 = a+c
+    sum_2 = a+b+c
+    if sum_1 != 0:  #a+c != 0
+        CSI = a/(a+b+c)
+        FAR = c/(a+c)
+        HR  = a/(a+c)
+    else:           #a+c = 0
+        if sum_2 != 0:  #a+b+c != 0
+            CSI = a/(a+b+c)
+    if score_name_input == 'Critical Success Index':
+        output_score = CSI
+    elif score_name_input == 'False Alarm Rate':
+        output_score = FAR
+    elif score_name_input == 'Hit Rate':
+        output_score = HR
+   
+    return output_score
+
+def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list):
+
+    CSI_output = []  #(2, threshold len)
+    threshold_list = threshold_list_input
+   
+    obs_input = comb_bx_input[comb_bx_input.columns[0]].to_list()
+    len_model = np.shape(comb_bx_input)[1]  # == 3
+   
+    for i in range(1,len_model):
+        csi_output_model = []
+        model_input = comb_bx_input[comb_bx_input.columns[i]].to_list()
+
+        for j in range(len(threshold_list )):
+            csi_here = Calc_Score(score_name_input,threshold_list[j], model_input, obs_input)
+            csi_output_model.append(csi_here)
+
+        CSI_output.append(csi_output_model)
+    #set default figure size
+    if fig_dict is not None:
+        f,ax = plt.subplots(**fig_dict)   
+    else: 
+        f,ax = plt.subplots(figsize=(8,8))
+    
+    #set default text size
+    def_text = dict(fontsize=20)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+
+    #Make Plot
+    for i in range(len(CSI_output)):
+        plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])  #CHANGE THIS ONE, MAIN PROGRAM
+        ax.set_xlabel('Threshold',fontsize = text_kwargs['fontsize']*0.8)
+        ax.set_ylabel(score_name_input,fontsize = text_kwargs['fontsize']*0.8)
+        ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
+        plt.ylim(0,1)
+        plt.legend()
+        plt.grid()
+     
+    #add '>' to xticks
+    labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
+    ax.set_xticklabels(labels)
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
+ 
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel = None,  vdiff=None,

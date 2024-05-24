@@ -203,6 +203,22 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: False
+
+  plot_grp8:
+    type: "csi"
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all",'epa_region']
+    domain_name: ["CONUS",'R1']
+    threshold_list: [10,20,30,40,50,60,70,80,90,100]
+    score_name: 'Critical Success Index'  #can be used 'Critical Success Index' 'False Alarm Rate' 'Hit Rate'
+    model_name_list: ['AirNow','WRF-Chem','WRF-Chem vcp']
+    data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
       
 stats:
   # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
