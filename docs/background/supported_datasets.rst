@@ -30,7 +30,7 @@ Surface
 ^^^^^^^
 
    * `AirNow <https://www.airnow.gov/>`_ 
-   * `AERONET <https://aeronet.gsfc.nasa.gov/>`_ (under development)
+   * `AERONET <https://aeronet.gsfc.nasa.gov/>`_
    * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_ (under development)
    * `AQS <https://www.epa.gov/aqs/>`_ (in MONET, coming soon to MELODIES MONET)
    * `CRN <https://www.ncdc.noaa.gov/crn/>`_ (in MONET, coming soon to MELODIES MONET)
@@ -40,9 +40,14 @@ Surface
      (in MONET, coming soon to MELODIES MONET)
    * `ISD <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_
      (in MONET, coming soon to MELODIES MONET)
-   
+
 See the `Expand Surface Observations <https://github.com/NOAA-CSL/MELODIES-MONET/projects/7>`_ 
 project on GitHub to learn about current and future development.
+
+.. note::
+
+   The :doc:`/cli` can be used to download and create MELODIES MONET-ready datasets for:
+   AirNow, AERONET, AQS, and ISD.
 
 Aircraft (under development)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
