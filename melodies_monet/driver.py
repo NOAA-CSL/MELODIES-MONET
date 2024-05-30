@@ -286,6 +286,8 @@ class observation:
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
+                # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
+                #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == 'tropomi_l2_no2':
                 from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
