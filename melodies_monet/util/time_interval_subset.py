@@ -34,4 +34,11 @@ def subset_OMPS_l2(file_path,timeinterval):
         for j in fst:
             interval_files.append(j)
     return interval_files
-    
+
+def subset_MODIS_l2(file_path,timeinterval):
+    '''Dependent on filenaming convention
+    '''
+    import pandas as pd
+    from glob import glob
+    import fnmatch
+
