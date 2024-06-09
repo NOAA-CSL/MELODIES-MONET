@@ -284,7 +284,7 @@ For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
-"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot"
+"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot","csi"
 Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
@@ -339,8 +339,13 @@ variable is rural or urban. (e.g., '').
 is better compared to observations. (e.g., 'RMSE', 'IOA' ,' NMB', 'NME'). choose
 one only for each time scorecard code run.
 
-**model_name_list:** List of model names used for legend labels.
-(e.g.,  ['AirNow','cmaq_expt','rrfs_13km','wrfchem_v4.2'])
+**model_name_list:** 
+for multi-box plot, list of observation and model names user choose to set as x-labels; 
+for csi plot, list of model names (only) user choose to set as labels.
+
+**threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
+
+**score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
