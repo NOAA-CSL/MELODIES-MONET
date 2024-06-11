@@ -21,12 +21,13 @@ import matplotlib.pyplot as plt
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
-from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize, LogNorm
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
 
+from matplotlib.dates import DateFormatter
 import matplotlib.dates as mdates
-from scipy.interpolate import griddata
+#from scipy.interpolate import griddata
 
 
 
@@ -228,54 +229,19 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
     return ax
 
-###NEW curtain plot qzr++  
 
-#### Function to interpolate and clean model data (FOR CURTAIN PLOT):
 
-def interpolate_and_clean_model_data(time, altitude, model_data):
+
+###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
+def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, model_var, obs_var, grp_dict, vmin=None, vmax=None, domain_type=None, domain_name=None, obs_label_config=None, model_scatter_data=None):
     """
-    Interpolates and cleans model data for creating curtain plots.
-
-    Parameters
-    ----------
-    time : numpy.ndarray
-        Array of time points converted to floats (e.g., seconds since the start).
-    altitude : numpy.ndarray
-        Array of altitude points.
-    model_data : numpy.ndarray
-        2D array of model data values to be cleaned and interpolated.
-
-    Returns
-    -------
-    numpy.ndarray
-        The cleaned and interpolated model data.
-    """
-    # Create meshgrid for interpolation based on the provided float time and altitude
-    time_grid, altitude_grid = np.meshgrid(np.unique(time), np.unique(altitude), indexing='ij')
-
-    # Flatten the grids and model data for interpolation
-    model_data_flat = model_data.flatten()
-    points = np.column_stack((time_grid.flatten(), altitude_grid.flatten()))
-
-    # Filter valid data points (non-NaN)
-    valid_mask = ~np.isnan(model_data_flat)
-    points_valid = points[valid_mask]
-    values_valid = model_data_flat[valid_mask]
-
-    # Perform interpolation using 'nearest' method to fill in NaNs
-    model_data_interpolated = griddata(points_valid, values_valid, points, method='nearest')
-
-    # Replace any remaining NaNs or Infs with appropriate limits
-    model_data_cleaned = np.nan_to_num(model_data_interpolated, nan=np.nanmean(model_data_interpolated), posinf=np.max(model_data_interpolated), neginf=np.min(model_data_interpolated))
-
-    # Reshape interpolated data back to the original grid shape
-    return model_data_cleaned.reshape(time_grid.shape)
-
-#### Main curtain plot function:
-def make_curtain_plot(time, altitude, model_data_2d, obs_data_2d, model_var, obs_var, grp_dict, vmin, vmax, domain_type, domain_name):
-    """
-    Generates a curtain plot comparing model data with observations across altitude over time,
+    Generates a curtain plot comparing model data with obs across altitude (Pressure, right now) over time,
     with the ability to customize the appearance through a configuration dictionary.
+    ##Two Subplots: 1) model data contourf plot with model scaatter overlay, 
+    2) another for observation data using scatter plot. 
+    This layout ensures that both datasets can be analyzed without visual interference from each other.
+    Shared X-Axis: The time axis is shared between the two plots for better comparison.
+    Titles and Labels: Each subplot has a title specific to the data it displays.
 
     Parameters
     ----------
@@ -285,6 +251,8 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_data_2d, model_var, obs
         Array of altitude points.
     model_data_2d : numpy.ndarray
         2D array of cleaned and interpolated model data.
+    obs_pressure : numpy.ndarray
+        Array of pressure points corresponding to observations.
     obs_data_2d : numpy.ndarray
         2D array of observational data.
     model_var : str
@@ -301,77 +269,114 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_data_2d, model_var, obs
         Type of domain being plotted (e.g., 'region', 'global').
     domain_name : str
         Name of the domain being plotted.
+    obs_label_config : dict
+        Configuration dictionary for observation labels.
+    model_scatter_data : numpy.ndarray or None
+        Data for model scatter plot overlay.
 
     Returns
     -------
     None
         Saves the generated plot to a file.
     """
-    # Create a figure with the specified dimensions
-    fig, ax = plt.subplots(figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (12, 6)))
+    if model_data_2d.size == 0 or obs_data_2d.size == 0:
+        print("Warning: Model or observation data is empty. Skipping plot.")
+        return
 
+    # Determine vmin and vmax from YAML config if provided
+    if 'variable_limits' in grp_dict:
+        var_limits = grp_dict['variable_limits'].get(obs_var, {})
+        vmin = var_limits.get('vmin', vmin)
+        vmax = var_limits.get('vmax', vmax)
+
+    # Debugging: print shapes and ndims
+    print(f"time shape: {time.shape}, ndims: {time.ndim}")
+    print(f"altitude shape: {altitude.shape}, ndims: {altitude.ndim}")
+    print(f"model_data_2d shape: {model_data_2d.shape}, ndims: {model_data_2d.ndim}")
+    print(f"obs_data_2d shape: {obs_data_2d.shape}, ndims: {obs_data_2d.ndim}")
+
+    # Determine vmin and vmax dynamically if not provided
+    if vmin is None or vmax is None:
+        vmin = min(np.nanmin(model_data_2d), np.nanmin(obs_data_2d))
+        vmax = max(np.nanmax(model_data_2d), np.nanmax(obs_data_2d))
     
-    # Calculate global min and max for color normalization
-    data_min = min(np.nanmin(model_data_2d), np.nanmin(obs_data_2d))
-    data_max = max(np.nanmax(model_data_2d), np.nanmax(obs_data_2d))
+    # Set colorbar min to zero if the minimum value is less than zero
+    if vmin < 0:
+        vmin = 0
 
-    # Use custom colormap from YAML if provided, else default to 'viridis'
-    # Check if a custom colormap is specified or a named colormap should be used
-    color_levels = grp_dict.get('color_levels', 100)  # Default or from YAML
-    if grp_dict.get('color_map_custom', False):
-        # Use custom colors to make a colormap
+    print(f"vmin and vmax set dynamically based on model and observation data to {vmin} and {vmax}")
+
+    fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]})
+
+    # Handling custom color maps
+    if grp_dict.get('color_map_custom', False) and 'colors' in grp_dict:
         colors = grp_dict['colors']
-        cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=color_levels)
+        cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=grp_dict.get('color_levels', 100))
     else:
-        # Use a named colormap
         cmap = plt.get_cmap(grp_dict.get('color_map', 'viridis'))
 
-    norm = Normalize(vmin=data_min, vmax=data_max)
+    norm = Normalize(vmin=vmin, vmax=vmax)
 
-    # Meshgrid for time and altitude to facilitate contour plotting
-    time_grid, altitude_grid = np.meshgrid(np.unique(time), np.unique(altitude), indexing='ij')    
+    time_dates = mdates.date2num(time)
+    time_mesh, altitude_mesh = np.meshgrid(time_dates, altitude, indexing='ij')
 
-    # Example for contour plot:
-    contour = ax.contourf(time_grid, altitude_grid, model_data_2d, cmap=cmap, norm=norm)
+    levels = np.linspace(vmin, vmax, 200)
+    contourf_plot = axs[0].contourf(time_mesh, altitude_mesh, model_data_2d, levels=levels, cmap=cmap, norm=norm, extend='both')
 
-    # Observations overlayed on Model Curtain as Scatter
-    # Create a scatter plot using time and altitude
-    scatter = ax.scatter(time_grid.flatten(), altitude_grid.flatten(), c=obs_data_2d.flatten(), cmap=cmap, norm=norm, edgecolors='none')
+    # Adjust the layout to place the colorbar at the bottom
+    cbar = fig.colorbar(contourf_plot, ax=axs.ravel().tolist(), orientation='horizontal', pad=0.1, aspect=50)
+    cbar.set_label(obs_label_config.get(obs_var, {}).get('ylabel_plot', 'Variable (units)'), fontsize=12, fontweight='bold')
+    cbar.ax.tick_params(labelsize=10)
 
-    cbar = plt.colorbar(contour, ax=ax)  #Colorbar for model and obs
-    # Get current font size from the 'text_kwargs' in grp_dict or use a default size
-    current_font_size = grp_dict.get('text_kwargs', {}).get('fontsize', 12) 
-    cbar.set_label(f'{model_var}', fontsize=current_font_size*0.6)  # You can adjust the fontsize as needed.
-    cbar.ax.tick_params(labelsize=current_font_size*0.6)  # Adjust the fontsize for the tick labels as needed.
+    axs[0].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+    axs[0].xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig.autofmt_xdate(rotation=45, ha='right')
 
-    # Set titles and labels with customized font settings
-    ax.set_title(f"Model Curtain Plot with Observations Scatter Overlaid: {model_var} vs {obs_var}", **grp_dict.get('text_kwargs', {'fontsize': 12}))
-    ax.set_xlabel('Time', **grp_dict.get('text_kwargs', {'fontsize': 12}))
-    ax.set_ylabel('Altitude', **grp_dict.get('text_kwargs', {'fontsize': 12}))
-    ##ax.tick_params(axis='both', which='major', labelsize=grp_dict.get('text_kwargs', {}).get('fontsize', 12))
-       
-    # Set tick parameters
-    ax.tick_params(axis='both', which='major', labelsize=current_font_size * 0.8)
+    #axs[0].set_title(f"Model vs Observation Curtain Plot: {model_var} vs {obs_var}", fontsize=12, fontweight='bold')
+    # Set the main title and subplot titles
+    fig.suptitle(f"Model vs Observation Curtain Plot: {model_var} vs {obs_var}", fontsize=16, fontweight='bold')
+    axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=12, fontweight='bold')
+    
+    axs[0].set_ylabel('Pressure (Pa)', fontsize=12, fontweight='bold')
+    axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+    axs[0].tick_params(axis='both', labelsize=10)
 
-    # Format the x-axis to display dates and times
-    ax.xaxis_date()  # Interpret the x-axis values as dates
-    # Set format for date-time on the x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
-    fig.autofmt_xdate()  # Rotate date labels to prevent overlap
+    # Separate subplot for the observation scatter plot
+    axs[1].set_title("Observation Scatter", fontsize=12, fontweight='bold')
+    scatter = axs[1].scatter(time_dates, obs_pressure, c=obs_data_2d, cmap=cmap, norm=norm, edgecolor=(0, 0, 0, 0), linewidth=0.3, alpha=0.5)
+    axs[1].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+    axs[1].xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig.autofmt_xdate(rotation=45, ha='right')
 
-    # Display legend and apply layout adjustments #Placeholder
-    # Plot legend
-    ##plt.legend(loc='upper left', bbox_to_anchor=(1.15, 1.15), borderaxespad=0.) #placeholder for any legend
+    axs[1].set_ylabel('Pressure (Pa)', fontsize=12, fontweight='bold')
+    axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+    axs[1].tick_params(axis='both', labelsize=10)
+    axs[1].set_xlabel('Time', fontsize=12, fontweight='bold')
 
-    # Adjust layout to fit the legend and prevent it from being cut off
-    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    # Set the same y-tick labels for both subplots and exclude the minimum value
+    y_ticks = axs[0].get_yticks()
+    axs[1].set_yticks(y_ticks)
+    axs[1].set_yticklabels([str(int(tick)) if tick != y_ticks.min() else '' for tick in y_ticks])
 
-    # Save the plot to a specified file path
+    # Plot model scatter data on top of the model curtain plot
+    if model_scatter_data is not None:
+        axs[0].scatter(time_dates, obs_pressure, c=model_scatter_data, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.5, alpha=0.7)
+
+        # Print diagnostics for model scatter data
+        print(f"model_scatter_data shape: {model_scatter_data.shape}, ndims: {model_scatter_data.ndim}")
+
     plt.show()
-    ##plt.close() #close after showing to free up memory #if needed (placeholder)
 
 
-
+    #Diagnostic Histogram
+    #plt.figure(figsize=(10, 4))
+    #plt.hist(model_data_2d.values.flatten(), bins=100, alpha=0.15, color='blue', label='Model', range=(vmin, vmax))
+    #plt.hist(obs_data_2d.flatten(), bins=100, alpha=0.5, color='green', label='Observation', range=(vmin, vmax))
+    #plt.legend()
+    #plt.title('Distribution of Model and Observation Data')
+    #plt.xlabel('Value')
+    #plt.ylabel('Frequency')
+    #plt.show()
 
 
 

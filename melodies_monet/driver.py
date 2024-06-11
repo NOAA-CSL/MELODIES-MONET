@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
+
 from .util import write_util
 
 __all__ = (
@@ -1186,6 +1187,11 @@ class analysis:
         -------
         None
         """
+        import stratify
+        from .util.tools import resample_stratify
+        from .util.tools import vert_interp
+        import matplotlib.dates as mdates
+        import numpy as np
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1245,6 +1251,7 @@ class analysis:
                     # Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
                         p = self.paired[p_label]
+                        
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
@@ -1567,60 +1574,173 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-
                         
+
+
+
                         elif plot_type.lower() == 'curtain':
                             curtain_config = grp_dict
-                            vmin = curtain_config['data_proc'].get('vmin_plot', None)
-                            vmax = curtain_config['data_proc'].get('vmax_plot', None)
+                        
+                            # Ensure we use the correct observation and model objects from pairing
+                            obs = self.obs[p.obs]
+                            mod = self.models[p.model]  # Get the model associated with this pair
+                            model_obj = mod.obj  # This assumes `mod.obj` contains the necessary model data
+                            model_data = model_obj[modvar].values
+                            obs_data = obs.obj[obsvar].values
+                        
+                            # Debugging: print dimensions
+                            ##print(f"Dimensions of model data: {model_data.shape}, ndims: {model_data.ndim}")
+                            ##print(f"Dimensions of observation data: {obs_data.shape}, ndims: {obs_data.ndim}")
+                        
+                            if not isinstance(obs.obj, pd.DataFrame):
+                                obs.obj = obs.obj.to_dataframe()
+                        
+                            # Drop any variables where coords NaN
+                            obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs', 'latitude', 'longitude']).set_index('time')
+                        
+                            # Convert to get something useful for MONET
+                            new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs', 'pressure_obs'])
+                        
+                            # Nearest neighbor approach to find closest grid cell to each point
+                            ds_model = m.util.combinetool.combine_da_to_da(model_obj, new_ds_obs, merge=False)
+                        
+                            # Interpolate based on time in the observations
+                            ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                        
+                            # Fetch the observation configuration for colorbar labels and plot limits
+                            obs_plot_dict = self.control_dict['obs'][p.obs]['variables'][obsvar]
+                        
+                            # Print ds_model and pressure_model values
+                            ##print(f"ds_model: {ds_model}")
+                            ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
+                        
+                            # Define target pressures for interpolation based on the range of pressure_model
+                            min_pressure = ds_model['pressure_model'].min().compute()
+                            max_pressure = ds_model['pressure_model'].max().compute()
+                            interval = 100  # Interval in Pa
+                        
+                            print(f"Pressure MIN:{min_pressure}, max: {max_pressure}, interval: {interval}")
+                        
+                            target_pressures = np.linspace(max_pressure, min_pressure, interval)
                             
-                            model_label = p.model
-                            obs_label = p.obs
+                            # Debugging: print target pressures
+                            ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
                         
-                            if 'altitude' in pairdf.columns and vmin is not None and vmax is not None:
-                                pairdf_filtered = pairdf[(pairdf['altitude'] >= vmin) & (pairdf['altitude'] <= vmax)]
-                            else:
-                                pairdf_filtered = pairdf
+                            # Check for NaN values before interpolation
+                            ##print(f"NaNs in model_data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
+                            ##print(f"NaNs in pressure_model before interpolation: {np.isnan(ds_model['pressure_model']).sum().compute()}")
                         
+                            # Resample model data to target pressures using stratify
+                            da_wrf_const = resample_stratify(ds_model[modvar], target_pressures, ds_model['pressure_model'], axis=1, interpolation='linear', extrapolation='nan')
+                            da_wrf_const.name = modvar
+                        
+                            # Create target_pressures DataArray
+                            da_target_pressures = xr.DataArray(target_pressures, dims=('z'))
+                            da_target_pressures.name = 'target_pressures'
+                        
+                            # Merge DataArrays into a single Dataset
+                            ds_wrf_const = xr.merge([da_wrf_const, da_target_pressures])
+                            ds_wrf_const = ds_wrf_const.set_coords('target_pressures')
+                        
+                            # Debugging: print merged dataset
+                            ##print(ds_wrf_const)
+                        
+                            # Ensure model_data_2d is properly reshaped for the contourf plot
+                            model_data_2d = ds_wrf_const[modvar].squeeze()
+                        
+                            # Debugging: print reshaped model data shape
+                            ##print(f"Reshaped model data shape: {model_data_2d.shape}")
+                        
+                            # Align the observation data with the time array length for scatter plot
+                            time = ds_wrf_const['time'].values
+                            obs_pressure = new_ds_obs['pressure_obs'].values.flatten()
+                            obs_data_2d = obs_data.flatten()
+                        
+                            ##print(f"time shape: {time.shape}, ndims: {time.ndim}")
+                            ##print(f"obs_pressure shape: {obs_pressure.shape}, ndims: {obs_pressure.ndim}")
+                            ##print(f"obs_data_2d shape: {obs_data_2d.shape}, ndims: {obs_data_2d.ndim}")
+                        
+                            time_dates = mdates.date2num(pd.to_datetime(time))
+                        
+                            if len(obs_pressure) != len(time_dates):
+                                obs_pressure = np.interp(time_dates, mdates.date2num(pd.to_datetime(new_ds_obs['time_obs'].values)), obs_pressure)
+                                obs_data_2d = np.interp(time_dates, mdates.date2num(pd.to_datetime(new_ds_obs['time_obs'].values)), obs_data_2d)
+                                ##print(f"Length of obs_pressure after interpolation: {len(obs_pressure)}")
+                                ##print(f"Length of obs_data_2d after interpolation: {len(obs_data_2d)}")
+                        
+                            # Fetch the observation configuration for colorbar labels
+                            obs_label_config = self.control_dict['obs'][p.obs]['variables']
+                            
+                            # Ensure the observation data is a DataFrame and reset index
+                            df_obs = new_ds_obs.to_dataframe().reset_index()
+                            df_obs['time'] = df_obs['time_obs']
+                        
+                            # Create var_name_list dynamically based on modvar and pressure_model
+                            var_name_list = [modvar, 'pressure_model'] if modvar != 'pressure_model' else [modvar]
+                            available_vars = [var for var in var_name_list if var in ds_model]
+                            
+                            # Print diagnostics for available variables
+                            ##print(f"Available variables for interpolation: {available_vars}")
+                            
+                            # Convert ds_model to DataFrame and reset index
+                            df_model = ds_model[available_vars].to_dataframe().reset_index()
+                            
+                            # Print diagnostics for the observation DataFrame
+                            ##print(f"Type of df_obs: {type(df_obs)}")
+                            ##print(f"Head of df_obs:\n{df_obs.head()}")
+                            
+                            # Print diagnostics for the model DataFrame
+                            ##print(f"Type of df_model: {type(df_model)}")
+                            ##print(f"Head of df_model:\n{df_model.head()}")
+                            
+                            # Ensure both DataFrames have the necessary columns for merging
+                            common_columns = set(df_obs.columns) & set(df_model.columns)
+                            ##print(f"Common columns between observation and model DataFrames: {common_columns}")
+                            if not {'latitude', 'longitude', 'pressure_obs', 'time'}.issubset(common_columns):
+                                raise ValueError("Missing necessary columns for merging. Columns needed: 'latitude', 'longitude', 'pressure_obs', 'time'")
+                            
+                            # Perform vertical interpolation only for available variables
+                            df_wrf = vert_interp(ds_model, df_obs, available_vars)
+                            
+                            # Print diagnostics for the resulting DataFrame
+                            ##print(f"Type of df_wrf: {type(df_wrf)}")
+                            ##print(f"Head of df_wrf:\n{df_wrf.head()}")
+                            
+                            # Ensure the modvar exists in the resulting DataFrame
+                            if modvar not in df_wrf.columns:
+                                raise ValueError(f"{modvar} not found in the resulting DataFrame columns")
+                            
+                            model_scatter_data = df_wrf[modvar].values
+                            
+                            # Print diagnostics for model scatter data
+                            ##print(f"model_scatter_data shape: {model_scatter_data.shape}, ndims: {model_scatter_data.ndim}")
+                        
+                            # Generate the curtain plot using airplots.make_curtain_plot
                             try:
-                                model_data_pivot = pairdf_filtered.pivot(index='time', columns='altitude', values=modvar)
-                                obs_data_pivot = pairdf_filtered.pivot(index='time', columns='altitude', values=obsvar)
-                        
-                                # Convert datetime index to float seconds since the first timestamp
-                                time_values = model_data_pivot.index.values
-                                time_as_float = (time_values - time_values[0]).astype('timedelta64[s]').astype(float)
-                                
-                                altitude_values = model_data_pivot.columns.values
-                                model_data_2d = model_data_pivot.values
-                                obs_data_2d = obs_data_pivot.values
-                        
-                                model_data_2d_cleaned = airplots.interpolate_and_clean_model_data(time_as_float, altitude_values, model_data_2d)
-                                #Create Curtain Plots
-                                print(f"Processing curtain plot for model '{model_label}' and observation '{obs_label}'...")
+                                ##print(f"Length of time_dates: {len(time_dates)}")
+                                ##print(f"Length of obs_pressure: {len(obs_pressure)}")
+                                ##print(f"Length of obs_data_2d: {len(obs_data_2d)}")
+                                ##print(f"model_scatter_data shape: {model_scatter_data.shape}")
                         
                                 airplots.make_curtain_plot(
-                                    time=time_values, #time_as_float, #for datetime format on x-axis use time_values
-                                    altitude=altitude_values,
-                                    model_data_2d=model_data_2d_cleaned,
-                                    obs_data_2d=obs_data_2d,
+                                    time=pd.to_datetime(time),
+                                    altitude=target_pressures,  # Use target_pressures for interpolation
+                                    model_data_2d=model_data_2d,  # Already reshaped to match the expected shape
+                                    obs_pressure=obs_pressure,  # Pressure_obs for obs scatter plot
+                                    obs_data_2d=obs_data_2d,  # Use original observation data for scatter plot
                                     model_var=modvar,
                                     obs_var=obsvar,
                                     grp_dict=curtain_config,
-                                    vmin=vmin,
-                                    vmax=vmax,
                                     domain_type=domain_type,
-                                    domain_name=domain_name
+                                    domain_name=domain_name,
+                                    obs_label_config=obs_label_config,
+                                    model_scatter_data=model_scatter_data  # Pass model scatter data for plotting
                                 )
-
-                                # Save the scatter density plot for the current pair immediately
-                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
-                                print(f"Saving Curtain plot (Model) with Scatter Overlay (Observation) to {outname_pair}...")  # Debugging print statement
-                                plt.savefig(outname_pair)
-                                plt.close()  # Close the current figure
-                                
-                        
                             except Exception as e:
                                 print(f"Error generating curtain plot for {modvar} vs {obsvar}: {e}")
+                            finally:
+                                plt.close('all')  # Clean up matplotlib resources
+
 
                             
                                 
