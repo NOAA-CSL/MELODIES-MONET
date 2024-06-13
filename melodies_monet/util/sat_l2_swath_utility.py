@@ -1,5 +1,6 @@
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
+#
 
 # read all swath data for the time range
 # developed for TROPOMI Level2 NO2
