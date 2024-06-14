@@ -1145,7 +1145,7 @@ class analysis:
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
 
-                    if obs.label == 'tropomi_l2_no2':
+                    if obs.sat_type == 'tropomi_l2_no2':
                         from .util import sat_l2_swath_utility as sutil
                         from .util import cal_mod_no2col as mutil
 
