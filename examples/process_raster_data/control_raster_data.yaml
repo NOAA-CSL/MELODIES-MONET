@@ -1,6 +1,7 @@
 analysis:
-  start_time: '2024-01-01'
-  end_time:   '2024-01-31'
+  # 2023 July 1 - July 3 182 - 184
+  start_time: '2023-07-01'
+  end_time:   '2023-07-03'
   time_interval: '24h'
   output_dir: $HOME/Plots
   debug: True
@@ -8,3 +9,6 @@ analysis:
   target_grid: Uniform_180_360
   time_chunking_with_gridded_data: True
 
+obs:
+  modis:
+    filename: $HOME/Data/MOD04_L2/MOD04_L2.*.hdf
