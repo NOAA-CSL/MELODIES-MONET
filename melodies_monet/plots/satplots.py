@@ -438,7 +438,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
     
     #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean()
+    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
     
     #Take the mean over time for the model output
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
