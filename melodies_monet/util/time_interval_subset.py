@@ -37,6 +37,7 @@ def subset_OMPS_l2(file_path,timeinterval):
 
 def subset_MODIS_l2(file_path,timeinterval):
     '''Dependent on filenaming convention
+       MOD04_L2.AYYYYDDD.HHMM.collection.timestamp.hdf
     '''
     import pandas as pd
     from glob import glob
