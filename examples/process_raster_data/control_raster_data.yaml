@@ -11,4 +11,5 @@ analysis:
 
 obs:
   modis:
+    # MOD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
     filename: $HOME/Data/MOD04_L2/MOD04_L2.*.hdf
