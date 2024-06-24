@@ -1959,7 +1959,7 @@ class analysis:
                                                          datelist=datelist,
                                                          better_or_worse_method = better_or_worse_method)
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, msa_bx,time_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx, region_bx, msa_bx, time_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
 
                         elif plot_type.lower() == 'csi':
                             # First for p_index = 0 create the obs box plot data array.
@@ -1986,7 +1986,7 @@ class analysis:
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
 
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
 
 
                         elif plot_type.lower() == 'taylor':
