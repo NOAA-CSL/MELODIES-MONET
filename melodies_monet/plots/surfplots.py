@@ -401,7 +401,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         matplotlib ax from previous occurrence so can overlay obs and model 
         results on the same plot
     avg_window : rule 
-        Pandas resampling rule (e.g., 'H', 'D')
+        Pandas resampling rule (e.g., 'h', 'D')
     ylabel : str
         Title of y-axis
     vmin : real number

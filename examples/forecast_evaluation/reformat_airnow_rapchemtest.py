@@ -16,8 +16,8 @@ start_time_reformat=sys.argv[1]
 end_time_reformat=sys.argv[2] 
 print(sys.argv[1])
 print(sys.argv[2])
-dates = pd.date_range(start=start_time_reformat,end=end_time_reformat,freq='H')
-#dates = pd.date_range(start='2021-05-28',end='2021-05-29',freq='H')
+dates = pd.date_range(start=start_time_reformat,end=end_time_reformat,freq='h')
+#dates = pd.date_range(start='2021-05-28',end='2021-05-29',freq='h')
 
 
 # helper function for local time.  Could be important for EPA statistics\n"
@@ -28,7 +28,7 @@ def get_local_time(ds):
         o = tim.expand_dims({'x':t.x.values}).transpose('time','x')
         on = xr.Dataset({'time_local':o,'utcoffset':t.utcoffset})
         y = on.to_dataframe()
-        y['time_local'] = y.time_local + pd.to_timedelta(y.utcoffset, unit='H')
+        y['time_local'] = y.time_local + pd.to_timedelta(y.utcoffset, unit='h')
         time_local = y[['time_local']].to_xarray()
         ds = xr.merge([ds,time_local])
     return ds

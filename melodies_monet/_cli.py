@@ -186,7 +186,7 @@ def get_aeronet(
     start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
     end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
     daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
-    freq: str = typer.Option("H", "-f", "--freq", help=(
+    freq: str = typer.Option("h", "-f", "--freq", help=(
             "Frequency to resample to. "
             "Mean is used to reduce the time groups (as opposed to nearest, e.g.)."
         )
@@ -368,7 +368,7 @@ def get_airnow(
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H" if not daily else "D")
+    dates = pd.date_range(start_date, end_date, freq="h" if not daily else "D")
     if verbose:
         print("Dates:")
         print(dates)
@@ -555,7 +555,7 @@ def get_ish_lite(
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H")
+    dates = pd.date_range(start_date, end_date, freq="h")
     if verbose:
         print("Dates:")
         print(dates)
@@ -700,7 +700,7 @@ def get_ish_lite(
 def get_ish(
     start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
     end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
-    freq: str = typer.Option("H", "-f", "--freq", help=(
+    freq: str = typer.Option("h", "-f", "--freq", help=(
             "Frequency to resample to. "
             "Mean is used to reduce the time groups (as opposed to nearest, e.g.)."
         )
@@ -771,7 +771,7 @@ def get_ish(
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H")
+    dates = pd.date_range(start_date, end_date, freq="h")
     if verbose:
         print("Dates:")
         print(dates)
@@ -982,7 +982,7 @@ def get_aqs(
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H" if not daily else "D")
+    dates = pd.date_range(start_date, end_date, freq="h" if not daily else "D")
     if verbose:
         print("Dates:")
         print(dates)

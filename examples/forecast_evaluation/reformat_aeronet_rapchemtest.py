@@ -15,16 +15,16 @@ start_time_reformat=sys.argv[1]
 end_time_reformat=sys.argv[2]
 print(sys.argv[1])
 print(sys.argv[2])
-dates = pd.date_range(start=start_time_reformat,end=end_time_reformat,freq='H')
+dates = pd.date_range(start=start_time_reformat,end=end_time_reformat,freq='h')
 
-#dates = pd.date_range(start='2021-08-01',end='2021-09-01',freq='H')
+#dates = pd.date_range(start='2021-08-01',end='2021-09-01',freq='h')
 # set the output filename
 #outname = 'AERONET_L15_20190901_20190930.nc'
 outname = 'test5.nc'
 # set standard wavelengths
 standard_wavelengths = np.array([0.34, 0.44, 0.55, 0.66, 0.86, 1.63, 11.1])* 1000. # convert from micron to nm
 # get the data
-df = mio.aeronet.add_data(dates, interp_to_aod_values=standard_wavelengths, freq='H') # ,n_procs=12)
+df = mio.aeronet.add_data(dates, interp_to_aod_values=standard_wavelengths, freq='h') # ,n_procs=12)
 
 
 # dfp = df.rename({'siteid':'x'},axis=1).set_index(['time','x']).drop_duplicates()
