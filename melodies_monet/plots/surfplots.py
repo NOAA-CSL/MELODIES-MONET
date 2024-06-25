@@ -1250,7 +1250,7 @@ def scorecard_step4_GetRegionLUCDate(ds_name=None,region_list=None,datelist=None
             region_date_rural_here = []
             region_date_urban_here = []
             for i in range(len(region_here['Time'])):
-                date_here1 = region_here['Time'][i]
+                date_here1 = region_here['Time'].values[i]
                 timestamp = ((date_here1 - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1, 's'))
                 date_here = datetime.utcfromtimestamp(timestamp)  #this function== 1970,1,1 + timestamp(in seconds)
                 if date_here >= date_start_here and date_here <= date_end_here:
