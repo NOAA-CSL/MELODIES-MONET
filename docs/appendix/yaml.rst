@@ -323,11 +323,21 @@ data will be used and the domain_name is used only in the plot title. If
 domain_type is not equal to all, MELODIES MONET will query all of the data 
 where domain_type is equal to domain_name.
 
-**region_name:** multi-box plot only. user specified variable from which the region information
-will be used to plot. if use 'epa+region' then a total of 61 regions can be choose from.
+**region_name:** list of source of regions used in title.
+(e.g., ['epa_region'])
 
-**region_list:** multi-box plot only. list of regions in the above 'region_name' variable 
-user want to plot.
+**region_list:** list of regions we will calculate for scorecard. 
+(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+
+**urban_rural_name:** list of only one string input, which is variable used to
+determine wheter urban or rural site. (e.g., ['msa_name'])
+
+**urban_rural_differentiate_value:** string of value used to determine whether 
+variable is rural or urban. (e.g., '').
+
+**better_or_worse_method:** string of method used to determine which models 
+is better compared to observations. (e.g., 'RMSE', 'IOA' ,' NMB', 'NME'). choose
+one only for each time scorecard code run.
 
 **model_name_list:** 
 for multi-box plot, list of observation and model names user choose to set as x-labels; 

@@ -1445,8 +1445,6 @@ class analysis:
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        #print('pairfdf_all',pairdf_all)
-                        #print('pairfdf',pairdf)
 
                         # JianHe: do we need provide a warning if pairdf is empty (no valid obsdata) for specific subdomain?
                         # MEB: pairdf.empty fails for data left in xarray format. isnull format works.
@@ -1873,7 +1871,6 @@ class analysis:
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
-
                         elif plot_type.lower() == 'multi_boxplot':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -1892,22 +1889,13 @@ class analysis:
                                 comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
                                 
-                                #print('0',np.shape(region_bx))
-                                #print('0',np.shape(comb_bx)) 
-                                
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model, 
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,   
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
                             
-                            #print('x',np.shape(region_bx))
-                            #print('x',np.shape(comb_bx))  
-                           
-                            #print('finish calc multi-boxplot')
-
                             # For the last p_index make the plot.
-                            if p_index == len(pair_labels) - 1:
-                             
+                            if p_index == len(pair_labels) - 1:                             
                                 splots.make_multi_boxplot(
                                     comb_bx,
                                     label_bx,
@@ -1926,14 +1914,7 @@ class analysis:
                                     debug=self.debug)
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
-                        ################################
-                        #This end BEIMING multi-box-plot
-                        ################################
-
-                        #############################
-                        #This start BEIMING scorecard
-                        #############################
-                        #from datetime import datetime
+                                
                         elif plot_type.lower() == 'scorecard':
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
@@ -1942,18 +1923,16 @@ class analysis:
                             # Then add the model to this dataarray.
                             comb_bx, label_bx,region_bx, msa_bx,time_bx = splots.scorecard_step1_combine_df(pairdf, pairdf_reg, region_name= region_name,urban_rural_name=urban_rural_name, 
                                                                                                    column=modvar, label=p.model, plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
-                            #print('finish step1')
                             # For the last p_index make the plot.
                             if p_index == len(pair_labels) - 1:
                                 output_obs, output_model1, output_model2 = splots.scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model_name_list=model_name_list)
-                                #print('finish step2')
       
                                 #split by region, data, and urban/rural
                                 datelist = splots.GetDateList(self.start_time,self.end_time)
                                 OBS_Region_Date_Urban_list, OBS_Region_Date_Rural_list = splots.scorecard_step4_GetRegionLUCDate(ds_name=output_obs,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
                                 MODEL1_Region_Date_Urban_list, MODEL1_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model1,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
                                 MODEL2_Region_Date_Urban_list, MODEL2_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model2,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
-                                #print('finish step3')
+                                
                                 #Kick Nan values
                                 OBS_Region_Date_Urban_list_noNan,MODEL1_Region_Date_Urban_list_noNan,MODEL2_Region_Date_Urban_list_noNan = splots.scorecard_step5_KickNan(obs_input=OBS_Region_Date_Urban_list,
                                                                                                                                                                           model_input_1=MODEL1_Region_Date_Urban_list,
@@ -1961,8 +1940,6 @@ class analysis:
                                 OBS_Region_Date_Rural_list_noNan,MODEL1_Region_Date_Rural_list_noNan,MODEL2_Region_Date_Rural_list_noNan = splots.scorecard_step5_KickNan(obs_input=OBS_Region_Date_Rural_list,
                                                                                                                                                                           model_input_1=MODEL1_Region_Date_Rural_list,
                                                                                                                                                                           model_input_2=MODEL2_Region_Date_Rural_list)
-
-                                #print('finish step4')
                                 #Get final output Matrix
                                 Output_matrix = splots.scorecard_step8_OutputMatrix(obs_urban_input    = OBS_Region_Date_Urban_list_noNan, 
                                                                                     model1_urban_input = MODEL1_Region_Date_Urban_list_noNan,
@@ -1971,7 +1948,6 @@ class analysis:
                                                                                     model1_rural_input = MODEL1_Region_Date_Rural_list_noNan,
                                                                                     model2_rural_input = MODEL2_Region_Date_Rural_list_noNan,
                                                                                     better_or_worse_method = better_or_worse_method)
-                                #print('finish step5')
                                 #plot the scorecard
                                 splots.scorecard_step9_makeplot(output_matrix=Output_matrix,
                                                          column=obsvar,
@@ -1984,17 +1960,9 @@ class analysis:
                                                          text_dict=text_dict,
                                                          datelist=datelist,
                                                          better_or_worse_method = better_or_worse_method)
-
-                                #print('finish step6')
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, msa_bx,time_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
-                        ###########################
-                        #This end BEIMING scorecard
-                        ###########################
-                        
-                        ###########################
-                        #This start BEIMING CSI plot
-                        ###########################
+                                del (comb_bx, label_bx, region_bx, msa_bx, time_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
                         elif plot_type.lower() == 'csi':
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
@@ -2020,7 +1988,7 @@ class analysis:
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
 
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
 
 
                         elif plot_type.lower() == 'taylor':
