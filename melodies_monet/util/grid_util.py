@@ -146,7 +146,34 @@ def normalize_data_grid(count_grid, data_grid):
     data_grid[count_grid == 0] = np.nan
     data_grid[count_grid > 0] /= count_grid[count_grid > 0]
 
-def generate_uniform_grid(paired_dims,start,end,obstime,ntime,nlat,nlon):
+def generate_uniform_grid(start, end, ntime, nlat, nlon):
+    import pandas as pd
+    start_timestamp = pd.to_datetime(start).timestamp()
+    end_timestamp = pd.to_datetime(end).timestamp()
+
+    ntime = ntime
+    nlat = nlat
+    nlon = nlon
+    lon0 = -180
+
+    # generate uniform grid
+    time_edges = np.linspace(start_timestamp, end_timestamp, ntime+1, endpoint=True, dtype=float)
+    time_grid = 0.5 * (time_edges[0:ntime] + time_edges[1:ntime+1])
+    lat_edges = np.linspace(-90, 90, nlat+1, endpoint=True, dtype=float)
+    lat_grid = 0.5 * (lat_edges[0:nlat] + lat_edges[1:nlat+1])
+    lat_min, lat_max = lat_edges[0:nlat], lat_edges[1:nlat+1]
+    lon_edges = np.linspace(lon0, lon0 + 360, nlon+1, endpoint=True, dtype=float)
+    lon_grid = 0.5 * (lon_edges[0:nlon] + lon_edges[1:nlon+1])
+
+    grid = {'longitude':lon_grid,
+            'latitude':lat_grid,
+            'time':time_grid}  
+    edges = {'time_edges':time_edges,'lon_edges':lon_edges,'lat_edges':lat_edges}
+
+    return grid, edges
+
+
+def generate_uniform_grid_with_paired_dims(paired_dims,start,end,obstime,ntime,nlat,nlon):
     import pandas as pd
     #import xarray as xr
     

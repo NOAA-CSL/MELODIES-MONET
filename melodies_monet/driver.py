@@ -122,6 +122,8 @@ class observation:
         self.variable_dict = None
         self.resample = None
         self.time_var = None
+        self.obs_grid = None
+        self.obs_edges = None
 
     def __repr__(self):
         return (
@@ -299,7 +301,16 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
-        
+
+    def generate_obs_grid(self, control_dict=None):
+        from .util import grid_util
+        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
+            control_dict['obs']['obs_grid']['start'],
+            control_dict['obs']['obs_grid']['end'],
+            control_dict['obs']['obs_grid']['ntime'],
+            control_dict['obs']['obs_grid']['nlat'],
+            control_dict['obs']['obs_grid']['nlon'])
+
     def filter_obs(self):
         """Filter observations based on filter_dict.
         
