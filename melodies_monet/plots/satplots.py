@@ -223,11 +223,15 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
         print(plot_kwargs)
         # {'color': 'k', 'linestyle': '-', 'marker': '*', 'linewidth': 2.0, 'markersize': 10.0, 'label': 'omps_nm', 'fontsize': 14.4}
         if avg_window is None:
-            df[column].mean('y').plot(ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
+            # bug fixed (AttributeError: 'Rectangle' object has no property 'marker'). M.Li
+            df[column].mean('y').plot.line(x = "time", ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
+            #df[column].mean('y').plot(ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
                                            marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
                                           markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
         else:
-            df[column].resample(time = avg_window).mean().mean('y').plot(ax=ax,color=plot_kwargs['color'],\
+            # bug fixed (AttributeError: 'Rectangle' object has no property 'marker'). M.Li
+            df[column].resample(time = avg_window).mean().mean('y').plot.line(x = "time", ax=ax,color=plot_kwargs['color'],\
+            #df[column].resample(time = avg_window).mean().mean('y').plot(ax=ax,color=plot_kwargs['color'],\
                                                                               linestyle=plot_kwargs['linestyle'],\
                                            marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
                                           markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
@@ -236,11 +240,15 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
     else:
         # this means that an axis handle already exists and use it to plot the model output.
         if avg_window is None:
-            df[column].mean('y').plot(ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
+            # bug fixed. M.Li
+            df[column].mean('y').plot.line(x = "time",ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
+            #df[column].mean('y').plot(ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
                                            marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
                                           markersize=plot_dict['markersize'],label=plot_dict['label'])
         else:
-            df[column].resample(time=avg_window).mean().mean('y').plot(ax=ax, color=plot_dict['color'],\
+            # bug fixed. M.Li
+            df[column].resample(time=avg_window).mean().mean('y').plot.line(x = "time",ax=ax, color=plot_dict['color'],\
+            #df[column].resample(time=avg_window).mean().mean('y').plot(ax=ax, color=plot_dict['color'],\
                                                                             linestyle=plot_dict['linestyle'],\
                                            marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
                                           markersize=plot_dict['markersize'],label=plot_dict['label'])   
@@ -344,7 +352,10 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
         dia.add_sample(df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict)
     #Set parameters for all plots
     contours = dia.add_contours(colors='0.5')
-    plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
+    # control the clabel format for very high values (e.g., NO2 columns), M.Li
+    #plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
+    plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8, fmt='(%1.1e)')
+
     plt.grid(alpha=.5)
     plt.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
                bbox_to_anchor=(0.75, 0.93), loc='center left')
@@ -693,6 +704,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
     
     #Take the difference for the model output - the sat output
+
     diff_mod_min_obs = (df[column_m] - df[column_o]).squeeze()
     #Take mean over time, 
     if len(diff_mod_min_obs.dims) == 3:
