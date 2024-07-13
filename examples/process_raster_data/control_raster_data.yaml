@@ -5,7 +5,6 @@ analysis:
   time_interval: '24h'
   output_dir: $HOME/Plots
   debug: True
-  regrid: False
 
 obs:
   Terra_MODIS:

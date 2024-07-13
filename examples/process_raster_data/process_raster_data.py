@@ -4,7 +4,6 @@ an = driver.analysis()
 an.control = 'control_raster_data.yaml'
 an.read_control()
 
-print(an.control_dict)
 
 for time_interval in an.time_intervals:
 
