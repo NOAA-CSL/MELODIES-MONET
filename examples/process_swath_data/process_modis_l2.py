@@ -1,7 +1,7 @@
 from melodies_monet import driver
 
 an = driver.analysis()
-an.control = 'control_raster_data.yaml'
+an.control = 'control_modis_l2.yaml'
 an.read_control()
 
 
