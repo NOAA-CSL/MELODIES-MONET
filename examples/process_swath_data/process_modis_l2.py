@@ -4,8 +4,8 @@ an = driver.analysis()
 an.control = 'control_modis_l2.yaml'
 an.read_control()
 
-an.generate_obs_grid()
-print(an.obs_grid)
+an.setup_obs_grid()
+# print(an.obs_grid)
 
 for time_interval in an.time_intervals:
 

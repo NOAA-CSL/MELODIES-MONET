@@ -654,6 +654,7 @@ class analysis:
         self.model_regridders = None
         self.obs_grid = None
         self.obs_edges = None
+        self.obs_gridded_data = None
 
     def __repr__(self):
         return (
@@ -825,15 +826,6 @@ class analysis:
             self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
             self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
-    def generate_obs_grid(self):
-        from .util import grid_util
-        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
-            self.control_dict['obs_grid']['start_time'],
-            self.control_dict['obs_grid']['end_time'],
-            self.control_dict['obs_grid']['ntime'],
-            self.control_dict['obs_grid']['nlat'],
-            self.control_dict['obs_grid']['nlon'])
-
     def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
@@ -974,6 +966,18 @@ class analysis:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
 
+    def setup_obs_grid(self):
+        from .util import grid_util
+        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
+            self.control_dict['obs_grid']['start_time'],
+            self.control_dict['obs_grid']['end_time'],
+            self.control_dict['obs_grid']['ntime'],
+            self.control_dict['obs_grid']['nlat'],
+            self.control_dict['obs_grid']['nlon'])
+
+        for obs in self.control_dict['obs']:
+            for var in self.control_dict['obs'][obs]['variables']:
+                print(obs, var)
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
