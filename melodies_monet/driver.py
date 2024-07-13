@@ -305,11 +305,11 @@ class observation:
     def generate_obs_grid(self, control_dict=None):
         from .util import grid_util
         self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
-            control_dict['obs']['obs_grid']['start'],
-            control_dict['obs']['obs_grid']['end'],
-            control_dict['obs']['obs_grid']['ntime'],
-            control_dict['obs']['obs_grid']['nlat'],
-            control_dict['obs']['obs_grid']['nlon'])
+            control_dict['obs_grid']['start'],
+            control_dict['obs_grid']['end'],
+            control_dict['obs_grid']['ntime'],
+            control_dict['obs_grid']['nlat'],
+            control_dict['obs_grid']['nlon'])
 
     def filter_obs(self):
         """Filter observations based on filter_dict.

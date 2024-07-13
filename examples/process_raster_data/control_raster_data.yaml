@@ -6,6 +6,10 @@ analysis:
   output_dir: $HOME/Plots
   debug: True
 
+obs_grid:
+  nlat: 180
+  nlon: 360
+
 obs:
   Terra_MODIS:
     # MOD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
@@ -15,7 +19,7 @@ obs:
     filename: $HOME/Data/MODIS/Terra/C61/2020/*/MOD04_L2.*.hdf
     variables:
       AOD_550_Dark_Target_Deep_Blue_Combined:
-        fill_values: -9999
+        fillvalue: -9999
         scale: 0.001
         units: none
 
@@ -27,7 +31,7 @@ obs:
     filename: $HOME/Data/MODIS/Aqua/C61/2020/*/MYD04_L2.*.hdf
     variables:
       AOD_550_Dark_Target_Deep_Blue_Combined:
-        fill_values: -9999
+        fillvalue: -9999
         scale: 0.001
         units: none
 
