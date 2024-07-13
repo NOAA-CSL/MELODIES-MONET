@@ -655,6 +655,7 @@ class analysis:
         self.obs_grid = None
         self.obs_edges = None
         self.obs_gridded_data = None
+        self.obs_gridded_count = None
 
     def __repr__(self):
         return (
@@ -968,16 +969,30 @@ class analysis:
 
     def setup_obs_grid(self):
         from .util import grid_util
+        ntime = self.control_dict['obs_grid']['ntime']
+        nlat = self.control_dict['obs_grid']['nlat']
+        nlon = self.control_dict['obs_grid']['nlon']
         self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
             self.control_dict['obs_grid']['start_time'],
             self.control_dict['obs_grid']['end_time'],
-            self.control_dict['obs_grid']['ntime'],
-            self.control_dict['obs_grid']['nlat'],
-            self.control_dict['obs_grid']['nlon'])
+            ntime, nlat, nlon)
 
+        """
+        time_edges (np.array): grid time edges
+        x_edges (np.array): grid x coord edges
+        y_edges (np.array): grid y coord edges
+        time_obs (np.array): obs times
+        x_obs (np.array): obs x coords
+        y_obs (np.array): obs y coords
+        data_obs (np.array): obs data values
+        count_grid (np.array): number of obs points in grid cell
+        data_grid (np.array): sum of data values in grid cell
+        """
         for obs in self.control_dict['obs']:
             for var in self.control_dict['obs'][obs]['variables']:
-                print(obs, var)
+                print('initializing gridded data and counts ', obs, var)
+                self.obs_gridded_data = np.zeros([ntime, nlon, nlat], dtype=np.float32)
+                self.obs_gridded_count = np.zeros([ntime, nlon, nlat], dtype=np.int32)
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
