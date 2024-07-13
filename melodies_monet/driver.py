@@ -122,8 +122,6 @@ class observation:
         self.variable_dict = None
         self.resample = None
         self.time_var = None
-        self.obs_grid = None
-        self.obs_edges = None
 
     def __repr__(self):
         return (
@@ -241,7 +239,7 @@ class observation:
                         self.obj = self.obj.rename({v:d['rename']})
                         self.variable_dict[d['rename']] = self.variable_dict.pop(v)
 
-    def open_sat_obs(self,time_interval=None):
+    def open_sat_obs(self, time_interval=None, control_dict=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
@@ -301,15 +299,6 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
-
-    def generate_obs_grid(self, control_dict=None):
-        from .util import grid_util
-        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
-            control_dict['obs_grid']['start'],
-            control_dict['obs_grid']['end'],
-            control_dict['obs_grid']['ntime'],
-            control_dict['obs_grid']['nlat'],
-            control_dict['obs_grid']['nlon'])
 
     def filter_obs(self):
         """Filter observations based on filter_dict.
@@ -663,6 +652,8 @@ class analysis:
         self.target_grid = None
         self.obs_regridders = None
         self.model_regridders = None
+        self.obs_grid = None
+        self.obs_edges = None
 
     def __repr__(self):
         return (
@@ -834,6 +825,15 @@ class analysis:
             self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
             self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
+    def generate_obs_grid(self):
+        from .util import grid_util
+        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
+            self.control_dict['obs_grid']['start_time'],
+            self.control_dict['obs_grid']['end_time'],
+            self.control_dict['obs_grid']['ntime'],
+            self.control_dict['obs_grid']['nlat'],
+            self.control_dict['obs_grid']['nlon'])
+
     def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
         object for each of them, populating the :attr:`models` dict.
@@ -969,7 +969,7 @@ class analysis:
                 if load_files:
                     if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
-                        o.open_sat_obs(time_interval=time_interval)
+                        o.open_sat_obs(time_interval=time_interval, control_dict=self.control_dict)
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o

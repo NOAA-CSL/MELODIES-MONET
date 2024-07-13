@@ -7,13 +7,16 @@ analysis:
   debug: True
 
 obs_grid:
+  start_time: '2020-09-09'
+  end_time:   '2020-09-11'
+  ntime: 72
   nlat: 180
   nlon: 360
 
 obs:
   Terra_MODIS:
     # MOD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
-    debug: True
+    debug: False
     obs_type: 'sat_swath_clm'
     sat_type: 'modis_l2'
     filename: $HOME/Data/MODIS/Terra/C61/2020/*/MOD04_L2.*.hdf
@@ -25,7 +28,7 @@ obs:
 
   Aqua_MODIS:
     # MYD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
-    debug: True
+    debug: False
     obs_type: 'sat_swath_clm'
     sat_type: 'modis_l2'
     filename: $HOME/Data/MODIS/Aqua/C61/2020/*/MYD04_L2.*.hdf
