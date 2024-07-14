@@ -997,9 +997,10 @@ class analysis:
             count_grid (np.array): number of obs points in grid cell
             data_grid (np.array): sum of data values in grid cell
         """
-        for obs in self.control_dict['obs']:
-            for var in self.control_dict['obs'][obs]['variables']:
-                print('updating gridded data and counts ', obs, var)
+        for obs in self.obs:
+            for obs_time in self.obs[obs].obj:
+                print('updating obs time: ', obs, obs_time)
+                print(self.obs[obs].obj[obs_time])
                 """
                 self.obs_gridded_data[obs + '_' + var]
                 self.obs_gridded_count[obs + '_' + var]

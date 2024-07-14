@@ -12,6 +12,8 @@ obs_grid:
   ntime: 72
   nlat: 180
   nlon: 360
+  lat_obs_name: 'Latitude'
+  lon_obs_name: 'Longitude'
 
 obs:
   Terra_MODIS:
