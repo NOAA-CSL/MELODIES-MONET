@@ -14,3 +14,4 @@ for time_interval in an.time_intervals:
     an.open_obs(time_interval=time_interval)
     an.update_obs_gridded_data()
 
+an.normalize_obs_gridded_data()
