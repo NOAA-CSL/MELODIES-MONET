@@ -1000,7 +1000,12 @@ class analysis:
         for obs in self.obs:
             for obs_time in self.obs[obs].obj:
                 print('updating obs time: ', obs, obs_time)
+                obs_timestamp = pd.to_datetime(
+                    obs_time, format='%Y%j%H%M').timestamp()
+                print(obs_timestamp)
                 print(self.obs[obs].obj[obs_time])
+                for var in self.obs[obs].obj[obs_time]:
+                    print(var)
                 """
                 self.obs_gridded_data[obs + '_' + var]
                 self.obs_gridded_count[obs + '_' + var]
