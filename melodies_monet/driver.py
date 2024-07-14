@@ -1011,6 +1011,20 @@ class analysis:
                         self.obs_gridded_count[key],
                         self.obs_gridded_data[key])
 
+    def normalize_obs_gridded_data(self):
+        from .util import grid_util
+        """
+        """
+        for obs in self.obs:
+            for obs_time in self.obs[obs].obj:
+                print('normalizing obs time: ', obs, obs_time)
+                for var in self.obs[obs].obj[obs_time]:
+                    key = obs + '_' + var
+                    print(key)
+                    grid_util.normalize_data_grid(
+                        self.obs_gridded_count[key],
+                        self.obs_gridded_data[key])
+
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
         (i.e., those listed in the input yaml file) together,

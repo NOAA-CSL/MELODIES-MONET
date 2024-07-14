@@ -53,7 +53,7 @@ def update_sparse_data_grid(time_edges, x_edges, y_edges,
 
 def normalize_sparse_data_grid(count_grid, data_grid):
     """
-    Normalize accumuxed data on a uniform grid
+    Normalize accumulated data on a uniform grid
 
     Parameters
         count_grid (dict): number of obs points in grid cell
@@ -134,7 +134,7 @@ def update_data_grid(time_edges, x_edges, y_edges,
 
 def normalize_data_grid(count_grid, data_grid):
     """
-    Normalize accumuxed data on a uniform grid
+    Normalize accumulated data on a uniform grid
 
     Parameters
         count_grid (np.array): number of obs points in grid cell
