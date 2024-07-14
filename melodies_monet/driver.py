@@ -989,16 +989,6 @@ class analysis:
     def update_obs_grid(self):
         from .util import grid_util
         """
-        update_data_grid args
-            time_edges (np.array): grid time edges
-            x_edges (np.array): grid x coord edges
-            y_edges (np.array): grid y coord edges
-            time_obs (np.array): obs times
-            x_obs (np.array): obs x coords
-            y_obs (np.array): obs y coords
-            data_obs (np.array): obs data values
-            count_grid (np.array): number of obs points in grid cell
-            data_grid (np.array): sum of data values in grid cell
         """
         for obs in self.obs:
             for obs_time in self.obs[obs].obj:
@@ -1006,12 +996,20 @@ class analysis:
                 obs_timestamp = pd.to_datetime(
                     obs_time, format='%Y%j%H%M').timestamp()
                 print(obs_timestamp)
-                print(self.obs[obs].obj[obs_time])
-                """
-                self.obs_gridded_data[obs + '_' + var]
-                self.obs_gridded_count[obs + '_' + var]
-                grid_util.update_data_grid
-                """
+                for var in self.obs[obs].obj[obs_time]:
+                    key = obs + '_' + var
+                    print(key)
+                    nobs = self.obs[obs].obj[obs_time][var].size
+                    grid_util.update_data_grid(
+                        self.obs_edges['time_edges'],
+                        self.obs_edges['lon_edges'],
+                        self.obs_edges['lat_edges'],
+                        obs_timestamp * np.ones(nobs, dtype=np.float32),
+                        self.obs[obs].obj[obs_time].coords['lon'].values.flatten(),
+                        self.obs[obs].obj[obs_time].coords['lat'].values.flatten(),
+                        self.obs[obs].obj[obs_time][var].values.flatten(),
+                        self.obs_gridded_count[key],
+                        self.obs_gridded_data[key])
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
