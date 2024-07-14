@@ -12,8 +12,6 @@ obs_grid:
   ntime: 72
   nlat: 180
   nlon: 360
-  lat_obs_name: 'Latitude'
-  lon_obs_name: 'Longitude'
 
 obs:
   Terra_MODIS:
@@ -23,14 +21,9 @@ obs:
     sat_type: 'modis_l2'
     filename: $HOME/Data/MODIS/Terra/C61/2020/*/MOD04_L2.*.hdf
     variables:
-      Latitude:
-        fillvalue: -9999
-        scale: 1.0
-      Longitude:
-        fillvalue: -9999
-        scale: 1.0
       AOD_550_Dark_Target_Deep_Blue_Combined:
-        fillvalue: -9999
+        minimum: 0.0
+        maximum: 10.0
         scale: 0.001
         units: none
 
@@ -41,14 +34,9 @@ obs:
     sat_type: 'modis_l2'
     filename: $HOME/Data/MODIS/Aqua/C61/2020/*/MYD04_L2.*.hdf
     variables:
-      Latitude:
-        fillvalue: -9999
-        scale: 1.0
-      Longitude:
-        fillvalue: -9999
-        scale: 1.0
       AOD_550_Dark_Target_Deep_Blue_Combined:
-        fillvalue: -9999
+        minimum: 0.0
+        maximum: 10.0
         scale: 0.001
         units: none
 
