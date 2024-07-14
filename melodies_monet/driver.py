@@ -284,8 +284,12 @@ class observation:
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
                 print('Reading MODIS L2')
+                flst = tsub.subset_MODIS_l2(self.file,time_interval)
+                print(flst)
                 self.obj = mio.sat._modis_l2_mm.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
+                # self.obj = mio.sat._modis_l2_mm.read_mfdataset(
+                #     flst, self.variable_dict, debug=self.debug)
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == 'tropomi_l2_no2':
