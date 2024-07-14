@@ -10,8 +10,12 @@ an.setup_obs_grid()
 for time_interval in an.time_intervals:
 
     print(time_interval)
-
     an.open_obs(time_interval=time_interval)
 
-    # for obs in an.obs:
-    #     print(an.obs[obs].obj)
+    print(time_interval)
+    an.update_obs_grid()
+
+    for obs in an.obs:
+        for obs_time in an.obs[obs].obj:
+            print('obs_time:', obs_time)
+            print(an.obs[obs].obj[obs_time])

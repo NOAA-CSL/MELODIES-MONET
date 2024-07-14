@@ -654,8 +654,8 @@ class analysis:
         self.model_regridders = None
         self.obs_grid = None
         self.obs_edges = None
-        self.obs_gridded_data = None
-        self.obs_gridded_count = None
+        self.obs_gridded_data = {}
+        self.obs_gridded_count = {}
 
     def __repr__(self):
         return (
@@ -977,22 +977,34 @@ class analysis:
             self.control_dict['obs_grid']['end_time'],
             ntime, nlat, nlon)
 
-        """
-        time_edges (np.array): grid time edges
-        x_edges (np.array): grid x coord edges
-        y_edges (np.array): grid y coord edges
-        time_obs (np.array): obs times
-        x_obs (np.array): obs x coords
-        y_obs (np.array): obs y coords
-        data_obs (np.array): obs data values
-        count_grid (np.array): number of obs points in grid cell
-        data_grid (np.array): sum of data values in grid cell
-        """
         for obs in self.control_dict['obs']:
             for var in self.control_dict['obs'][obs]['variables']:
                 print('initializing gridded data and counts ', obs, var)
-                self.obs_gridded_data = np.zeros([ntime, nlon, nlat], dtype=np.float32)
-                self.obs_gridded_count = np.zeros([ntime, nlon, nlat], dtype=np.int32)
+                self.obs_gridded_data[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.float32)
+                self.obs_gridded_count[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.int32)
+
+    def update_obs_grid(self):
+        from .util import grid_util
+        """
+        update_data_grid args
+            time_edges (np.array): grid time edges
+            x_edges (np.array): grid x coord edges
+            y_edges (np.array): grid y coord edges
+            time_obs (np.array): obs times
+            x_obs (np.array): obs x coords
+            y_obs (np.array): obs y coords
+            data_obs (np.array): obs data values
+            count_grid (np.array): number of obs points in grid cell
+            data_grid (np.array): sum of data values in grid cell
+        """
+        for obs in self.control_dict['obs']:
+            for var in self.control_dict['obs'][obs]['variables']:
+                print('updating gridded data and counts ', obs, var)
+                """
+                self.obs_gridded_data[obs + '_' + var]
+                self.obs_gridded_count[obs + '_' + var]
+                grid_util.update_data_grid
+                """
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
