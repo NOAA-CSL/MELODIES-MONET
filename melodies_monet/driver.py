@@ -986,7 +986,7 @@ class analysis:
                 self.obs_gridded_data[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.float32)
                 self.obs_gridded_count[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.int32)
 
-    def update_obs_grid(self):
+    def update_obs_gridded_data(self):
         from .util import grid_util
         """
         """
@@ -999,12 +999,12 @@ class analysis:
                 for var in self.obs[obs].obj[obs_time]:
                     key = obs + '_' + var
                     print(key)
-                    nobs = self.obs[obs].obj[obs_time][var].size
+                    n_obs = self.obs[obs].obj[obs_time][var].size
                     grid_util.update_data_grid(
                         self.obs_edges['time_edges'],
                         self.obs_edges['lon_edges'],
                         self.obs_edges['lat_edges'],
-                        obs_timestamp * np.ones(nobs, dtype=np.float32),
+                        np.full(n_obs, obs_timestamp, dtype=np.float32),
                         self.obs[obs].obj[obs_time].coords['lon'].values.flatten(),
                         self.obs[obs].obj[obs_time].coords['lat'].values.flatten(),
                         self.obs[obs].obj[obs_time][var].values.flatten(),
