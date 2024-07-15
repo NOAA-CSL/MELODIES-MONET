@@ -1030,7 +1030,8 @@ class analysis:
                     da = xr.DataArray(
                         self.obs_gridded_data[key],
                         dims=['time', 'lon', 'lat'],
-                        coords={'lon': self.obs_grid['longitude'],
+                        coords={'time': self.obs_grid['time'],
+                                'lon': self.obs_grid['longitude'],
                                 'lat': self.obs_grid['latitude']})
                     self.obs_gridded_dataset[key] = da
 
