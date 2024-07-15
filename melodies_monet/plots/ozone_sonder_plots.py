@@ -23,6 +23,7 @@ import math
 from ..plots import savefig
 from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory,calc_8hr_rolling_max_v1,calc_default_colors,new_color_map,map_projection,get_utcoffset,make_timeseries,make_taylor,calculate_boxplot,make_boxplot
 
+
 #Define ozone sonder, vertical single date plot
 def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,ozone_range,station_name,release_time,fill_color_list,plot_dict,fig_dict,text_dict):
     ALT_sl = df['altitude']
@@ -176,6 +177,7 @@ def make_vertical_boxplot_os(df,comb_bx,label_bx,model_name_list,altitude_range,
         plt.ylabel('ALT-ground level (km)')
         plt.xlabel('O3 (ppbv)')
 
+
 def split_by_threshold(o3_list_input,alt_list_input,threshold_list_input):
     df = pd.DataFrame(data={'o3':o3_list_input,'alt':alt_list_input})
     output_list = []
@@ -183,6 +185,7 @@ def split_by_threshold(o3_list_input,alt_list_input,threshold_list_input):
         df_here = df.o3.loc[(df.alt>threshold_list_input[i-1])&(df.alt<=threshold_list_input[i])]
         output_list.append(df_here.values)
     return output_list
+
 
 def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_method,cmap_method):
     #release height info,get height of each release site to be substract    
@@ -225,49 +228,3 @@ def density_scatter_plot_os(df,altitude_range,ozone_range,station_name,altitude_
     plt.xlabel('O$_3$ Obs (ppbv)')
     plt.ylabel('O$_3$ Model (ppbv)')
     plt.legend()
-
-
-
-
-     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
