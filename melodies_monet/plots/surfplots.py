@@ -43,7 +43,7 @@ def make_24hr_regulatory(df, col=None):
 def calc_24hr_ave_v1(df, col=None):
     df.index = df.time_local
     # select sites with nobs >=18, 75% completeness
-    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=18)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
+    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=18, numeric_only=True)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_24hr_ave, on=["siteid", "time_local"])
 
@@ -67,10 +67,10 @@ def make_8hr_regulatory(df, col=None):
 
 def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df.index = df.time_local
-    df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean().reset_index().dropna()
+    df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean(numeric_only=True).reset_index().dropna()
     # JianHe: select sites with nobs >=18, 75% completeness based on EPA
     df_rolling.index = df_rolling.time_local
-    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18).reset_index(drop=True).dropna()
+    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18, numeric_only=True).reset_index(drop=True).dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
 
@@ -325,9 +325,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
-            df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
+            df_mean=df_reg.groupby(['siteid'],as_index=False).mean(numeric_only=True)
         else:
-            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile/100., numeric_only=True)
 
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -337,9 +337,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
-            df_mean=df.groupby(['siteid'],as_index=False).mean()
+            df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
         else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100., numeric_only=True)
        
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -401,7 +401,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         matplotlib ax from previous occurrence so can overlay obs and model 
         results on the same plot
     avg_window : rule 
-        Pandas resampling rule (e.g., 'H', 'D')
+        Pandas resampling rule (e.g., 'h', 'D')
     ylabel : str
         Title of y-axis
     vmin : real number
@@ -688,7 +688,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
     
     #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean()
+    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
     
     #Take the mean over time for the model output
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
@@ -1250,7 +1250,7 @@ def scorecard_step4_GetRegionLUCDate(ds_name=None,region_list=None,datelist=None
             region_date_rural_here = []
             region_date_urban_here = []
             for i in range(len(region_here['Time'])):
-                date_here1 = region_here['Time'][i]
+                date_here1 = region_here['Time'].values[i]
                 timestamp = ((date_here1 - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1, 's'))
                 date_here = datetime.utcfromtimestamp(timestamp)  #this function== 1970,1,1 + timestamp(in seconds)
                 if date_here >= date_start_here and date_here <= date_end_here:
@@ -1654,14 +1654,14 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
 
     # calculate exceedance
     if column_o == 'OZONE_reg':
-        df_mean=df.groupby(['siteid'],as_index=False).quantile(0.95) #concentrations not used in plotting, get the correct format for plotting
+        df_mean=df.groupby(['siteid'],as_index=False).quantile(0.95, numeric_only=True) #concentrations not used in plotting, get the correct format for plotting
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 70.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 70.].groupby(['siteid'],as_index=False)[column_m].count()     
         ylabel2 = 'O3'  
  
     elif column_o == 'PM2.5_reg':
-        df_mean=df.groupby(['siteid'],as_index=False).mean() #concentrations not used in plotting, get the correct format for plotting
+        df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True) #concentrations not used in plotting, get the correct format for plotting
         # get the exceedance days for each site
         df_counto = df[df[column_o]> 35.].groupby(['siteid'],as_index=False)[column_o].count()
         df_countm = df[df[column_m]> 35.].groupby(['siteid'],as_index=False)[column_m].count()

@@ -157,7 +157,7 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
         matplotlib ax from previous occurrence so can overlay obs and model 
         results on the same plot
     avg_window : rule 
-        Pandas resampling rule (e.g., 'H', 'D')
+        Pandas resampling rule (e.g., 'h', 'D')
     ylabel : str
         Title of y-axis
     vmin : real number
@@ -449,7 +449,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
     
     #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean()
+    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
     
     #Take the mean over time for the model output
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()

@@ -1500,7 +1500,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )
@@ -2413,7 +2413,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )

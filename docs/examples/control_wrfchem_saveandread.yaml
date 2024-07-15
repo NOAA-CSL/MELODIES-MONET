@@ -147,8 +147,8 @@ plots:
       ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
       # ^ Time used for avg and plotting
       #   Options: 'time' for UTC or 'time_local'
-      ts_avg_window: "H"
-      # ^ Options: None for no averaging, pandas resample rule (e.g., 'H', 'D')
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
       set_axis: True
       # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
 

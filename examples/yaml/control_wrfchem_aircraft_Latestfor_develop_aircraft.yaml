@@ -107,7 +107,7 @@ plots:
       #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: #'H' # pandas resample rule (e.g., 'H', 'D'). No averaging is done if ts_avg_window is null or not specified.
+      ts_avg_window: #'h' # pandas resample rule (e.g., 'h', 'D'). No averaging is done if ts_avg_window is null or not specified.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
       #vmin2, vmax2 filter not needed as filter_dict option added in 'altitude_yax2' to subset the paireddf as per altitude secondary-axis limits
       #vmin2: #0  #Optional

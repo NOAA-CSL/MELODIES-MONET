@@ -80,7 +80,7 @@ def kolmogorov_zurbenko_filter(df, col, window, iterations):
     for i in range(iterations):
         z.index = z.time_local
         z = z.groupby('siteid')[col].rolling(
-            window, center=True, min_periods=1).mean().reset_index().dropna()
+            window, center=True, min_periods=1).mean(numeric_only=True).reset_index().dropna()
     df = df.reset_index(drop=True)
     return df.merge(z, on=['siteid', 'time_local'])
 
@@ -119,23 +119,26 @@ def long_to_wide(df):
 def calc_8hr_rolling_max(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby('siteid')[col].rolling(
-        window, center=True, win_type='boxcar').mean().reset_index().dropna()
+        window, center=True, win_type='boxcar').mean(
+                numeric_only=True).reset_index().dropna()
     df_rolling_max = df_rolling.groupby('siteid').resample(
-        'D', on='time_local').max().reset_index(drop=True)
+        'D', on='time_local').max(numeric_only=True).reset_index(drop=True)
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=['siteid', 'time_local'])
 
 
 def calc_24hr_ave(df, col=None):
     df.index = df.time_local
-    df_24hr_ave = df.groupby('siteid')[col].resample('D').mean().reset_index()
+    df_24hr_ave = df.groupby('siteid')[col].resample('D').mean(
+            numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_24hr_ave, on=['siteid', 'time_local'])
 
 
 def calc_3hr_ave(df, col=None):
     df.index = df.time_local
-    df_3hr_ave = df.groupby('siteid')[col].resample('3H').mean().reset_index()
+    df_3hr_ave = df.groupby('siteid')[col].resample('3h').mean(
+            numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_3hr_ave, on=['siteid', 'time_local'])
 
@@ -143,7 +146,7 @@ def calc_3hr_ave(df, col=None):
 def calc_annual_ave(df, col=None):
     df.index = df.time_local
     df_annual_ave = df.groupby('siteid')[col].resample(
-        'A').mean().reset_index()
+        'A').mean(numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_annual_ave, on=['siteid', 'time_local'])
 
