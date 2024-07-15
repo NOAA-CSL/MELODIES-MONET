@@ -116,7 +116,7 @@ class observation:
         self.file = None
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
-        self.type = 'pt_src'   
+        self.type = 'pt_src'
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
@@ -182,10 +182,9 @@ class observation:
 
             _, extension = os.path.splitext(files[0])
             try:
-                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:  
+                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
                     if len(files) > 1:
-                        self.obj = xr.open_mfdataset(files)    
-                        
+                        self.obj = xr.open_mfdataset(files)
                     else:
                         self.obj = xr.open_dataset(files[0])
                 elif extension in ['.ict', '.icartt']:
@@ -528,7 +527,7 @@ class model:
                 print('**** Reading WRF-Chem model output...')
                 self.mod_kwargs.update({'var_list' : list_input_var})
                 self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'rrfs' in self.model.lower():  
+            elif 'rrfs' in self.model.lower():
                 print('**** Reading RRFS-CMAQ model output...')
                 if self.files_pm25 is not None:
                     self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
@@ -911,7 +910,6 @@ class analysis:
                 if load_files:
                     m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
-                #print('open_model',self.models[m.label])
 
     def open_obs(self, time_interval=None, load_files=True):
         """Open all observations listed in the input yaml file and create an 
@@ -1008,12 +1006,13 @@ class analysis:
                     model_obj = mod.obj[keys]
 
                 ## TODO:  add in ability for simple addition of variables from
+
                 # simplify the objs object with the correct mapping variables
                 obs = self.obs[obs_to_pair]
+
                 # pair the data
                 # if pt_sfc (surface point network or monitor)
                 if obs.obs_type.lower() == 'pt_sfc':
-                    
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obs_to_df()

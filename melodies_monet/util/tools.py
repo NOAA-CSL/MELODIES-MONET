@@ -293,7 +293,7 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
 def vert_interp(ds_model,df_obs,var_name_list):
     import xarray as xr
     from pandas import merge_asof, Series
-    
+
     var_out_list = []
     for var_name in var_name_list:
         if var_name == 'pressure_model':
@@ -313,9 +313,11 @@ def vert_interp(ds_model,df_obs,var_name_list):
     df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
+
     final_df_model = merge_asof(df_obs, df_model, 
                             by=['latitude', 'longitude', 'pressure_obs'], 
                             on='time', direction='nearest')
+
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
