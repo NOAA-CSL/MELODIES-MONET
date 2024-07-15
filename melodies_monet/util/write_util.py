@@ -7,6 +7,8 @@ from pandas.api.types import is_float_dtype
 def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, title=''):
     """Function to write netcdf4 files with some compression for floats from an attribute of the
     analysis class (models, obs, paired). Writes the objects within the attribute as separate files.
+    Any characters in variable names that are not allowed in netcdf4 variables names will be dropped.
+    Full variable names will always be saved in the variable attribute `long_name`.
 
     Parameters
     ----------
@@ -43,6 +45,26 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
         print('Writing:', output_name)
         
         dset=obj[group].obj
+                
+        # Write long_name and remove any illegal characters from variable names 
+        rename_dict={}
+        allowed_chars = ['a','b','c','d','e','f','g','h','i','j','k','l','m',
+                            'n','o','p','q','r','s','t','u','v','w','x','y','z',
+                            'A','B','C','D','E','F','G','H','I','J','K','L','M',
+                            'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+                            '0','1','2','3','4','5','6','7','8','9',
+                            '_','.','@','+','-']
+        for i in dset.variables:
+            dset[i].attrs['long_name']=i
+            illegal_chars = i.translate(str.maketrans('','',"".join(allowed_chars)))
+            if illegal_chars:
+                rename_dict[i]= i.translate(str.maketrans('','',"".join(illegal_chars)))
+        if rename_dict:
+            dset = dset.rename(rename_dict)
+            print('WARNING: The following variables have been renamed due to illegal characters in the variable name for netcdf4 format. ')
+            print('The original variable names can be found in the `long_name` variable attribute. ')
+            print(list(rename_dict.keys()))
+        
         comp = dict(zlib=True, complevel=7)
         encoding = {}
         for i in dset.data_vars.keys():
@@ -50,6 +72,7 @@ def write_analysis_ncf(obj, output_dir='', fn_prefix=None, keep_groups=None, tit
             #     print("Compressing: {}, original_dtype: {}".format(i, dset[i].dtype))
             #     dset[i] = compress_variable(dset[i])
                 encoding[i] = comp
+        
         dset.attrs['title'] = title
         dset.attrs['format'] = 'NetCDF-4'
         dset.attrs['date_created'] = pd.to_datetime('today').strftime('%Y-%m-%d')

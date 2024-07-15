@@ -1,8 +1,11 @@
-
 # Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
-#Code to create plots for surface observations
+'''
+aircraftplots.py
+this code is designed for plotting aircraft specific
+plot types 
+'''
 
 import os
 import monetio as mio

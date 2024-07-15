@@ -284,7 +284,7 @@ For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
-"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot"
+"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot","csi"
 Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
@@ -323,13 +323,29 @@ data will be used and the domain_name is used only in the plot title. If
 domain_type is not equal to all, MELODIES MONET will query all of the data 
 where domain_type is equal to domain_name.
 
-**region_name:** multi-box plot only. user specified variable from which the region information
-will be used to plot. if use 'epa+region' then a total of 61 regions can be choose from.
+**region_name:** list of source of regions used in title.
+(e.g., ['epa_region'])
 
-**region_list:** multi-box plot only. list of regions in the above 'region_name' variable 
-user want to plot.
+**region_list:** list of regions we will calculate for scorecard. 
+(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
 
-**model_name_list:** multi-box plot only. list of observation and model names user choose to set as x-labels
+**urban_rural_name:** list of only one string input, which is variable used to
+determine wheter urban or rural site. (e.g., ['msa_name'])
+
+**urban_rural_differentiate_value:** string of value used to determine whether 
+variable is rural or urban. (e.g., '').
+
+**better_or_worse_method:** string of method used to determine which models 
+is better compared to observations. (e.g., 'RMSE', 'IOA' ,' NMB', 'NME'). choose
+one only for each time scorecard code run.
+
+**model_name_list:** 
+for multi-box plot, list of observation and model names user choose to set as x-labels; 
+for csi plot, list of model names (only) user choose to set as labels.
+
+**threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
+
+**score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 

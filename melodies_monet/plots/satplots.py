@@ -223,11 +223,15 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
         print(plot_kwargs)
         # {'color': 'k', 'linestyle': '-', 'marker': '*', 'linewidth': 2.0, 'markersize': 10.0, 'label': 'omps_nm', 'fontsize': 14.4}
         if avg_window is None:
-            df[column].mean('y').plot(ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
+            # bug fixed (AttributeError: 'Rectangle' object has no property 'marker'). M.Li
+            df[column].mean('y').plot.line(x = "time", ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
+            #df[column].mean('y').plot(ax=ax, color=plot_kwargs['color'],linestyle=plot_kwargs['linestyle'],\
                                            marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
                                           markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
         else:
-            df[column].resample(time = avg_window).mean().mean('y').plot(ax=ax,color=plot_kwargs['color'],\
+            # bug fixed (AttributeError: 'Rectangle' object has no property 'marker'). M.Li
+            df[column].resample(time = avg_window).mean().mean('y').plot.line(x = "time", ax=ax,color=plot_kwargs['color'],\
+            #df[column].resample(time = avg_window).mean().mean('y').plot(ax=ax,color=plot_kwargs['color'],\
                                                                               linestyle=plot_kwargs['linestyle'],\
                                            marker=plot_kwargs['marker'],linewidth=plot_kwargs['linewidth'],\
                                           markersize=plot_kwargs['markersize'],label=plot_kwargs['label'])
@@ -236,11 +240,15 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
     else:
         # this means that an axis handle already exists and use it to plot the model output.
         if avg_window is None:
-            df[column].mean('y').plot(ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
+            # bug fixed. M.Li
+            df[column].mean('y').plot.line(x = "time",ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
+            #df[column].mean('y').plot(ax=ax, color=plot_dict['color'],linestyle=plot_dict['linestyle'],\
                                            marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
                                           markersize=plot_dict['markersize'],label=plot_dict['label'])
         else:
-            df[column].resample(time=avg_window).mean().mean('y').plot(ax=ax, color=plot_dict['color'],\
+            # bug fixed. M.Li
+            df[column].resample(time=avg_window).mean().mean('y').plot.line(x = "time",ax=ax, color=plot_dict['color'],\
+            #df[column].resample(time=avg_window).mean().mean('y').plot(ax=ax, color=plot_dict['color'],\
                                                                             linestyle=plot_dict['linestyle'],\
                                            marker=plot_dict['marker'],linewidth=plot_dict['linewidth'],\
                                           markersize=plot_dict['markersize'],label=plot_dict['label'])   
@@ -344,7 +352,10 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
         dia.add_sample(df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict)
     #Set parameters for all plots
     contours = dia.add_contours(colors='0.5')
-    plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
+    # control the clabel format for very high values (e.g., NO2 columns), M.Li
+    #plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
+    plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8, fmt='(%1.1e)')
+
     plt.grid(alpha=.5)
     plt.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8,
                bbox_to_anchor=(0.75, 0.93), loc='center left')
@@ -668,8 +679,10 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
-    """Creates difference plot for satellite and model data. Needs to be altered for cases where more than 1 overpass for a location,
-    eg. more than 1 day of data."""
+    """Creates difference plot for satellite and model data.
+        For data in swath format, overplots all differences
+        For data on regular grid, mean difference.
+    """
     if debug == False:
         plt.ioff()
         
@@ -691,8 +704,11 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         ylabel = column_o
     
     #Take the difference for the model output - the sat output
-    diff_mod_min_obs = (df[column_o] - df[column_m]).squeeze()
 
+    diff_mod_min_obs = (df[column_m] - df[column_o]).squeeze()
+    #Take mean over time, 
+    if len(diff_mod_min_obs.dims) == 3:
+        diff_mod_min_obs = diff_mod_min_obs.mean('time')
     
     #Determine the domain
     if domain_type == 'all' and domain_name == 'CONUS':
@@ -739,7 +755,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     c = ax.axes.scatter(df.longitude,df.latitude,c=diff_mod_min_obs,cmap=cmap,s=2,norm=norm)
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
-    plt.title(title_add + label_o + ' - ' + label_m,fontweight='bold',**text_kwargs)
+    plt.title(title_add + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
     
     #Uncomment these lines if you update above just to verify colorbars are identical.
@@ -757,7 +773,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     position_m = model_ax.get_position()
     position_c = cax.get_position()
     cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
+    cax.set_ylabel('$\Delta$'+ylabel,fontweight='bold',**text_kwargs)
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
