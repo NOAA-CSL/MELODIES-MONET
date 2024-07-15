@@ -7,6 +7,7 @@ dependencies:
   - python=3.9
   #
   # melodies_monet deps
+  - matplotlib-base<3.9  # for pandas v1 compat
   - monet
   - monetio
   - netcdf4
