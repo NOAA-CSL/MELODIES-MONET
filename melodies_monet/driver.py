@@ -659,6 +659,7 @@ class analysis:
         self.obs_edges = None
         self.obs_gridded_data = {}
         self.obs_gridded_count = {}
+        self.obs_gridded_dataset = None
 
     def __repr__(self):
         return (
@@ -1015,6 +1016,8 @@ class analysis:
         from .util import grid_util
         """
         """
+        self.obs_gridded_dataset = xr.Dataset()
+
         for obs in self.obs:
             for obs_time in self.obs[obs].obj:
                 print('normalizing obs time: ', obs, obs_time)
@@ -1024,6 +1027,13 @@ class analysis:
                     grid_util.normalize_data_grid(
                         self.obs_gridded_count[key],
                         self.obs_gridded_data[key])
+                    da = xr.DataArray(
+                        self.obs_gridded_data[key],
+                        dims=['time', 'lon', 'lat'],
+                        coords={'lon': self.obs_grid['longitude'],
+                                'lat': self.obs_grid['latitude']})
+                    self.obs_gridded_dataset[key] = da
+
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class

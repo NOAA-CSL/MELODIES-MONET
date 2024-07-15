@@ -15,3 +15,4 @@ for time_interval in an.time_intervals:
     an.update_obs_gridded_data()
 
 an.normalize_obs_gridded_data()
+print(an.obs_gridded_dataset)
