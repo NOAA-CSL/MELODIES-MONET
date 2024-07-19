@@ -120,6 +120,7 @@ class observation:
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
+        self.variable_summing = None
         self.resample = None
         self.time_var = None
 
@@ -203,6 +204,7 @@ class observation:
         self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables() 
         self.resample_data()
         self.filter_obs()
 
@@ -369,6 +371,31 @@ class observation:
                     # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
                     if 'LLOD_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+    
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
     def resample_data(self):
         """Resample the obs df based on the value set in the control file.
@@ -418,6 +445,7 @@ class model:
         self.obj = None
         self.mapping = None
         self.variable_dict = None
+        self.variable_summing = None
         self.plot_kwargs = None
         self.proj = None
 
@@ -500,9 +528,17 @@ class model:
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
+        # First make a list of variables not in mapping but from variable_summing, if provided
+        if self.variable_summing is not None:
+            vars_for_summing  = []
+            for var in self.variable_summing.keys():
+                vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
         list_input_var = []
         for obs_map in self.mapping:
-            list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+            if self.variable_summing is not None:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
+            else:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
         if time_chunking_with_gridded_data:
@@ -568,6 +604,7 @@ class model:
                     self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables()
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
@@ -614,6 +651,30 @@ class model:
                         print('changing units for {}'.format(v))
                         self.obj[v].values *= 1e9
                         self.obj[v].attrs['units'] = 'ppbv'        
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
 class analysis:
     """The analysis class.
@@ -871,6 +932,8 @@ class analysis:
 
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
+                if 'variable_summing' in self.control_dict['model'][mod].keys():
+                    m.variable_summing = self.control_dict['model'][mod]['variable_summing']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
                     
@@ -945,6 +1008,8 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'variable_summing' in self.control_dict['obs'][obs].keys():
+                    o.variable_summing = self.control_dict['obs'][obs]['variable_summing']
                 if 'resample' in self.control_dict['obs'][obs].keys():
                     o.resample = self.control_dict['obs'][obs]['resample']
                 if 'time_var' in self.control_dict['obs'][obs].keys():
