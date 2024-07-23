@@ -239,12 +239,12 @@ plots:
   plot_grp5:
     type: 'curtain'
     fig_kwargs:
-      figsize: [24,14] #[12, 8]
+      figsize: [20,14] #[12, 8]
     default_plot_kwargs:
       #linewidth: 4.0
-      markersize: 30.
+      markersize: 40.
     text_kwargs:
-      fontsize: 18
+      fontsize: 25 #18
       fontweight: 'bold'
     domain_type: ['all']
     domain_name: ['CONUS']
@@ -252,14 +252,9 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True
-      ts_select_time: 'time'
-      ts_avg_window:  'H'  #Uncomment to use time averaging
       altitude_variable: 'altitude'
-      vmin_plot: #1000
-      vmax_plot: #10000
-    # Optionally specify a custom colormap and number of levels
-    ##If want to use standard matplotlib colorscale comment the True option and colors and uncomment the following:
-    color_map_custom: False #True
+    ##To use a custom Matplotlib colormap, set “color_map_custom”=True and specify “colors” and "color_levels" like the example below. To use a standard Matplotlib colormap, set “color_map_custom” = False and specify a “color_map”:
+    color_map_custom: True #False #True
     colors: ["#ff8cff", "#dd6ff2", "#bb52e5", "#9935d8", "#7718cb",
         "#0000bb", "#002ccc", "#0058dd", "#0084ee", "#00afff",
         "#00ebff", "#27ffd7", "#63ff9b", "#a3ff5b", "#d3ff2b",
@@ -267,21 +262,20 @@ plots:
         "#ff0000", "#d8000f", "#b2001f", "#8c002f", "#66003f",
         "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] #,
         #"#ffffff"] #['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
-    ##use_interpolation: False #True #False  # Set to True for interpolated plot, False for block-like plot #Obsolete NOW
-    color_map: 'Spectral_r' #'jet'  # This tells the plotting function to use the built-in 'rainbow' colormap
     color_levels: 30 #31 #15 #10  # Define the number of distinct colors in the color bar
-    # Optionally specify dynamic color bar ranges based on data
-    dynamic_color_range: True  # New key to use dynamic ranges based on model and obs data
+    color_map: 'Spectral_r' #'jet'  # This tells the plotting function to use the built-in 'rainbow' colormap   
     variable_limits:
       NO2_CL_RYERSON:
-        vmin: 0
-        vmax: 1 #10
+        cmin: 0
+        cmax: 1 #10
       NO_CL_RYERSON:
-        vmin: 0
-        vmax: 1 #15
+        cmin: 0
+        cmax: 1 #15
       O3_CL_RYERSON:
-        vmin: 0
-        vmax: 100
+        cmin: 0
+        cmax: 100
+    vmin: 120000 #hPa  #0  #Optional (y-axis limits)
+    vmax: 5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
     
   plot_grp6:
     type: 'taylor' # plot type

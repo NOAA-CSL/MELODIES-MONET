@@ -1187,7 +1187,7 @@ class analysis:
         -------
         None
         """
-        import stratify
+        
         from .util.tools import resample_stratify
         from .util.tools import vert_interp
         import matplotlib.dates as mdates
@@ -1579,7 +1579,28 @@ class analysis:
 
 
                         elif plot_type.lower() == 'curtain':
+                            if set_yaxis:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
                             curtain_config = grp_dict
+
+                            # Determine cmin and cmax (colorbar min max) from YAML config if provided
+                            if 'variable_limits' in curtain_config:
+                                var_limits = curtain_config['variable_limits'].get(obsvar, {})
+                                cmin = var_limits.get('cmin')
+                                cmax = var_limits.get('cmax')
+
+                            # Inside your loop for processing each pair
+                            obs_label = p.obs
+                            model_label = p.model
                         
                             # Ensure we use the correct observation and model objects from pairing
                             obs = self.obs[p.obs]
@@ -1730,12 +1751,23 @@ class analysis:
                                     obs_data_2d=obs_data_2d,  # Use original observation data for scatter plot
                                     model_var=modvar,
                                     obs_var=obsvar,
+                                    cmin=cmin,
+                                    cmax=cmax,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    plot_dict=plot_dict,
                                     grp_dict=curtain_config,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     obs_label_config=obs_label_config,
-                                    model_scatter_data=model_scatter_data  # Pass model scatter data for plotting
+                                    model_scatter_data=model_scatter_data,  # Pass model scatter data for plotting
+                                    debug=self.debug  # Pass debug flag
                                 )
+                            
+                                # Save the curtain plot for the current pair immediately
+                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+                                print(f"Saving curtain plot to {outname_pair}...")
+                                plt.savefig(outname_pair)
                             except Exception as e:
                                 print(f"Error generating curtain plot for {modvar} vs {obsvar}: {e}")
                             finally:
