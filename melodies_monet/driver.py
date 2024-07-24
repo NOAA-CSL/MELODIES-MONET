@@ -1742,8 +1742,12 @@ class analysis:
                                 ##print(f"Length of obs_pressure: {len(obs_pressure)}")
                                 ##print(f"Length of obs_data_2d: {len(obs_data_2d)}")
                                 ##print(f"model_scatter_data shape: {model_scatter_data.shape}")
+
+                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+
+                                print(f"Saving curtain plot to {outname_pair}...")
                         
-                                airplots.make_curtain_plot(
+                                ax = airplots.make_curtain_plot(
                                     time=pd.to_datetime(time),
                                     altitude=target_pressures,  # Use target_pressures for interpolation
                                     model_data_2d=model_data_2d,  # Already reshaped to match the expected shape
@@ -1756,6 +1760,7 @@ class analysis:
                                     vmin=vmin,
                                     vmax=vmax,
                                     plot_dict=plot_dict,
+                                    outname=outname_pair,
                                     grp_dict=curtain_config,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
@@ -1764,10 +1769,7 @@ class analysis:
                                     debug=self.debug  # Pass debug flag
                                 )
                             
-                                # Save the curtain plot for the current pair immediately
-                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
-                                print(f"Saving curtain plot to {outname_pair}...")
-                                plt.savefig(outname_pair)
+                                
                             except Exception as e:
                                 print(f"Error generating curtain plot for {modvar} vs {obsvar}: {e}")
                             finally:
@@ -1966,7 +1968,9 @@ class analysis:
                                 del kwargs['shade_lowest']
 
 
+                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
 
+                            print(f"Saving scatter density plot to {outname_pair}...")
                             
                             # Create the scatter density plot
                             print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
@@ -1983,13 +1987,11 @@ class analysis:
                                 vmax_x=vmax_x,
                                 vmin_y=vmin_y,
                                 vmax_y=vmax_y,
+                                outname=outname_pair,
                                 **kwargs                            
                             )
 
-                            # Save the scatter density plot for the current pair immediately
-                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
-                            print(f"Saving scatter density plot to {outname_pair}...")  # Debugging print statement
-                            plt.savefig(outname_pair)
+                            
                             plt.close()  # Close the current figure
                             
                         elif plot_type.lower() == 'boxplot':

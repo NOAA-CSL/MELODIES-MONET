@@ -232,7 +232,7 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
 
 ###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
-def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, model_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, domain_type=None, domain_name=None, obs_label_config=None, model_scatter_data=None, debug=False):
+def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, model_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, outname='plot', domain_type=None, domain_name=None, obs_label_config=None, model_scatter_data=None, debug=False):
     """
     Generates a curtain plot comparing model data with obs across altitude (Pressure, right now) over time,
     with the ability to customize the appearance through a configuration dictionary.
@@ -271,6 +271,8 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     plot_dict : dictionary
         Dictionary containing information about plotting for each pair
         (e.g., color, linestyle, markerstyle).
+    outname : str
+        File location and name of plot.
     domain_type : str
         Type of domain being plotted (e.g., 'region', 'global').
     domain_name : str
@@ -380,7 +382,10 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
 
         # Print diagnostics for model scatter data
         print(f"model_scatter_data shape: {model_scatter_data.shape}, ndims: {model_scatter_data.ndim}")
-
+        
+    # Save the curtain plot for the current pair immediately
+    print(f"Saving curtain plot to {outname}...")
+    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
     plt.show()
 
     # Only close the plot if not in debug mode
@@ -396,8 +401,6 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     #plt.xlabel('Value')
     #plt.ylabel('Frequency')
     #plt.show()
-
-
 
 
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
@@ -716,7 +719,7 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
 
 
 ##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -741,6 +744,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         Title for the plot (optional)
     fill: bool
         Fill set to True for seaborn kde plot
+    outname : str
+        File location and name of plot.
     **kwargs: dict 
         Additional keyword arguments for customization
 
@@ -844,6 +849,9 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         cbar = plt.colorbar(mappable, ax=ax)
     cbar.set_label(colorbar_label)
 
+    # Save the scatter density plot for the current pair immediately
+    print(f"Saving scatter density plot to {outname}...")
+    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
     plt.show()
 
     return ax
