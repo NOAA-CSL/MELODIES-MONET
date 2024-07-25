@@ -40,3 +40,14 @@ obs:
         scale: 0.001
         units: none
 
+model:
+  MERRA2:
+    regrid:
+      base_grid: $HOME/Data/Grids/merra2_grid.nc
+      method: bilinear
+    mapping:
+      Terra_MODIS:
+        TOTEXTTAU: AOD_550_Dark_Target_Deep_Blue_Combined
+      Aqua_MODIS:
+        TOTEXTTAU: AOD_550_Dark_Target_Deep_Blue_Combined
+
