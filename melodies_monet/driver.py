@@ -651,6 +651,7 @@ class analysis:
         self.save = None
         self.read = None
         self.time_chunking_with_gridded_data = False  # Default to False
+        self.time_chunking_with_obs_gridding = False  # Default to False
         self.regrid = False  # Default to False
         self.target_grid = None
         self.obs_regridders = None
@@ -735,6 +736,8 @@ class analysis:
         # set time_chunking_with_gridded_data option, regrid option, and target_grid
         if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
             self.time_chunking_with_gridded_data = self.control_dict['analysis']['time_chunking_with_gridded_data']
+        if 'time_chunking_with_obs_gridding' in self.control_dict['analysis'].keys():
+            self.time_chunking_with_obs_gridding = self.control_dict['analysis']['time_chunking_with_obs_gridding']
         if 'regrid' in self.control_dict['analysis'].keys():
             self.regrid = self.control_dict['analysis']['regrid']
         if 'target_grid' in self.control_dict['analysis'].keys():
