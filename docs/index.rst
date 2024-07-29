@@ -56,7 +56,7 @@ MONETIO please refer to:
    :caption: Tutorial
 
    tutorial/installation
-   tutorial/getting_started
+   tutorial/software_architecture
    tutorial/downloading_obs
    tutorial/how_to_run
 

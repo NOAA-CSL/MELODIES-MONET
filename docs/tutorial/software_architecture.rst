@@ -1,5 +1,5 @@
-Getting Started
-===============
+Software Architecture
+=====================
 
 The User Interface
 ------------------
