@@ -1,5 +1,5 @@
-Developer's Guide
-=================
+Information for Developers
+==========================
 
 Description of Branches
 -----------------------
