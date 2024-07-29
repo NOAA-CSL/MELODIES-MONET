@@ -53,12 +53,12 @@ MONETIO please refer to:
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Tutorial
+   :caption: Getting Started
 
-   tutorial/installation
-   tutorial/software_architecture
-   tutorial/downloading_obs
-   tutorial/how_to_run
+   getting_started/installation
+   getting_started/software_architecture
+   getting_started/downloading_obs
+   getting_started/how_to_run
 
 .. toctree::
    :maxdepth: 1

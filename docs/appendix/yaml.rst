@@ -185,7 +185,7 @@ Generalizing this to include other surface observations is under development.
 **filename:**  The file directory location and name. These observations need 
 to be preprocessed prior to incorporating them into MELODIES MONET.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
-See :doc:`../tutorial/downloading_obs` for more details.
+See :doc:`../getting_started/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
