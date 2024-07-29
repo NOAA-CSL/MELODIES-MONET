@@ -140,8 +140,8 @@ changes.
     changes. 
 
 
-User's Guide Development
-------------------------
+Contributions to the Docs
+-------------------------
 
 If you add a component to MELODIES MONET, please follow the instructions below 
 to update the readthedocs user guide. 
