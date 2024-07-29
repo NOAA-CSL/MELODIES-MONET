@@ -65,7 +65,7 @@ MONETIO please refer to:
    :caption: Contribute
    
    develop/contribute
-   develop/workshops
+   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets
