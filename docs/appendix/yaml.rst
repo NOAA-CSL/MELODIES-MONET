@@ -231,7 +231,7 @@ nan_values are set to NaN first and then the unit conversion is applied.
      (in %) is used to calculate the percentile (e.g., 5, 50, 95). Currently only
      used for "spatial_bias" plots. Will work with data as is and regulatory metrics.
    * **regulatory:** If false (default), use data as is. If set to true, the
-     regulatory metric is calculated as explained under :doc:`/background/supported_diagnostics`.
+     regulatory metric is calculated as explained under :doc:`/users_guide/supported_diagnostics`.
      Only works for "OZONE" and "PM2.5" variables.
    * **ylabel_reg_plot:** String to use as ylabel in plot for regulatory calculation.
      Useful for adding units or instrument information. Only used if regulatory = True.
@@ -276,7 +276,7 @@ Plots
 -----
 All input for each plotting group. A plotting group consists of one plotting 
 type. The plotting types are described in 
-:doc:`/background/supported_plots`. All model /
+:doc:`/users_guide/supported_plots`. All model /
 observational pairs and domains specified for the plotting group will be 
 included. You may include as many plotting groups as you like.
 
@@ -397,7 +397,7 @@ Stats
 -----
 All input needed to calculate the statistics. The supported statistics available 
 in MELODIES MONET are described in 
-:doc:`/background/supported_stats`. All model /
+:doc:`/users_guide/supported_stats`. All model /
 observational pairs and domains specified will be included. You may include as 
 many statistics as you like. Note however that the calculation of the statistics 
 is relatively slow right now. Optimizing this code is under development.
@@ -407,7 +407,7 @@ use Kelvin. Wind direction has special calculations for AirNow if the observatio
 name is 'WD'. 
 
 **stat_list:** List of acronyms of statistics to calculate as defined in 
-:doc:`/background/supported_stats`. (e.g., ['MB', 'MdnB',
+:doc:`/users_guide/supported_stats`. (e.g., ['MB', 'MdnB',
 'NMB', 'NMdnB','R2', 'RMSE']). A dictionary of definitions is also included in 
 MELODIES-MONET/melodies_monet/stats/proc_stats.py. 
 
