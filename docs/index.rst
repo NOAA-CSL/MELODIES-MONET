@@ -101,5 +101,6 @@ MONETIO please refer to:
    cli
    appendix/machine-specific-install
    appendix/yaml
+   appendix/troubleshooting
 
 
