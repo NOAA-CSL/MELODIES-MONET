@@ -4,7 +4,8 @@ Installation/Requirements
 Required dependencies [#yaml]_
 ------------------------------
 
-- Python 3.6+ (3.9 recommended)
+- Python 3.6+ (3.9 - 3.11 recommended)
+- ``pandas`` 1 (most of the system works with pandas 2 as well, but some CLI-only commands might fail. MONETIO also might have some routines that require pandas 1)
 - ``pyyaml`` (to read control files)
 - ``monet``, which brings `many dependencies <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
 - ``monetio``, which brings `a few dependencies <https://monetio.readthedocs.io/en/stable/installing.html>`__
@@ -13,10 +14,15 @@ Optional dependencies
 ---------------------
 
 - ``netcdf4`` (`from Unidata <https://unidata.github.io/netcdf4-python/>`__; most likely needed for reading model/obs datasets)
-- ``wrf-python`` (needed in order to use the WRF-Chem reader)
+- ``wrf-python`` (needed in order to use the WRF-Chem reader, currently the conda package seems to require Python < 3.12)
 - ``typer`` (to use the :doc:`/cli`;
   add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060>`__ fancy tracebacks and ``--help``)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
+
+Incompatibilities
+-----------------
+- pandas=1 is incompatible with matplotlib 3.9+.
+- wrf-python, at least in the official conda-forge package, is incompatible with Python 3.12+.
 
 .. _user-install-instructions:
 
@@ -36,6 +42,9 @@ Add dependencies from conda-forge::
 
     $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch
 
+.. note::
+   Currently, the wrf-python conda package is not compatible with Apple Silicon (Apple machines using Intel should be fine). If you need to run the WRF-Chem reader and only have access to a machine using Apple Silicon, you can try compiling it from souce code from the official repos.
+   
 Now, install the stable branch of MELODIES MONET to the environment::
 
     $ pip install --no-deps https://github.com/NOAA-CSL/MELODIES-MONET/archive/main.zip
