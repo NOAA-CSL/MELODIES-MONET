@@ -263,7 +263,7 @@ plots:
         "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] #,
         #"#ffffff"] #['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
     color_levels: 30 #31 #15 #10  # Define the number of distinct colors in the color bar
-    color_map: 'Spectral_r' #'jet'  # This tells the plotting function to use the built-in 'rainbow' colormap   
+    #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
     variable_limits:
       NO2_CL_RYERSON:
         cmin: 0
