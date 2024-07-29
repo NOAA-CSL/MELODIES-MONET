@@ -44,7 +44,7 @@ MONETIO please refer to:
    background/introduction
    background/description
    background/supported_datasets
-   background/supported_analyses
+   background/supported_diagnostics
    background/supported_plots
    background/supported_stats
    background/time_chunking

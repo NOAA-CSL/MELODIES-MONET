@@ -231,7 +231,7 @@ nan_values are set to NaN first and then the unit conversion is applied.
      (in %) is used to calculate the percentile (e.g., 5, 50, 95). Currently only
      used for "spatial_bias" plots. Will work with data as is and regulatory metrics.
    * **regulatory:** If false (default), use data as is. If set to true, the
-     regulatory metric is calculated as explained under :doc:`/background/supported_analyses`.
+     regulatory metric is calculated as explained under :doc:`/background/supported_diagnostics`.
      Only works for "OZONE" and "PM2.5" variables.
    * **ylabel_reg_plot:** String to use as ylabel in plot for regulatory calculation.
      Useful for adding units or instrument information. Only used if regulatory = True.
