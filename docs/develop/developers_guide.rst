@@ -55,10 +55,10 @@ In order to prepare for developing MELODIES MONET,
 we clone the repositories and create a conda environment that references them.
 
 .. note::
-   If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera
+   If you are installing MELODIES MONET on NCAR Casper or NOAA Hera
    follow these machine specific instructions instead.
 
-   - :ref:`NCAR Cheyenne <appendix/machine-specific-install:NCAR HPC Cheyenne/Casper>`
+   - :ref:`NCAR Casper <appendix/machine-specific-install:NCAR HPC Derecho/Casper>`
    - :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
 
 .. important::

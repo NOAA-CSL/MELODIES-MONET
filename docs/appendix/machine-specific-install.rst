@@ -1,11 +1,11 @@
 Machine-specific Install
 ========================
 
-NCAR HPC Cheyenne/Casper
+NCAR HPC Derecho/Casper
 ------------------------
 
 Below are specific recipes for getting started with MELODIES MONET
-on the NCAR HPC, Cheyenne/Casper.
+on the NCAR HPC, Derecho/Casper.
 
 **Official NCAR JupyterHub kernel**
 

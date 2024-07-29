@@ -60,5 +60,5 @@ Now, install the stable branch of MELODIES MONET to the environment::
    that include a record
    of all the dependencies (direct and indirect) are available via the GitHub:
 
-   - `NCAR Cheyenne environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/cheyenne>`__
+   - `NCAR Casper environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/casper>`__
    - `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
