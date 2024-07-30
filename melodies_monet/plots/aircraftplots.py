@@ -314,19 +314,19 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
         cmin = min(np.nanmin(model_data_2d), np.nanmin(obs_data_2d))
         cmax = max(np.nanmax(model_data_2d), np.nanmax(obs_data_2d))
     
-    # Set colorbar min to zero if the minimum value is less than zero
-    if cmin < 0:
-        cmin = 0
+    
 
     print(f"cmin and cmax set dynamically based on model and observation data to {cmin} and {cmax}")
 
     fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]})
 
     # Handling custom color maps
-    if grp_dict.get('color_map_custom', False) and 'colors' in grp_dict:
+    if 'color_map_custom' in grp_dict and grp_dict['color_map_custom'] is True and 'colors' in grp_dict:
+        # Custom color map logic
         colors = grp_dict['colors']
         cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=grp_dict.get('color_levels', 100))
     else:
+    # Default color map logic
         cmap = plt.get_cmap(grp_dict.get('color_map', 'viridis'))
 
     norm = Normalize(vmin=cmin, vmax=cmax)

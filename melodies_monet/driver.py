@@ -1683,11 +1683,6 @@ class analysis:
                         
                             time_dates = mdates.date2num(pd.to_datetime(time))
                         
-                            if len(obs_pressure) != len(time_dates):
-                                obs_pressure = np.interp(time_dates, mdates.date2num(pd.to_datetime(new_ds_obs['time_obs'].values)), obs_pressure)
-                                obs_data_2d = np.interp(time_dates, mdates.date2num(pd.to_datetime(new_ds_obs['time_obs'].values)), obs_data_2d)
-                                ##print(f"Length of obs_pressure after interpolation: {len(obs_pressure)}")
-                                ##print(f"Length of obs_data_2d after interpolation: {len(obs_data_2d)}")
                         
                             # Fetch the observation configuration for colorbar labels
                             obs_label_config = self.control_dict['obs'][p.obs]['variables']
