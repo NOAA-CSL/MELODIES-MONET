@@ -1592,11 +1592,6 @@ class analysis:
                                 vmax = None
                             curtain_config = grp_dict
 
-                            # Determine cmin and cmax (colorbar min max) from YAML config if provided
-                            if 'variable_limits' in curtain_config:
-                                var_limits = curtain_config['variable_limits'].get(obsvar, {})
-                                cmin = var_limits.get('cmin')
-                                cmax = var_limits.get('cmax')
 
                             # Inside your loop for processing each pair
                             obs_label = p.obs
@@ -1608,6 +1603,11 @@ class analysis:
                             model_obj = mod.obj  # This assumes `mod.obj` contains the necessary model data
                             model_data = model_obj[modvar].values
                             obs_data = obs.obj[obsvar].values
+
+                            # Determine cmin and cmax (colorbar min max) from observation config if provided
+                            cmin = obs_plot_dict.get('vmin_plot', None)
+                            cmax = obs_plot_dict.get('vmax_plot', None)
+
                         
                             # Debugging: print dimensions
                             ##print(f"Dimensions of model data: {model_data.shape}, ndims: {model_data.ndim}")

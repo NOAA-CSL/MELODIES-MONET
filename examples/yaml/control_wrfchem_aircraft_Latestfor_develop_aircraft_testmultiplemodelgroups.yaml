@@ -86,8 +86,8 @@ obs:
         LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
         LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
         ylabel_plot: 'Ozone (ppbv)'
-        vmin_plot: 15.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 55.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmin_plot: 0 #15.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 100 #55.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
         vdiff_plot: 20.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
         # nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
       'NO_CL_RYERSON':
@@ -96,7 +96,7 @@ obs:
         LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
         ylabel_plot: 'NO (ppbv)' #Optional to set ylabel so can include units and/or instr etc.
         vmin_plot: 0.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1 #20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
         vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
         nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
       'NO2_CL_RYERSON':
@@ -105,7 +105,7 @@ obs:
         LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
         ylabel_plot: 'NO2 (ppbv)' #Optional to set ylabel so can include units and/or instr etc.
         vmin_plot: 0.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1 #20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
         vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
         nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
       'Latitude_YANG':
@@ -264,16 +264,6 @@ plots:
         #"#ffffff"] #['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
     color_levels: 30 #31 #15 #10  # Define the number of distinct colors in the color bar
     #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
-    variable_limits:
-      NO2_CL_RYERSON:
-        cmin: 0
-        cmax: 1 #10
-      NO_CL_RYERSON:
-        cmin: 0
-        cmax: 1 #15
-      O3_CL_RYERSON:
-        cmin: 0
-        cmax: 100
     vmin: 120000 #hPa  #0  #Optional (y-axis limits)
     vmax: 5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
     

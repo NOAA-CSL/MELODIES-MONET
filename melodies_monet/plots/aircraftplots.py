@@ -297,12 +297,6 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
         print("Warning: Model or observation data is empty. Skipping plot.")
         return
 
-    # Determine cmin and cmax (colorbar min max) from YAML config if provided
-    if 'variable_limits' in grp_dict:
-        var_limits = grp_dict['variable_limits'].get(obs_var, {})
-        cmin = var_limits.get('cmin', cmin)
-        cmax = var_limits.get('cmax', cmax)
-
     # Debugging: print shapes and ndims
     print(f"time shape: {time.shape}, ndims: {time.ndim}")
     print(f"altitude shape: {altitude.shape}, ndims: {altitude.ndim}")
