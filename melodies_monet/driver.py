@@ -1654,7 +1654,7 @@ class analysis:
                             ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
                         
                             # Check for NaN values before interpolation
-                            ##print(f"NaNs in model_data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
+                            ##print(f"NaNs in model data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
                             ##print(f"NaNs in pressure_model before interpolation: {np.isnan(ds_model['pressure_model']).sum().compute()}")
 
                         
@@ -1670,7 +1670,7 @@ class analysis:
                             ds_wrf_const = xr.merge([da_wrf_const, da_target_pressures])
                             ds_wrf_const = ds_wrf_const.set_coords('target_pressures')
                         
-                            # Debugging: print merged dataset
+                            # Debugging: print merged dataset for model curtain
                             ##print(ds_wrf_const)
                         
                             # Ensure model_data_2d is properly reshaped for the contourfill plot
@@ -1684,17 +1684,12 @@ class analysis:
 
                             # Fetch model pressure and other model and observation data from "pairdf" (for scatter plot overlay)
                             time = pairdf['time']
-                            obs_pressure = pairdf['pressure_obs']
-                            obs_data = pairdf[obsvar]
-                            model_data = pairdf[modvar]        
+                            obs_pressure = pairdf['pressure_obs']  
+                            ##print(f"Length of time: {len(time)}") #Debugging
+                            ##print(f"Length of obs_pressure: {len(obs_pressure)}") #Debugging
                         
                             # Generate the curtain plot using airplots.make_curtain_plot
                             try:
-                                ##print(f"Length of time_dates: {len(time_dates)}")
-                                ##print(f"Length of obs_pressure: {len(obs_pressure)}")
-                                ##print(f"Length of obs_data_2d: {len(obs_data_2d)}")
-                                ##print(f"model_scatter_data shape: {model_scatter_data.shape}")
-
                                 outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
 
                                 print(f"Saving curtain plot to {outname_pair}...")
