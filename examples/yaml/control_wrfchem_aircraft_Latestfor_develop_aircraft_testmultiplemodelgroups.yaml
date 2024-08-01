@@ -246,6 +246,7 @@ plots:
     text_kwargs:
       fontsize: 25 #18
       fontweight: 'bold'
+      labelsize: 16
     domain_type: ['all']
     domain_name: ['CONUS']
     data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
@@ -264,8 +265,9 @@ plots:
         #"#ffffff"] #['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
     color_levels: 30 #31 #15 #10  # Define the number of distinct colors in the color bar
     #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
-    vmin: 120000 #hPa  #0  #Optional (y-axis limits)
+    vmin: 120000 #Pressure in Pa  #0  #Optional (y-axis limits)
     vmax: 5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
+    interval : 500 #Pressure in Pa; target pressure interpolation steps for model curtain 2d plot
     
   plot_grp6:
     type: 'taylor' # plot type

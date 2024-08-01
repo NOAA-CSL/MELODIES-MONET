@@ -232,7 +232,7 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
 
 ###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
-def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, model_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, outname='plot', domain_type=None, domain_name=None, obs_label_config=None, model_scatter_data=None, debug=False):
+def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, outname='plot', domain_type=None, domain_name=None, obs_label_config=None, text_dict=None, debug=False):
     """
     Generates a curtain plot comparing model data with obs across altitude (Pressure, right now) over time,
     with the ability to customize the appearance through a configuration dictionary.
@@ -252,9 +252,9 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
         2D array of cleaned and interpolated model data.
     obs_pressure : numpy.ndarray
         Array of pressure points corresponding to observations.
-    obs_data_2d : numpy.ndarray
-        2D array of observational data.
-    model_var : str
+    pairdf : pandas.DataFrame
+        Paired DataFrame containing model and observation data for scatter plots.
+    mod_var : str
         Model variable name for labeling.
     obs_var : str
         Observation variable name for labeling.
@@ -279,8 +279,8 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
         Name of the domain being plotted.
     obs_label_config : dict
         Configuration dictionary for observation labels.
-    model_scatter_data : numpy.ndarray or None
-        Data for model scatter plot overlay.
+    text_dict : dict
+        Dictionary containing text properties (fontsize, fontweight, etc.).
     debug : bool
         Whether to plot interactively (True) or not (False). Flag for submitting jobs to supercomputer turn off interactive mode.
 
@@ -293,7 +293,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     if vmin is not None and vmax is not None:
         plot_dict['ylim'] = [vmin, vmax]
     
-    if model_data_2d.size == 0 or obs_data_2d.size == 0:
+    if model_data_2d.size == 0 or pairdf.empty:
         print("Warning: Model or observation data is empty. Skipping plot.")
         return
 
@@ -301,15 +301,13 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     print(f"time shape: {time.shape}, ndims: {time.ndim}")
     print(f"altitude shape: {altitude.shape}, ndims: {altitude.ndim}")
     print(f"model_data_2d shape: {model_data_2d.shape}, ndims: {model_data_2d.ndim}")
-    print(f"obs_data_2d shape: {obs_data_2d.shape}, ndims: {obs_data_2d.ndim}")
+    print(f"pairdf shape: {pairdf.shape}, ndims: {pairdf.ndim}")
 
     # Determine cmin and cmax dynamically if not provided
     if cmin is None or cmax is None:
-        cmin = min(np.nanmin(model_data_2d), np.nanmin(obs_data_2d))
-        cmax = max(np.nanmax(model_data_2d), np.nanmax(obs_data_2d))
+        cmin = min(np.nanmin(model_data_2d), np.nanmin(pairdf[obs_var].values))
+        cmax = max(np.nanmax(model_data_2d), np.nanmax(pairdf[obs_var].values))
     
-    
-
     print(f"cmin and cmax set dynamically based on model and observation data to {cmin} and {cmax}")
 
     fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]})
@@ -320,7 +318,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
         colors = grp_dict['colors']
         cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=grp_dict.get('color_levels', 100))
     else:
-    # Default color map logic
+        # Default color map logic
         cmap = plt.get_cmap(grp_dict.get('color_map', 'viridis'))
 
     norm = Normalize(vmin=cmin, vmax=cmax)
@@ -333,35 +331,32 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
 
     # Adjust the layout to place the colorbar at the bottom
     cbar = fig.colorbar(contourf_plot, ax=axs.ravel().tolist(), orientation='horizontal', pad=0.1, aspect=50)
-    cbar.set_label(obs_label_config.get(obs_var, {}).get('ylabel_plot', 'Variable (units)'), fontsize=18, fontweight='bold')
-    cbar.ax.tick_params(labelsize=14)
+    cbar.set_label(obs_label_config.get(obs_var, {}).get('ylabel_plot', 'Variable (units)'), fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    cbar.ax.tick_params(labelsize=text_dict.get('labelsize', 14))
 
     axs[0].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
     axs[0].xaxis.set_major_locator(mdates.AutoDateLocator())
     fig.autofmt_xdate(rotation=45, ha='right')
 
-    #axs[0].set_title(f"Model vs Observation Curtain Plot: {model_var} vs {obs_var}", fontsize=12, fontweight='bold')
     # Set the main title and subplot titles
-    fig.suptitle(f"Model vs Observation Curtain Plot: {model_var} vs {obs_var}", fontsize=16, fontweight='bold')
-    axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=18, fontweight='bold')
+    fig.suptitle(f"Model vs Observation Curtain Plot: {mod_var} vs {obs_var}", fontsize=text_dict.get('fontsize', 16), fontweight=text_dict.get('fontweight', 'bold'))
+    axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     
-    axs[0].set_ylabel('Pressure (Pa)', fontsize=18, fontweight='bold')
+    axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
-    axs[0].tick_params(axis='both', labelsize=14)
+    axs[0].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
 
     # Separate subplot for the observation scatter plot
-    axs[1].set_title("Observation Scatter", fontsize=18, fontweight='bold')
-    scatter = axs[1].scatter(time_dates, obs_pressure, c=obs_data_2d, cmap=cmap, norm=norm, edgecolor=(0, 0, 0, 0), linewidth=0.3, alpha=0.5)
+    axs[1].set_title("Observation Scatter", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    scatter = axs[1].scatter(time_dates, obs_pressure, c=pairdf[obs_var].values, cmap=cmap, norm=norm, edgecolor=(0, 0, 0, 0), linewidth=0.3, alpha=0.5)
     axs[1].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
     axs[1].xaxis.set_major_locator(mdates.AutoDateLocator())
     fig.autofmt_xdate(rotation=45, ha='right')
 
-    axs[1].set_ylabel('Pressure (Pa)', fontsize=18, fontweight='bold')
+    axs[1].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
-    axs[1].tick_params(axis='both', labelsize=14)
-    axs[1].set_xlabel('Time', fontsize=18, fontweight='bold')
-
-    
+    axs[1].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
+    axs[1].set_xlabel('Time', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
 
     # Set the same y-tick labels for both subplots and exclude the minimum value
     y_ticks = axs[0].get_yticks()
@@ -371,12 +366,8 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     axs[1].set_yticklabels([str(int(tick)) if tick != y_ticks.min() else '' for tick in y_ticks])
 
     # Plot model scatter data on top of the model curtain plot
-    if model_scatter_data is not None:
-        axs[0].scatter(time_dates, obs_pressure, c=model_scatter_data, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.5, alpha=0.7)
+    axs[0].scatter(time_dates, obs_pressure, c=pairdf[mod_var].values, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.5, alpha=0.7)
 
-        # Print diagnostics for model scatter data
-        print(f"model_scatter_data shape: {model_scatter_data.shape}, ndims: {model_scatter_data.ndim}")
-        
     # Save the curtain plot for the current pair immediately
     print(f"Saving curtain plot to {outname}...")
     savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
@@ -385,6 +376,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, obs_data_2d, 
     # Only close the plot if not in debug mode
     if not debug:
         plt.close()
+
 
     #Diagnostic Histogram
     #plt.figure(figsize=(10, 4))
