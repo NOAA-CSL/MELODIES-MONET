@@ -984,6 +984,11 @@ class analysis:
             self.control_dict['obs_grid']['end_time'],
             ntime, nlat, nlon)
 
+        self.da_obs_grid = xr.DataArray(dims=['lon', 'lat'],
+            coords={'lon': self.obs_grid['longitude'],
+                    'lat': self.obs_grid['latitude']})
+        print(self.da_obs_grid)
+
         for obs in self.control_dict['obs']:
             for var in self.control_dict['obs'][obs]['variables']:
                 print('initializing gridded data and counts ', obs, var)
