@@ -5,7 +5,9 @@ an.control = 'control_modis_l2.yaml'
 an.read_control()
 
 an.setup_obs_grid()
-print(an.obs_grid)
+# print(an.obs_grid)
+
+an.setup_regridders()
 
 """
 for time_interval in an.time_intervals:

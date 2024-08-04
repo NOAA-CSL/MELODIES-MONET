@@ -9,7 +9,7 @@ import os
 import xarray as xr
 
 
-def setup_regridder(config, config_group='obs'):
+def setup_regridder(config, config_group='obs', target_grid=None):
     """
     Setup regridder for observations or model
 
@@ -24,6 +24,9 @@ def setup_regridder(config, config_group='obs'):
     except ImportError as e:
         print('regrid_util: xesmf module not found')
         raise
+
+    print('setup_regridder.target_grid')
+    print(target_grid)
 
     target_file = os.path.expandvars(config['analysis']['target_grid'])
     ds_target = xr.open_dataset(target_file)

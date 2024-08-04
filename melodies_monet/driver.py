@@ -831,8 +831,11 @@ class analysis:
         """
         from .util import regrid_util
         if self.regrid:
-            self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
-            self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
+            if self.target_grid == 'obs_grid':
+                self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model', target_grid=self.da_obs_grid)
+            else:
+                self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+                self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -987,7 +990,7 @@ class analysis:
         self.da_obs_grid = xr.DataArray(dims=['lon', 'lat'],
             coords={'lon': self.obs_grid['longitude'],
                     'lat': self.obs_grid['latitude']})
-        print(self.da_obs_grid)
+        # print(self.da_obs_grid)
 
         for obs in self.control_dict['obs']:
             for var in self.control_dict['obs'][obs]['variables']:
