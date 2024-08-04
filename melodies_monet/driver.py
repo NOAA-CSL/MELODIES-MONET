@@ -999,7 +999,7 @@ class analysis:
                 print('updating obs time: ', obs, obs_time)
                 obs_timestamp = pd.to_datetime(
                     obs_time, format='%Y%j%H%M').timestamp()
-                print(obs_timestamp)
+                # print(obs_timestamp)
                 for var in self.obs[obs].obj[obs_time]:
                     key = obs + '_' + var
                     print(key)
