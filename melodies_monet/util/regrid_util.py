@@ -28,8 +28,11 @@ def setup_regridder(config, config_group='obs', target_grid=None):
     print('setup_regridder.target_grid')
     print(target_grid)
 
-    target_file = os.path.expandvars(config['analysis']['target_grid'])
-    ds_target = xr.open_dataset(target_file)
+    if target_grid is not None:
+        ds_target = target_grid
+    else:
+        target_file = os.path.expandvars(config['analysis']['target_grid'])
+        ds_target = xr.open_dataset(target_file)
 
     regridder_dict = dict()
 
