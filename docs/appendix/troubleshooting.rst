@@ -4,7 +4,7 @@ Troubleshooting
 Installation problems
 ---------------------
     * Conda installation fails:
-        * Often the problem is in the installation of wrf-python. Check that your computer does not have an Apple Silicon CPU (Apple Intel should be fine) and that the Pyhton version is compatible with the wrf-python conda package.
+        * Often the problem is in the installation of wrf-python. Check that your computer does not have an Apple Silicon CPU (Apple Intel should be fine) and that the Python version is compatible with the wrf-python Conda package.
  
 Runtime issues
 --------------
