@@ -144,7 +144,23 @@ def normalize_data_grid(count_grid, data_grid):
         None
     """
     data_grid[count_grid == 0] = np.nan
-    data_grid[count_grid > 0] /= count_grid[count_grid > 0]
+    # data_grid[count_grid > 0] /= count_grid[count_grid > 0]
+
+    """
+    mask = np.where(count_grid > 0)
+    data_grid[mask] = data_grid[mask] / count_grid[mask]
+    """
+
+    """
+    ntime, nx, ny = data_grid.shape
+    for i_time in range(ntime):
+        for i_x in range(nx):
+            for i_y in range(ny):
+                if count_grid[i_time, i_x, i_y] > 0:
+                    print(count_grid[i_time, i_x, i_y], data_grid[i_time, i_x, i_y])
+                    data_grid[i_time, i_x, i_y] = data_grid[i_time, i_x, i_y] / count_grid[i_time, i_x, i_y]
+                    print(count_grid[i_time, i_x, i_y], data_grid[i_time, i_x, i_y])
+    """
 
 def generate_uniform_grid(start, end, ntime, nlat, nlon):
     import pandas as pd
