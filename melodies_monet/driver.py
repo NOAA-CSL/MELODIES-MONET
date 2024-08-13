@@ -1038,13 +1038,20 @@ class analysis:
                     grid_util.normalize_data_grid(
                         self.obs_gridded_count[key],
                         self.obs_gridded_data[key])
-                    da = xr.DataArray(
+                    da_data = xr.DataArray(
                         self.obs_gridded_data[key],
                         dims=['time', 'lon', 'lat'],
                         coords={'time': self.obs_grid['time'],
                                 'lon': self.obs_grid['longitude'],
                                 'lat': self.obs_grid['latitude']})
-                    self.obs_gridded_dataset[key] = da
+                    da_count = xr.DataArray(
+                        self.obs_gridded_count[key],
+                        dims=['time', 'lon', 'lat'],
+                        coords={'time': self.obs_grid['time'],
+                                'lon': self.obs_grid['longitude'],
+                                'lat': self.obs_grid['latitude']})
+                    self.obs_gridded_dataset[key + '_data'] = da_data
+                    self.obs_gridded_dataset[key + '_count'] = da_count
 
 
     def pair_data(self, time_interval=None):
