@@ -54,7 +54,7 @@ jobs:
           for f in *.ipynb; do
             if [ "$f" == 'idealized.ipynb' ]; then
               jupytext --to py $f -o t.py
-              python t.py
+              python t.py || exit 1
             fi
           done
           cd -
