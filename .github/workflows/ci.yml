@@ -20,7 +20,7 @@ jobs:
       fail-fast: false  # just until cf versions are working
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python (micromamba)
         uses: mamba-org/provision-with-micromamba@v15
@@ -96,7 +96,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python (micromamba)
         uses: mamba-org/provision-with-micromamba@v15
@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check that .py files have the license header
         run: python3 ci/check-for-license-header.py
