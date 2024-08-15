@@ -4,8 +4,8 @@ Installation/Requirements
 Required dependencies [#yaml]_
 ------------------------------
 
-- Python 3.6+ (3.9 - 3.11 recommended)
-- ``pandas`` 1 (most of the system works with pandas 2 as well, but some CLI-only commands might fail. MONETIO also might have some routines that require pandas 1)
+- Python 3.6+ (3.9 -- 3.11 recommended)
+- ``pandas`` 1 (most of the system works with pandas 2 as well, but some of the :doc:`/cli` commands for downloading observational datasets using MONETIO might fail)
 - ``pyyaml`` (to read control files)
 - ``monet``, which brings `many dependencies <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
 - ``monetio``, which brings `a few dependencies <https://monetio.readthedocs.io/en/stable/installing.html>`__
@@ -22,7 +22,7 @@ Optional dependencies
 Incompatibilities
 -----------------
 - pandas=1 is incompatible with matplotlib 3.9+.
-- wrf-python, at least in the official conda-forge package, is incompatible with Python 3.12+.
+- wrf-python, at least in the official conda-forge package, is not available for Python 3.12+, until `this build issue <https://github.com/conda-forge/wrf-python-feedstock/pull/70>`__ is resolved.
 
 .. _user-install-instructions:
 
