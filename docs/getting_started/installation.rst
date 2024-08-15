@@ -4,7 +4,7 @@ Installation/Requirements
 Required dependencies [#yaml]_
 ------------------------------
 
-- Python 3.6+ (3.9 - 3.11 recommended)
+- Python 3.6+ (3.9 -- 3.11 recommended)
 - ``pandas`` 1 (most of the system works with pandas 2 as well, but some of the :doc:`/cli` commands for downloading observational datasets using MONETIO might fail)
 - ``pyyaml`` (to read control files)
 - ``monet``, which brings `many dependencies <https://monet-arl.readthedocs.io/en/stable/installing.html>`__
