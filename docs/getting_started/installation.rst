@@ -22,7 +22,7 @@ Optional dependencies
 Incompatibilities
 -----------------
 - pandas=1 is incompatible with matplotlib 3.9+.
-- wrf-python, at least in the official conda-forge package, is incompatible with Python 3.12+.
+- wrf-python, at least in the official conda-forge package, is not available for Python 3.12+, until `this build issue <https://github.com/conda-forge/wrf-python-feedstock/pull/70>`__ is resolved.
 
 .. _user-install-instructions:
 
