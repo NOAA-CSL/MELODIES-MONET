@@ -13,4 +13,4 @@ Runtime issues
 * The plots are not produced. The error message references ``leg.legendHandles``:
     * You are probably using Matplotlib 3.9+ with pandas 1.x. Downgrade Matplotlib to 3.8 (upgrading pandas should also work, but you might run into some incompatibilities for some specific functionalities, especially those related to downloading observational data with MONETIO. Check :doc:`/getting_started/installation`).
 * Failure downoloading maps:
-    * MELODIES-MONET uses Cartopy.crs for mapping. Cartopy.crs downloads shapefiles automatically to create the maps, and if you are offline or working on a machine with download restrictions, this might fail. Check :doc:`/appendix/machine-specific-install`. This is the situatino for *NOAA HPC Hera*, and the solution discussed there should work.
+    * MELODIES-MONET uses Cartopy for mapping. Cartopy downloads shapefiles automatically to create the maps, and if you are offline or working on a machine with download restrictions, this might fail. Check :doc:`/appendix/machine-specific-install`. This is the situation for *NOAA HPC Hera*, and the solution discussed there should work.
