@@ -9,7 +9,7 @@ Installation problems
 Runtime issues
 --------------
 * Pairing (:meth:`~melodies_monet.driver.analysis.pair_models`) takes too long:
-    * ``analysis.pair_models()`` is one of the most expensive functions in MELODIES MONET, and you might be running out of memory. If you have access to more RAM, try it with that. A Time Chunking functionality is being developed to deal with this issue.
+    * ``analysis.pair_models()`` is one of the most expensive functions in MELODIES MONET, and you might be running out of memory. If you have access to more RAM, try it with that. A Time Chunking functionality is being developed to deal with this issue. Check :doc:`/users_guide/time_chunking'.
 * The plots are not produced. The error message references ``leg.legendHandles``:
     * You are probably using Matplotlib 3.9+ with pandas 1.x. Downgrade Matplotlib to 3.8 (upgrading pandas should also work, but you might run into some incompatibilities for some specific functionalities, especially those related to downloading observational data with MONETIO. Check :doc:`/getting_started/installation`).
 * Failure downoloading maps:
