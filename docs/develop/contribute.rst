@@ -14,5 +14,5 @@ the contributions and support from you.
 - Join an :ref:`Upcoming Workshop <develop/other_resources:Upcoming>`
   or check out :ref:`Past Workshops <develop/other_resources:Past>`.
 - See our developers guide, to learn 
-  :ref:`develop/information_for_devs:How to incorporate updates to MELODIES MONET`.
+  :ref:`develop/developers_guide:How to incorporate updates to MELODIES MONET`.
 - Email melodies@ucar.edu with questions.

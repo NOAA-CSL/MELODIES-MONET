@@ -52,7 +52,7 @@ Now, install the stable branch of MELODIES MONET to the environment::
 
 .. note::
    If you are interested in modifying what MELODIES MONET can do,
-   take a look at the :doc:`/develop/information_for_devs`.
+   take a look at the :doc:`/develop/developers_guide`.
 
 
 .. [#yaml] Examples of `conda <https://conda.io>`__

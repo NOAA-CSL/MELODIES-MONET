@@ -67,7 +67,7 @@ MONETIO please refer to:
    develop/contribute
    develop/other_resources
    develop/development_team
-   develop/information_for_devs
+   develop/developers_guide
    develop/datasets
 
 .. toctree::
