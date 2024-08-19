@@ -17,17 +17,17 @@ jobs:
     strategy:
       matrix:
         monet: [cf, dev]
-      fail-fast: false  # just until cf versions are working
+      fail-fast: false  # always both
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/provision-with-micromamba@v15
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: docs/environment-docs.yml
-          cache-env: true
-          extra-specs: |
+          cache-environment: true
+          create-args: >-
             pytest
 
       - if: ${{ matrix.monet == 'dev' }}
@@ -53,8 +53,7 @@ jobs:
           cd docs/examples
           for f in *.ipynb; do
             if [ "$f" == 'idealized.ipynb' ]; then
-              jupytext --to py $f -o t.py
-              python t.py
+              jupytext --to py $f -o t.py && python t.py || exit 1
             fi
           done
           cd -
@@ -96,13 +95,13 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/provision-with-micromamba@v15
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: docs/environment-docs.yml
-          cache-env: true
+          cache-environment: true
 
       - name: linkcheck
         run: sphinx-build -b linkcheck docs docs/_build/linkcheck
@@ -125,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check that .py files have the license header
         run: python3 ci/check-for-license-header.py
