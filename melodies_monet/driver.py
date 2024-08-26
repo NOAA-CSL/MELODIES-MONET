@@ -1322,6 +1322,7 @@ class analysis:
             from .plots import satplots as splots,savefig
         else: 
             from .plots import surfplots as splots, savefig
+            from .plots import aircraftplots as airplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
