@@ -1,0 +1,206 @@
+Developer's Guide
+=================
+
+Description of Branches
+-----------------------
+
+There are several primary repository branches
+for specific development tracks.
+
+main
+____
+This is the stable release branch.
+It is updated from the *develop* branch
+and tagged prior to each release.
+The melodies-monet conda package is created from *main*.
+
+develop
+_______
+This is the parent branch in which
+to consolidate the various development tracks.
+General practice, when working within the central repository,
+is to create a working branch, branched from *develop*,
+with a naming convention such as *develop_topic*.
+The *develop_topic* branches are merged back to *develop*
+via pull requests.
+Forks of the central repository should follow the same
+branching conventions.
+
+develop_aircraft
+________________
+The *develop_aircraft* branch is the place
+for adding new features related to aircraft observations.
+
+develop_satellite
+_________________
+The *develop_satellite* branch is intended
+for adding support for reading and processing
+satellite observations.
+This includes both gridded satellite data products
+and swath or geostationary disk data products.
+Sub-branches are sometimes created off of *develop_satellite*,
+such as *develop_satellite_swath*.
+
+develop_testsuite
+_________________
+The *develop_testsuite* branch holds modules
+under development for unit tests and regression tests.
+
+.. _dev-install-instructions:
+
+Setting up your development environment
+---------------------------------------
+
+In order to prepare for developing MELODIES MONET,
+we clone the repositories and create a conda environment that references them.
+
+.. note::
+   If you are installing MELODIES MONET on NCAR Casper or NOAA Hera
+   follow these machine specific instructions instead.
+
+   - :ref:`NCAR Casper <appendix/machine-specific-install:NCAR HPC Derecho/Casper>`
+   - :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
+
+.. important::
+   The instructions below are for cloning a repository using SSH.
+   If you prefer, you can also clone the monet, monetio, and
+   MELODIES-MONET repositories using HTTPS [#clone]_.
+
+To install MELODIES MONET on your laptop or on HPC machines in general follow 
+these instructions:
+ 
+(a) Set up a conda environment with all the dependencies, including MONET and 
+    MONETIO::
+
+       $ conda create --name melodies-monet python=3.9
+       $ conda activate melodies-monet
+       $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
+
+(b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
+    your conda environment::
+
+       $ git clone git@github.com:noaa-oar-arl/monet.git
+       $ cd monet
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
+       $ git clone git@github.com:noaa-oar-arl/monetio.git
+       $ cd monetio
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
+(c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
+
+       $ git clone git@github.com:NOAA-CSL/MELODIES-MONET.git
+       $ cd MELODIES-MONET
+       $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
+
+
+How to incorporate updates to MELODIES MONET
+--------------------------------------------
+
+In order to contribute code to MELODIES MONET, you will need to fork the
+repository, make changes on your fork, and submit a pull request with your
+changes. 
+
+(a) Fork the GitHub repository to your own GitHub account
+    using the "Fork" button near the top right:
+
+    https://github.com/NOAA-CSL/MELODIES-MONET
+
+    .. note::
+       You can pull updates from the main NOAA repository
+       by using the "Fetch Upstream" button on your fork.
+       Alternatively: [#clone]_ ::
+
+          $ git remote add upstream git@github.com:NOAA-CSL/MELODIES-MONET.git
+          $ git pull upstream main
+          $ git push origin main
+
+(b) Navigate on your working machine
+    to where you would like to keep the MELODIES-MONET code
+    (e.g. in your work location) and clone [#clone]_ your fork::
+
+       $ git clone git@github.com:$GitHubUsername/$ForkName.git
+
+(c) Checkout the develop branch --- you need to do this with the remote branch
+    as well as create a local tracking branch::
+
+       $ git checkout origin/develop
+       $ git checkout develop
+
+    Then all development work will be in the ``melodies_monet`` folder. ::
+
+       $ cd melodies_monet
+
+(d) Make changes to your fork.
+
+(e) Submit a pull request back to the main MELODIES MONET repository with your
+    changes. 
+
+
+Contributions to the Docs
+-------------------------
+
+If you add a component to MELODIES MONET, please follow the instructions below 
+to update the readthedocs user guide. 
+
+This User's Guide has been generated by the Sphinx documentation system.
+This requires adding the following packages to your conda environment in
+order to build the HTML docs.
+
+Either use the ``docs/environment-docs.yml`` file [#env]_
+from the MELODIES MONET repository,
+or add the following packages to your conda environment manually::
+
+    $ conda install -y -c conda-forge sphinx sphinx_rtd_theme myst-nb sphinx-design sphinx-click sphinx-togglebutton typer
+
+The restructured text sources (rst) are located
+in the MELODIES-MONET/docs folders.
+The rst files may be edited and new files added
+to document any package modifications
+or new MELODIES MONET components.
+
+To build the HTML docs::
+
+    $ cd docs
+    $ make clean
+    $ make html
+
+The generated HTML will be created in ``docs/_build/html``,
+with ``docs/_build/html/index.html`` the main page that can be
+viewed in any browser.
+
+Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/2>`_ 
+project on GitHub to learn about current and future development.
+
+
+.. _clone-notes:
+.. [#clone] Note that in order to do an SSH clone,
+   e.g. ::
+
+      $ git clone git@github.com:noaa-oar-arl/monet.git
+
+   you must have already
+   `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
+   to your GitHub account for your current machine.
+   If you are new to GitHub, check out
+   `this GitHub tutorial <https://jlord.us/git-it/>`__.
+   We recommend the SSH method, but if you don't add an SSH key
+   you can still clone the repositories via HTTPS, e.g. ::
+
+       $ git clone https://github.com/noaa-oar-arl/monet.git
+
+
+.. [#env] That is,
+   use::
+
+      $ conda env update -n melodies-monet -f docs/environment-docs.yml
+
+   to update your existing conda environment,
+   or::
+
+      $ conda env create -f docs/environment-docs.yml
+
+   to create a new conda environment (``melodies-monet-docs``).
