@@ -4,6 +4,8 @@ an = driver.analysis()
 an.control = 'control_modis_l2.yaml'
 an.read_control()
 
+an.open_models()
+
 an.setup_obs_grid()
 # print(an.obs_grid)
 
@@ -32,6 +34,9 @@ an.obs_gridded_dataset.to_netcdf('MODIS.nc')
 for model in an.model_regridders:
     print(model)
     print(an.model_regridders[model])
+
+for model in an.models:
+    print(an.models[model].obj)
 
 # ds_model_regrid = regridder(ds_model)
 
