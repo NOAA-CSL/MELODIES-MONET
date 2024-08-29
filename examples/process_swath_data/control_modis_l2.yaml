@@ -1,7 +1,8 @@
 analysis:
   # 2020 September 9 - September 11 253 - 255
   start_time: '2020-09-09'
-  end_time:   '2020-09-11'
+  # end_time:   '2020-09-11'
+  end_time:   '2020-09-10'
   time_interval: '24h'
   output_dir: $HOME/Plots
   debug: True
@@ -11,8 +12,10 @@ analysis:
 
 obs_grid:
   start_time: '2020-09-09'
-  end_time:   '2020-09-11'
-  ntime: 72
+  # end_time:   '2020-09-11'
+  end_time:   '2020-09-10'
+  # ntime: 72
+  ntime: 48
   nlat: 180
   nlon: 360
 

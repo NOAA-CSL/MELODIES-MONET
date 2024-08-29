@@ -7,7 +7,7 @@ an.read_control()
 an.setup_obs_grid()
 # print(an.obs_grid)
 
-# an.setup_regridders()
+an.setup_regridders()
 
 for time_interval in an.time_intervals:
 
@@ -17,7 +17,7 @@ for time_interval in an.time_intervals:
     an.update_obs_gridded_data()
 
 an.normalize_obs_gridded_data()
-print(an.obs_gridded_dataset)
+# print(an.obs_gridded_dataset)
 
 for param in ['Terra_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined',
               'Aqua_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined']:
@@ -28,4 +28,6 @@ for param in ['Terra_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined',
     an.obs_gridded_dataset[param + '_data'].values = param_data
 
 an.obs_gridded_dataset.to_netcdf('MODIS.nc')
+
+# ds_model_regrid = regridder(ds_model)
 
