@@ -14,7 +14,8 @@ import monet
 import collections
 
 import logging
-numba_logger = logging.getLogger('numba')
+
+numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
 
@@ -23,7 +24,7 @@ def create_swathdefinition(obsobj):
 
     Partameters
     -----------
-    obsobj : xr.Dataset 
+    obsobj : xr.Dataset
          Object containing lat andsdf:q
          lon of satellite observations
 
@@ -33,8 +34,11 @@ def create_swathdefinition(obsobj):
         A pyresample SwathDefinition with the swath data
     """
 
-    swathdef = monet.util.interp_util.lonlat_to_swathdefinition(obsobj["lon"].values, obsobj["lat"].values)
+    swathdef = monet.util.interp_util.lonlat_to_swathdefinition(
+        obsobj["lon"].values, obsobj["lat"].values
+    )
     return swathdef
+
 
 def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
     """Interpolate model to satellite swath/swaths
@@ -42,7 +46,7 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
     Parameters
     ----------
     obsobj : xr.Dataset | collections.OrderedDict
-        satellite with swath data. If type is xr.Dataset, a single 
+        satellite with swath data. If type is xr.Dataset, a single
         swath is assumed. If type is collections.OrderedDict, a key containing
         each swath in a scan is assumed.
     modobj : xr.Dataset
@@ -51,7 +55,7 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
     Returns
     -------
     modswath : xr.Dataset | collections.OrderedDict
-        Regridded model data at swath or swaths. If type is xr.Dataset, a single 
+        Regridded model data at swath or swaths. If type is xr.Dataset, a single
         swath is returned. If type is collections.OrderedDict, it returns an
         OrderedDict in which each time represents the reference time of the swath.
     """
@@ -86,6 +90,7 @@ def _interp_mod2swath(swathobj, modobj, method="bilinear"):
     modswath = regridder(modobj)
     return modswath
 
+
 def _calc_dp(obsobj):
     """Calculate delta pressure in satellite layers
 
@@ -100,16 +105,17 @@ def _calc_dp(obsobj):
         Pressure difference in layer
     """
 
-    dp_vals = (obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values 
-               - obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values)
+    dp_vals = (
+        obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
+        - obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
+    )
     dp = xr.DataArray(
         data=dp_vals,
-        dims = ("x", "y", "swt_level"),
-        coords = {"lon": (("x", "y"), obsobj["lon"].values),
-                  "lat": (("x", "y"), obsobj["lat"].values)},
-        attrs = {"units": "Pa",
-                 "description": "Delta pressure in layer",
-                 "long_name": "delta_p"}
+        dims=("x", "y", "swt_level"),
+        coords={
+            "lon": (("x", "y"), obsobj["lon"].values),
+            "lat": (("x", "y"), obsobj["lat"].values),
+        },
+        attrs={"units": "Pa", "description": "Delta pressure in layer", "long_name": "delta_p"},
     )
     return dp
-
