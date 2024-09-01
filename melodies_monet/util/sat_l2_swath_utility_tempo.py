@@ -6,14 +6,16 @@
 # developed for TEMPO Level2 NO2
 #
 
-import xesmf as xe
+import collections
+import logging
+from datetime import datetime
+
+import monet
 import numpy as np
 import xarray as xr
-from datetime import datetime
-import monet
-import collections
-
-import logging
+import xesmf as xe
+import warnings
+import numba
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -74,9 +76,9 @@ def _interp_mod2swath(swathobj, modobj, method="bilinear"):
 
     Parameters
     ----------
-    swathobj: xr.Dataset
+    swathobj : xr.Dataset
         It contains the referencetime, lat and lon data of the swath
-    modobj: xr.Dataset
+    modobj : xr.Dataset
         It contains the data to be regridded (time, lat and lon)
 
     Returns
@@ -101,7 +103,7 @@ def _calc_dp(obsobj):
 
     Returns
     -------
-    dp: xr.DataArray
+    dp : xr.DataArray
         Pressure difference in layer
     """
 
@@ -119,3 +121,101 @@ def _calc_dp(obsobj):
         attrs={"units": "Pa", "description": "Delta pressure in layer", "long_name": "delta_p"},
     )
     return dp
+
+
+@numba.jit(nopython=True)
+def _fast_interp_vert(orig, target, data):
+    """Performs the numpy interpolation. It is separated from other functions
+    for the sake of using the numba jit.
+
+    Parameters:
+    -----------
+    orig : np.ndarray
+        Original grid from which to interpolate. The expected dimensions are (time, z, x, y),
+        in that order. The horizontal and time dimensions are expected to be previously
+        interpolated. The original pressure levels should be in decreasing order.
+    target : np.ndarray
+        Target data with vertical grid information. The expected dimensions are (time, z, x, y),
+        in that order. The target pressure layers should be in decreasing order.
+    data : np.ndarray
+        Data to be interpolated. It should have the same grid (including vertical) and dimensions
+        as orig.
+
+    Returns
+    -------
+    interp : np.ndarray
+        Interpolated data
+    """
+    assert orig.shape == data.shape, "Grid shape does not match data"
+    nt, nz, nx, ny = target.shape
+    interp = np.zeros((nt, nz, nx, ny))
+    for t in nt:
+        for x in nx:
+            for y in ny:
+                interp[t, :, x, y] = np.flip(
+                    np.interp(
+                        np.flip(target[t, :, x, y]),
+                        np.flip(orig[t, :, x, y]),
+                        np.flip(data[t, :, x, y]),
+                    )
+                )
+    return interp
+
+
+def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
+    """Interpolates model vertical layers to TEMPO vertical layers
+
+    Paramenters
+    -----------
+    modobj : xr.Dataset
+        Model data (as provided by MONETIO)
+    obsobj : xr.Dataset
+        TEMPO data (as provided by MONETIO). Must include pressure.
+    vars : list[str]
+        Variables to interpolate.
+
+    Returns
+    -------
+    modsatlayers : xr.Dataset
+        Model data (interpolated to TEMPO vertical layers
+    """
+    modsatlayers = xr.Dataset()
+    p_mid_tempo = (
+        obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
+        - obsobj["pressure"].isel(swt_level_stagg=slice(None, -1)).values
+    )
+    p_orig = modobj["pres_pa_mid"]
+    dimensions = ("time", "z", "lon", "lat")
+    coords = {
+        "time": (("time",), modobj["time"].values),
+        "lon": (("x", "y"), modobj["lon"].values),
+        "lat": (("x", "y"), modobj["lat"].values),
+    }
+    for var in vars:
+        interpolated = _interp_mod2swath(p_orig, p_mid_tempo, modobj[var].values)
+        modsatlayers[var] = xr.DataArray(
+            data=interpolated, dims=dimensions, coords=coords, attrs=modobj[var].attrs
+        )
+    modsatlayers["p_mid_tempo"] = xr.DataArray(
+        data=p_mid_tempo, dims=dimensions, coords=coords, attrs=modobj["p_mid_tempo"].attrs
+    )
+    _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
+    modsatlayers["p_mid_tempo"].attrs["description"] = _interp_description
+    return modsatlayers
+
+
+def _calc_partialcolumn(modobj):
+    """Calculates the partial column of a species from its concentration.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+
+    Returns
+    -------
+    partial_col : xr.DataArray
+        DataArray containing the partial column of the species.
+    """
+    warnings.warn("The vertical partial column calculator has not been programmed yet")
+    pass
