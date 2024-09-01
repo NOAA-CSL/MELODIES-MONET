@@ -8,14 +8,14 @@
 
 import collections
 import logging
+import warnings
 from datetime import datetime
 
 import monet
+import numba
 import numpy as np
 import xarray as xr
 import xesmf as xe
-import warnings
-import numba
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -179,6 +179,9 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
     modsatlayers : xr.Dataset
         Model data (interpolated to TEMPO vertical layers
     """
+    assert modobj["longitude"].fillna(0).values == obsobj["lon"].fillna(0).values
+    assert modobj["latitude"].fillna(0).values == obsobj["lat"].fillna(0).values
+
     modsatlayers = xr.Dataset()
     p_mid_tempo = (
         obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
@@ -188,8 +191,8 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
     dimensions = ("time", "z", "lon", "lat")
     coords = {
         "time": (("time",), modobj["time"].values),
-        "lon": (("x", "y"), modobj["lon"].values),
-        "lat": (("x", "y"), modobj["lat"].values),
+        "lon": (("x", "y"), modobj["longitude"].values),
+        "lat": (("x", "y"), modobj["latitude"].values),
     }
     for var in vars:
         interpolated = _interp_mod2swath(p_orig, p_mid_tempo, modobj[var].values)
