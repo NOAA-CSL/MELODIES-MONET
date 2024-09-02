@@ -118,7 +118,11 @@ def _calc_dp(obsobj):
             "lon": (("x", "y"), obsobj["lon"].values),
             "lat": (("x", "y"), obsobj["lat"].values),
         },
-        attrs={"units": "Pa", "description": "Delta pressure in layer", "long_name": "delta_p"},
+        attrs={
+            "units": "Pa",
+            "description": "Delta pressure in layer",
+            "long_name": "delta_p",
+        },
     )
     return dp
 
@@ -200,14 +204,17 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
             data=interpolated, dims=dimensions, coords=coords, attrs=modobj[var].attrs
         )
     modsatlayers["p_mid_tempo"] = xr.DataArray(
-        data=p_mid_tempo, dims=dimensions, coords=coords, attrs=modobj["p_mid_tempo"].attrs
+        data=p_mid_tempo,
+        dims=dimensions,
+        coords=coords,
+        attrs=modobj["p_mid_tempo"].attrs,
     )
     _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
     modsatlayers["p_mid_tempo"].attrs["description"] = _interp_description
     return modsatlayers
 
 
-def _calc_partialcolumn(modobj):
+def _calc_partialcolumn(modobj, var='NO2'):
     """Calculates the partial column of a species from its concentration.
 
     Parameters
@@ -220,5 +227,29 @@ def _calc_partialcolumn(modobj):
     partial_col : xr.DataArray
         DataArray containing the partial column of the species.
     """
-    warnings.warn("The vertical partial column calculator has not been programmed yet")
-    pass
+    R = 8.314 # m3 * Pa / K / mol
+    layer_thickness = _calc_layer_thickness(modobj)
+    partial_col = (modobj["pres_pa_mid"] * modobj[var] * layer_thickness) / (R * modobj["tk"])
+
+    return partial_col
+
+def _calc_layer_thickness(modobj):
+    """Calculates layer thickness
+
+    Parameters
+    ----------
+    modbj : xr.Dataset
+        Model data as produced by the MONETIO reader.
+
+    Returns
+    -------
+    layer_thickness : xr.DataArray
+        Layer thickness in m.
+    """
+    layer_thickness = xr.zeros_like(modobj["height_agl"])
+    layer_thickness[:, 0, :, :] = modobj["height_agl"].isel(z=0).values
+    layer_thickness[:, 1:, :, :] = (
+        modobj["height_agl"].isel(z=slice(2, None)).values
+        - modobj["height_agl"].isel(z=slice(1, -1)).values
+    )
+    return layer_thickness
