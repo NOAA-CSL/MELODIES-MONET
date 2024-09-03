@@ -166,7 +166,7 @@ def _fast_interp_vert(orig, target, data):
     return interp
 
 
-def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
+def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2"]):
     """Interpolates model vertical layers to TEMPO vertical layers
 
     Paramenters
@@ -214,7 +214,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["no2_col"]):
     return modsatlayers
 
 
-def _calc_partialcolumn(modobj, var='NO2'):
+def _calc_partialcolumn(modobj, var="NO2"):
     """Calculates the partial column of a species from its concentration.
 
     Parameters
@@ -227,11 +227,12 @@ def _calc_partialcolumn(modobj, var='NO2'):
     partial_col : xr.DataArray
         DataArray containing the partial column of the species.
     """
-    R = 8.314 # m3 * Pa / K / mol
+    R = 8.314  # m3 * Pa / K / mol
     layer_thickness = _calc_layer_thickness(modobj)
     partial_col = (modobj["pres_pa_mid"] * modobj[var] * layer_thickness) / (R * modobj["tk"])
 
     return partial_col
+
 
 def _calc_layer_thickness(modobj):
     """Calculates layer thickness
@@ -253,3 +254,31 @@ def _calc_layer_thickness(modobj):
         - modobj["height_agl"].isel(z=slice(1, -1)).values
     )
     return layer_thickness
+
+
+def apply_ak_mod2tempo_no2(modobj, obsobj):
+    """Apply the averaging kernel according to the recomendations by
+    Brad Pierce and Sara-Eva Martínez-Alonso
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data, already interpolated to TEMPO grid
+
+    obsobj : xr.Dataset
+        TEMPO data, including pressure and scattering weights
+
+    Returns
+    -------
+    xr.DataArray
+        A xr.DataArray containing the NO2 model data after applying
+        the air mass factors and scattering weights
+    """
+    fac = 2.12138e22  # Unit conversion 1.0e4*6.023e23/28.97/9.8/1000
+    dp = _calc_dp(obsobj)
+    scattering_weights = modobj["scattering_weights"]
+    modno2 = modobj["NO2"]
+    amf_troposphere = obsobj["amf_troposphere"]
+    modno2col_trfmd = (dp.squeeze() * scattering_weights.squeeze() * modno2) * fac * 1e-6
+    modno2col_trfmd = modno2col_trfmd / amf_troposphere
+    return modno2col_trfmd
