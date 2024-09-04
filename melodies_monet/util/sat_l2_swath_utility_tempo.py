@@ -9,9 +9,7 @@
 import collections
 import logging
 import warnings
-from datetime import datetime
 
-import monet
 import numba
 import numpy as np
 import xarray as xr
@@ -20,26 +18,6 @@ import xesmf as xe
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
-
-# def create_swathdefinition(obsobj):
-#     """Creates a pyresample SwathDefinition with the TEMPO swath grid
-#
-#     Partameters
-#     -----------
-#     obsobj : xr.Dataset
-#          Object containing lat andsdf:q
-#          lon of satellite observations
-#
-#     Returns
-#     -------
-#     pyresample.geometry.SwathDefinition
-#         A pyresample SwathDefinition with the swath data
-#     """
-#
-#     swathdef = monet.util.interp_util.lonlat_to_swathdefinition(
-#         obsobj["lon"].values, obsobj["lat"].values
-#     )
-#     return swathdef
 
 
 def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
@@ -292,7 +270,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(modobj, obsobj):
     unit_c = 6.022e23 * 9.8 / 1e4
     dp = _calc_dp(obsobj).rename({"swt_level": "z"})
     PPBTOMOLMOL = 1e-9
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
