@@ -49,6 +49,7 @@ obs:
 model:
   MERRA2:
     mod_type: reanalysis
+    files: $HOME/Data/MERRA2/tavg1_2d_aer_Nx/*nc4
     regrid:
       base_grid: $HOME/Data/Grids/merra2_grid.nc
       method: bilinear
