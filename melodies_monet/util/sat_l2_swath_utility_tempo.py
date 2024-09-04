@@ -19,7 +19,6 @@ numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
 
-
 def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
     """Interpolate model to satellite swath/swaths
 
@@ -196,7 +195,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
     return modsatlayers
 
 
-def _calc_partialcolumn(modobj, var="NO2"):
+def calc_partialcolumn(modobj, var="NO2"):
     """Calculates the partial column of a species from its concentration.
 
     Parameters
@@ -247,7 +246,7 @@ def _calc_layer_thickness(modobj):
     return layer_thickness
 
 
-def apply_weights_mod2tempo_no2_hydrostatic(modobj, obsobj):
+def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
     """Apply the scattering weights and air mass factors accordint to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
     assuming the hydrostatic equation. It does not require temperature
@@ -255,11 +254,10 @@ def apply_weights_mod2tempo_no2_hydrostatic(modobj, obsobj):
 
     Parameters
     ----------
-    modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
-
     obsobj : xr.Dataset
         TEMPO data, including pressure and scattering weights
+    modobj : xr.Dataset
+        Model data, already interpolated to TEMPO grid
 
     Returns
     -------
@@ -283,17 +281,16 @@ def apply_weights_mod2tempo_no2_hydrostatic(modobj, obsobj):
     return modno2col_trfmd
 
 
-def apply_weights_mod2tempo_no2(modobj, obsobj):
+def apply_weights_mod2tempo_no2(obsobj, modobj):
     """Apply the scattering weights and air mass factors according to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
 
     Parameters
     ----------
-    modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
-
     obsobj : xr.Dataset
         TEMPO data, including pressure and scattering weights
+    modobj : xr.Dataset
+        Model data, already interpolated to TEMPO grid
 
     Returns
     -------
@@ -317,3 +314,65 @@ def apply_weights_mod2tempo_no2(modobj, obsobj):
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
     }
     return modno2col_trfmd
+
+
+def _regrid_and_apply_weights(obsobj, modobj):
+    """Does the complete process of regridding and
+    applying scattering weights. Assumes that obsobj is a Dataset
+
+    Parameters
+    ----------
+    obsobj : xr.Dataset
+        TEMPO observations
+    modobj : xr.Dataset
+        Model data
+
+    Returns
+    -------
+    xr.DataArray
+        Model data regridded to the TEMPO grid,
+        with the averaging kernel.
+    """
+    modobj_hs = tempo_interp_mod2swath(obsobj, modobj)
+    if "layer_height_agl" in list(modobj.variables):
+        modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
+        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
+        return apply_weights_mod2tempo_no2(obsobj, modobj_swath)
+    else:
+        warnings.warn(
+            "There is no layer_height_agl variable, and the partial column"
+            + "cannot be directly calculated. Assuming hydrostatic equation."
+        )
+        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2"])
+        return apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
+
+
+def regrid_and_apply_weights(obsobj, modobj):
+    """Does the complete process of regridding
+    and applying scattering weights.
+
+    Parameters
+    ----------
+    obsobj : xr.Dataset | collections.OrderedDict
+    modobj : xr.Dataset
+
+    Returns
+    -------
+    xr.Dataset | collections.OrderedDict
+        Model with regridded data. If obsobj is of type collections.OrderedDict,
+        an OrderedDict is returned.
+    """
+
+    if isinstance(obsobj, xr.DataArray):
+        regridded = _regrid_and_apply_weights(obsobj, modobj)
+        output = regridded.to_dataset(name="NO2_col_2sat")
+        output.attrs["reference_time"] = obsobj.attrs["reference_time"]
+        return output
+    elif isinstance(obsobj, collections.OrderedDict):
+        output_multiple = collections.OrderedDict()
+        for ref_time in obsobj.keys():
+            output_multiple[ref_time] = _regrid_and_apply_weights(obsobj[ref_time], modobj)
+            output_multiple[ref_time].attrs["reference_time"] = ref_time
+        return output_multiple
+    else:
+        raise "Obsobj must be xr.DataArray or collections.OrderedDict"
