@@ -31,12 +31,10 @@ for param in ['Terra_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined',
 
 an.obs_gridded_dataset.to_netcdf('MODIS.nc')
 
-for model in an.model_regridders:
-    print(model)
-    print(an.model_regridders[model])
 
 for model in an.models:
     print(an.models[model].obj)
-
-# ds_model_regrid = regridder(ds_model)
+    regridder = an.model_regridders[model]
+    print(regridder)
+    ds_model_regrid = regridder(an.models[model].obj)
 
