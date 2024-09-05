@@ -24,49 +24,21 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
 
     Parameters
     ----------
-    obsobj : xr.Dataset | collections.OrderedDict
-        satellite with swath data. If type is xr.Dataset, a single
-        swath is assumed. If type is collections.OrderedDict, a key containing
-        each swath in a scan is assumed.
+    obsobj : xr.Dataset
+        satellite with swath data.
     modobj : xr.Dataset
         model data (with no2 col calculated)
 
     Returns
     -------
-    modswath : xr.Dataset | collections.OrderedDict
+    xr.Dataset | collections.OrderedDict
         Regridded model data at swath or swaths. If type is xr.Dataset, a single
         swath is returned. If type is collections.OrderedDict, it returns an
         OrderedDict in which each time represents the reference time of the swath.
     """
 
-    if isinstance(obsobj, collections.OrderedDict):
-        modswath = collections.OrderedDict()
-        for key in obsobj.keys():
-            modswath[key] = _interp_mod2swath(obsobj[key], modobj, method=method)
-    elif isinstance(obsobj, xr.Dataset):
-        modswath = _interp_mod2swath(obsobj, modobj, method)
-    return modswath
-
-
-def _interp_mod2swath(swathobj, modobj, method="bilinear"):
-    """Interpolate model to swath,
-
-    Parameters
-    ----------
-    swathobj : xr.Dataset
-        It contains the referencetime, lat and lon data of the swath
-    modobj : xr.Dataset
-        It contains the data to be regridded (time, lat and lon)
-
-    Returns
-    -------
-    modswath : xr.Dataset
-        Dataset containing the regridded model
-    """
-
-    mod_at_swathtime = modobj.interp(time=swathobj.time.mean())
-    # import pdb; pdb.set_trace()
-    regridder = xe.Regridder(mod_at_swathtime, swathobj, method, unmapped_to_nan=True)
+    mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
+    regridder = xe.Regridder(mod_at_swathtime, obsobj, method, unmapped_to_nan=True)
     modswath = regridder(mod_at_swathtime)
     return modswath
 
@@ -81,7 +53,7 @@ def _calc_dp(obsobj):
 
     Returns
     -------
-    dp : xr.DataArray
+    xr.DataArray
         Pressure difference in layer
     """
 
@@ -127,7 +99,7 @@ def _interp_vert(orig, target, data):
 
     Returns
     -------
-    interp : np.ndarray
+    np.ndarray
         Interpolated data
     """
     assert orig.shape == data.shape, "Grid shape does not match data"
@@ -160,7 +132,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
 
     Returns
     -------
-    modsatlayers : xr.Dataset
+    xr.Dataset
         Model data (interpolated to TEMPO vertical layers
     """
     assert np.all(modobj["lon"].fillna(0).values == obsobj["lon"].fillna(0).values)
@@ -205,7 +177,7 @@ def calc_partialcolumn(modobj, var="NO2"):
 
     Returns
     -------
-    partial_col : xr.DataArray
+    xr.DataArray
         DataArray containing the partial column of the species.
     """
     R = 8.314  # m3 * Pa / K / mol
@@ -234,7 +206,7 @@ def _calc_layer_thickness(modobj):
 
     Returns
     -------
-    layer_thickness : xr.DataArray
+    xr.DataArray
         Layer thickness in m.
     """
     height_agl = modobj["layer_height_agl"]
@@ -363,16 +335,22 @@ def regrid_and_apply_weights(obsobj, modobj):
         an OrderedDict is returned.
     """
 
-    if isinstance(obsobj, xr.DataArray):
+    if isinstance(obsobj, xr.Dataset):
         regridded = _regrid_and_apply_weights(obsobj, modobj)
         output = regridded.to_dataset(name="NO2_col_2sat")
-        output.attrs["reference_time"] = obsobj.attrs["reference_time"]
+        output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         return output
     elif isinstance(obsobj, collections.OrderedDict):
         output_multiple = collections.OrderedDict()
         for ref_time in obsobj.keys():
-            output_multiple[ref_time] = _regrid_and_apply_weights(obsobj[ref_time], modobj)
-            output_multiple[ref_time].attrs["reference_time"] = ref_time
+            output_multiple[ref_time] = _regrid_and_apply_weights(
+                obsobj[ref_time], modobj
+            ).to_dataset(name="NO2_col_2sat")
+            output_multiple[ref_time].attrs["reference_time_string"] = ref_time
+            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
+            output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
+                "granule_number"
+            ]
         return output_multiple
     else:
-        raise "Obsobj must be xr.DataArray or collections.OrderedDict"
+        raise "Obsobj must be xr.Dataset or collections.OrderedDict"
