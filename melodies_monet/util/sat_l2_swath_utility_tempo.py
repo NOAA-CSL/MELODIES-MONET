@@ -356,7 +356,7 @@ def regrid_and_apply_weights(obsobj, modobj):
         raise "Obsobj must be xr.Dataset or collections.OrderedDict"
 
 
-def back_to_modgrid(modobj, obj2grid):
+def back_to_modgrid(obj2grid, modobj):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors.
 
