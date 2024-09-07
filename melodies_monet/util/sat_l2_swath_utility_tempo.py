@@ -376,6 +376,6 @@ def back_to_modgrid(modobj, obj2grid):
     if len(obj2grid) > 1:
         for k in list(obj2grid.keys())[1:]:
             concatenated = xr.concat([concatenated, obj2grid[k]], dim="x")
-    regridder = xr.Regridder(concatenated, modobj, method='bilinear', unmapped_to_nan=True)
+    regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
     return out_regridded
