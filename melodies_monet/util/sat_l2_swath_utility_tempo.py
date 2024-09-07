@@ -31,7 +31,7 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
 
     Returns
     -------
-    xr.Dataset | collections.OrderedDict
+    xr.Dataset
         Regridded model data at swath or swaths. If type is xr.Dataset, a single
         swath is returned. If type is collections.OrderedDict, it returns an
         OrderedDict in which each time represents the reference time of the swath.
@@ -354,3 +354,28 @@ def regrid_and_apply_weights(obsobj, modobj):
         return output_multiple
     else:
         raise "Obsobj must be xr.Dataset or collections.OrderedDict"
+
+
+def back_to_modgrid(modobj, obj2grid):
+    """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
+    the scattering weights and air mass factors.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        A modobj including the modgrid.
+    obj2grid : collections.OrderedDict[str, xr.Dataset]
+        An OrderedDict with time_reference strings as keys.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with obj2grid regridded to modobj.
+    """
+    concatenated = obj2grid[list(obj2grid.keys())[0]]
+    if len(obj2grid) > 1:
+        for k in list(obj2grid.keys())[1:]:
+            concatenated = xr.concat([concatenated, obj2grid[k]], dim="x")
+    regridder = xr.Regridder(concatenated, modobj, method='bilinear', unmapped_to_nan=True)
+    out_regridded = regridder(concatenated)
+    return out_regridded
