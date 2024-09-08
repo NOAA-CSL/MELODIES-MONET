@@ -337,7 +337,7 @@ def regrid_and_apply_weights(obsobj, modobj):
 
     if isinstance(obsobj, xr.Dataset):
         regridded = _regrid_and_apply_weights(obsobj, modobj)
-        output = regridded.to_dataset(name="NO2_col_2sat")
+        output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         return output
     elif isinstance(obsobj, collections.OrderedDict):
@@ -345,7 +345,7 @@ def regrid_and_apply_weights(obsobj, modobj):
         for ref_time in obsobj.keys():
             output_multiple[ref_time] = _regrid_and_apply_weights(
                 obsobj[ref_time], modobj
-            ).to_dataset(name="NO2_col_2sat")
+            ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
             output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
@@ -356,9 +356,16 @@ def regrid_and_apply_weights(obsobj, modobj):
         raise "Obsobj must be xr.Dataset or collections.OrderedDict"
 
 
-def back_to_modgrid(obj2grid, modobj):
+def back_to_modgrid(
+    obj2grid,
+    modobj,
+    subset_vars="all",
+    add_time=True,
+    to_netcdf=False,
+    out_name="Regridded_object_XYZ.nc",
+):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
-    the scattering weights and air mass factors.
+    the scattering weights and air mass factors. It is designed for a single scan.
 
     Parameters
     ----------
@@ -366,16 +373,90 @@ def back_to_modgrid(obj2grid, modobj):
         A modobj including the modgrid.
     obj2grid : collections.OrderedDict[str, xr.Dataset]
         An OrderedDict with time_reference strings as keys.
+    subset_var : str | list[str]
+        A list containing a subset of variables to regrid.
+        If it is 'all', all variables are regridded
+    add_time : bool
+        If True, add reference time as a coordinate for the scan.
+        Can be useful to concatenate later if multiple scans are required.
+    to_netcdf : bool
+        If True, save a netcdf with the paired data
+    out_name : str
+        The base name to save the files if to_netcdf is True. XX will be replaced
+        with the scan number and the reference time. If to_netcdf is False, this will
+        be ignored.
 
     Returns
     -------
     xr.Dataset
         Dataset with obj2grid regridded to modobj.
     """
-    concatenated = obj2grid[list(obj2grid.keys())[0]]
+    concatenated = _subset_ds(obj2grid[list(obj2grid.keys())[0]], subset_vars)
+    scan_num = concatenated.attrs["scan_num"]
+    granules = [concatenated.attrs["granule_number"]]
+    ref_times = [concatenated.attrs["reference_time_string"][:-1]]  # Remove unneded Z
     if len(obj2grid) > 1:
         for k in list(obj2grid.keys())[1:]:
-            concatenated = xr.concat([concatenated, obj2grid[k]], dim="x")
+            ds_to_add = _subset_ds(obj2grid[k])
+            if ds_to_add.attrs["scan_num"] != scan_num:
+                raise (
+                    "back_to_modgrid is prepared to work with data of a single scan. "
+                    + f"However, {list(obj2grid.keys())[0]} is from scan {scan_num} and "
+                    + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
+                )
+            concatenated = xr.concat([concatenated, _subset_ds(obj2grid[k])], dim="x")
+            granules.append(obj2grid[k].attrs["granule_number"])
+            ref_times.append(obj2grid[k].attrs["reference_time_string"][:-1])
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
+    out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
+    for v in out_regridded.variables:
+        out_regridded[v].attrs = concatenated[v].attrs
+    out_regridded.attrs["reference_time_string"] = ref_times
+    out_regridded.attrs["granules"] = np.array(granules)
+    scan_num = concatenated.attrs["scan_num"]
+    if add_time:
+        time = [np.array(ref_times[0], dtype="datetime64[ns]")]
+        da_time = xr.DataArray(
+            name="start_time",
+            data=time,
+            dims=["start_time"],
+            attrs={"description": "Reference start time of first selected granule in scan."},
+            coords={
+                "start_time": (("start_time",), time)
+            },
+        )
+        out_regridded = out_regridded.expand_dims(start_time=da_time)
+    if to_netcdf:
+        if "XYZ" in out_name:
+            out_regridded.to_netcdf(
+                out_name.replace(
+                    "XYZ", f"S{scan_num}_{ref_times[0]}"
+                )
+            )
+        else:
+            out_regridded.to_netcdf(out_name)
+
     return out_regridded
+
+
+def _subset_ds(ds, subset_vars="all"):
+    """Subset of variables to select from an xr.Dataset. If subset_vars is all, it just returns
+    the Dataset whithout doing anything
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset to subset
+    subset_vars : str | list[str]
+        String or list of strings with the names of the variables to subset.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with the subset of variables of interest
+    """
+    if subset_vars == "all":
+        return ds
+    else:
+        return ds[subset_vars]
