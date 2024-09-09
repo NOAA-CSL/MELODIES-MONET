@@ -9,6 +9,7 @@
 import collections
 import logging
 import warnings
+import glob
 
 import numba
 import numpy as np
@@ -353,7 +354,7 @@ def regrid_and_apply_weights(obsobj, modobj):
             ]
         return output_multiple
     else:
-        raise "Obsobj must be xr.Dataset or collections.OrderedDict"
+        raise Exception("Obsobj must be xr.Dataset or collections.OrderedDict")
 
 
 def back_to_modgrid(
@@ -399,12 +400,12 @@ def back_to_modgrid(
         for k in list(obj2grid.keys())[1:]:
             ds_to_add = _subset_ds(obj2grid[k])
             if ds_to_add.attrs["scan_num"] != scan_num:
-                raise (
+                raise Exception(
                     "back_to_modgrid is prepared to work with data of a single scan. "
                     + f"However, {list(obj2grid.keys())[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
                 )
-            concatenated = xr.concat([concatenated, _subset_ds(obj2grid[k])], dim="x")
+            concatenated = xr.concat([concatenated, _subset_ds(obj2grid[k], subset_vars)], dim="x")
             granules.append(obj2grid[k].attrs["granule_number"])
             ref_times.append(obj2grid[k].attrs["reference_time_string"][:-1])
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
@@ -415,6 +416,7 @@ def back_to_modgrid(
     out_regridded.attrs["reference_time_string"] = ref_times
     out_regridded.attrs["granules"] = np.array(granules)
     scan_num = concatenated.attrs["scan_num"]
+    out_regridded.attrs["scan_num"] = scan_num
     if add_time:
         time = [np.array(ref_times[0], dtype="datetime64[ns]")]
         da_time = xr.DataArray(
@@ -453,6 +455,8 @@ def _subset_ds(ds, subset_vars="all"):
     if subset_vars == "all":
         return ds
     else:
+        if isinstance(subset_vars, str):
+            subset_vars = [subset_vars]
         return ds[subset_vars]
 
 
@@ -486,16 +490,33 @@ def paired_at_modgrid(satdict, moddict, modobj, to_netcdf=False, output_name="Re
     """
 
     ds_sat = back_to_modgrid(satdict, modobj, subset_vars="vertical_column_troposphere")
-    ds_mod = back_to_modgrid(satdict, modobj, subset_vars="NO2_col_wsct")
+    ds_mod = back_to_modgrid(moddict, modobj, subset_vars="NO2_col_wsct")
     ds_out = xr.merge([ds_mod, ds_sat])
+    # import pdb; pdb.set_trace()
     if to_netcdf:
         if "XYZ" in output_name:
-            scan_num = ds_out.attrs["scan_num"][0]
+            scan_num = ds_out.attrs["scan_num"]
             ds_out.to_netcdf(
                 output_name.replace(
-                    "XYZ", f"S{scan_num}_{ds_out['start_time'].values[0].astype(str)}"
+                    "XYZ", f"S{scan_num}_{ds_out['start_time'].values.astype(str)[0][0:19]}"
                 )
             )
         else:
             ds_out.to_netcdf(output_name)
     return ds_out
+
+
+def read_paired_gridded_tempo_model(path):
+    """Reads in paired gridded tempo and model data
+
+    Parameters
+    ----------
+    path : str or globobject
+
+    Returns
+    -------
+    combined dataset with paired tempo and gridded data.
+    """
+
+    pathlist = sorted(glob.glob(path))
+    return xr.open_mfdataset(pathlist)
