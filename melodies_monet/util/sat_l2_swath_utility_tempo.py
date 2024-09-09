@@ -422,18 +422,12 @@ def back_to_modgrid(
             data=time,
             dims=["start_time"],
             attrs={"description": "Reference start time of first selected granule in scan."},
-            coords={
-                "start_time": (("start_time",), time)
-            },
+            coords={"start_time": (("start_time",), time)},
         )
         out_regridded = out_regridded.expand_dims(start_time=da_time)
     if to_netcdf:
         if "XYZ" in out_name:
-            out_regridded.to_netcdf(
-                out_name.replace(
-                    "XYZ", f"S{scan_num}_{ref_times[0]}"
-                )
-            )
+            out_regridded.to_netcdf(out_name.replace("XYZ", f"S{scan_num}_{ref_times[0]}"))
         else:
             out_regridded.to_netcdf(out_name)
 
@@ -460,3 +454,48 @@ def _subset_ds(ds, subset_vars="all"):
         return ds
     else:
         return ds[subset_vars]
+
+
+def paired_at_modgrid(satdict, moddict, modobj, to_netcdf=False, output_name="Regridded_XYZ.nc"):
+    """Pairs model and satellite in TEMPO space space and regrids them to model space.
+    Designed for the vertical column of NO2.
+
+    Parameters
+    ----------
+    satdict : collections.OrderedDict[str, xr.Dataset]
+        OrderedDict containing the datasets with TEMPO data in TEMPO space.
+        There should be one Dataset per swath.
+    moddict : collections.OrderedDict[str, xr.Dataset]
+        OrderedDict containing the datasets with model data in TEMPO space
+        after applying scattering weights. There should be one Dataset per swath.
+    modobj : xr.Dataset
+        Model object containing the grid information.
+        Only the variables "lat" and "lon" matter.
+    to_netcdf : boolean
+        If True, an output netCDF will be saved.
+    output_name : str
+        Name used to save the information. Ignored if to_netcdf is False.
+        If the name contains the strin 'XYZ', it will be replaced by the datestrin and the number
+        of scan.
+
+    Returns
+    -------
+    xr.Dataset
+        xr.Dataset containing the model tropospheric column after applying the scatterin weights
+        and the satellite tropospheric vertical column.
+    """
+
+    ds_sat = back_to_modgrid(satdict, modobj, subset_vars="vertical_column_troposphere")
+    ds_mod = back_to_modgrid(satdict, modobj, subset_vars="NO2_col_wsct")
+    ds_out = xr.merge([ds_mod, ds_sat])
+    if to_netcdf:
+        if "XYZ" in output_name:
+            scan_num = ds_out.attrs["scan_num"][0]
+            ds_out.to_netcdf(
+                output_name.replace(
+                    "XYZ", f"S{scan_num}_{ds_out['start_time'].values[0].astype(str)}"
+                )
+            )
+        else:
+            ds_out.to_netcdf(output_name)
+    return ds_out
