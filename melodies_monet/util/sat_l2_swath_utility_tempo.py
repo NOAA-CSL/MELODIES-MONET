@@ -498,7 +498,7 @@ def paired_at_modgrid(satdict, moddict, modobj, to_netcdf=False, output_name="Re
             scan_num = ds_out.attrs["scan_num"]
             ds_out.to_netcdf(
                 output_name.replace(
-                    "XYZ", f"S{scan_num}_{ds_out['start_time'].values.astype(str)[0][0:19]}"
+                    "XYZ", f"S{scan_num:03d}_{ds_out['start_time'].values.astype(str)[0][0:19]}"
                 )
             )
         else:
