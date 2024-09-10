@@ -371,14 +371,8 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
         raise Exception("Obsobj must be xr.Dataset or collections.OrderedDict")
 
 
-def back_to_modgrid(
-    paireddict,
-    modobj,
-    subset_obs="all",
-    subset_mod="all",
-    add_time=True,
-    to_netcdf=False,
-    out_name="Regridded_object_XYZ.nc",
+def back_to_modgrid_scan(
+    paireddict, modobj, add_time=True, to_netcdf=False, out_name="Regridded_object_XYZ.nc"
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -529,4 +523,4 @@ def save_swath(moddict, path="Paired_swath_XYZ.nc"):
                 pathout = "1" + path
         elif isinstance(path, list):
             pathout = list[i]
-        moddict.to_netcdf(pathout)
+        moddict[k].to_netcdf(pathout)
