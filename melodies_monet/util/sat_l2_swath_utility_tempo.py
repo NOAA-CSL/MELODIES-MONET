@@ -372,7 +372,12 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
 
 
 def back_to_modgrid(
-    paireddict, modobj, add_time=True, to_netcdf=False, out_name="Regridded_object_XYZ.nc"
+    paireddict,
+    modobj,
+    keys_to_merge="all",
+    add_time=True,
+    to_netcdf=False,
+    out_name="Regridded_object_XYZ.nc",
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -383,9 +388,9 @@ def back_to_modgrid(
         An OrderedDict with time_reference strings as keys.
     modobj : xr.Dataset
         A modobj including the modgrid.
-    subset_var : str | list[str]
-        A list containing a subset of variables to regrid.
-        If it is 'all', all variables are regridded
+    keys_to_merge : str | list[str]
+        If 'all', all keys are assumed to be part of the same scan and merged.
+        Else, only the keys provided are merged.
     add_time : bool
         If True, add reference time as a coordinate for the scan.
         Can be useful to concatenate later if multiple scans are required.
@@ -401,7 +406,10 @@ def back_to_modgrid(
     xr.Dataset
         Dataset with obj2grid regridded to modobj.
     """
-    ordered_keys = sorted(list(paireddict.keys()))
+    if keys_to_merge == "all":
+        ordered_keys = sorted(list(paireddict.keys()))
+    else:
+        ordered_keys = sorted(list(keys_to_merge))
     concatenated = paireddict[ordered_keys[0]]
     scan_num = concatenated.attrs["scan_num"]
     granules = [concatenated.attrs["granule_number"]]
@@ -456,6 +464,63 @@ def back_to_modgrid(
                     f"S{scan_num:03d}_{out_regridded['time'].values.astype(str)[0][0:19]}",
                 )
             )
+        else:
+            out_regridded.to_netcdf(out_name)
+
+    return out_regridded
+
+
+def back_to_modgrid_multiscan(
+    paireddict, modobj, to_netcdf=False, out_name="Regridded_object_XYZ.nc"
+):
+    """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
+    the scattering weights and air mass factors. It is designed for multiple scans, and uses
+    back_to_modgrid under the hood. Generally, back_to_modgrid should only be used if
+    you can ensure that you are reading only one scan at a time.
+
+    Parameters
+    ----------
+    paireddict : collections.OrderedDict[str, xr.Dataset]
+        An OrderedDict with time_reference strings as keys.
+    modobj : xr.Dataset
+        A modobj including the modgrid.
+    subset_var : str | list[str]
+        A list containing a subset of variables to regrid.
+        If it is 'all', all variables are regridded
+    to_netcdf : bool
+        If True, save a netcdf with the paired data
+    out_name : str
+        The base name to save the files if to_netcdf is True. XX will be replaced
+        with the first and list times. If to_netcdf is False, this will
+        be ignored.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with obj2grid regridded to modobj.
+    """
+    out_regridded = xr.Dataset()
+    ordered_keys = sorted(list(paireddict.keys()))
+    scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
+    keys_in_scan = [ordered_keys[0]]
+    if len(ordered_keys > 1):
+        for k in ordered_keys[1:]:
+            if paireddict[k].attrs["scan_num"] == scan_num:
+                keys_in_scan.append(k)
+            else:
+                regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
+                out_regridded = xr.merge([out_regridded, regridded_scan])
+                scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
+                keys_in_scan = [ordered_keys[0]]
+        regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
+        out_regridded = xr.merge([out_regridded, regridded_scan])
+
+    if to_netcdf:
+        if "XYZ" in out_name:
+            first_time = out_regridded["time"][0].values.astype(str)[0:19]
+            last_time = out_regridded["time"][-1].values.astype(str)[0:19]
+            scan_num = out_regridded.attrs["scan_num"]
+            out_regridded.to_netcdf(out_name.replace("XYZ", f"{first_time}_{last_time}"))
         else:
             out_regridded.to_netcdf(out_name)
 
