@@ -319,17 +319,18 @@ def _regrid_and_apply_weights(obsobj, modobj):
     if "layer_height_agl" in list(modobj.variables):
         modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
-        return apply_weights_mod2tempo_no2(obsobj, modobj_swath)
+        ds_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
     else:
         warnings.warn(
             "There is no layer_height_agl variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2"])
-        return apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
+        ds_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
+    return ds_out
 
 
-def regrid_and_apply_weights(obsobj, modobj):
+def regrid_and_apply_weights(obsobj, modobj, pair=False):
     """Does the complete process of regridding
     and applying scattering weights.
 
@@ -349,12 +350,15 @@ def regrid_and_apply_weights(obsobj, modobj):
         regridded = _regrid_and_apply_weights(obsobj, modobj)
         output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
+        if pair:
+            output = xr.merge([output, obsobj["vertical_column_troposphere"]])
         return output
     elif isinstance(obsobj, collections.OrderedDict):
         output_multiple = collections.OrderedDict()
         for ref_time in obsobj.keys():
             output_multiple[ref_time] = _regrid_and_apply_weights(
-                obsobj[ref_time], modobj
+                obsobj[ref_time],
+                modobj,
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs[
@@ -363,6 +367,11 @@ def regrid_and_apply_weights(obsobj, modobj):
             output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
                 "granule_number"
             ]
+            if pair:
+                import pdb; pdb.set_trace()
+                output_multiple[ref_time] = xr.merge(
+                    [output_multiple[ref_time], obsobj[ref_time]["vertical_column_troposphere"]]
+                )
         return output_multiple
     else:
         raise Exception("Obsobj must be xr.Dataset or collections.OrderedDict")
