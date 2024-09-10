@@ -330,7 +330,7 @@ def _regrid_and_apply_weights(obsobj, modobj):
     return ds_out
 
 
-def regrid_and_apply_weights(obsobj, modobj, pair=False):
+def regrid_and_apply_weights(obsobj, modobj, pair=True):
     """Does the complete process of regridding
     and applying scattering weights.
 
@@ -368,7 +368,6 @@ def regrid_and_apply_weights(obsobj, modobj, pair=False):
                 "granule_number"
             ]
             if pair:
-                import pdb; pdb.set_trace()
                 output_multiple[ref_time] = xr.merge(
                     [output_multiple[ref_time], obsobj[ref_time]["vertical_column_troposphere"]]
                 )
@@ -507,55 +506,6 @@ def _subset_ds(ds, subset_vars="all"):
         if isinstance(subset_vars, str):
             subset_vars = [subset_vars]
         return ds[subset_vars]
-
-
-# def paired_at_modgrid(
-#     satdict, moddict, modobj, to_netcdf=False, output_name="Regridded_XYZ.nc"
-# ):
-#     """Pairs model and satellite in TEMPO space space and regrids them to model space.
-#     Designed for the vertical column of NO2.
-#
-#     Parameters
-#     ----------
-#     satdict : collections.OrderedDict[str, xr.Dataset]
-#         OrderedDict containing the datasets with TEMPO data in TEMPO space.
-#         There should be one Dataset per swath.
-#     moddict : collections.OrderedDict[str, xr.Dataset]
-#         OrderedDict containing the datasets with model data in TEMPO space
-#         after applying scattering weights. There should be one Dataset per swath.
-#     modobj : xr.Dataset
-#         Model object containing the grid information.
-#         Only the variables "lat" and "lon" matter.
-#     to_netcdf : boolean
-#         If True, an output netCDF will be saved.
-#     output_name : str
-#         Name used to save the information. Ignored if to_netcdf is False.
-#         If the name contains the strin 'XYZ', it will be replaced by the datestrin and the number
-#         of scan.
-#
-#     Returns
-#     -------
-#     xr.Dataset
-#         xr.Dataset containing the model tropospheric column after applying the scatterin weights
-#         and the satellite tropospheric vertical column.
-#     """
-#
-#     ds_sat = back_to_modgrid(satdict, modobj, subset_vars="vertical_column_troposphere")
-#     ds_mod = back_to_modgrid(moddict, modobj, subset_vars="NO2_col_wsct")
-#     ds_out = xr.merge([ds_mod, ds_sat])
-#     # import pdb; pdb.set_trace()
-#     if to_netcdf:
-#         if "XYZ" in output_name:
-#             scan_num = ds_out.attrs["scan_num"]
-#             ds_out.to_netcdf(
-#                 output_name.replace(
-#                     "XYZ",
-#                     f"S{scan_num:03d}_{ds_out['start_time'].values.astype(str)[0][0:19]}",
-#                 )
-#             )
-#         else:
-#             ds_out.to_netcdf(output_name)
-#     return ds_out
 
 
 def read_paired_gridded_tempo_model(path):
