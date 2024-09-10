@@ -414,14 +414,12 @@ def back_to_modgrid(
                     + f"However, {list(paireddict.keys())[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
                 )
-            concatenated = xr.concat(
-                [concatenated, paireddict[k]], dim="x"
-            )
+            concatenated = xr.concat([concatenated, paireddict[k]], dim="x")
             granules.append(paireddict[k].attrs["granule_number"])
             ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
-    out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
+    # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
         if v in concatenated.variables:
             out_regridded[v].attrs = concatenated[v].attrs
@@ -434,20 +432,27 @@ def back_to_modgrid(
     if add_time:
         time = [np.array(ref_times[0], dtype="datetime64[ns]")]
         da_time = xr.DataArray(
-            name="start_time",
+            name="time",
             data=time,
-            dims=["start_time"],
+            dims=["time"],
             attrs={"description": "Reference start time of first selected granule in scan."},
-            coords={"start_time": (("start_time",), time)},
+            coords={"time": (("time",), time)},
         )
-        out_regridded = out_regridded.expand_dims(start_time=da_time)
+        out_regridded = out_regridded.expand_dims(time=da_time)
+        out_regridded["end_time"] = (
+            ("time",),
+            [np.array(ref_times[-1], dtype="datetime64[ns]")],
+        )
+        out_regridded["end_time"].attrs = {
+            "description": "time at which the last swath of the scan starts"
+        }
     if to_netcdf:
         if "XYZ" in out_name:
             scan_num = out_regridded.attrs["scan_num"]
             out_regridded.to_netcdf(
                 out_name.replace(
                     "XYZ",
-                    f"S{scan_num:03d}_{out_regridded['start_time'].values.astype(str)[0][0:19]}",
+                    f"S{scan_num:03d}_{out_regridded['time'].values.astype(str)[0][0:19]}",
                 )
             )
         else:
