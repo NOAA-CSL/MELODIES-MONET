@@ -512,6 +512,10 @@ def save_swath(moddict, path="Paired_swath_XYZ.nc"):
         Path to save the swath. If XYZ is present, it will be replaced
         by the date, number of scan and number of granule. If it is a list,
         it will use the list elements to save the swaths.
+
+    Returns
+    -------
+    None
     """
     for i, k in enumerate(moddict.keys()):
         scan_num = moddict[k].attrs["scan_num"]
