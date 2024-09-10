@@ -401,17 +401,18 @@ def back_to_modgrid(
     xr.Dataset
         Dataset with obj2grid regridded to modobj.
     """
-    concatenated = paireddict[list(paireddict.keys())[0]]
+    ordered_keys = sorted(list(paireddict.keys()))
+    concatenated = paireddict[ordered_keys[0]]
     scan_num = concatenated.attrs["scan_num"]
     granules = [concatenated.attrs["granule_number"]]
     ref_times = [concatenated.attrs["reference_time_string"][:-1]]  # Remove unneded Z
     if len(paireddict) > 1:
-        for k in list(paireddict.keys())[1:]:
+        for k in ordered_keys[1:]:
             ds_to_add = paireddict[k]
             if ds_to_add.attrs["scan_num"] != scan_num:
                 raise Exception(
                     "back_to_modgrid is prepared to work with data of a single scan. "
-                    + f"However, {list(paireddict.keys())[0]} is from scan {scan_num} and "
+                    + f"However, {ordered_keys[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
                 )
             concatenated = xr.concat([concatenated, paireddict[k]], dim="x")
