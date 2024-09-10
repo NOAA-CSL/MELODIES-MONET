@@ -310,15 +310,15 @@ def _regrid_and_apply_weights(obsobj, modobj):
     if "layer_height_agl" in list(modobj.variables):
         modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
-        ds_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
+        da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
     else:
         warnings.warn(
             "There is no layer_height_agl variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2"])
-        ds_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
-    return ds_out
+        da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
+    return da_out
 
 
 def regrid_and_apply_weights(obsobj, modobj, pair=True):
@@ -343,6 +343,8 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         if pair:
             output = xr.merge([output, obsobj["vertical_column_troposphere"]])
+        if "lat" in output.variables:
+            output = output.rename({"lat": "latitude", "lon": "longitude"})
         return output
     elif isinstance(obsobj, collections.OrderedDict):
         output_multiple = collections.OrderedDict()
@@ -359,6 +361,10 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
             if pair:
                 output_multiple[ref_time] = xr.merge(
                     [output_multiple[ref_time], obsobj[ref_time]["vertical_column_troposphere"]]
+                )
+            if "lat" in output_multiple[ref_time].variables:
+                output_multiple[ref_time] = output_multiple[ref_time].rename(
+                    {"lat": "latitude", "lon": "longitude"}
                 )
         return output_multiple
     else:
@@ -379,10 +385,10 @@ def back_to_modgrid(
 
     Parameters
     ----------
+    paireddict : collections.OrderedDict[str, xr.Dataset]
+        An OrderedDict with time_reference strings as keys.
     modobj : xr.Dataset
         A modobj including the modgrid.
-    obs2grid : collections.OrderedDict[str, xr.Dataset]
-        An OrderedDict with time_reference strings as keys.
     subset_var : str | list[str]
         A list containing a subset of variables to regrid.
         If it is 'all', all variables are regridded
@@ -499,3 +505,28 @@ def read_paired_gridded_tempo_model(path):
 
     pathlist = sorted(glob.glob(path))
     return xr.open_mfdataset(pathlist)
+
+
+def save_swath(moddict, path="Paired_swath_XYZ.nc"):
+    """Saves each swath individually
+
+    Parameters
+    ----------
+    moddict : collections.OrderedDict[str, xr.Dataset]
+        Ordered dict containing all of the paired model and swath.
+    path : str | list[str]
+        Path to save the swath. If XYZ is present, it will be replaced
+        by the date, number of scan and number of granule. If it is a list,
+        it will use the list elements to save the swaths.
+    """
+    for i, k in enumerate(moddict.keys()):
+        scan_num = moddict[k].attrs["scan_num"]
+        gran_num = moddict[k].attrs["granule_number"]
+        if isinstance(path, str):
+            if "XYZ" in path:
+                pathout = path.replace("XYZ", f"{k[:-1]}_S{scan_num:03d}G{gran_num:03d}")
+            else:
+                pathout = "1" + path
+        elif isinstance(path, list):
+            pathout = list[i]
+        moddict.to_netcdf(pathout)
