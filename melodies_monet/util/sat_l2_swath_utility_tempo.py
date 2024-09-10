@@ -7,9 +7,9 @@
 #
 
 import collections
+import glob
 import logging
 import warnings
-import glob
 
 import numba
 import numpy as np
@@ -163,9 +163,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
         coords=coords,
         attrs=modobj["pres_pa_mid"].attrs,
     )
-    _interp_description = (
-        "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
-    )
+    _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
     modsatlayers["p_mid_tempo"].attrs["description"] = _interp_description
     return modsatlayers
 
@@ -216,8 +214,7 @@ def _calc_layer_thickness(modobj):
     layer_thickness = xr.zeros_like(height_agl)
     layer_thickness[0, :, :] = height_agl.isel(z=0).values
     layer_thickness[1:, :, :] = (
-        height_agl.isel(z=slice(1, None)).values
-        - height_agl.isel(z=slice(0, -1)).values
+        height_agl.isel(z=slice(1, None)).values - height_agl.isel(z=slice(0, -1)).values
     )
     return layer_thickness
 
@@ -248,14 +245,10 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(
-        modobj["p_mid_tempo"] >= tropopause_pressure
-    )
+    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
     modno2 = modobj["NO2"].where(modobj["p_mid_tempo"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
-    modno2col_trfmd = (
-        (dp * scattering_weights * modno2).sum(dim="z") * unit_c * PPBTOMOLMOL
-    )
+    modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * PPBTOMOLMOL
     modno2col_trfmd = modno2col_trfmd.where(modno2.isel(z=0).notnull())
     modno2col_trfmd = modno2col_trfmd / amf_troposphere
     return modno2col_trfmd
@@ -284,9 +277,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     tropopause_pressure = obsobj["tropopause_pressure"] * 100
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(
-        modobj["p_mid_tempo"] >= tropopause_pressure
-    )
+    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
     modno2col_trfmd = modno2col_trfmd.where(modobj["NO2_col"].isel(z=0).notnull())
@@ -361,9 +352,7 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
                 modobj,
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
-            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs[
-                "scan_num"
-            ]
+            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
             output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
                 "granule_number"
             ]
@@ -377,8 +366,7 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True):
 
 
 def back_to_modgrid(
-    obs2grid,
-    mod2grid,
+    paireddict,
     modobj,
     subset_obs="all",
     subset_mod="all",
@@ -413,49 +401,35 @@ def back_to_modgrid(
     xr.Dataset
         Dataset with obj2grid regridded to modobj.
     """
-    concatenated_obs = _subset_ds(obs2grid[list(obs2grid.keys())[0]], subset_obs)
-    concatenated_mod = _subset_ds(mod2grid[list(mod2grid.keys())[0]], subset_mod)
-    scan_num = concatenated_obs.attrs["scan_num"]
-    granules = [concatenated_obs.attrs["granule_number"]]
-    ref_times = [
-        concatenated_obs.attrs["reference_time_string"][:-1]
-    ]  # Remove unneded Z
-    if len(obs2grid) > 1:
-        for k in list(obs2grid.keys())[1:]:
-            ds_to_add = _subset_ds(obs2grid[k])
+    concatenated = paireddict[list(paireddict.keys())[0]]
+    scan_num = concatenated.attrs["scan_num"]
+    granules = [concatenated.attrs["granule_number"]]
+    ref_times = [concatenated.attrs["reference_time_string"][:-1]]  # Remove unneded Z
+    if len(paireddict) > 1:
+        for k in list(paireddict.keys())[1:]:
+            ds_to_add = paireddict[k]
             if ds_to_add.attrs["scan_num"] != scan_num:
                 raise Exception(
                     "back_to_modgrid is prepared to work with data of a single scan. "
-                    + f"However, {list(obs2grid.keys())[0]} is from scan {scan_num} and "
+                    + f"However, {list(paireddict.keys())[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
                 )
-            concatenated_obs = xr.concat(
-                [concatenated_obs, _subset_ds(obs2grid[k], subset_obs)], dim="x"
+            concatenated = xr.concat(
+                [concatenated, paireddict[k]], dim="x"
             )
-            concatenated_mod = xr.concat(
-                [concatenated_mod, _subset_ds(mod2grid[k], subset_mod)], dim="x"
-            )
-            granules.append(obs2grid[k].attrs["granule_number"])
-            ref_times.append(obs2grid[k].attrs["reference_time_string"][:-1])
-    regridder = xe.Regridder(
-        concatenated_obs, modobj, method="bilinear", unmapped_to_nan=True
-    )
-    out_regridded_obs = regridder(concatenated_obs)
-    out_regridded_mod = regridder(concatenated_mod)
-    out_regridded = xr.merge([out_regridded_obs, out_regridded_mod])
+            granules.append(paireddict[k].attrs["granule_number"])
+            ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
+    regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
+    out_regridded = regridder(concatenated)
     out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
-        if v in concatenated_obs.variables:
-            out_regridded[v].attrs = concatenated_obs[v].attrs
-        elif v in concatenated_mod.variables:
-            out_regridded[v].attrs = concatenated_mod[v].attrs
+        if v in concatenated.variables:
+            out_regridded[v].attrs = concatenated[v].attrs
         else:
-            warnings.warn(
-                f"Variable {v} not found in mod2grid nor obs2grid. Continuing."
-            )
+            warnings.warn(f"Variable {v} not found in mod2grid nor obs2grid. Continuing.")
     out_regridded.attrs["reference_time_string"] = ref_times
     out_regridded.attrs["granules"] = np.array(granules)
-    scan_num = concatenated_obs.attrs["scan_num"]
+    scan_num = concatenated.attrs["scan_num"]
     out_regridded.attrs["scan_num"] = scan_num
     if add_time:
         time = [np.array(ref_times[0], dtype="datetime64[ns]")]
@@ -463,9 +437,7 @@ def back_to_modgrid(
             name="start_time",
             data=time,
             dims=["start_time"],
-            attrs={
-                "description": "Reference start time of first selected granule in scan."
-            },
+            attrs={"description": "Reference start time of first selected granule in scan."},
             coords={"start_time": (("start_time",), time)},
         )
         out_regridded = out_regridded.expand_dims(start_time=da_time)
