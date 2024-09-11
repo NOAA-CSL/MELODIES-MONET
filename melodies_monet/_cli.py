@@ -7,6 +7,7 @@ melodies-monet -- MELODIES MONET CLI
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from typing import List
 
 try:
     import typer
@@ -486,6 +487,18 @@ def get_openaq(
             "if using default output file name)."
         )
     ),
+    param: List[str] = typer.Option(["o3", "pm25", "pm10"], "-p", "--params", help=(
+            "Parameters. "
+            "Use '-p' more than once to get multiple parameters. "
+            "Other examples: 'no', 'no2', 'nox', 'so2', 'co', 'bc'. "
+            "Only applicable to the web API methods ('api-v2')."
+        )
+    ),
+    method: str = typer.Option("api-v2", "-m", "--method", help=(
+            "Method (reader) to use for fetching data. "
+            "Options: 'api-v2', 'openaq-fetches'."
+        )
+    ),
     compress: bool = typer.Option(True, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
@@ -498,7 +511,7 @@ def get_openaq(
         False, "--debug/", help="Print more messages (including full tracebacks)."
     ),
 ):
-    """Download OpenAQ data using monetio and reformat for MM usage."""
+    """Download hourly OpenAQ data using monetio and reformat for MM usage."""
     import warnings
 
     import monetio as mio
@@ -512,12 +525,25 @@ def get_openaq(
 
     typer.echo(HEADER)
 
+    if method not in {"api-v2", "openaq-fetches"}:
+        typer.secho(f"Error: method {method!r} not recognized", fg=ERROR_COLOR)
+        raise typer.Exit(2)
+
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="D")
+
+    if method in {"openaq-fetches"}:
+        dates = pd.date_range(start_date, end_date, freq="D")
+    elif method in {"api-v2"}:
+        dates = pd.date_range(start_date, end_date, freq="H")
+    else:
+        raise AssertionError
     if verbose:
         print("Dates:")
         print(dates)
+
+    if verbose and method in {"api-v2"}:
+        print("Params:", param)
 
     # Set destination and file name
     fmt = r"%Y%m%d"
@@ -535,57 +561,96 @@ def get_openaq(
             dst = p.parent
             out_name = p.name
 
-    if verbose:
+    if verbose and method in {"openaq-fetches"}:
         from dask.diagnostics import ProgressBar
 
         ProgressBar().register()
 
     with _timer("Fetching data with monetio"):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message="The (error|warn)_bad_lines argument has been deprecated"
-            )
-            df = mio.openaq.add_data(
+        if method == "openaq-fetches":
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The (error|warn)_bad_lines argument has been deprecated"
+                )
+                df = mio.openaq.add_data(
+                    dates,
+                    n_procs=num_workers,
+                    wide_fmt=True,
+                )
+
+            # Address time-wise non-unique site IDs
+            # Some (most?) are just slightly different lat/lon
+            # But seems like a few are actual time-wise lat/lon duplicates
+            df = df.drop_duplicates(["time", "siteid"])
+
+        elif method == "api-v2":
+            df = mio.obs.openaq_v2.add_data(
                 dates,
-                n_procs=num_workers,
+                parameters=param,
+                sensor_type="reference grade",
+                wide_fmt=True,
+                timeout=60,
+                retry=15,
+                threads=num_workers if num_workers > 1 else None,
             )
 
-        # # FIXME: local testing only
-        # df = pd.read_csv("openaq_2019-08.csv.gz", index_col=0, parse_dates=["time", "time_local"])
-        # df["utcoffset"] = pd.to_timedelta(df["utcoffset"])  # str in the CSV
-
-        # Remove dates outside of requested range
-        # TODO: fix in monetio?
-        good = (df.time >= start_date) & (df.time <= end_date)
-        df = df[good]
+            dupes = df[df.duplicated(["time", "siteid"], keep=False)]
+            if not dupes.empty:
+                typer.echo(
+                    f"warning: {len(dupes)} unexpected time-siteid duplicated rows:"
+                )
+                if verbose:
+                    typer.echo(dupes)
+                df = df.drop_duplicates(["time", "siteid"])
+        else:
+            raise AssertionError
 
         # Drop times not on the hour
         good = df.time == df.time.dt.floor("H")
         typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
         df = df[good]
 
-        # Address time-wise non-unique site IDs
-        # Some (most?) are just slightly different lat/lon
-        # But seems like a few are actual time-wise lat/lon duplicates
-        # TODO: fix in monetio (maybe OpenAQ *has* site IDs? or can just make them up)
-        df = df.drop_duplicates(["time", "siteid"])
-
     with _timer("Forming xarray Dataset"):
         df = df.drop(columns=["index"], errors="ignore")
         df = df.dropna(subset=["latitude", "longitude"])
 
-        site_vns = [
-            "siteid",  # based on country and lat/lon
-            "latitude",
-            "longitude",
-            "utcoffset",
-            "city",
-            "country",  # 2-char codes
-            "sourceName",
-            "sourceType",  # "government"
-        ]
-        # NOTE: time_local not included since it varies in time as well
+        if method == "openaq-fetches":
+            site_vns = [
+                "siteid",  # based on country and lat/lon
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "city",
+                "country",  # 2-char codes
+                #
+                "sourceName",
+                "sourceType",  # "government"
+            ]
+            # NOTE: time_local not included since it varies in time as well
+        elif method == "api-v2":
+            site_vns = [
+                "siteid",  # real OpenAQ location ID
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "location",
+                "city",
+                "country",
+                #
+                "entity",
+                "sensor_type",
+                "is_mobile",
+                "is_analysis",
+            ]
+            for vn in ["city", "is_analysis"]:  # may have been dropped for being all null
+                if vn not in df.columns:
+                    site_vns.remove(vn)
+
+        else:
+            raise AssertionError
 
         ds_site = (
             df[site_vns]
@@ -595,6 +660,7 @@ def get_openaq(
             .swap_dims(siteid="x")
         )
 
+        breakpoint()
         ds = (
             df.drop(columns=[vn for vn in site_vns if vn not in ["siteid"]])
             .set_index(["time", "siteid"])
@@ -606,8 +672,8 @@ def get_openaq(
         )
 
         # Rename species vars and add units as attr
-        nice_us = {"ppm": "ppmv", "ugm3": "ug m-3"}
-        for vn0 in [n for n in df.columns if n.endswith(("_ppm", "_ugm3", "_umg3"))]:
+        nice_us = {"ppm": "ppmv", "ugm3": "ug m-3", "ppb": "pbbv"}
+        for vn0 in [n for n in df.columns if n.endswith(("_ppm", "ppb", "_ugm3", "_umg3"))]:
             i_last_underscore = vn0.rfind("_")
             vn, u = vn0[:i_last_underscore], vn0[i_last_underscore + 1:]
             if u == "umg3":
