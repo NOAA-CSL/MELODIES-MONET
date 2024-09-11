@@ -51,6 +51,21 @@ Surface Evaluation
    **BOX-plot** - BOX-plot comparing one or more model results with one
    observation over the analysis window with options to specify the domain.
 
+.. figure:: /_static/figures/plot_grp7.multi_boxplot.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.png
+   :scale: 35 %
+
+   **Multi-BOX-plot** - Like BOX-plot, but including multiple regions.
+
+.. figure:: /_static/figures/plot_grp6.scorecard.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.png
+
+   **Scorecard** - Compares two model outputs, evaluated against observations.
+   The evaluation statistical parameters can be the Root Mean Square (RMSE),
+   the Normalized Mean Bias (NMB) or the Index Of Agreement (IOA).
+
+.. figure:: /_static/figures/plot_grp8.csi.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.Critical\ Success\ Index.png
+
+   **Critical Success Index** Plot of the Critical Success Index, as commonly used in Forecast evaluation.
+
 See the `Expand Surface Observations <https://github.com/NOAA-CSL/MELODIES-MONET/projects/7>`_ 
 project on GitHub to learn about current and future development.
 

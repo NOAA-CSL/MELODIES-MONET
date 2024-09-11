@@ -40,13 +40,13 @@ structure is the following:
 
 * **plots** -- All input for each plotting group. A plotting group consists 
   of one plotting type. The plotting types are described in 
-  :doc:`/background/supported_plots`. All model /
+  :doc:`/users_guide/supported_plots`. All model /
   observational pairs and domains specified for the plotting group will be 
   included. You may include as many plotting groups as you like.
 
 * **stats** -- All input needed to calculate the statistics. The supported
   statistics available in MELODIES MONET are described in 
-  :doc:`/background/supported_stats`. All model /
+  :doc:`/users_guide/supported_stats`. All model /
   observational pairs and domains specified will be included. You may 
   include as many statistics as you like. Note however that the calculation 
   of the statistics is relatively slow right now. Optimizing this code is 

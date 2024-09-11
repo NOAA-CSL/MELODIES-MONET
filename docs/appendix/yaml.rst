@@ -106,6 +106,10 @@ data (e.g., surf_only: True).
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
 
+**apply_ak:** This is an optional argument used for pairing of satellite data. This
+should be set to True when application of satellite averaging kernels or apriori data 
+to model observations is desired. 
+
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
 variable name is first (i.e., key) and the observation variable name is second 
@@ -181,7 +185,7 @@ Generalizing this to include other surface observations is under development.
 **filename:**  The file directory location and name. These observations need 
 to be preprocessed prior to incorporating them into MELODIES MONET.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
-See :doc:`../tutorial/downloading_obs` for more details.
+See :doc:`../getting_started/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
@@ -227,7 +231,7 @@ nan_values are set to NaN first and then the unit conversion is applied.
      (in %) is used to calculate the percentile (e.g., 5, 50, 95). Currently only
      used for "spatial_bias" plots. Will work with data as is and regulatory metrics.
    * **regulatory:** If false (default), use data as is. If set to true, the
-     regulatory metric is calculated as explained under :doc:`/background/supported_analyses`.
+     regulatory metric is calculated as explained under :doc:`/users_guide/supported_diagnostics`.
      Only works for "OZONE" and "PM2.5" variables.
    * **ylabel_reg_plot:** String to use as ylabel in plot for regulatory calculation.
      Useful for adding units or instrument information. Only used if regulatory = True.
@@ -272,7 +276,7 @@ Plots
 -----
 All input for each plotting group. A plotting group consists of one plotting 
 type. The plotting types are described in 
-:doc:`/background/supported_plots`. All model /
+:doc:`/users_guide/supported_plots`. All model /
 observational pairs and domains specified for the plotting group will be 
 included. You may include as many plotting groups as you like.
 
@@ -280,7 +284,7 @@ For each plotting group, update the label and include the following information.
 Note: the labels need to be unique, but otherwise are not used.
 
 **type:** The plot type. Options are: "timeseries", "taylor", "spatial_bias",
-"spatial_overlay", "spatial_bias_exceedance", and "boxplot"
+"spatial_overlay", "spatial_bias_exceedance", "boxplot", "multi-boxplot","csi"
 Note: "spatial_bias_exceedance" plots only work when regulatory = True.
 
 **fig_kwargs:** This is optional to provide a dictionary with figure 
@@ -318,6 +322,30 @@ siteid, etc.).
 data will be used and the domain_name is used only in the plot title. If 
 domain_type is not equal to all, MELODIES MONET will query all of the data 
 where domain_type is equal to domain_name.
+
+**region_name:** list of source of regions used in title.
+(e.g., ['epa_region'])
+
+**region_list:** list of regions we will calculate for scorecard. 
+(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+
+**urban_rural_name:** list of only one string input, which is variable used to
+determine wheter urban or rural site. (e.g., ['msa_name'])
+
+**urban_rural_differentiate_value:** string of value used to determine whether 
+variable is rural or urban. (e.g., '').
+
+**better_or_worse_method:** string of method used to determine which models 
+is better compared to observations. (e.g., 'RMSE', 'IOA' ,' NMB', 'NME'). choose
+one only for each time scorecard code run.
+
+**model_name_list:** 
+for multi-box plot, list of observation and model names user choose to set as x-labels; 
+for csi plot, list of model names (only) user choose to set as labels.
+
+**threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
+
+**score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
@@ -369,7 +397,7 @@ Stats
 -----
 All input needed to calculate the statistics. The supported statistics available 
 in MELODIES MONET are described in 
-:doc:`/background/supported_stats`. All model /
+:doc:`/users_guide/supported_stats`. All model /
 observational pairs and domains specified will be included. You may include as 
 many statistics as you like. Note however that the calculation of the statistics 
 is relatively slow right now. Optimizing this code is under development.
@@ -379,7 +407,7 @@ use Kelvin. Wind direction has special calculations for AirNow if the observatio
 name is 'WD'. 
 
 **stat_list:** List of acronyms of statistics to calculate as defined in 
-:doc:`/background/supported_stats`. (e.g., ['MB', 'MdnB',
+:doc:`/users_guide/supported_stats`. (e.g., ['MB', 'MdnB',
 'NMB', 'NMdnB','R2', 'RMSE']). A dictionary of definitions is also included in 
 MELODIES-MONET/melodies_monet/stats/proc_stats.py. 
 
