@@ -1938,7 +1938,7 @@ def get_openaq(
                 df = mio.openaq.add_data(
                     dates,
                     n_procs=num_workers,
-                    wide_fmt=True,
+                    # wide_fmt=True,
                 )
 
             # Address time-wise non-unique site IDs
@@ -2022,7 +2022,6 @@ def get_openaq(
             .swap_dims(siteid="x")
         )
 
-        breakpoint()
         ds = (
             df.drop(columns=[vn for vn in site_vns if vn not in ["siteid"]])
             .set_index(["time", "siteid"])
