@@ -61,6 +61,7 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
     regridder = xe.Regridder(mod_at_swathtime, obsobj, method, unmapped_to_nan=True)
     modswath = regridder(mod_at_swathtime)
+    # import pdb; pdb.set_trace()
     return modswath
 
 
@@ -452,8 +453,8 @@ def back_to_modgrid(
         ordered_keys = sorted(list(paireddict.keys()))
     else:
         ordered_keys = sorted(list(keys_to_merge))
-    modobj["longitude"] = modobj["longitude"].astype("float64", order="C")
-    modobj["latitude"] = modobj["longitude"].astype("float64", order="C")
+    # modobj["longitude"] = modobj["longitude"].astype("float64", order="C")
+    # modobj["latitude"] = modobj["latitude"].astype("float64", order="C")
     concatenated = paireddict[ordered_keys[0]]
     scan_num = concatenated.attrs["scan_num"]
     granules = [concatenated.attrs["granule_number"]]
@@ -471,8 +472,10 @@ def back_to_modgrid(
             granules.append(paireddict[k].attrs["granule_number"])
             ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
     end_time = np.array(paireddict[k].attrs["final_time_string"], dtype="datetime64[ns]")
+    # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
+    # import pdb; pdb.set_trace()
     # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
         if v in concatenated.variables:
@@ -547,10 +550,10 @@ def back_to_modgrid_multiscan(
     keys_in_scan = [ordered_keys[0]]
     if len(ordered_keys) > 1:
         for k in ordered_keys[1:]:
-            # import pdb; pdb.set_trace()
             if paireddict[k].attrs["scan_num"] == scan_num:
                 keys_in_scan.append(k)
             else:
+                # import pdb; pdb.set_trace()
                 regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
@@ -639,10 +642,64 @@ def save_swath(moddict, path="Paired_swath_XYZ.nc"):
         moddict[k].to_netcdf(pathout)
 
 
-def read_objs_andpair(obs_path, mod_path, period='per_scan', save_swath=True, back_to_modgrid=True, save_gridded=True):
-    """ WIP """
+def select_by_keys(data_names, period="per_scan"):
+    """Selects data containing the same scan or day. It does
+    so by file name, so it is important that the standard naming
+    is not altered.
+
+    Parameters
+    ----------
+    data_names : list[str]
+        list containing the names of the files to select from.
+    selection_criteria : str
+        str with the selection criteria. If "all", the function does nothing.
+        If "per_scan", it will return a list of lists[str], with each inner
+        list containing one complete scan.
+        If "per_day", it will return a list of lists[str], with each inner
+        list containing one complete day.
+
+    Returns
+    -------
+    list[str] | list[list[str]]
+        A sorted list of strings if "all" is provided, a list[list[str]]
+        if a different criteria is provided.
+    """
+    import re
+
+    date_names_sorted = sorted(data_names)
+
+    if period not in ["all", "per_day", "per_scan"]:
+        warnings.warn(
+            "Could not understand looping recommendations for processing files."
+            ' Not in "all", "per_day" nor "per_scan". Adopting "all".'
+        )
+        period = "all"
+
+    if period == "all":
+        return date_names_sorted
+
+    days = sorted(set([re.search("((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted]))
+    subgroups = []
+    for day in days:
+        subgroups.append([d for d in date_names_sorted if day in d])
+
+    if period == "per_day":
+        return subgroups
+
+    if period == "per_scan":
+        scans = []
+        for sg in subgroups:
+            scan = sorted(set([re.search("(S(\d{3}))G(\d{2})", s).group(1) for s in sg]))
+            for s in scan:
+                scans.append([f for f in sg if s in f])
+        return scans
+
+
+def read_objs_andpair(
+    obs_path, mod_path, period="per_scan", save_swath=True, back_to_modgrid=True, save_gridded=True
+):
+    """WIP"""
     tempodata = sorted(glob.glob(obs_path))
-    if period=='per_scan':
-        list_of_scans = []
-        # timestamps_and_scans = 
+    loop_strategy = select_by_keys()
+
     pass
