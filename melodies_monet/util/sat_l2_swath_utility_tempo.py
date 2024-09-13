@@ -11,6 +11,7 @@ import glob
 import logging
 import warnings
 
+import cf_xarray as cfxr
 import numba
 import numpy as np
 import xarray as xr
@@ -20,7 +21,35 @@ numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
 
-def speedup_regridding(dset, variable_list=["latitude", "longitude"]):
+def calc_grid_corners(ds, lat="latitude", lon="longitude"):
+    """Adds latitude and longitude bounds inplace.
+    If the grid is rectilinear, it should be quite precise.
+    If it is curvilinear, is a rough estimate.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset to which the latitude and longitude will be added.
+    lat : str
+        name of the lat variable.
+    lon : str
+        name of the lon variable.
+
+    Returns
+    -------
+    None
+    """
+    corners = ds[[lat, lon]].cf.add_bounds([lat, lon])
+    lat_b = cfxr.bounds_to_vertices(
+        corners[f"{lat}_bounds"], "bounds", order=None
+    )
+    lon_b = cfxr.bounds_to_vertices(
+        corners[f"{lon}_bounds"], "bounds", order=None
+    )
+    return lat_b, lon_b
+
+
+def speedup_regridding(dset, variables="all"):
     """Makes modobj latitude and longitude C_contiguous, which speeds up regridding.
     It makes the changes inplace
 
@@ -31,15 +60,17 @@ def speedup_regridding(dset, variable_list=["latitude", "longitude"]):
 
     Returns
     -------
-        None
+    None
     """
-    for v in variable_list:
+    if variables == "all":
+        variables = dset.variables
+    for v in variables:
         if not dset[v].values.flags["C_CONTIGUOUS"]:
             dtype = dset[v].dtype
             dset[v] = dset[v].astype(dtype, order="C")
 
 
-def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
+def tempo_interp_mod2swath(obsobj, modobj, method="conservative"):
     """Interpolate model to satellite swath/swaths
 
     Parameters
@@ -57,11 +88,9 @@ def tempo_interp_mod2swath(obsobj, modobj, method="bilinear"):
         OrderedDict in which each time represents the reference time of the swath.
     """
 
-    speedup_regridding(modobj)
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
-    regridder = xe.Regridder(mod_at_swathtime, obsobj, method, unmapped_to_nan=True)
+    regridder = xe.Regridder(mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True)
     modswath = regridder(mod_at_swathtime)
-    # import pdb; pdb.set_trace()
     return modswath
 
 
@@ -262,7 +291,6 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
     unit_c = 6.022e23 * 9.8 / 1e4
     dp = _calc_dp(obsobj).rename({"swt_level": "z"})
     PPBTOMOLMOL = 1e-9
-    # import pdb; pdb.set_trace()
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
@@ -294,7 +322,6 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     """
     partial_col = modobj["NO2_col"]
 
-    # import pdb; pdb.set_trace()
     tropopause_pressure = obsobj["tropopause_pressure"] * 100
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
@@ -310,7 +337,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     return modno2col_trfmd
 
 
-def _regrid_and_apply_weights(obsobj, modobj):
+def _regrid_and_apply_weights(obsobj, modobj, method='conservative'):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -327,7 +354,7 @@ def _regrid_and_apply_weights(obsobj, modobj):
         Model data regridded to the TEMPO grid,
         with the averaging kernel.
     """
-    modobj_hs = tempo_interp_mod2swath(obsobj, modobj)
+    modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method)
     if "layer_height_agl" in list(modobj.variables):
         modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
@@ -342,7 +369,7 @@ def _regrid_and_apply_weights(obsobj, modobj):
     return da_out
 
 
-def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True):
+def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="conservative"):
     """Does the complete process of regridding
     and applying scattering weights.
 
@@ -365,10 +392,9 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True):
         an OrderedDict is returned.
     """
 
+    speedup_regridding(modobj, ["latitude", "longitude", "lat_b", "lon_b"])
     if isinstance(obsobj, xr.Dataset):
-        if verbose:
-            print("creating_weights", flush=True)
-        regridded = _regrid_and_apply_weights(obsobj, modobj)
+        regridded = _regrid_and_apply_weights(obsobj, modobj, method=method)
         output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
@@ -388,7 +414,7 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True):
                 print(f"Regridding {ref_time}")
             output_multiple[ref_time] = _regrid_and_apply_weights(
                 obsobj[ref_time],
-                modobj,
+                modobj, method=method
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
@@ -475,7 +501,6 @@ def back_to_modgrid(
     # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
-    # import pdb; pdb.set_trace()
     # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
         if v in concatenated.variables:
@@ -553,7 +578,6 @@ def back_to_modgrid_multiscan(
             if paireddict[k].attrs["scan_num"] == scan_num:
                 keys_in_scan.append(k)
             else:
-                # import pdb; pdb.set_trace()
                 regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
@@ -696,10 +720,12 @@ def select_by_keys(data_names, period="per_scan"):
 
 
 def read_objs_andpair(
-    obs_path, mod_path, period="per_scan", save_swath=True, back_to_modgrid=True, save_gridded=True
+    obs_path, mod_path, period="per_scan", save_swath=True, back_to_modgrid=True, save_gridded=True, **kwargs
 ):
     """WIP"""
     tempodata = sorted(glob.glob(obs_path))
     loop_strategy = select_by_keys()
 
-    pass
+
+    paired_data = regrid_and_apply_weights()
+    
