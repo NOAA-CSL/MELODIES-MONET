@@ -6,11 +6,9 @@
 # contact: meng.li.atm@gmail.com
 #
 
-import xesmf as xe
 import numpy as np
 import xarray as xr
 import pandas as pd
-from datetime import datetime
 
 def cal_model_no2columns(modobj):
 
