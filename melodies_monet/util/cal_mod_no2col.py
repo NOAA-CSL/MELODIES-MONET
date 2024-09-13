@@ -29,23 +29,13 @@ def cal_model_no2columns(modobj):
 
     # calculate the no2 tropospheric vertical columns and pressure from wrf-chem
     no2    = modobj['no2']
-    ph     = modobj['PH']
-    phb    = modobj['PHB']
-    pb     = modobj['PB']
-    tdata  = modobj['T']
-    pdata  = modobj['P']
     time   = modobj.coords['time']
     modlon = modobj.coords['longitude']
 
-    # presure: base state + PB (KSMP)
     nt, nz, ny, nx = no2.shape
-    pb2  = np.zeros([nt, nz, ny, nx],dtype=np.float)
-    pb2  = pdata + pb
-
-    # convert the perturbation potential temperature (from 300K reference) to temp
-    tb = np.zeros([nt, nz, ny, nx],dtype=np.float)
-    tb =(300.0+tdata)*((pb2/1.0e5)**0.286)
-
+    pb2 = modobj['pres_pa_mid']
+    tb = modobj['temperature_k']
+    dz = modobj['dz_m']
 
     # --- initialize arrays
     # no2 columns for each layer
@@ -70,12 +60,12 @@ def cal_model_no2columns(modobj):
     no2 = no2 / 1000.0
     for vl in range(nz):
         ad = pb2[:,vl,:,:] * (28.97e-3)/(8.314*tb[:,vl,:,:])
-        zh = ((ph[:,vl+1,:,:] + phb[:,vl+1,:,:]) - (ph[:,vl,:,:]+phb[:,vl,:,:]))/9.81
+        zh = dz[:,vl,:,:]
         value[:,:,:]= no2[:,vl,:,:]*zh[:,:,:]*6.022e23/(28.97e-3)*1e-10*ad[:,:,:] # timex y x x
         no2col[:,vl,:,:] = value[:,:,:]
 
     # add to model
-    modobj['PB2'] = xr.DataArray(pb2,dims=["time", "z", "y","x"])
+    modobj['PB2'] = pb2
     modobj['localtime'] = xr.DataArray(localtm, dims=["time","y", "x"])
     modobj['no2col'] = xr.DataArray(no2col,dims=["time", "z", "y","x"])
 
