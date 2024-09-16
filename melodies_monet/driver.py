@@ -1,4 +1,4 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
+
 # SPDX-License-Identifier: Apache-2.0
 #
 """
@@ -1244,6 +1244,29 @@ class analysis:
                         p.model_vars = keys
                         p.obs_vars = obs_vars
                         p.obj = paired_data_cp 
+                        label = '{}_{}'.format(p.obs,p.model)
+
+                        self.paired[label] = p
+
+                    if obs.sat_type == 'tempo_l2_no2':
+                        from .util import sat_l2_swath_utility_tempo as sutil
+
+                        paired_data_atswath = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                        paired_data_atgrid = sutil.back_to_modgid_multiscan(paired_data_atswath, modobj)
+
+                        self.models[model_label].obj = model_obj
+
+                        p = pair()
+
+                        paired_data = paired_data.reset_index("y") # for saving
+                        paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data_atgrid
                         label = '{}_{}'.format(p.obs,p.model)
 
                         self.paired[label] = p
