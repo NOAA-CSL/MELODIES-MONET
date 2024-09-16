@@ -396,8 +396,9 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
     return da_out
 
 
-def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="conservative",
-                             discard_useless=True):
+def regrid_and_apply_weights(
+    obsobj, modobj, pair=True, verbose=True, method="conservative", discard_useless=True
+):
     """Does the complete process of regridding
     and applying scattering weights.
 
