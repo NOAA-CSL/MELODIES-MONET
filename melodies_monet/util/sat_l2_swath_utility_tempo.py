@@ -40,12 +40,8 @@ def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     None
     """
     corners = ds[[lat, lon]].cf.add_bounds([lat, lon])
-    lat_b = cfxr.bounds_to_vertices(
-        corners[f"{lat}_bounds"], "bounds", order=None
-    )
-    lon_b = cfxr.bounds_to_vertices(
-        corners[f"{lon}_bounds"], "bounds", order=None
-    )
+    lat_b = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
+    lon_b = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
     return lat_b, lon_b
 
 
@@ -89,7 +85,9 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative"):
     """
 
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
-    regridder = xe.Regridder(mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True)
+    regridder = xe.Regridder(
+        mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True
+    )
     modswath = regridder(mod_at_swathtime)
     return modswath
 
@@ -337,7 +335,36 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     return modno2col_trfmd
 
 
-def _regrid_and_apply_weights(obsobj, modobj, method='conservative'):
+def discard_nonpairable(obsobj, modobj):
+    """Discards inplace granules from obsobj that do not match modobj's
+    domain, or granules that are all NaN. If the domain is small,
+    it can considerably speed up the regridding process.
+
+    Parameters
+    ----------
+    obsobj : collections.OrderedDict[str, xr.Dataset]
+        tempo data
+    modobj : xr.Dataset
+        model data
+
+    Return
+    ------
+    collections.OrderedDict[str, xr.Dataset]
+    """
+    for k in obsobj.keys():
+        if obsobj[k]["lon"].max() < modobj["longitude"].min():
+            del obsobj[k]
+        elif obsobj[k]["lon"].min() > modobj["longitude"].max():
+            del obsobj[k]
+        elif obsobj[k]["lat"].max() < modobj["latitude"].min():
+            del obsobj[k]
+        elif obsobj[k]["lat"].min() > modobj["latitude"].max():
+            del obsobj[k]
+        elif np.all(obsobj[k]["vertical_column_troposphere"].isnull().values):
+            del obsobj[k]
+
+
+def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -369,7 +396,8 @@ def _regrid_and_apply_weights(obsobj, modobj, method='conservative'):
     return da_out
 
 
-def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="conservative"):
+def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="conservative",
+                             discard_useless=True):
     """Does the complete process of regridding
     and applying scattering weights.
 
@@ -384,6 +412,10 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="co
     verbose : boolean
         If True, let's the user know when each timestamp is being regridded.
         Only has an effect if the input is an OrderedDict
+    discard_nonpairable : bool
+        If True, data from obsobj that does not match data from modobj
+        (be it because it's all nan or because the don't match in terms
+        of domain) is discarded.
 
     Returns
     -------
@@ -392,7 +424,12 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="co
         an OrderedDict is returned.
     """
 
-    speedup_regridding(modobj, ["latitude", "longitude", "lat_b", "lon_b"])
+    modgrid = {
+        "lon": np.asfortranarray(modobj["lon"].values),
+        "lat": np.asfortranarray(modobj["lat"].values),
+        "lon_b": np.asfortranarray(modobj["lat"].values),
+        "lat_b": np.asfortranarray(modobj["lat"].values),
+    }
     if isinstance(obsobj, xr.Dataset):
         regridded = _regrid_and_apply_weights(obsobj, modobj, method=method)
         output = regridded.to_dataset(name="NO2_col_wsct")
@@ -413,8 +450,7 @@ def regrid_and_apply_weights(obsobj, modobj, pair=True, verbose=True, method="co
             if verbose:
                 print(f"Regridding {ref_time}")
             output_multiple[ref_time] = _regrid_and_apply_weights(
-                obsobj[ref_time],
-                modobj, method=method
+                obsobj[ref_time], modobj, method=method
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
@@ -720,12 +756,16 @@ def select_by_keys(data_names, period="per_scan"):
 
 
 def read_objs_andpair(
-    obs_path, mod_path, period="per_scan", save_swath=True, back_to_modgrid=True, save_gridded=True, **kwargs
+    obs_path,
+    mod_path,
+    period="per_scan",
+    save_swath=True,
+    back_to_modgrid=True,
+    save_gridded=True,
+    **kwargs,
 ):
     """WIP"""
     tempodata = sorted(glob.glob(obs_path))
     loop_strategy = select_by_keys()
 
-
     paired_data = regrid_and_apply_weights()
-    
