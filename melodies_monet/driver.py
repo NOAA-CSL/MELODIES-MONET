@@ -1203,9 +1203,6 @@ class analysis:
         """
         
         from .util.tools import resample_stratify
-        from .util.tools import vert_interp
-        import matplotlib.dates as mdates
-        import numpy as np
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1593,17 +1590,27 @@ class analysis:
 
 
                         elif plot_type.lower() == 'curtain':
+                            # Set cmin and cmax from obs_plot_dict for colorbar limits
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
+                                    cmin = obs_plot_dict['vmin_plot']
+                                    cmax = obs_plot_dict['vmax_plot']
                                 else:
                                     print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
+                                    cmin = None
+                                    cmax = None
+                            else:
+                                cmin = None
+                                cmax = None
+                            
+                            # Set vmin and vmax from grp_dict for altitude limits
+                            if set_yaxis:
+                                vmin = grp_dict.get('vmin', None)
+                                vmax = grp_dict.get('vmax', None)
                             else:
                                 vmin = None
                                 vmax = None
+
                                 
                             curtain_config = grp_dict # Curtain plot grp YAML dict
                             # Inside your loop for processing each pair
@@ -1621,10 +1628,6 @@ class analysis:
                         
                             # Fetch the model and observation data from pairdf
                             pairdf = pairdf_all.reset_index()
-
-                            # Determine cmin and cmax (colorbar min max) from observation config if provided
-                            cmin = obs_plot_dict.get('vmin_plot', None)
-                            cmax = obs_plot_dict.get('vmax_plot', None)
                         
                             #### For model_data_2d for curtain/contourfill plot #####                       
                             # Convert to get something useful for MONET
@@ -1643,12 +1646,15 @@ class analysis:
                             # Define target pressures for interpolation based on the range of pressure_model
                             min_pressure = ds_model['pressure_model'].min().compute()
                             max_pressure = ds_model['pressure_model'].max().compute()
-                            # Fetch the interval from curtain_config
-                            interval = curtain_config.get('interval', 100)  # Default to 100 (in Pa) if not provided 
+                            
+                            # Fetch the interval and num_levels from curtain_config
+                            interval = curtain_config.get('interval', 10000)  # Default to 10,000 Pa if not provided      # Y-axis tick interval
+                            num_levels = curtain_config.get('num_levels', 100)   # Default to 100 levels if not provided
                         
-                            print(f"Pressure MIN:{min_pressure}, max: {max_pressure}, interval: {interval}")
-                        
-                            target_pressures = np.linspace(max_pressure, min_pressure, interval)
+                            print(f"Pressure MIN:{min_pressure}, max: {max_pressure}, ytick_interval: {interval}, interpolation_levels: {num_levels}  ")
+                            
+                            # Use num_levels to define target_pressures interpolation levels 
+                            target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
                             
                             # Debugging: print target pressures
                             ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
@@ -1698,17 +1704,17 @@ class analysis:
                                     time=pd.to_datetime(time),
                                     altitude=target_pressures,  # Use target_pressures for interpolation
                                     model_data_2d=model_data_2d,  # Already reshaped to match the expected shape
-                                    pairdf=pairdf,  #use pairdf for scatter overlay (model and obs)
                                     obs_pressure=obs_pressure,  # Pressure_obs for obs scatter plot
+                                    pairdf=pairdf,  #use pairdf for scatter overlay (model and obs)
                                     mod_var=modvar,
                                     obs_var=obsvar,
-                                    cmin=cmin,
-                                    cmax=cmax,
+                                    grp_dict=curtain_config,
                                     vmin=vmin,
                                     vmax=vmax,
+                                    cmin=cmin,
+                                    cmax=cmax,
                                     plot_dict=plot_dict,
                                     outname=outname_pair,
-                                    grp_dict=curtain_config,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     obs_label_config=obs_label_config,

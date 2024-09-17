@@ -25,8 +25,8 @@ model:
     variables:
         'pres_pa_mid':
             rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
-            unit_scale: 1 #Opt Scaling factor 
-            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+            unit_scale: 100 #1 #Opt Scaling factor 
+            unit_scale_method: '/' #convert to hPa (1 hPa=100 Pa) #'*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         'temperature_k':
             rename: temp_model # name to convert this variable to
             unit_scale: 1 #Opt Scaling factor 
@@ -52,8 +52,8 @@ model:
     variables:
         'pres_pa_mid':
             rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
-            unit_scale: 1 #Opt Scaling factor 
-            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+            unit_scale: 100 #1 #Opt Scaling factor 
+            unit_scale_method: '/' #convert to hPa (1 hPa=100 Pa) #'*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         'temperature_k':
             rename: temp_model # name to convert this variable to
             unit_scale: 1 #Opt Scaling factor 
@@ -118,7 +118,7 @@ obs:
             unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
       'P_BUI':
             rename: pressure_obs # name to convert this variable to
-            unit_scale: 100 #Opt Scaling factor 
+            unit_scale: 1 #remain in hPa #100 # hpa to Pa  #Opt Scaling factor 
             unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
       'MSL_GPS_Altitude_YANG':
           rename: altitude # name to convert this variable to
@@ -255,19 +255,20 @@ plots:
       set_axis: True
       altitude_variable: 'altitude'
     ##To use a custom Matplotlib colormap, set “color_map_custom”=True and specify “colors” and "color_levels" like the example below. To use a standard Matplotlib colormap, set “color_map_custom” = False and specify a “color_map”:
-    color_map_custom: True #False #True
+    color_map_custom: True #False 
     colors: ["#ff8cff", "#dd6ff2", "#bb52e5", "#9935d8", "#7718cb",
         "#0000bb", "#002ccc", "#0058dd", "#0084ee", "#00afff",
         "#00ebff", "#27ffd7", "#63ff9b", "#a3ff5b", "#d3ff2b",
         "#ffff00", "#ffcf00", "#ff9f00", "#ff6f00", "#ff3f00",
         "#ff0000", "#d8000f", "#b2001f", "#8c002f", "#66003f",
-        "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] #,
-        #"#ffffff"] #['blue','royalblue', 'cyan', 'yellow', 'orange', 'red'] ##['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725'] #['purple', 'blue', 'green', 'yellow'] # Example gradient
-    color_levels: 30 #31 #15 #10  # Define the number of distinct colors in the color bar
+        "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] # Example gradient
+    color_levels: 30   # Define the number of distinct colors in the color bar (see te numbers of colors in 'colors' key above is matching)
     #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
-    vmin: 120000 #Pressure in Pa  #0  #Optional (y-axis limits)
-    vmax: 5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
-    interval : 500 #Pressure in Pa; target pressure interpolation steps for model curtain 2d plot
+    vmin: 50 #in hPa #5000 #120000 #Pressure in Pa  #0  #Optional (y-axis limits)
+    vmax: 1200 # in hPa #120000 #5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
+    num_levels: 100   # Number of vertical levels for interpolation
+    interval: 100 #hPa #10000 #Pa   # Y-axis tick interval in Pa (e.g., ticks every 10,000 Pa)
+    pressure_units: 'hPa' #'Pa' (units for y-axis)
     
   plot_grp6:
     type: 'taylor' # plot type

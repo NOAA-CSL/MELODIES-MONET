@@ -289,10 +289,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     None
         Saves the generated plot to a file.
     """
-
-    if vmin is not None and vmax is not None:
-        plot_dict['ylim'] = [vmin, vmax]
-    
+  
     if model_data_2d.size == 0 or pairdf.empty:
         print("Warning: Model or observation data is empty. Skipping plot.")
         return
@@ -342,9 +339,59 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     fig.suptitle(f"Model vs Observation Curtain Plot: {mod_var} vs {obs_var}", fontsize=text_dict.get('fontsize', 16), fontweight=text_dict.get('fontweight', 'bold'))
     axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     
-    axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    ##axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold')) #removed explicit y-axis label (made it flexible: see pressure_units via yaml)
     axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
     axs[0].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
+    axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom (FOR SECOND SUBPLOT)
+
+    # Set y-axis limits if vmin and vmax are provided
+    if vmin is not None and vmax is not None:
+        # Since y-axis is inverted already (see invert_yaxis() above), set limits accordingly
+        print(f"Setting y-axis limits: vmin={vmin}, vmax={vmax}")
+        axs[0].set_ylim(vmax, vmin)  # Note the order to match inversion
+        axs[1].set_ylim(vmax, vmin)  # Note the order to match inversion
+    else:
+        vmin, vmax = axs[0].get_ylim()
+
+
+
+    # Retrieve pressure units from grp_dict or default to 'Pa'
+    pressure_units = grp_dict.get('pressure_units', 'Pa')
+    
+    # Set y-tick labels and y-axis label based on pressure units
+    if pressure_units == 'hPa':
+        y_axis_label = 'Pressure (hPa)'
+    else:
+        y_axis_label = 'Pressure (Pa)'
+    
+    # Apply y-tick labels and y-axis labels (both subplots)
+    axs[0].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
+                      fontweight=text_dict.get('fontweight', 'bold'))
+    axs[1].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
+                      fontweight=text_dict.get('fontweight', 'bold'))
+   
+
+    # Set y-axis ticks at specified intervals for axs[0] (first subplot)
+    if 'interval' in grp_dict:
+        interval = grp_dict['interval']
+        print(f"Interval value: {interval}")  # This will print the interval value
+        y_ticks = np.arange(vmin, vmax + interval, interval)
+        y_ticks = y_ticks[y_ticks <= vmax]  # Ensure ticks do not exceed vmax
+        print(f"Calculated y_ticks: {y_ticks}")
+        axs[0].set_yticks(y_ticks)
+        # Format y-tick labels
+        axs[0].set_yticklabels([str(int(tick)) for tick in y_ticks])
+    else:
+        y_ticks = axs[0].get_yticks()
+    
+    # Synchronize y-ticks and y-limits for axs[1] (Second subplot) based on axs[0] (First subplot)
+    y_ticks = axs[0].get_yticks()
+    y_lim = axs[0].get_ylim()
+    axs[1].set_yticks(y_ticks)
+    axs[1].set_ylim(y_lim)
+    # Set y-tick labels for axs[1]
+    axs[1].set_yticklabels([str(int(tick)) for tick in y_ticks])  ##axs[1].set_yticklabels([str(int(tick)) if tick != y_ticks.min() else '' for tick in y_ticks]) #if needed to hide minimum 
+
 
     # Separate subplot for the observation scatter plot
     axs[1].set_title("Observation Scatter", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
@@ -353,17 +400,10 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     axs[1].xaxis.set_major_locator(mdates.AutoDateLocator())
     fig.autofmt_xdate(rotation=45, ha='right')
 
-    axs[1].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
-    axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+    ##axs[1].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))  #made it flexible via YAML specified 'pressure_units'
     axs[1].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
     axs[1].set_xlabel('Time', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
 
-    # Set the same y-tick labels for both subplots and exclude the minimum value
-    y_ticks = axs[0].get_yticks()
-    y_lim = axs[0].get_ylim()
-    axs[1].set_yticks(y_ticks)
-    axs[1].set_ylim(y_lim)
-    axs[1].set_yticklabels([str(int(tick)) if tick != y_ticks.min() else '' for tick in y_ticks])
 
     # Plot model scatter data on top of the model curtain plot
     axs[0].scatter(time_dates, obs_pressure, c=pairdf[mod_var].values, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.5, alpha=0.7)
