@@ -6,8 +6,7 @@
 # developed for TEMPO Level2 NO2
 #
 
-""" Python utility for TEMPO use."""
-
+"""Python utility for TEMPO use."""
 
 import collections
 import glob
@@ -96,7 +95,11 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
     if weights is None:
         regridder = xe.Regridder(
-            mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True
+            mod_at_swathtime,
+            obsobj,
+            method,
+            ignore_degenerate=True,
+            unmapped_to_nan=True,
         )
         modswath = regridder(mod_at_swathtime)
     else:
@@ -233,7 +236,9 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
         coords=coords,
         attrs=modobj["pres_pa_mid"].attrs,
     )
-    _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
+    _interp_description = (
+        "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
+    )
     modsatlayers["p_mid_tempo"].attrs["description"] = _interp_description
     return modsatlayers
 
@@ -286,7 +291,8 @@ def _calc_layer_thickness(modobj):
     layer_thickness = xr.zeros_like(height_agl)
     layer_thickness[0, :, :] = height_agl.isel(z=0).values
     layer_thickness[1:, :, :] = (
-        height_agl.isel(z=slice(1, None)).values - height_agl.isel(z=slice(0, -1)).values
+        height_agl.isel(z=slice(1, None)).values
+        - height_agl.isel(z=slice(0, -1)).values
     )
     return layer_thickness
 
@@ -310,18 +316,27 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
         A xr.DataArray containing the NO2 model data after applying
         the air mass factors and scattering weights
     """
-    unit_c = 6.022e23 * 9.8 / 1e4 # NA * g / m2_to_cm2
+    unit_c = 6.022e23 * 9.8 / 1e4  # NA * g / m2_to_cm2
     dp = _calc_dp(obsobj).rename({"swt_level": "z"})
     ppbv2molmol = 1e-9
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
+    scattering_weights = scattering_weights.where(
+        modobj["p_mid_tempo"] >= tropopause_pressure
+    )
     modno2 = modobj["NO2"].where(modobj["p_mid_tempo"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
-    modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
+    modno2col_trfmd = (
+        (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
+    )
     modno2col_trfmd = modno2col_trfmd.where(modno2.isel(z=0).notnull())
     modno2col_trfmd = modno2col_trfmd / amf_troposphere
+    modno2col_trfmd.attrs = {
+        "units": "molecules/cm2",
+        "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2_hydrostatic, TEMPO util",
+    }
     return modno2col_trfmd
 
 
@@ -347,7 +362,9 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     tropopause_pressure = obsobj["tropopause_pressure"] * 100
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
+    scattering_weights = scattering_weights.where(
+        modobj["p_mid_tempo"] >= tropopause_pressure
+    )
     amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
     modno2col_trfmd = modno2col_trfmd.where(modobj["NO2_col"].isel(z=0).notnull())
@@ -462,7 +479,9 @@ def regrid_and_apply_weights(
     #     "lat_b": np.asfortranarray(modobj["lat"].values),
     # }
     if isinstance(obsobj, xr.Dataset):
-        regridded = _regrid_and_apply_weights(obsobj, modobj, method=method, weights=weights)
+        regridded = _regrid_and_apply_weights(
+            obsobj, modobj, method=method, weights=weights
+        )
         output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
@@ -484,13 +503,15 @@ def regrid_and_apply_weights(
                 obsobj[ref_time], modobj, method=method, weights=weights
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
-            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
+            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs[
+                "scan_num"
+            ]
             output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
                 "granule_number"
             ]
-            output_multiple[ref_time].attrs["final_time_string"] = obsobj[ref_time]["time"][
-                -1
-            ].values.astype(str)
+            output_multiple[ref_time].attrs["final_time_string"] = obsobj[ref_time][
+                "time"
+            ][-1].values.astype(str)
             if pair:
                 output_multiple[ref_time] = xr.merge(
                     [
@@ -568,14 +589,18 @@ def back_to_modgrid(
         paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
     )
     # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
-    regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
+    regridder = xe.Regridder(
+        concatenated, modobj, method="bilinear", unmapped_to_nan=True
+    )
     out_regridded = regridder(concatenated)
     # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
         if v in concatenated.variables:
             out_regridded[v].attrs = concatenated[v].attrs
         else:
-            warnings.warn(f"Variable {v} not found in mod2grid nor obs2grid. Continuing.")
+            warnings.warn(
+                f"Variable {v} not found in mod2grid nor obs2grid. Continuing."
+            )
     out_regridded.attrs["reference_time_string"] = ref_times
     out_regridded.attrs["granules"] = np.array(granules)
     scan_num = concatenated.attrs["scan_num"]
@@ -586,7 +611,9 @@ def back_to_modgrid(
             name="time",
             data=time,
             dims=["time"],
-            attrs={"description": "Reference start time of first selected granule in scan."},
+            attrs={
+                "description": "Reference start time of first selected granule in scan."
+            },
             coords={"time": (("time",), time)},
         )
         out_regridded = out_regridded.expand_dims(time=da_time)
@@ -658,7 +685,6 @@ def back_to_modgrid_multiscan(
         if "XYZ" in path:
             first_time = out_regridded["time"][0].values.astype(str)[0:19]
             last_time = out_regridded["time"][-1].values.astype(str)[0:19]
-            scan_num = out_regridded.attrs["scan_num"]
             out_regridded.to_netcdf(path.replace("XYZ", f"{first_time}_{last_time}"))
         else:
             out_regridded.to_netcdf(path)
@@ -747,7 +773,9 @@ def save_paired_swath(moddict, path="Paired_swath_XYZ.nc"):
         gran_num = moddict[k].attrs["granule_number"]
         if isinstance(path, str):
             if "XYZ" in path:
-                pathout = path.replace("XYZ", f"{k[:-1]}_S{scan_num:03d}G{gran_num:03d}")
+                pathout = path.replace(
+                    "XYZ", f"{k[:-1]}_S{scan_num:03d}G{gran_num:03d}"
+                )
             else:
                 pathout = path.replace(".nc", f"{i}.nc")
         else:
@@ -788,9 +816,10 @@ def select_by_keys(data_names, period="per_scan"):
         )
         period = "all"
 
-
     if period != "all":
-        days = sorted({re.search(r"((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted})
+        days = sorted(
+            {re.search(r"((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted}
+        )
         subgroups = []
         for day in days:
             subgroups.append([d for d in date_names_sorted if day in d])
@@ -801,7 +830,9 @@ def select_by_keys(data_names, period="per_scan"):
         if period == "per_scan":
             scans = []
             for sg in subgroups:
-                scan = sorted({re.search(r"(S(\d{3}))G(\d{2})", s).group(1) for s in sg})
+                scan = sorted(
+                    {re.search(r"(S(\d{3}))G(\d{2})", s).group(1) for s in sg}
+                )
                 for s in scan:
                     scans.append([f for f in sg if s in f])
             return scans
@@ -846,7 +877,8 @@ def read_objs_andpair(
                 "surface_pressure": {},
                 "pressure": {},
                 "scattering_weights": {},
-                "air_mass_factors_troposphere": {},
+                "amf_troposphere": {},
+                "tropopause_pressure": {},
             },
         )
         if discard_useless:
@@ -870,5 +902,7 @@ def read_objs_andpair(
         return paired_swath
 
     if to_modgrid:
-        return read_paired_gridded_tempo_model(f"{output}/Regridded_paired_model_tempo_*.nc")
+        return read_paired_gridded_tempo_model(
+            f"{output}/Regridded_paired_model_tempo_*.nc"
+        )
     return read_paired_swath(f"{output}/Paired_swath_*.nc")
