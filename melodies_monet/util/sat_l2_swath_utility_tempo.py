@@ -189,7 +189,7 @@ def _interp_vert(orig, target, data):
     return interp
 
 
-def interp_vertical_mod2swath(obsobj, modobj, variables=["NO2_col"]):
+def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     """Interpolates model vertical layers to TEMPO vertical layers
 
     Paramenters
@@ -198,7 +198,7 @@ def interp_vertical_mod2swath(obsobj, modobj, variables=["NO2_col"]):
         Model data (as provided by MONETIO)
     obsobj : xr.Dataset
         TEMPO data (as provided by MONETIO). Must include pressure.
-    varables : list[str]
+    varables : str | list[str]
         Variables to interpolate.
 
     Returns
@@ -222,7 +222,7 @@ def interp_vertical_mod2swath(obsobj, modobj, variables=["NO2_col"]):
         "lon": (("x", "y"), modobj["lon"].values),
         "lat": (("x", "y"), modobj["lat"].values),
     }
-    for var in variables:
+    for var in list(variables):
         interpolated = _interp_vert(p_orig, p_mid_tempo, modobj[var].values)
         modsatlayers[var] = xr.DataArray(
             data=interpolated, dims=dimensions, coords=coords, attrs=modobj[var].attrs
@@ -255,9 +255,9 @@ def calc_partialcolumn(modobj, var="NO2"):
     """
     R = 8.314  # m3 * Pa / K / mol
     NA = 6.022e23
-    PPBTOMOLMOL = 1e-9
-    M2TOCM2 = 1e4
-    fac_units = PPBTOMOLMOL * NA / M2TOCM2
+    ppbv2molmol = 1e-9
+    m2_to_cm2 = 1e4
+    fac_units = ppbv2molmol * NA / m2_to_cm2
     layer_thickness = _calc_layer_thickness(modobj)
     partial_col = (
         modobj[var]
@@ -310,16 +310,16 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
         A xr.DataArray containing the NO2 model data after applying
         the air mass factors and scattering weights
     """
-    unit_c = 6.022e23 * 9.8 / 1e4
+    unit_c = 6.022e23 * 9.8 / 1e4 # NA * g / m2_to_cm2
     dp = _calc_dp(obsobj).rename({"swt_level": "z"})
-    PPBTOMOLMOL = 1e-9
+    ppbv2molmol = 1e-9
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
     scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
     modno2 = modobj["NO2"].where(modobj["p_mid_tempo"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
-    modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * PPBTOMOLMOL
+    modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
     modno2col_trfmd = modno2col_trfmd.where(modno2.isel(z=0).notnull())
     modno2col_trfmd = modno2col_trfmd / amf_troposphere
     return modno2col_trfmd
@@ -512,7 +512,7 @@ def back_to_modgrid(
     keys_to_merge="all",
     add_time=True,
     to_netcdf=False,
-    out_name="Regridded_object_XYZ.nc",
+    path="Regridded_object_XYZ.nc",
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -531,7 +531,7 @@ def back_to_modgrid(
         Can be useful to concatenate later if multiple scans are required.
     to_netcdf : bool
         If True, save a netcdf with the paired data
-    out_name : str
+    path : str
         The base name to save the files if to_netcdf is True. XX will be replaced
         with the scan number and the reference time. If to_netcdf is False, this will
         be ignored.
@@ -563,7 +563,10 @@ def back_to_modgrid(
             concatenated = xr.concat([concatenated, paireddict[k]], dim="x")
             granules.append(paireddict[k].attrs["granule_number"])
             ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
-    end_time = np.array(paireddict[k].attrs["final_time_string"], dtype="datetime64[ns]")
+
+    end_time = np.array(
+        paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
+    )
     # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
     regridder = xe.Regridder(concatenated, modobj, method="bilinear", unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
@@ -592,22 +595,22 @@ def back_to_modgrid(
             "description": "time at which the last swath of the scan starts"
         }
     if to_netcdf:
-        if "XYZ" in out_name:
+        if "XYZ" in path:
             scan_num = out_regridded.attrs["scan_num"]
             out_regridded.to_netcdf(
-                out_name.replace(
+                path.replace(
                     "XYZ",
                     f"S{scan_num:03d}_{out_regridded['time'].values.astype(str)[0][0:19]}",
                 )
             )
         else:
-            out_regridded.to_netcdf(out_name)
+            out_regridded.to_netcdf(path)
 
     return out_regridded
 
 
 def back_to_modgrid_multiscan(
-    paireddict, modobj, to_netcdf=False, out_name="Regridded_object_XYZ.nc"
+    paireddict, modobj, to_netcdf=False, path="Regridded_object_XYZ.nc"
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for multiple scans, and uses
@@ -625,7 +628,7 @@ def back_to_modgrid_multiscan(
         If it is 'all', all variables are regridded
     to_netcdf : bool
         If True, save a netcdf with the paired data
-    out_name : str
+    path : str
         The base name to save the files if to_netcdf is True. XX will be replaced
         with the first and list times. If to_netcdf is False, this will
         be ignored.
@@ -652,13 +655,13 @@ def back_to_modgrid_multiscan(
         out_regridded = xr.merge([out_regridded, regridded_scan])
 
     if to_netcdf:
-        if "XYZ" in out_name:
+        if "XYZ" in path:
             first_time = out_regridded["time"][0].values.astype(str)[0:19]
             last_time = out_regridded["time"][-1].values.astype(str)[0:19]
             scan_num = out_regridded.attrs["scan_num"]
-            out_regridded.to_netcdf(out_name.replace("XYZ", f"{first_time}_{last_time}"))
+            out_regridded.to_netcdf(path.replace("XYZ", f"{first_time}_{last_time}"))
         else:
-            out_regridded.to_netcdf(out_name)
+            out_regridded.to_netcdf(path)
 
     return out_regridded
 
@@ -778,31 +781,33 @@ def select_by_keys(data_names, period="per_scan"):
 
     date_names_sorted = sorted(data_names)
 
-    if period not in ["all", "per_day", "per_scan"]:
+    if period not in ("all", "per_day", "per_scan"):
         warnings.warn(
             "Could not understand looping recommendations for processing files."
             ' Not in "all", "per_day" nor "per_scan". Adopting "all".'
         )
         period = "all"
 
-    if period == "all":
-        return [date_names_sorted]
 
-    days = sorted(set([re.search("((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted]))
-    subgroups = []
-    for day in days:
-        subgroups.append([d for d in date_names_sorted if day in d])
+    if period != "all":
+        days = sorted({re.search(r"((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted})
+        subgroups = []
+        for day in days:
+            subgroups.append([d for d in date_names_sorted if day in d])
 
-    if period == "per_day":
-        return subgroups
+        if period == "per_day":
+            return subgroups
 
-    if period == "per_scan":
-        scans = []
-        for sg in subgroups:
-            scan = sorted(set([re.search("(S(\d{3}))G(\d{2})", s).group(1) for s in sg]))
-            for s in scan:
-                scans.append([f for f in sg if s in f])
-        return scans
+        if period == "per_scan":
+            scans = []
+            for sg in subgroups:
+                scan = sorted({re.search(r"(S(\d{3}))G(\d{2})", s).group(1) for s in sg})
+                for s in scan:
+                    scans.append([f for f in sg if s in f])
+            return scans
+
+    # This only should happen if period == "all"
+    return [date_names_sorted]
 
 
 def read_objs_andpair(
@@ -812,7 +817,7 @@ def read_objs_andpair(
     save_swath=True,
     to_modgrid=True,
     save_gridded=True,
-    discard_nonpairable=True,
+    discard_useless=True,
     regrid_method="conservative",
     regrid_weights=None,
     output=".",
@@ -821,7 +826,7 @@ def read_objs_andpair(
     obs_path = sorted(glob.glob(obs_path))
     looping_strategy = select_by_keys(obs_path, period)
     # Sanity check
-    if period == "per_scan" or period == "per_swath":
+    if period in ("per_scan", "per_swath"):
         if not save_swath and not save_gridded:
             raise ValueError(
                 f"You asked to loop on a period of {period}, but to not save either swaths"
@@ -844,20 +849,20 @@ def read_objs_andpair(
                 "air_mass_factors_troposphere": {},
             },
         )
-        if discard_nonpairable:
+        if discard_useless:
             discard_nonpairable(obsobj, modobj)
 
         paired_swath = regrid_and_apply_weights(
             obsobj, modobj, method=regrid_method, weights=regrid_weights
         )
         if save_swath:
-            save_paired_swath(paired_swath, output=f"{output}/Paired_swath_XYZ.nc")
+            save_paired_swath(paired_swath, path=f"{output}/Paired_swath_XYZ.nc")
         if to_modgrid:
             paired_modspace = back_to_modgrid_multiscan(
                 paired_swath,
                 modobj,
                 to_netcdf=save_gridded,
-                out_name=f"{output}/Regridded_paired_model_tempo_XYZ.nc",
+                path=f"{output}/Regridded_paired_model_tempo_XYZ.nc",
             )
     if period == "all":
         if to_modgrid:
