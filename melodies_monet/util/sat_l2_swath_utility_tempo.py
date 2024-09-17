@@ -6,6 +6,9 @@
 # developed for TEMPO Level2 NO2
 #
 
+""" Python utility for TEMPO use."""
+
+
 import collections
 import glob
 import logging
@@ -16,6 +19,7 @@ import numba
 import numpy as np
 import xarray as xr
 import xesmf as xe
+import monetio as mio
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -66,7 +70,7 @@ def speedup_regridding(dset, variables="all"):
             dset[v] = dset[v].astype(dtype, order="C")
 
 
-def tempo_interp_mod2swath(obsobj, modobj, method="conservative"):
+def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """Interpolate model to satellite swath/swaths
 
     Parameters
@@ -75,6 +79,11 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative"):
         satellite with swath data.
     modobj : xr.Dataset
         model data (with no2 col calculated)
+    method : str
+        Choose regridding method. Can be "conservative", "conservative_normed",
+        "bilinear" or "patch". Check xesmf documentation for details.
+    weights : str
+        Path to the weightfile. If present, the weights won't be calculated again.
 
     Returns
     -------
@@ -85,10 +94,23 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative"):
     """
 
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
-    regridder = xe.Regridder(
-        mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True
-    )
-    modswath = regridder(mod_at_swathtime)
+    if weights is None:
+        regridder = xe.Regridder(
+            mod_at_swathtime, obsobj, method, ignore_degenerate=True, unmapped_to_nan=True
+        )
+        modswath = regridder(mod_at_swathtime)
+    else:
+        regridder = xe.Regridder(
+            mod_at_swathtime,
+            obsobj,
+            method,
+            ignore_degenerate=True,
+            unmapped_to_nan=True,
+            filename=weights,
+            reuse_weights=True,
+        )
+        modswath = regridder(mod_at_swathtime)
+
     return modswath
 
 
@@ -167,7 +189,7 @@ def _interp_vert(orig, target, data):
     return interp
 
 
-def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
+def interp_vertical_mod2swath(obsobj, modobj, variables=["NO2_col"]):
     """Interpolates model vertical layers to TEMPO vertical layers
 
     Paramenters
@@ -176,7 +198,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
         Model data (as provided by MONETIO)
     obsobj : xr.Dataset
         TEMPO data (as provided by MONETIO). Must include pressure.
-    vars : list[str]
+    varables : list[str]
         Variables to interpolate.
 
     Returns
@@ -200,7 +222,7 @@ def interp_vertical_mod2swath(obsobj, modobj, vars=["NO2_col"]):
         "lon": (("x", "y"), modobj["lon"].values),
         "lat": (("x", "y"), modobj["lat"].values),
     }
-    for var in vars:
+    for var in variables:
         interpolated = _interp_vert(p_orig, p_mid_tempo, modobj[var].values)
         modsatlayers[var] = xr.DataArray(
             data=interpolated, dims=dimensions, coords=coords, attrs=modobj[var].attrs
@@ -223,6 +245,8 @@ def calc_partialcolumn(modobj, var="NO2"):
     ----------
     modobj : xr.Dataset
         Model data
+    var : str
+        variable to calculate the partial column from
 
     Returns
     -------
@@ -236,7 +260,7 @@ def calc_partialcolumn(modobj, var="NO2"):
     fac_units = PPBTOMOLMOL * NA / M2TOCM2
     layer_thickness = _calc_layer_thickness(modobj)
     partial_col = (
-        modobj["NO2"]
+        modobj[var]
         * modobj["pres_pa_mid"]
         * layer_thickness
         * fac_units
@@ -364,7 +388,7 @@ def discard_nonpairable(obsobj, modobj):
             del obsobj[k]
 
 
-def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
+def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -374,6 +398,11 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
         TEMPO observations
     modobj : xr.Dataset
         Model data
+    method : str
+        Choose regridding method. Can be "conservative", "conservative_normed",
+        "bilinear" or "patch". Check xesmf documentation for details.
+    weights : str
+        Path to the weightfile. If present, the weights won't be calculated again.
 
     Returns
     -------
@@ -381,7 +410,7 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
         Model data regridded to the TEMPO grid,
         with the averaging kernel.
     """
-    modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method)
+    modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
     if "layer_height_agl" in list(modobj.variables):
         modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
@@ -397,7 +426,7 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative"):
 
 
 def regrid_and_apply_weights(
-    obsobj, modobj, pair=True, verbose=True, method="conservative", discard_useless=True
+    obsobj, modobj, pair=True, verbose=True, method="conservative", weights=None
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -413,10 +442,11 @@ def regrid_and_apply_weights(
     verbose : boolean
         If True, let's the user know when each timestamp is being regridded.
         Only has an effect if the input is an OrderedDict
-    discard_nonpairable : bool
-        If True, data from obsobj that does not match data from modobj
-        (be it because it's all nan or because the don't match in terms
-        of domain) is discarded.
+    method : str
+        Choose regridding method. Can be "conservative", "conservative_normed",
+        "bilinear" or "patch". Check xesmf documentation for details.
+    weights : None | str
+        If present, a weightfile (as in "weights") is applied
 
     Returns
     -------
@@ -425,14 +455,14 @@ def regrid_and_apply_weights(
         an OrderedDict is returned.
     """
 
-    modgrid = {
-        "lon": np.asfortranarray(modobj["lon"].values),
-        "lat": np.asfortranarray(modobj["lat"].values),
-        "lon_b": np.asfortranarray(modobj["lat"].values),
-        "lat_b": np.asfortranarray(modobj["lat"].values),
-    }
+    # modgrid = {
+    #     "lon": np.asfortranarray(modobj["lon"].values),
+    #     "lat": np.asfortranarray(modobj["lat"].values),
+    #     "lon_b": np.asfortranarray(modobj["lat"].values),
+    #     "lat_b": np.asfortranarray(modobj["lat"].values),
+    # }
     if isinstance(obsobj, xr.Dataset):
-        regridded = _regrid_and_apply_weights(obsobj, modobj, method=method)
+        regridded = _regrid_and_apply_weights(obsobj, modobj, method=method, weights=weights)
         output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
@@ -445,13 +475,13 @@ def regrid_and_apply_weights(
         if pair:
             output = xr.merge([output, obsobj["vertical_column_troposphere"]])
         return output
-    elif isinstance(obsobj, collections.OrderedDict):
+    if isinstance(obsobj, collections.OrderedDict):
         output_multiple = collections.OrderedDict()
         for ref_time in obsobj.keys():
             if verbose:
                 print(f"Regridding {ref_time}")
             output_multiple[ref_time] = _regrid_and_apply_weights(
-                obsobj[ref_time], modobj, method=method
+                obsobj[ref_time], modobj, method=method, weights=weights
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
@@ -473,8 +503,7 @@ def regrid_and_apply_weights(
                     {"lat": "latitude", "lon": "longitude"}
                 )
         return output_multiple
-    else:
-        raise Exception("Obsobj must be xr.Dataset or collections.OrderedDict")
+    raise TypeError("Obsobj must be xr.Dataset or collections.OrderedDict")
 
 
 def back_to_modgrid(
@@ -526,7 +555,7 @@ def back_to_modgrid(
         for k in ordered_keys[1:]:
             ds_to_add = paireddict[k]
             if ds_to_add.attrs["scan_num"] != scan_num:
-                raise Exception(
+                raise ValueError(
                     "back_to_modgrid is prepared to work with data of a single scan. "
                     + f"However, {ordered_keys[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
@@ -652,10 +681,9 @@ def _subset_ds(ds, subset_vars="all"):
     """
     if subset_vars == "all":
         return ds
-    else:
-        if isinstance(subset_vars, str):
-            subset_vars = [subset_vars]
-        return ds[subset_vars]
+    if isinstance(subset_vars, str):
+        subset_vars = [subset_vars]
+    return ds[subset_vars]
 
 
 def read_paired_gridded_tempo_model(path):
@@ -667,24 +695,45 @@ def read_paired_gridded_tempo_model(path):
 
     Returns
     -------
-    combined dataset with paired tempo and gridded data.
+    xr.Dataset
+        combined dataset with paired tempo and gridded data.
     """
 
     pathlist = sorted(glob.glob(path))
     return xr.open_mfdataset(pathlist)
 
 
-def save_swath(moddict, path="Paired_swath_XYZ.nc"):
+def read_paired_swath(path):
+    """Read in paired swath data
+
+    Parameters
+    ----------
+    path : str or globobject
+
+    Returns
+    -------
+    collections.OrderedDict[str, xr.Dataset]
+        OrderedDict with datasets containing every swath
+    """
+    pathlist = sorted(glob.glob(path))
+    swaths = collections.OrderedDict()
+    for f in pathlist:
+        ds = xr.open_dataset(f)
+        time = ds.attrs["reference_time_string"]
+        swaths[time] = ds
+    return swaths
+
+
+def save_paired_swath(moddict, path="Paired_swath_XYZ.nc"):
     """Saves each swath individually
 
     Parameters
     ----------
     moddict : collections.OrderedDict[str, xr.Dataset]
         Ordered dict containing all of the paired model and swath.
-    path : str | list[str]
+    path : str
         Path to save the swath. If XYZ is present, it will be replaced
-        by the date, number of scan and number of granule. If it is a list,
-        it will use the list elements to save the swaths.
+        by the date, number of scan and number of granule.
 
     Returns
     -------
@@ -697,9 +746,9 @@ def save_swath(moddict, path="Paired_swath_XYZ.nc"):
             if "XYZ" in path:
                 pathout = path.replace("XYZ", f"{k[:-1]}_S{scan_num:03d}G{gran_num:03d}")
             else:
-                pathout = "1" + path
-        elif isinstance(path, list):
-            pathout = list[i]
+                pathout = path.replace(".nc", f"{i}.nc")
+        else:
+            pathout = f"{i}_paired.nc"
         moddict[k].to_netcdf(pathout)
 
 
@@ -737,7 +786,7 @@ def select_by_keys(data_names, period="per_scan"):
         period = "all"
 
     if period == "all":
-        return date_names_sorted
+        return [date_names_sorted]
 
     days = sorted(set([re.search("((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted]))
     subgroups = []
@@ -758,15 +807,63 @@ def select_by_keys(data_names, period="per_scan"):
 
 def read_objs_andpair(
     obs_path,
-    mod_path,
+    modobj,
     period="per_scan",
     save_swath=True,
-    back_to_modgrid=True,
+    to_modgrid=True,
     save_gridded=True,
-    **kwargs,
+    discard_nonpairable=True,
+    regrid_method="conservative",
+    regrid_weights=None,
+    output=".",
 ):
     """WIP"""
-    tempodata = sorted(glob.glob(obs_path))
-    loop_strategy = select_by_keys()
+    obs_path = sorted(glob.glob(obs_path))
+    looping_strategy = select_by_keys(obs_path, period)
+    # Sanity check
+    if period == "per_scan" or period == "per_swath":
+        if not save_swath and not save_gridded:
+            raise ValueError(
+                f"You asked to loop on a period of {period}, but to not save either swaths"
+                + "or regridded data. This would render it impossible to recover the data"
+                + "after each loop. Please change save_swath and/or save_gridded to True."
+            )
+    if save_gridded and not to_modgrid:
+        warnings.warn(
+            "to_modgrid is False, but save_gridded is True. save_gridded will be ignored."
+        )
+    for i in looping_strategy:
+        obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(
+            i,
+            {
+                "vertical_column_troposphere": {},
+                "main_data_quality_flag": {"max": 0},
+                "surface_pressure": {},
+                "pressure": {},
+                "scattering_weights": {},
+                "air_mass_factors_troposphere": {},
+            },
+        )
+        if discard_nonpairable:
+            discard_nonpairable(obsobj, modobj)
 
-    paired_data = regrid_and_apply_weights()
+        paired_swath = regrid_and_apply_weights(
+            obsobj, modobj, method=regrid_method, weights=regrid_weights
+        )
+        if save_swath:
+            save_paired_swath(paired_swath, output=f"{output}/Paired_swath_XYZ.nc")
+        if to_modgrid:
+            paired_modspace = back_to_modgrid_multiscan(
+                paired_swath,
+                modobj,
+                to_netcdf=save_gridded,
+                out_name=f"{output}/Regridded_paired_model_tempo_XYZ.nc",
+            )
+    if period == "all":
+        if to_modgrid:
+            return paired_modspace
+        return paired_swath
+
+    if to_modgrid:
+        return read_paired_gridded_tempo_model(f"{output}/Regridded_paired_model_tempo_*.nc")
+    return read_paired_swath(f"{output}/Paired_swath_*.nc")
