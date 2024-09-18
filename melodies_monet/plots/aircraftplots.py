@@ -123,9 +123,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
-            df_mean=df_reg.groupby(['siteid'],as_index=False).mean()
+            df_mean=df_reg.groupby(['siteid'],as_index=False).mean(numeric_only=True)
         else:
-            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+            df_mean=df_reg.groupby(['siteid'],as_index=False).quantile(ptile/100., numeric_only=True)
 
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -135,9 +135,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
-            df_mean=df.groupby(['siteid'],as_index=False).mean()
+            df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
         else:
-            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100.)
+            df_mean=df.groupby(['siteid'],as_index=False).quantile(ptile/100., numeric_only=True)
        
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
@@ -521,19 +521,19 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         bin_midpoints = altitude_bins.apply(lambda x: x.mid)
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
-        median = df.groupby(altitude_bins, observed=True)[column].median()
-        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median(numeric_only=True)
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25, numeric_only=True)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75, numeric_only=True)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
-        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
-        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
-        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05, numeric_only=True)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10, numeric_only=True)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90, numeric_only=True)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95, numeric_only=True)
         
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean(numeric_only=True)
 
         ##Plotting vertprofile starts
         plot_kwargs_fillbetween = plot_kwargs.copy()
@@ -626,20 +626,20 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         # can be .groupby(bin_midpoints) as well (qzr)
-        median = df.groupby(altitude_bins, observed=True)[column].median()
-        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25)
-        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75)
+        median = df.groupby(altitude_bins, observed=True)[column].median(numeric_only=True)
+        q1 = df.groupby(altitude_bins, observed=True)[column].quantile(0.25, numeric_only=True)
+        q3 = df.groupby(altitude_bins, observed=True)[column].quantile(0.75, numeric_only=True)
         # Convert bin_midpoints to a numerical data type
         df['bin_midpoints'] = df['bin_midpoints'].astype(float)
 
         # Calculate the 10th, 90th, 5th, and 95th percentiles
-        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10)
-        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90)
-        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05)
-        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95)
+        p10 = df.groupby(altitude_bins, observed=True)[column].quantile(0.10, numeric_only=True)
+        p90 = df.groupby(altitude_bins, observed=True)[column].quantile(0.90, numeric_only=True)
+        p5 = df.groupby(altitude_bins, observed=True)[column].quantile(0.05, numeric_only=True)
+        p95 = df.groupby(altitude_bins, observed=True)[column].quantile(0.95, numeric_only=True)
 
         # Calculate the mean of bin_midpoints grouped by altitude bins
-        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean()
+        binmidpoint = df.groupby(altitude_bins, observed=True)['bin_midpoints'].mean(numeric_only=True)
           
         plot_kwargs_fillbetween = plot_dict.copy()
         del plot_kwargs_fillbetween['marker']
