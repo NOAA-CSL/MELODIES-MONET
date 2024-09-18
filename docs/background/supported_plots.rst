@@ -5,7 +5,7 @@ Model to Model Comparisons
 --------------------------
 Under development. 
 
-.. See the `Spatial Verification <https://github.com/NOAA-CSL/MELODIES-MONET/projects/3>`_ 
+See the `Spatial Verification <https://github.com/NOAA-CSL/MELODIES-MONET/projects/3>`_ 
 project on GitHub to learn about current and future development.
 
 Model to Observation Comparisons
