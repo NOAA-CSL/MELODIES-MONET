@@ -80,7 +80,7 @@ def kolmogorov_zurbenko_filter(df, col, window, iterations):
     for i in range(iterations):
         z.index = z.time_local
         z = z.groupby('siteid')[col].rolling(
-            window, center=True, min_periods=1).mean().reset_index().dropna()
+            window, center=True, min_periods=1).mean(numeric_only=True).reset_index().dropna()
     df = df.reset_index(drop=True)
     return df.merge(z, on=['siteid', 'time_local'])
 
@@ -119,23 +119,26 @@ def long_to_wide(df):
 def calc_8hr_rolling_max(df, col=None, window=None):
     df.index = df.time_local
     df_rolling = df.groupby('siteid')[col].rolling(
-        window, center=True, win_type='boxcar').mean().reset_index().dropna()
+        window, center=True, win_type='boxcar').mean(
+                numeric_only=True).reset_index().dropna()
     df_rolling_max = df_rolling.groupby('siteid').resample(
-        'D', on='time_local').max().reset_index(drop=True)
+        'D', on='time_local').max(numeric_only=True).reset_index(drop=True)
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=['siteid', 'time_local'])
 
 
 def calc_24hr_ave(df, col=None):
     df.index = df.time_local
-    df_24hr_ave = df.groupby('siteid')[col].resample('D').mean().reset_index()
+    df_24hr_ave = df.groupby('siteid')[col].resample('D').mean(
+            numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_24hr_ave, on=['siteid', 'time_local'])
 
 
 def calc_3hr_ave(df, col=None):
     df.index = df.time_local
-    df_3hr_ave = df.groupby('siteid')[col].resample('3H').mean().reset_index()
+    df_3hr_ave = df.groupby('siteid')[col].resample('3h').mean(
+            numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_3hr_ave, on=['siteid', 'time_local'])
 
@@ -143,7 +146,7 @@ def calc_3hr_ave(df, col=None):
 def calc_annual_ave(df, col=None):
     df.index = df.time_local
     df_annual_ave = df.groupby('siteid')[col].resample(
-        'A').mean().reset_index()
+        'A').mean(numeric_only=True).reset_index()
     df = df.reset_index(drop=True)
     return df.merge(df_annual_ave, on=['siteid', 'time_local'])
 
@@ -457,4 +460,45 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         an.open_obs()
         an.pair_data()
         an.save_analysis()
+
+def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
+    
+    # Convert variables from std to amb
+    
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    Losch = 2.69e25 # loschmidt's number
+    #I checked the more detailed icart files
+    #273 K, 1 ATM (101325 Pa)
+    std_ams = 101325.*6.02214e23/(8.314472*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_ams = Airnum/std_ams
+    
+    for var in convert_vars:
+        ds[var] = ds[var]*convert_std_to_amb_ams
+
+def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
+    
+    # Convert variables from std to amb
+    
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    Losch = 2.69e25 # loschmidt's number
+    #1013 mb, 273 K (101300 Pa)
+    std_bc = 101300.*6.02214e23/(8.314472*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_bc = Airnum/std_bc
+    
+    for var in convert_vars:
+        ds[var] = ds[var]*convert_std_to_amb_bc
 

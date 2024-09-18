@@ -121,6 +121,7 @@ class observation:
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
+        self.variable_summing = None
         self.resample = None
         self.time_var = None
 
@@ -204,6 +205,7 @@ class observation:
         self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables() 
         self.resample_data()
         self.filter_obs()
 
@@ -261,7 +263,7 @@ class observation:
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
-                self.obj = mio.sat._omps_l3_mm.read_OMPS_l3(self.file)
+                self.obj = mio.sat._omps_l3_mm.open_dataset(self.file)
             elif self.sat_type == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
@@ -280,16 +282,17 @@ class observation:
                     
             elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
-                self.obj = mio.sat._mopitt_l3_mm.read_mopittdataset(self.file, 'column')
+                self.obj = mio.sat._mopitt_l3_mm.open_dataset(self.file, ['column','pressure_surf','apriori_col',
+                                                                          'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
                 from monetio import modis_l2
                 print('Reading MODIS L2')
                 self.obj = modis_l2.read_mfdataset(
                     self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type == 'tropomi_l2_no2':
-                from monetio import tropomi_l2_no2
+                #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
-                self.obj = tropomi_l2_no2.read_trpdataset(
+                self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
@@ -369,6 +372,31 @@ class observation:
                     # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
                     if 'LLOD_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+    
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
     def resample_data(self):
         """Resample the obs df based on the value set in the control file.
@@ -418,6 +446,7 @@ class model:
         self.obj = None
         self.mapping = None
         self.variable_dict = None
+        self.variable_summing = None
         self.plot_kwargs = None
         self.proj = None
 
@@ -454,7 +483,7 @@ class model:
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
- 
+            
         # add option to read list of files from text file
         _, extension = os.path.splitext(self.file_str)
         if extension.lower() == '.txt':
@@ -500,9 +529,17 @@ class model:
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
+        # First make a list of variables not in mapping but from variable_summing, if provided
+        if self.variable_summing is not None:
+            vars_for_summing  = []
+            for var in self.variable_summing.keys():
+                vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
         list_input_var = []
         for obs_map in self.mapping:
-            list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+            if self.variable_summing is not None:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
+            else:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
         if time_chunking_with_gridded_data:
@@ -554,7 +591,7 @@ class model:
                 self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
                 #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-                #self.obj.monet.scrip = self.obj_scrip
+                #self.obj.monet.scrip = self.obj_scrip      
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
                     self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
@@ -568,6 +605,7 @@ class model:
                     self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables()
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
@@ -614,6 +652,30 @@ class model:
                         print('changing units for {}'.format(v))
                         self.obj[v].values *= 1e9
                         self.obj[v].attrs['units'] = 'ppbv'        
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
 class analysis:
     """The analysis class.
@@ -871,6 +933,8 @@ class analysis:
 
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
+                if 'variable_summing' in self.control_dict['model'][mod].keys():
+                    m.variable_summing = self.control_dict['model'][mod]['variable_summing']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
                     
@@ -945,6 +1009,8 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'variable_summing' in self.control_dict['obs'][obs].keys():
+                    o.variable_summing = self.control_dict['obs'][obs]['variable_summing']
                 if 'resample' in self.control_dict['obs'][obs].keys():
                     o.resample = self.control_dict['obs'][obs]['resample']
                 if 'time_var' in self.control_dict['obs'][obs].keys():
@@ -978,6 +1044,7 @@ class analysis:
         None
         """
         pairs = {}  # TODO: unused
+        print('1, in pair data')
         for model_label in self.models:
             mod = self.models[model_label]
             # Now we have the models we need to loop through the mapping table for each network and pair the data
@@ -986,6 +1053,7 @@ class analysis:
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
                 obs_vars = [mod.mapping[obs_to_pair][key] for key in keys]
+
                 if mod.variable_dict is not None:
                     mod_vars = [key for key in mod.variable_dict.keys()]
                 else:
@@ -998,10 +1066,12 @@ class analysis:
                     for ll in lonlat_list:
                         if ll in mod.obj.data_vars:
                             keys += [ll]
+
                 if mod.variable_dict is not None:
                     model_obj = mod.obj[keys+mod_vars]
                 else:
                     model_obj = mod.obj[keys]
+
                 ## TODO:  add in ability for simple addition of variables from
 
                 # simplify the objs object with the correct mapping variables
@@ -1027,6 +1097,7 @@ class analysis:
                         print('After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
+                    print('saving pair')
                     p.obs = obs.label
                     p.model = mod.label
                     p.model_vars = keys
@@ -1130,13 +1201,15 @@ class analysis:
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     
-                    if obs.label == 'omps_nm':
+                    if obs.sat_type == 'omps_nm':
                         
                         from .util import satellite_utilities as sutil
                         
-                        #necessary observation index things 
-                        #the along track coordinate dim sometimes needs to be time and other times an unassigned 'x'
-                        obs.obj = obs.obj.swap_dims({'time':'x'})
+                        # necessary observation index things 
+                        ## the along track coordinate dim sometimes needs to be time and other times an unassigned 'x'
+                        if 'time' in obs.obj.dims:
+                            obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
+                            obs.obj = obs.obj.swap_dims({'time':'x'})
                         if mod.apply_ak == True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
@@ -1155,24 +1228,81 @@ class analysis:
                         p.obj = paired_data 
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
+                    if obs.sat_type == 'tropomi_l2_no2':
+                        from .util import sat_l2_swath_utility as sutil
+                        from .util import cal_mod_no2col as mutil
+
+                        # calculate model no2 trop. columns. M.Li
+                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+
+                        if mod.apply_ak == True:
+                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                        else:
+                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+
+                        self.models[model_label].obj = model_obj
+
+                        p = pair()
+
+                        paired_data = paired_data.reset_index("y") # for saving
+                        paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data_cp 
+                        label = '{}_{}'.format(p.obs,p.model)
+
+                        self.paired[label] = p
+                        
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
-                    if obs.label == 'omps_l3':
+                    if len(keys) > 1: 
+                        print('Caution: More than 1 variable is included in mapping keys.')
+                        print('Pairing code is calculating a column for {}'.format(keys[0])) 
+                    if obs.sat_type == 'omps_l3':
                         from .util import satellite_utilities as sutil
                         # trim obs array to only data within analysis window
-                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
-                        model_obsgrid = sutil.omps_l3_daily_o3_pairing(mod.obj,obs_dat,'o3vmr')
-                        # combine model and observations into paired dataset
-                        obs_dat['o3vmr'] = (['time','x','y'],model_obsgrid.sel(time=slice(self.start_time.date(),self.end_time.date())).data)
+                        obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                        mod_dat = mod.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                        paired_obsgrid = sutil.omps_l3_daily_o3_pairing(mod_dat,obs_dat,keys[0])
+                       
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
                         p.obs_vars = obs_vars
-                        p.obj = obs_dat
+                        p.obj = paired_obsgrid
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
+
+                    elif obs.sat_type == 'mopitt_l3':
+                        from .util import satellite_utilities as sutil
+                        if mod.apply_ak: 
+                            model_obj = mod.obj[keys+['pres_pa_mid']]
+                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            # interpolate model to observation, calculate column with averaging kernels applied
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
+                            p = pair()
+                            p.type = obs.obs_type
+                            p.obs = obs.label
+                            p.model = mod.label
+                            p.model_vars = keys
+                            p.model_vars[0] += '_column_model'
+                            p.obs_vars = obs_vars
+                            p.obj = paired
+                            label ='{}_{}'.format(p.obs,p.model)
+                            self.paired[label] = p
+                        else:
+                            print("Pairing without averaging kernel has not been enabled for this dataset")
+
     def concat_pairs(self):
         """Read and concatenate all observation and model time interval pair data,
         populating the :attr:`paired` dict.
@@ -1182,7 +1312,7 @@ class analysis:
         None
         """
         pass
-    
+   
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -1246,6 +1376,21 @@ class analysis:
                 model_name_list = grp_dict['model_name_list']     
             
 
+            #read-in special settings for scorecard
+            if plot_type == 'scorecard':
+                region_list = grp_dict['region_list']
+                region_name = grp_dict['region_name']
+                urban_rural_name = grp_dict['urban_rural_name']
+                urban_rural_differentiate_value = grp_dict['urban_rural_differentiate_value']
+                better_or_worse_method = grp_dict['better_or_worse_method']
+                model_name_list = grp_dict['model_name_list']
+
+            #read-in special settings for csi plot
+            if plot_type == 'csi':
+                threshold_list = grp_dict['threshold_list']
+                score_name = grp_dict['score_name']
+                model_name_list = grp_dict['model_name_list']
+
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
             obs_vars = pair1.obs_vars
@@ -1270,6 +1415,10 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+
+                        # Adjust the modvar for satelitte no2 trop. column paring. M.Li
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         if obs_type in ["sat_swath_sfc", "sat_swath_clm", 
@@ -1281,9 +1430,10 @@ class analysis:
                                 
                                 pairdf_all = p.obj.swap_dims({'x':'time'})
                             # squash lat/lon dimensions into single dimension
-                            elif obs_type == 'sat_grid_clm':
-                                pairdf_all = p.obj.stack(ll=['x','y'])
-                                pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+                            ## 2024-03 MEB rechecking necessity of this.
+                            #elif obs_type == 'sat_grid_clm':
+                            #    pairdf_all = p.obj.stack(ll=['x','y'])
+                            #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
                             else:
                                 pairdf_all = p.obj
                             # Select only the analysis time window.
@@ -1410,6 +1560,7 @@ class analysis:
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
                             pairdf = pairdf_all
+
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
                             pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
@@ -1419,7 +1570,7 @@ class analysis:
                         if pairdf[obsvar].isnull().all():
                             print('Warning: no valid obs found for '+domain_name)
                             continue
-
+                        
                         # JianHe: Determine if calculate regulatory values
                         cal_reg = obs_plot_dict.get('regulatory', False)
 
@@ -1433,7 +1584,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )
@@ -1479,8 +1630,12 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # Select time to use as index.
-                            pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
+
+                            # 2024-03-01 MEB needs to only apply if pandas. fails for xarray
+                            if isinstance(pairdf,pd.core.frame.DataFrame):
+                                pairdf = pairdf.set_index(grp_dict['data_proc']['ts_select_time'])
                             # Specify ts_avg_window if noted in yaml file. #qzr++
+
                             if 'ts_avg_window' in grp_dict['data_proc'].keys():
                                 a_w = grp_dict['data_proc']['ts_avg_window']
                             else:
@@ -1570,6 +1725,7 @@ class analysis:
                                     altitude_yax2 = grp_dict['data_proc']['altitude_yax2']
                                     ax = airplots.add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2)
                                 savefig(outname + '.png', logo_height=150)
+
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
                                 
 
@@ -1948,6 +2104,12 @@ class analysis:
                             plt.close()  # Close the current figure
                             
                         elif plot_type.lower() == 'boxplot':
+                            # squeeze the xarray for boxplot, M.Li
+                            if obs_type in  ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc", "sat_grid_clm", "sat_swath_prof"]:
+                                pairdf_sel = pairdf.squeeze()
+                            else: 
+                                pairdf_sel = pairdf
+
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1961,10 +2123,10 @@ class analysis:
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,   
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=obsvar,   
                                                                                        label=p.obs, plot_dict=obs_dict)
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,  
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=modvar, label=p.model,  
                                                                                     plot_dict=plot_dict, comb_bx=comb_bx,
                                                                                     label_bx=label_bx)
                             # For the last p_index make the plot.
@@ -1999,17 +2161,18 @@ class analysis:
                                 vmin = None
                                 vmax = None
                             # First for p_index = 0 create the obs box plot data array.
+                            
                             if p_index == 0:
                                 comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg,region_name=region_name, column=obsvar, 
                                                                              label=p.obs, plot_dict=obs_dict)
+                                
                             # Then add the models to this dataarray.
-                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model,   
+                            comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf, pairdf_reg, region_name= region_name,column=modvar, label=p.model, 
                                                                          plot_dict=plot_dict, comb_bx=comb_bx,
                                                                          label_bx=label_bx)
-
+                            
                             # For the last p_index make the plot.
-                            if p_index == len(pair_labels) - 1:
-                             
+                            if p_index == len(pair_labels) - 1:                             
                                 splots.make_multi_boxplot(
                                     comb_bx,
                                     label_bx,
@@ -2025,10 +2188,85 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                    debug=self.debug)
                                 #Clear info for next plot.
-                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) 
+                                del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+                                
+                        elif plot_type.lower() == 'scorecard':
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                                comb_bx, label_bx,region_bx,msa_bx,time_bx = splots.scorecard_step1_combine_df(pairdf, pairdf_reg,region_name=region_name,urban_rural_name=urban_rural_name,
+                                                                                                       column=obsvar, label=p.obs, plot_dict=obs_dict)
+                            # Then add the model to this dataarray.
+                            comb_bx, label_bx,region_bx, msa_bx,time_bx = splots.scorecard_step1_combine_df(pairdf, pairdf_reg, region_name= region_name,urban_rural_name=urban_rural_name, 
+                                                                                                   column=modvar, label=p.model, plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
+                            # For the last p_index make the plot.
+                            if p_index == len(pair_labels) - 1:
+                                output_obs, output_model1, output_model2 = splots.scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model_name_list=model_name_list)
+      
+                                #split by region, data, and urban/rural
+                                datelist = splots.GetDateList(self.start_time,self.end_time)
+                                OBS_Region_Date_Urban_list, OBS_Region_Date_Rural_list = splots.scorecard_step4_GetRegionLUCDate(ds_name=output_obs,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
+                                MODEL1_Region_Date_Urban_list, MODEL1_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model1,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
+                                MODEL2_Region_Date_Urban_list, MODEL2_Region_Date_Rural_list= splots.scorecard_step4_GetRegionLUCDate(ds_name=output_model2,region_list=region_list,datelist=datelist,urban_rural_differentiate_value=urban_rural_differentiate_value)
+                                
+                                #Kick Nan values
+                                OBS_Region_Date_Urban_list_noNan,MODEL1_Region_Date_Urban_list_noNan,MODEL2_Region_Date_Urban_list_noNan = splots.scorecard_step5_KickNan(obs_input=OBS_Region_Date_Urban_list,
+                                                                                                                                                                          model_input_1=MODEL1_Region_Date_Urban_list,
+                                                                                                                                                                          model_input_2=MODEL2_Region_Date_Urban_list)
+                                OBS_Region_Date_Rural_list_noNan,MODEL1_Region_Date_Rural_list_noNan,MODEL2_Region_Date_Rural_list_noNan = splots.scorecard_step5_KickNan(obs_input=OBS_Region_Date_Rural_list,
+                                                                                                                                                                          model_input_1=MODEL1_Region_Date_Rural_list,
+                                                                                                                                                                          model_input_2=MODEL2_Region_Date_Rural_list)
+                                #Get final output Matrix
+                                Output_matrix = splots.scorecard_step8_OutputMatrix(obs_urban_input    = OBS_Region_Date_Urban_list_noNan, 
+                                                                                    model1_urban_input = MODEL1_Region_Date_Urban_list_noNan,
+                                                                                    model2_urban_input = MODEL2_Region_Date_Urban_list_noNan,
+                                                                                    obs_rural_input    = OBS_Region_Date_Rural_list_noNan, 
+                                                                                    model1_rural_input = MODEL1_Region_Date_Rural_list_noNan,
+                                                                                    model2_rural_input = MODEL2_Region_Date_Rural_list_noNan,
+                                                                                    better_or_worse_method = better_or_worse_method)
+                                #plot the scorecard
+                                splots.scorecard_step9_makeplot(output_matrix=Output_matrix,
+                                                         column=obsvar,
+                                                         region_list=region_list,
+                                                         model_name_list=model_name_list,
+                                                         outname=outname,
+                                                         domain_type=domain_type,
+                                                         domain_name=domain_name,
+                                                         fig_dict=fig_dict,
+                                                         text_dict=text_dict,
+                                                         datelist=datelist,
+                                                         better_or_worse_method = better_or_worse_method)
+                                #Clear info for next plot.
+                                del (comb_bx, label_bx, region_bx, msa_bx, time_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
+                        elif plot_type.lower() == 'csi':
+                            # First for p_index = 0 create the obs box plot data array.
+                            if p_index == 0:
+                               
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar,label=p.obs, plot_dict=obs_dict)
+                                print(p_index,np.shape(comb_bx))
+                            # Then add the models to this dataarray.
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model,plot_dict=plot_dict, comb_bx=comb_bx, label_bx=label_bx)
+                            print(p_index,np.shape(comb_bx))
+                            if p_index == len(pair_labels) - 1:
+                                print('final',p_index, len(pair_labels) - 1)
+                                splots.Plot_CSI(score_name_input=score_name,
+                                                threshold_list_input=threshold_list, 
+                                                comb_bx_input=comb_bx,
+                                                plot_dict=plot_dict,
+                                                fig_dict=fig_dict,
+                                                text_dict=text_dict,
+                                                domain_type=domain_type,
+                                                domain_name=domain_name,
+                                                model_name_list=model_name_list)
+                                #save figure
+                                plt.tight_layout()
+                                savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
+
+                                #Clear info for next plot.
+                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+
 
                         elif plot_type.lower() == 'taylor':
                             if set_yaxis == True:
@@ -2332,9 +2570,18 @@ class analysis:
                         # Adjust the modvar as done in pairing script, if the species name in obs and model are the same.
                         if obsvar == modvar:
                             modvar = modvar + '_new'
+                        # for satellite no2 trop. columns paired data, M.Li
+                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                            modvar = modvar + 'trpcol' 
 
                         # convert to dataframe
-                        pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                        # handle different dimensios, M.Li
+                        if ('y' in p.obj.dims) and ('x' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
+                        elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])
+                        else:
+                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
@@ -2399,7 +2646,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )
