@@ -1,4 +1,4 @@
-Supported Diagnositcs
+Supported Diagnostics
 =====================
 
 Supported data analysis options in MELODIES MONET are explained below.

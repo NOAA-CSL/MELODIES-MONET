@@ -21,9 +21,15 @@ import matplotlib.pyplot as plt
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
-from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
+
+from matplotlib.dates import DateFormatter
+import matplotlib.dates as mdates
+
+
+
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
@@ -222,7 +228,207 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
     return ax
 
-                              
+
+
+
+###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
+def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, outname='plot', domain_type=None, domain_name=None, obs_label_config=None, text_dict=None, debug=False):
+    """
+    Generates a curtain plot comparing model data with obs across altitude (Pressure, right now) over time,
+    with the ability to customize the appearance through a configuration dictionary.
+    ##Two Subplots: 1) model data contourf plot with model scatter overlay, 
+    2) another for observation data using scatter plot. 
+    This layout ensures that both datasets can be analyzed without visual interference from each other.
+    Shared X-Axis: The time axis is shared between the two plots for better comparison.
+    Titles and Labels: Each subplot has a title specific to the data it displays.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Array of time points, expected to be numerical values suitable for plotting.
+    altitude : numpy.ndarray
+        Array of altitude points.
+    model_data_2d : numpy.ndarray
+        2D array of cleaned and interpolated model data.
+    obs_pressure : numpy.ndarray
+        Array of pressure points corresponding to observations.
+    pairdf : pandas.DataFrame
+        Paired DataFrame containing model and observation data for scatter plots.
+    mod_var : str
+        Model variable name for labeling.
+    obs_var : str
+        Observation variable name for labeling.
+    grp_dict : dict
+        Plot configuration options including aesthetics and normalization parameters.
+    vmin : float
+        Min value to use on y-axis.
+    vmax : float
+        Max value to use on y-axis.
+    cmin : float or None
+        Minimum value for color normalization, if applicable.
+    cmax : float or None
+        Maximum value for color normalization, if applicable.
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair
+        (e.g., color, linestyle, markerstyle).
+    outname : str
+        File location and name of plot.
+    domain_type : str
+        Type of domain being plotted (e.g., 'region', 'global').
+    domain_name : str
+        Name of the domain being plotted.
+    obs_label_config : dict
+        Configuration dictionary for observation labels.
+    text_dict : dict
+        Dictionary containing text properties (fontsize, fontweight, etc.).
+    debug : bool
+        Whether to plot interactively (True) or not (False). Flag for submitting jobs to supercomputer turn off interactive mode.
+
+    Returns
+    -------
+    None
+        Saves the generated plot to a file.
+    """
+  
+    if model_data_2d.size == 0 or pairdf.empty:
+        print("Warning: Model or observation data is empty. Skipping plot.")
+        return
+
+    # Debugging: print shapes and ndims
+    print(f"time shape: {time.shape}, ndims: {time.ndim}")
+    print(f"altitude shape: {altitude.shape}, ndims: {altitude.ndim}")
+    print(f"model_data_2d shape: {model_data_2d.shape}, ndims: {model_data_2d.ndim}")
+    print(f"pairdf shape: {pairdf.shape}, ndims: {pairdf.ndim}")
+
+    # Determine cmin and cmax dynamically if not provided
+    if cmin is None or cmax is None:
+        cmin = min(np.nanmin(model_data_2d), np.nanmin(pairdf[obs_var].values))
+        cmax = max(np.nanmax(model_data_2d), np.nanmax(pairdf[obs_var].values))
+    
+    print(f"cmin and cmax set dynamically based on model and observation data to {cmin} and {cmax}")
+
+    fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]})
+
+    # Handling custom color maps
+    if 'color_map_custom' in grp_dict and grp_dict['color_map_custom'] is True and 'colors' in grp_dict:
+        # Custom color map logic
+        colors = grp_dict['colors']
+        cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=grp_dict.get('color_levels', 100))
+    else:
+        # Default color map logic
+        cmap = plt.get_cmap(grp_dict.get('color_map', 'viridis'))
+
+    norm = Normalize(vmin=cmin, vmax=cmax)
+
+    time_dates = mdates.date2num(time)
+    time_mesh, altitude_mesh = np.meshgrid(time_dates, altitude, indexing='ij')
+
+    levels = np.linspace(cmin, cmax, 200)
+    contourf_plot = axs[0].contourf(time_mesh, altitude_mesh, model_data_2d, levels=levels, cmap=cmap, norm=norm, extend='both')
+
+    # Adjust the layout to place the colorbar at the bottom
+    cbar = fig.colorbar(contourf_plot, ax=axs.ravel().tolist(), orientation='horizontal', pad=0.1, aspect=50)
+    cbar.set_label(obs_label_config.get(obs_var, {}).get('ylabel_plot', 'Variable (units)'), fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    cbar.ax.tick_params(labelsize=text_dict.get('labelsize', 14))
+
+    axs[0].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+    axs[0].xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig.autofmt_xdate(rotation=45, ha='right')
+
+    # Set the main title and subplot titles
+    fig.suptitle(f"Model vs Observation Curtain Plot: {mod_var} vs {obs_var}", fontsize=text_dict.get('fontsize', 16), fontweight=text_dict.get('fontweight', 'bold'))
+    axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    
+    ##axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold')) #removed explicit y-axis label (made it flexible: see pressure_units via yaml)
+    axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+    axs[0].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
+    axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom (FOR SECOND SUBPLOT)
+
+    # Set y-axis limits if vmin and vmax are provided
+    if vmin is not None and vmax is not None:
+        # Since y-axis is inverted already (see invert_yaxis() above), set limits accordingly
+        print(f"Setting y-axis limits: vmin={vmin}, vmax={vmax}")
+        axs[0].set_ylim(vmax, vmin)  # Note the order to match inversion
+        axs[1].set_ylim(vmax, vmin)  # Note the order to match inversion
+    else:
+        vmin, vmax = axs[0].get_ylim()
+
+
+
+    # Retrieve pressure units from grp_dict or default to 'Pa'
+    pressure_units = grp_dict.get('pressure_units', 'Pa')
+    
+    # Set y-tick labels and y-axis label based on pressure units
+    if pressure_units == 'hPa':
+        y_axis_label = 'Pressure (hPa)'
+    else:
+        y_axis_label = 'Pressure (Pa)'
+    
+    # Apply y-tick labels and y-axis labels (both subplots)
+    axs[0].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
+                      fontweight=text_dict.get('fontweight', 'bold'))
+    axs[1].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
+                      fontweight=text_dict.get('fontweight', 'bold'))
+   
+
+    # Set y-axis ticks at specified intervals for axs[0] (first subplot)
+    if 'interval' in grp_dict:
+        interval = grp_dict['interval']
+        print(f"Interval value: {interval}")  # This will print the interval value
+        y_ticks = np.arange(vmin, vmax + interval, interval)
+        y_ticks = y_ticks[y_ticks <= vmax]  # Ensure ticks do not exceed vmax
+        print(f"Calculated y_ticks: {y_ticks}")
+        axs[0].set_yticks(y_ticks)
+        # Format y-tick labels
+        axs[0].set_yticklabels([str(int(tick)) for tick in y_ticks])
+    else:
+        y_ticks = axs[0].get_yticks()
+    
+    # Synchronize y-ticks and y-limits for axs[1] (Second subplot) based on axs[0] (First subplot)
+    y_ticks = axs[0].get_yticks()
+    y_lim = axs[0].get_ylim()
+    axs[1].set_yticks(y_ticks)
+    axs[1].set_ylim(y_lim)
+    # Set y-tick labels for axs[1]
+    axs[1].set_yticklabels([str(int(tick)) for tick in y_ticks])  ##axs[1].set_yticklabels([str(int(tick)) if tick != y_ticks.min() else '' for tick in y_ticks]) #if needed to hide minimum 
+
+
+    # Separate subplot for the observation scatter plot
+    axs[1].set_title("Observation Scatter", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+    scatter = axs[1].scatter(time_dates, obs_pressure, c=pairdf[obs_var].values, cmap=cmap, norm=norm, edgecolor=(0, 0, 0, 0), linewidth=0.3, alpha=0.5)
+    axs[1].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H'))
+    axs[1].xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig.autofmt_xdate(rotation=45, ha='right')
+
+    ##axs[1].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))  #made it flexible via YAML specified 'pressure_units'
+    axs[1].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
+    axs[1].set_xlabel('Time', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
+
+
+    # Plot model scatter data on top of the model curtain plot
+    axs[0].scatter(time_dates, obs_pressure, c=pairdf[mod_var].values, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.5, alpha=0.7)
+
+    # Save the curtain plot for the current pair immediately
+    print(f"Saving curtain plot to {outname}...")
+    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
+    plt.show()
+
+    # Only close the plot if not in debug mode
+    if not debug:
+        plt.close()
+
+
+    #Diagnostic Histogram
+    #plt.figure(figsize=(10, 4))
+    #plt.hist(model_data_2d.values.flatten(), bins=100, alpha=0.15, color='blue', label='Model', range=(cmin, cmax))
+    #plt.hist(obs_data_2d.flatten(), bins=100, alpha=0.5, color='green', label='Observation', range=(cmin, cmax))
+    #plt.legend()
+    #plt.title('Distribution of Model and Observation Data')
+    #plt.xlabel('Value')
+    #plt.ylabel('Frequency')
+    #plt.show()
+
+
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
@@ -539,7 +745,7 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
 
 
 ##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -564,6 +770,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         Title for the plot (optional)
     fill: bool
         Fill set to True for seaborn kde plot
+    outname : str
+        File location and name of plot.
     **kwargs: dict 
         Additional keyword arguments for customization
 
@@ -667,6 +875,9 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         cbar = plt.colorbar(mappable, ax=ax)
     cbar.set_label(colorbar_label)
 
+    # Save the scatter density plot for the current pair immediately
+    print(f"Saving scatter density plot to {outname}...")
+    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
     plt.show()
 
     return ax
@@ -776,23 +987,24 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     # Convert the DataFrame to long-form or "tidy" format suitable for sns.violinplot
     melted_comb_violin = pd.melt(comb_violin, var_name='group', value_name='value')
     
+    # Set labels and title using text_dict
+    # Set default text size, modify here for bigger text
+    def_text = dict(fontsize=14)  # can increase fontsize for default text (> 14) 
+    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+
+
     # Create the violin plot
-    
-    # Updated sns.violinplot call
     # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
     sns.violinplot(x='group', y='value', data=melted_comb_violin, hue='group', palette=palette, cut=0, orient='v', density_norm='width', inner='quartile')
 
 
-
-
-
-    # Set labels and title using text_dict
-    
-    # Set labels and title
-    def_text = dict(fontsize=14)
-    text_kwargs = {**def_text, **text_dict} if text_dict else def_text
+    # Set labels and title with increased size
     plt.xlabel('', weight='bold', fontsize=text_kwargs['fontsize'])
     plt.ylabel(ylabel if ylabel else 'Value', weight='bold', fontsize=text_kwargs['fontsize'])
+
+    # Increase tick label size
+    plt.tick_params(axis='both', labelsize=text_kwargs['fontsize']*0.8)
+    
     
     # Set y-axis limits if provided
     if vmin is not None and vmax is not None:
@@ -800,7 +1012,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     
     # Set title
     if domain_type and domain_name:
-        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold')
+        plt.title(f"Violin Plot for {domain_type} - {domain_name}", fontweight='bold',fontsize=text_kwargs['fontsize'])
 
     # Finalize and save plot
     plt.tight_layout()

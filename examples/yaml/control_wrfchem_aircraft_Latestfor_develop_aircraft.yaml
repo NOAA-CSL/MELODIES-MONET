@@ -124,6 +124,7 @@ plots:
           altitude:
             oper: "between"
             value: [2000,8000] # values are [vmin_y2, vmax_y2] 
+            
   plot_grp2:
     type: 'vertprofile'  # plot type
     fig_kwargs:  # Opt to define figure options
@@ -153,7 +154,7 @@ plots:
     fig_kwargs:
       figsize: [10, 8]
     text_kwargs:
-      fontsize: 25.
+      fontsize: 20.
     domain_type: ['all']
     domain_name: ['CONUS']
     data: ['firexaq_wrfchem_v4.2']
@@ -198,7 +199,42 @@ plots:
     # Add other seaborn.kdeplot keyword arguments here as needed
     vcenter: #0  # Central value for TwoSlopeNorm
     extensions: ['min', 'max']  # Extensions for the colorbar  
+
   plot_grp5:
+    type: 'curtain'
+    fig_kwargs:
+      figsize: [20,14] #[12, 8]
+    default_plot_kwargs:
+      #linewidth: 4.0
+      markersize: 40.
+    text_kwargs:
+      fontsize: 25 #18
+      fontweight: 'bold'
+      labelsize: 16
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      altitude_variable: 'altitude'
+    ##To use a custom Matplotlib colormap, set “color_map_custom”=True and specify “colors” and "color_levels" like the example below. To use a standard Matplotlib colormap, set “color_map_custom” = False and specify a “color_map”:
+    color_map_custom: True #False 
+    colors: ["#ff8cff", "#dd6ff2", "#bb52e5", "#9935d8", "#7718cb",
+        "#0000bb", "#002ccc", "#0058dd", "#0084ee", "#00afff",
+        "#00ebff", "#27ffd7", "#63ff9b", "#a3ff5b", "#d3ff2b",
+        "#ffff00", "#ffcf00", "#ff9f00", "#ff6f00", "#ff3f00",
+        "#ff0000", "#d8000f", "#b2001f", "#8c002f", "#66003f",
+        "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] # Example gradient
+    color_levels: 30   # Define the number of distinct colors in the color bar (see te numbers of colors in 'colors' key above is matching)
+    #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
+    vmin: 50 #in hPa #5000 #120000 #Pressure in Pa  #0  #Optional (y-axis limits)
+    vmax: 1200 # in hPa #120000 #5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
+    num_levels: 100   # Number of vertical levels for interpolation
+    interval: 100 #hPa #10000 #Pa   # Y-axis tick interval in Pa (e.g., ticks every 10,000 Pa)
+    pressure_units: 'hPa' #'Pa' (units for y-axis)
+    
+  plot_grp6:
     type: 'taylor' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8,8] # figure size if multiple plots
@@ -213,7 +249,8 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add ty_scale for each variable in obs.
-  plot_grp6:
+      
+  plot_grp7:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
@@ -225,6 +262,7 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   #Wind direction has special calculations for AirNow if obs name is 'WD'
