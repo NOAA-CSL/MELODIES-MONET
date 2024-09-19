@@ -439,7 +439,7 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2"])
         da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
-    return np.isfinite(da_out)
+    return da_out.where(np.isfinite(da_out))
 
 
 def regrid_and_apply_weights(
