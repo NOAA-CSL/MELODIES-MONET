@@ -828,7 +828,37 @@ def read_objs_andpair(
     regrid_weights=None,
     output=".",
 ):
-    """WIP"""
+    """Read observations and pair to model data. The current implementation requires the
+    model to be loaded at once.
+
+    Parameters
+    ----------
+    obs_path : str
+        Path to the observations.
+    modobj : xr.Dataset
+        Model object, as read by MONETIO.
+    period : str
+        'per_scan',  'per_swath' or 'all'. Looping period to save memory.
+    save_swath : boolean
+        Whether each swath should be saved.
+    to_modgrid : boolean
+        Whether the data should be regridded back to the model grid.
+    save_gridded : boolean
+        Whether the gridded data should be saved.
+    discard_useless : boolean
+        Whether granules that don't match the model domain should be discarded.
+    regrid_method : str
+        Regrid method to use with xesmf. Generally, it should be 'conservative' or 'bilinear'.
+    regrid_weights : str
+        If provided, regrid_weights are read for speeding up the script.
+    output : str
+        Path to output
+
+    Returns
+    -------
+    xr.Dataset
+        Paired dataset at all timesteps
+    """
     obs_path = sorted(glob.glob(obs_path))
     looping_strategy = select_by_keys(obs_path, period)
     # Sanity check
