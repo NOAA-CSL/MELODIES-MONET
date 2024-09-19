@@ -114,7 +114,7 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
         )
         modswath = regridder(mod_at_swathtime)
 
-    return np.isfinite(modswath)
+    return modswath
 
 
 def _calc_dp(obsobj):
@@ -337,7 +337,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
         "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2_hydrostatic, TEMPO util",
     }
-    return np.isfinite(modno2col_trfmd)
+    return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
 def apply_weights_mod2tempo_no2(obsobj, modobj):
@@ -373,7 +373,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
         "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
     }
-    return np.isfinite(modno2col_trfmd)
+    return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
 def discard_nonpairable(obsobj, modobj):
@@ -621,7 +621,7 @@ def back_to_modgrid(
         out_regridded["end_time"].attrs = {
             "description": "time at which the last swath of the scan starts"
         }
-        out_regridded = np.isfinite(out_regridded)
+        out_regridded = out_regridded.where(np.isfinite(out_regridded))
     if to_netcdf:
         if "XYZ" in path:
             scan_num = out_regridded.attrs["scan_num"]
