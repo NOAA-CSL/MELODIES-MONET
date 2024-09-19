@@ -651,9 +651,6 @@ def back_to_modgrid_multiscan(
         An OrderedDict with time_reference strings as keys.
     modobj : xr.Dataset
         A modobj including the modgrid.
-    subset_var : str | list[str]
-        A list containing a subset of variables to regrid.
-        If it is 'all', all variables are regridded
     to_netcdf : bool
         If True, save a netcdf with the paired data
     path : str
@@ -691,29 +688,6 @@ def back_to_modgrid_multiscan(
             out_regridded.to_netcdf(path)
 
     return out_regridded
-
-
-def _subset_ds(ds, subset_vars="all"):
-    """Subset of variables to select from an xr.Dataset. If subset_vars is all, it just returns
-    the Dataset whithout doing anything
-
-    Parameters
-    ----------
-    ds : xr.Dataset
-        Dataset to subset
-    subset_vars : str | list[str]
-        String or list of strings with the names of the variables to subset.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with the subset of variables of interest
-    """
-    if subset_vars == "all":
-        return ds
-    if isinstance(subset_vars, str):
-        subset_vars = [subset_vars]
-    return ds[subset_vars]
 
 
 def read_paired_gridded_tempo_model(path):
