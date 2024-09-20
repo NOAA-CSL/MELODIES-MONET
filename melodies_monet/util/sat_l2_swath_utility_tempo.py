@@ -263,11 +263,14 @@ def calc_partialcolumn(modobj, var="NO2"):
     ppbv2molmol = 1e-9
     m2_to_cm2 = 1e4
     fac_units = ppbv2molmol * NA / m2_to_cm2
-    layer_thickness = _calc_layer_thickness(modobj)
+    if "dz_m" not in modobj.keys():
+        dz_m = _calc_layer_thickness(modobj)
+    else:
+        dz_m = modobj["dz_m"]
     partial_col = (
         modobj[var]
         * modobj["pres_pa_mid"]
-        * layer_thickness
+        * dz_m
         * fac_units
         / (R * modobj["temperature_k"])
     )
@@ -427,8 +430,15 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
         Model data regridded to the TEMPO grid,
         with the averaging kernel.
     """
+    if method == "conservative":
+        if "lat_b" not in modobj:
+            modobj["lat_b"], modobj["lon_b"] = calc_grid_corners(modobj)
+        if "lat_b" not in obsobj:
+            obsobj["lat_b"], obsobj["lon_b"] = calc_grid_corners(
+                obsobj, lat="lat", lon="lon"
+            )
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
-    if "layer_height_agl" in list(modobj.variables):
+    if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
         modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
         da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
@@ -605,6 +615,7 @@ def back_to_modgrid(
     out_regridded.attrs["granules"] = np.array(granules)
     scan_num = concatenated.attrs["scan_num"]
     out_regridded.attrs["scan_num"] = scan_num
+    out_regridded = out_regridded.where(np.isfinite(out_regridded))
     if add_time:
         time = [np.array(ref_times[0], dtype="datetime64[ns]")]
         da_time = xr.DataArray(
@@ -621,7 +632,6 @@ def back_to_modgrid(
         out_regridded["end_time"].attrs = {
             "description": "time at which the last swath of the scan starts"
         }
-        out_regridded = out_regridded.where(np.isfinite(out_regridded))
     if to_netcdf:
         if "XYZ" in path:
             scan_num = out_regridded.attrs["scan_num"]
