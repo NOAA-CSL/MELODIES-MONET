@@ -597,9 +597,6 @@ class model:
                     self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
                 else:
                     self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
-            elif 'camx' in self.model.lower():
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                self.obj = mio.models._camx_mm.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 print('**** Reading Unspecified model output. Take Caution...')
                 if len(self.files) > 1:
