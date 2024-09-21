@@ -5,7 +5,6 @@ analysis:
   time_interval: '24h'
   output_dir: $HOME/Plots
   debug: True
-  time_chunking_with_obs_gridding: True
   regrid: True
   target_grid: obs_grid
 
