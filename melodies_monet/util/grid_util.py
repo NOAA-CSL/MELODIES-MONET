@@ -8,6 +8,7 @@ file: grid_util.py
 
 import math
 import numpy as np
+import numba
 
 
 def update_sparse_data_grid(time_edges, x_edges, y_edges,
@@ -95,6 +96,7 @@ def sparse_data_to_array(time_edges, x_edges, y_edges,
     return count_grid_array, data_grid_array
 
 
+@numba.jit(nopython=True)
 def update_data_grid(time_edges, x_edges, y_edges,
                      time_obs, x_obs, y_obs, data_obs,
                      count_grid, data_grid):
@@ -125,9 +127,23 @@ def update_data_grid(time_edges, x_edges, y_edges,
             i_time = math.floor((time_obs[i] - time_edges[0]) / time_del)
             i_x = math.floor((x_obs[i] - x_edges[0]) / x_del)
             i_y = math.floor((y_obs[i] - y_edges[0]) / y_del)
+            """
             i_time = np.clip(i_time, 0, ntime - 1)
             i_x = np.clip(i_x, 0, nx - 1)
             i_y = np.clip(i_y, 0, ny - 1)
+            """
+            if i_time < 0:
+                i_time = 0
+            elif i_time >= ntime:
+                i_time = ntime - 1
+            if i_x < 0:
+                i_x = 0
+            elif i_x >= nx:
+                i_x = nx - 1
+            if i_y < 0:
+                i_y = 0
+            elif i_y >= ny:
+                i_y = ny - 1
             count_grid[i_time, i_x, i_y] += 1
             data_grid[i_time, i_x, i_y] += data_obs[i]
 
