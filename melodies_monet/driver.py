@@ -296,7 +296,7 @@ class observation:
                     self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type == 'tempo_l2_no2':
                 print('Reading TEMPO L2 NO2')
-                self.obj = mio.sat_tempo_l2_no2_mm.open_dataset(
+                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
@@ -1269,8 +1269,8 @@ class analysis:
                     if obs.sat_type == 'tempo_l2_no2':
                         from .util import sat_l2_swath_utility_tempo as sutil
 
-                        paired_data_atswath = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
-                        paired_data_atgrid = sutil.back_to_modgid_multiscan(paired_data_atswath, modobj)
+                        paired_data_atswath = sutil.interp_swatogrd_ak(obs.obj, model_obj)
+                        paired_data_atgrid = sutil.back_to_modgid_multiscan(paired_data_atswath, model_obj)
 
                         self.models[model_label].obj = model_obj
 

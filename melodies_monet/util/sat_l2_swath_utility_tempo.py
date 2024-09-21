@@ -828,6 +828,7 @@ def select_by_keys(data_names, period="per_scan"):
 
 def read_objs_andpair(
     obs_path,
+    vars_for_obs: None, 
     modobj,
     period="per_scan",
     save_swath=True,
@@ -884,18 +885,22 @@ def read_objs_andpair(
             "to_modgrid is False, but save_gridded is True. save_gridded will be ignored."
         )
     for i in looping_strategy:
-        obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(
-            i,
-            {
-                "vertical_column_troposphere": {},
-                "main_data_quality_flag": {"max": 0},
-                "surface_pressure": {},
-                "pressure": {},
-                "scattering_weights": {},
-                "amf_troposphere": {},
-                "tropopause_pressure": {},
-            },
-        )
+        if vars_for_obs is None:
+            obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(
+                i,
+                {
+                    "vertical_column_troposphere": {},
+                    "main_data_quality_flag": {"max": 0},
+                    "surface_pressure": {},
+                    "pressure": {},
+                    "scattering_weights": {},
+                    "amf_troposphere": {},
+                    "tropopause_pressure": {},
+                },
+            )
+        else:
+            obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, vars_for_obs)
+
         if discard_useless:
             discard_nonpairable(obsobj, modobj)
 
