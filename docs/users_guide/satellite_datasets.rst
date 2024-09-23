@@ -1,5 +1,0 @@
-Satellite Datasets
-==================
-
-Satellite datasets
-
