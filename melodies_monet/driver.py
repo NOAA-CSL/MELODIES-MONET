@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
+
 from .util import write_util
 
 __all__ = (
@@ -120,6 +121,7 @@ class observation:
         self.sat_type = None
         self.data_proc = None
         self.variable_dict = None
+        self.variable_summing = None
         self.resample = None
         self.time_var = None
 
@@ -203,6 +205,7 @@ class observation:
         self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables() 
         self.resample_data()
         self.filter_obs()
 
@@ -374,6 +377,31 @@ class observation:
                     # Then replace LLOD_value with LLOD_setvalue (after unit conversion)
                     if 'LLOD_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['LLOD_value'],d['LLOD_setvalue'])
+    
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
     def resample_data(self):
         """Resample the obs df based on the value set in the control file.
@@ -423,6 +451,7 @@ class model:
         self.obj = None
         self.mapping = None
         self.variable_dict = None
+        self.variable_summing = None
         self.plot_kwargs = None
         self.proj = None
 
@@ -505,9 +534,17 @@ class model:
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
+        # First make a list of variables not in mapping but from variable_summing, if provided
+        if self.variable_summing is not None:
+            vars_for_summing  = []
+            for var in self.variable_summing.keys():
+                vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
         list_input_var = []
         for obs_map in self.mapping:
-            list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
+            if self.variable_summing is not None:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
+            else:
+                list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
         if time_chunking_with_gridded_data:
@@ -573,6 +610,7 @@ class model:
                     self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
+        self.sum_variables()
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
@@ -619,6 +657,30 @@ class model:
                         print('changing units for {}'.format(v))
                         self.obj[v].values *= 1e9
                         self.obj[v].attrs['units'] = 'ppbv'        
+    def sum_variables(self):
+        """Sum any variables noted that should be summed to create new variables.
+        This occurs after any unit scaling.
+
+        Returns
+        -------
+        None
+        """
+        
+        try:
+            if self.variable_summing is not None:
+                for var_new in self.variable_summing.keys():
+                    if var_new in self.obj.variables:
+                        print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
+                        raise ValueError
+                    var_new_info = self.variable_summing[var_new]
+                    self.variable_dict[var_new] = var_new_info
+                    for i,var in enumerate(var_new_info['vars']):
+                        if i ==0:
+                            self.obj[var_new] = self.obj[var].copy()
+                        else:
+                            self.obj[var_new] += self.obj[var]
+        except ValueError as e:
+            raise Exception("Something happened when using variable_summing:") from e
 
 class analysis:
     """The analysis class.
@@ -884,6 +946,8 @@ class analysis:
 
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
+                if 'variable_summing' in self.control_dict['model'][mod].keys():
+                    m.variable_summing = self.control_dict['model'][mod]['variable_summing']
                 if 'plot_kwargs' in self.control_dict['model'][mod].keys():
                     m.plot_kwargs = self.control_dict['model'][mod]['plot_kwargs']
                     
@@ -958,6 +1022,8 @@ class analysis:
                     o.debug = self.control_dict['obs'][obs]['debug']
                 if 'variables' in self.control_dict['obs'][obs].keys():
                     o.variable_dict = self.control_dict['obs'][obs]['variables']
+                if 'variable_summing' in self.control_dict['obs'][obs].keys():
+                    o.variable_summing = self.control_dict['obs'][obs]['variable_summing']
                 if 'resample' in self.control_dict['obs'][obs].keys():
                     o.resample = self.control_dict['obs'][obs]['resample']
                 if 'time_var' in self.control_dict['obs'][obs].keys():
@@ -1148,9 +1214,23 @@ class analysis:
                     ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
                     #Interpolate based on time in the observations
                     ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+
+                    # Debugging: Print the variables in ds_model to verify 'pressure_model' is included  ##qzr++
+                    #print("Variables in ds_model after combine_da_to_da and interp:", ds_model.variables)
+                    
+                    # Ensure 'pressure_model' is included in ds_model (checked it exists)
+                    #if 'pressure_model' not in ds_model:
+                     #   raise KeyError("'pressure_model' is missing in the model dataset")   #qzr++
                     
                     paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
                     print('After pairing: ', paired_data)
+
+                    # Ensure 'pressure_model' is included in the DataFrame (pairdf) #qzr++
+                    #if 'pressure_model' not in paired_data.columns:
+                       # raise KeyError("'pressure_model' is missing in the paired_data")   #qzr++
+
+                      
+                    
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
                     p.type = 'aircraft'
@@ -1337,12 +1417,15 @@ class analysis:
         -------
         None
         """
+        
+        from .util.tools import resample_stratify
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
             from .plots import satplots as splots,savefig
         else: 
             from .plots import surfplots as splots, savefig
+            from .plots import aircraftplots as airplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1410,6 +1493,7 @@ class analysis:
                     # Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
                         p = self.paired[p_label]
+                        
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
@@ -1523,7 +1607,7 @@ class analysis:
                                 elif filter_op == 'isnotin':
                                     pairdf_all.query(f'{column} != {filter_vals}', inplace=True)
                                 else:
-                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True)
+                                    pairdf_all.query(f'{column} {filter_op} {filter_vals}', inplace=True) 
                         elif 'filter_string' in grp_dict['data_proc']:
                             pairdf_all.query(grp_dict['data_proc']['filter_string'], inplace=True)
 
@@ -1586,7 +1670,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )
@@ -1730,6 +1814,8 @@ class analysis:
 
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)  # Clear axis for next plot.
                                 
+
+
                             # At the end save the plot.
                             ##if p_index == len(pair_labels) - 1:
                                 #Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
@@ -1741,6 +1827,151 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
+                        
+
+
+
+                        elif plot_type.lower() == 'curtain':
+                            # Set cmin and cmax from obs_plot_dict for colorbar limits
+                            if set_yaxis:
+                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
+                                    cmin = obs_plot_dict['vmin_plot']
+                                    cmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
+                                    cmin = None
+                                    cmax = None
+                            else:
+                                cmin = None
+                                cmax = None
+                            
+                            # Set vmin and vmax from grp_dict for altitude limits
+                            if set_yaxis:
+                                vmin = grp_dict.get('vmin', None)
+                                vmax = grp_dict.get('vmax', None)
+                            else:
+                                vmin = None
+                                vmax = None
+
+                                
+                            curtain_config = grp_dict # Curtain plot grp YAML dict
+                            # Inside your loop for processing each pair
+                            obs_label = p.obs
+                            model_label = p.model
+                        
+                            
+                            #Ensure we use the correct observation and model objects from pairing
+                            obs = self.obs[p.obs]
+                            mod = self.models[p.model]
+                            model_obj = mod.obj
+                        
+                            # Fetch the observation configuration for colorbar labels
+                            obs_label_config = self.control_dict['obs'][obs_label]['variables']
+                        
+                            # Fetch the model and observation data from pairdf
+                            pairdf = pairdf_all.reset_index()
+                        
+                            #### For model_data_2d for curtain/contourfill plot #####                       
+                            # Convert to get something useful for MONET
+                            new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs', 'pressure_obs'])
+                        
+                            # Nearest neighbor approach to find closest grid cell to each point
+                            ds_model = m.util.combinetool.combine_da_to_da(model_obj, new_ds_obs, merge=False)
+                        
+                            # Interpolate based on time in the observations
+                            ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())                 
+                        
+                            # Print ds_model and pressure_model values #Debugging
+                            ##print(f"ds_model: {ds_model}")
+                            ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
+                        
+                            # Define target pressures for interpolation based on the range of pressure_model
+                            min_pressure = ds_model['pressure_model'].min().compute()
+                            max_pressure = ds_model['pressure_model'].max().compute()
+                            
+                            # Fetch the interval and num_levels from curtain_config
+                            interval = curtain_config.get('interval', 10000)  # Default to 10,000 Pa if not provided      # Y-axis tick interval
+                            num_levels = curtain_config.get('num_levels', 100)   # Default to 100 levels if not provided
+                        
+                            print(f"Pressure MIN:{min_pressure}, max: {max_pressure}, ytick_interval: {interval}, interpolation_levels: {num_levels}  ")
+                            
+                            # Use num_levels to define target_pressures interpolation levels 
+                            target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
+                            
+                            # Debugging: print target pressures
+                            ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
+                        
+                            # Check for NaN values before interpolation
+                            ##print(f"NaNs in model data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
+                            ##print(f"NaNs in pressure_model before interpolation: {np.isnan(ds_model['pressure_model']).sum().compute()}")
+
+                        
+                            # Resample model data to target pressures using stratify
+                            da_wrf_const = resample_stratify(ds_model[modvar], target_pressures, ds_model['pressure_model'], axis=1, interpolation='linear', extrapolation='nan')
+                            da_wrf_const.name = modvar
+                        
+                            # Create target_pressures DataArray
+                            da_target_pressures = xr.DataArray(target_pressures, dims=('z'))
+                            da_target_pressures.name = 'target_pressures'
+                        
+                            # Merge DataArrays into a single Dataset
+                            ds_wrf_const = xr.merge([da_wrf_const, da_target_pressures])
+                            ds_wrf_const = ds_wrf_const.set_coords('target_pressures')
+                        
+                            # Debugging: print merged dataset for model curtain
+                            ##print(ds_wrf_const)
+                        
+                            # Ensure model_data_2d is properly reshaped for the contourfill plot
+                            model_data_2d = ds_wrf_const[modvar].squeeze()
+                        
+                            # Debugging: print reshaped model data shape
+                            ##print(f"Reshaped model data shape: {model_data_2d.shape}")
+                            
+                            #### model_data_2d for curtain plot ready ####
+
+
+                            # Fetch model pressure and other model and observation data from "pairdf" (for scatter plot overlay)
+                            time = pairdf['time']
+                            obs_pressure = pairdf['pressure_obs']  
+                            ##print(f"Length of time: {len(time)}") #Debugging
+                            ##print(f"Length of obs_pressure: {len(obs_pressure)}") #Debugging
+                        
+                            # Generate the curtain plot using airplots.make_curtain_plot
+                            try:
+                                outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
+
+                                print(f"Saving curtain plot to {outname_pair}...")
+                        
+                                ax = airplots.make_curtain_plot(
+                                    time=pd.to_datetime(time),
+                                    altitude=target_pressures,  # Use target_pressures for interpolation
+                                    model_data_2d=model_data_2d,  # Already reshaped to match the expected shape
+                                    obs_pressure=obs_pressure,  # Pressure_obs for obs scatter plot
+                                    pairdf=pairdf,  #use pairdf for scatter overlay (model and obs)
+                                    mod_var=modvar,
+                                    obs_var=obsvar,
+                                    grp_dict=curtain_config,
+                                    vmin=vmin,
+                                    vmax=vmax,
+                                    cmin=cmin,
+                                    cmax=cmax,
+                                    plot_dict=plot_dict,
+                                    outname=outname_pair,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    obs_label_config=obs_label_config,
+                                    text_dict=text_dict,
+                                    debug=self.debug  # Pass debug flag
+                                )
+                            
+                                
+                            except Exception as e:
+                                print(f"Error generating curtain plot for {modvar} vs {obsvar}: {e}")
+                            finally:
+                                plt.close('all')  # Clean up matplotlib resources
+
+
+                            
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
@@ -1803,6 +2034,8 @@ class analysis:
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
+
+                        
 
                         
                         elif plot_type.lower() == 'violin':
@@ -1930,7 +2163,9 @@ class analysis:
                                 del kwargs['shade_lowest']
 
 
+                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
 
+                            print(f"Saving scatter density plot to {outname_pair}...")
                             
                             # Create the scatter density plot
                             print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
@@ -1947,13 +2182,11 @@ class analysis:
                                 vmax_x=vmax_x,
                                 vmin_y=vmin_y,
                                 vmax_y=vmax_y,
+                                outname=outname_pair,
                                 **kwargs                            
                             )
 
-                            # Save the scatter density plot for the current pair immediately
-                            outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
-                            print(f"Saving scatter density plot to {outname_pair}...")  # Debugging print statement
-                            plt.savefig(outname_pair)
+                            
                             plt.close()  # Close the current figure
                             
                         elif plot_type.lower() == 'boxplot':
@@ -2499,7 +2732,7 @@ class analysis:
                             df2 = (
                                 pairdf.copy()
                                 .groupby("siteid")
-                                .resample('H', on='time_local')
+                                .resample('h', on='time_local')
                                 .mean()
                                 .reset_index()
                             )

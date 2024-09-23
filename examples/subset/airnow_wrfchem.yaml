@@ -82,7 +82,7 @@ plots:
     data_proc:
       rem_obs_nan: True
       ts_select_time: 'time_local'
-      ts_avg_window: 'H'
+      ts_avg_window: 'h'
       set_axis: True
 
   plot_overlay_group:

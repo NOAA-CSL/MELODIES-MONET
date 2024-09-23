@@ -40,8 +40,8 @@ extensions = [
 ]
 
 extlinks = {
-    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH'),
-    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR'),
+    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH %s'),
+    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR %s'),
 }
 
 autosummary_generate = True  # default in Sphinx v4
@@ -88,7 +88,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

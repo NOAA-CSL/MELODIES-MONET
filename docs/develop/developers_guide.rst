@@ -55,10 +55,10 @@ In order to prepare for developing MELODIES MONET,
 we clone the repositories and create a conda environment that references them.
 
 .. note::
-   If you are installing MELODIES MONET on NCAR Cheyenne or NOAA Hera
+   If you are installing MELODIES MONET on NCAR Casper or NOAA Hera
    follow these machine specific instructions instead.
 
-   - :ref:`NCAR Cheyenne <appendix/machine-specific-install:NCAR HPC Cheyenne/Casper>`
+   - :ref:`NCAR Casper <appendix/machine-specific-install:NCAR HPC Derecho/Casper>`
    - :ref:`NOAA Hera <appendix/machine-specific-install:NOAA HPC Hera>`
 
 .. important::
@@ -74,7 +74,7 @@ these instructions:
 
        $ conda create --name melodies-monet python=3.9
        $ conda activate melodies-monet
-       $ conda install -y -c conda-forge pyyaml pandas=1 monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
+       $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::
@@ -140,8 +140,8 @@ changes.
     changes. 
 
 
-User's Guide Development
-------------------------
+Contributions to the Docs
+-------------------------
 
 If you add a component to MELODIES MONET, please follow the instructions below 
 to update the readthedocs user guide. 
@@ -172,7 +172,7 @@ The generated HTML will be created in ``docs/_build/html``,
 with ``docs/_build/html/index.html`` the main page that can be
 viewed in any browser.
 
-Please see the `Documentation <https://github.com/NOAA-CSL/MELODIES-MONET/projects/2>`_ 
+Please see the `MELODIES-MONET Documentation <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
 project on GitHub to learn about current and future development.
 
 

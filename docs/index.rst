@@ -39,34 +39,33 @@ MONETIO please refer to:
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Background
+   :caption: User's Guide
 
-   background/introduction
-   background/description
-   background/supported_datasets
-   background/supported_analyses
-   background/supported_plots
-   background/supported_stats
-   background/time_chunking
-   background/satellite_datasets
-   background/gridded_datasets
-   
+   users_guide/introduction
+   users_guide/description
+   users_guide/supported_datasets
+   users_guide/supported_diagnostics
+   users_guide/supported_plots
+   users_guide/supported_stats
+   users_guide/time_chunking
+   users_guide/gridded_datasets
+
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Tutorial
+   :caption: Getting Started
 
-   tutorial/installation
-   tutorial/getting_started
-   tutorial/downloading_obs
-   tutorial/how_to_run
+   getting_started/installation
+   getting_started/software_architecture
+   getting_started/downloading_obs
+   getting_started/how_to_run
 
 .. toctree::
    :maxdepth: 1
    :caption: Contribute
    
    develop/contribute
-   develop/workshops
+   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets
@@ -102,5 +101,6 @@ MONETIO please refer to:
    cli
    appendix/machine-specific-install
    appendix/yaml
+   appendix/troubleshooting
 
 
