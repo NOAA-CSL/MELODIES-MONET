@@ -8,7 +8,7 @@ import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 _LOGGING_LEVEL = os.environ.get("MM_LOGGING_LEVEL", None)
 if _LOGGING_LEVEL is not None:
@@ -26,8 +26,6 @@ except ImportError as e:
         f"The error message was: {e}"
     )
     raise SystemExit(1)
-
-from typing import Tuple
 
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN
