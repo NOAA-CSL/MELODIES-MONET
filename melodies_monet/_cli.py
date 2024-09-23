@@ -4,10 +4,17 @@
 """
 melodies-monet -- MELODIES MONET CLI
 """
+import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List
+
+_LOGGING_LEVEL = os.environ.get("MM_LOGGING_LEVEL", None)
+if _LOGGING_LEVEL is not None:
+    import logging
+
+    logging.basicConfig(level=_LOGGING_LEVEL.upper())
 
 try:
     import typer
