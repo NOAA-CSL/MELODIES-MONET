@@ -592,6 +592,9 @@ class model:
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
                 #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
                 #self.obj.monet.scrip = self.obj_scrip      
+            elif "camx" in self.model.lower():
+                self.mod_kwargs.update({"var_list": list_input_var})
+                self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
                     self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
