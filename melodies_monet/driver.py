@@ -1251,14 +1251,16 @@ class analysis:
                     if obs.sat_type == 'tempo_l2_no2':
                         from .util import sat_l2_swath_utility_tempo as sutil
 
-                        paired_data_atswath = sutil.interp_swatogrd_ak(obs.obj, model_obj)
-                        paired_data_atgrid = sutil.back_to_modgid_multiscan(paired_data_atswath, model_obj)
+                        mod_no2 = [k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"]
+                        # import pdb; pdb.set_trace()
+                        paired_data_atswath = sutil.regrid_and_apply_weights(obs.obj, mod.obj, species=mod_no2, method='bilinear')
+                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(paired_data_atswath, model_obj, method='bilinear')
 
                         self.models[model_label].obj = model_obj
 
                         p = pair()
 
-                        paired_data = paired_data.reset_index("y") # for saving
+                        paired_data = paired_data_atgrid.reset_index("y") # for saving
                         paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         p.type = obs.obs_type
