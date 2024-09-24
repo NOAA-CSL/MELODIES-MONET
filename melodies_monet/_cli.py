@@ -1161,6 +1161,7 @@ def get_aqs(
         ds = (
             df[cols]
             .drop(columns=[vn for vn in site_vns if vn != "siteid"])
+            .drop(columns=[col for col in df.columns if col.endswith("_meta")])
             .drop_duplicates(["time", "siteid"], keep="first")
             .set_index(["time", "siteid"])
             .to_xarray()
