@@ -1045,16 +1045,40 @@ def get_aqs(
                     utcoffset=meta0["GMT Offset"].astype(int),
                 )
                 .drop(
-                    columns=["State Code", "County Code", "Site Number", "GMT Offset"],
+                    columns=["Site Number", "GMT Offset"],
                 )
                 .rename(
                     columns={
+                        "State Code": "state_code",
+                        "County Code": "county_code",
                         "City Name": "city",
                         "CBSA Name": "cbsa_name",
                     }
                 )
             )
             meta.loc[meta["city"] == "Not in a City", "city"] = "Not in a city"  # normalize
+
+            counties0 = pd.read_csv(
+                "https://aqs.epa.gov/aqsweb/documents/codetables/states_and_counties.csv",
+                encoding="ISO-8859-1",
+                dtype=str,
+            )
+            counties = (
+                counties0.copy()
+                .rename(
+                    columns={
+                        "State Code": "state_code",
+                        "State Name": "state_name",
+                        "State Abbreviation": "state",
+                        "County Code": "county_code",
+                        "County Name": "county",
+                        "EPA Region": "epa_region",  # note without R prefix
+                    }
+                )
+            )
+            counties["epa_region"] = "R" + counties["epa_region"]
+
+            meta = meta.merge(counties, on=["state_code", "county_code"], how="left")
 
     with _timer("Forming xarray Dataset"):
         # Select requested time period (older monetio doesn't do this)
