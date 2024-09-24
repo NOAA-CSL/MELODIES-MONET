@@ -1051,12 +1051,12 @@ def get_aqs(
                     columns={
                         "State Code": "state_code",
                         "County Code": "county_code",
-                        "City Name": "city",
+                        "City Name": "city_name",
                         "CBSA Name": "cbsa_name",
                     }
                 )
             )
-            meta.loc[meta["city"] == "Not in a City", "city"] = "Not in a city"  # normalize
+            meta.loc[meta["city_name"] == "Not in a City", "city_name"] = "Not in a city"  # normalize
 
             counties0 = pd.read_csv(
                 "https://aqs.epa.gov/aqsweb/documents/codetables/states_and_counties.csv",
@@ -1071,7 +1071,7 @@ def get_aqs(
                         "State Name": "state_name",
                         "State Abbreviation": "state",
                         "County Code": "county_code",
-                        "County Name": "county",
+                        "County Name": "county_name",
                         "EPA Region": "epa_region",  # note without R prefix
                     }
                 )
