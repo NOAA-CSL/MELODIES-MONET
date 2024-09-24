@@ -1054,6 +1054,7 @@ def get_aqs(
                     }
                 )
             )
+            meta.loc[meta["city"] == "Not in a City", "city"] = "Not in a city"  # normalize
 
     with _timer("Forming xarray Dataset"):
         # Select requested time period (older monetio doesn't do this)
