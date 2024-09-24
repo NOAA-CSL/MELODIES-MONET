@@ -408,7 +408,7 @@ def discard_nonpairable(obsobj, modobj):
             del obsobj[k]
 
 
-def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None):
+def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"]):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -439,7 +439,7 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
             )
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
     if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
-        modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs)
+        modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs, var=species[0])
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
         da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
     else:
@@ -447,13 +447,13 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
             "There is no layer_height_agl variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
-        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2"])
+        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, species)
         da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
     return da_out.where(np.isfinite(da_out))
 
 
 def regrid_and_apply_weights(
-    obsobj, modobj, pair=True, verbose=True, method="conservative", weights=None
+    obsobj, modobj, pair=True, verbose=True, method="conservative", weights=None, species=["NO2"],
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -490,7 +490,7 @@ def regrid_and_apply_weights(
     # }
     if isinstance(obsobj, xr.Dataset):
         regridded = _regrid_and_apply_weights(
-            obsobj, modobj, method=method, weights=weights
+            obsobj, modobj, method=method, weights=weights, species=species
         )
         output = regridded.to_dataset(name="NO2_col_wsct")
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
@@ -510,7 +510,7 @@ def regrid_and_apply_weights(
             if verbose:
                 print(f"Regridding {ref_time}")
             output_multiple[ref_time] = _regrid_and_apply_weights(
-                obsobj[ref_time], modobj, method=method, weights=weights
+                obsobj[ref_time], modobj, method=method, weights=weights, species=species
             ).to_dataset(name="NO2_col_wsct")
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs[
@@ -544,6 +544,7 @@ def back_to_modgrid(
     add_time=True,
     to_netcdf=False,
     path="Regridded_object_XYZ.nc",
+    method="bilinear"
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -566,6 +567,8 @@ def back_to_modgrid(
         The base name to save the files if to_netcdf is True. XX will be replaced
         with the scan number and the reference time. If to_netcdf is False, this will
         be ignored.
+    method : str
+        Method of regridding used by xESMF
 
     Returns
     -------
@@ -600,7 +603,7 @@ def back_to_modgrid(
     )
     # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
     regridder = xe.Regridder(
-        concatenated, modobj, method="bilinear", unmapped_to_nan=True
+        concatenated, modobj, method=method, unmapped_to_nan=True
     )
     out_regridded = regridder(concatenated)
     # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
@@ -648,7 +651,7 @@ def back_to_modgrid(
 
 
 def back_to_modgrid_multiscan(
-    paireddict, modobj, to_netcdf=False, path="Regridded_object_XYZ.nc"
+    paireddict, modobj, to_netcdf=False, path="Regridded_object_XYZ.nc", method="bilinear"
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for multiple scans, and uses
@@ -667,6 +670,8 @@ def back_to_modgrid_multiscan(
         The base name to save the files if to_netcdf is True. XX will be replaced
         with the first and list times. If to_netcdf is False, this will
         be ignored.
+    method : str
+        Method of regridding used by xESMF
 
     Returns
     -------
@@ -682,7 +687,7 @@ def back_to_modgrid_multiscan(
             if paireddict[k].attrs["scan_num"] == scan_num:
                 keys_in_scan.append(k)
             else:
-                regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
+                regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, method=method)
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
                 keys_in_scan = [k]
