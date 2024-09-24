@@ -1069,7 +1069,7 @@ def get_aqs(
                     columns={
                         "State Code": "state_code",
                         "State Name": "state_name",
-                        "State Abbreviation": "state",
+                        "State Abbreviation": "state_abbr",
                         "County Code": "county_code",
                         "County Name": "county_name",
                         "EPA Region": "epa_region",  # note without R prefix
@@ -1124,17 +1124,24 @@ def get_aqs(
         site_vns = [
             "siteid",
             "state_code",
+            "state_name",
+            "state_abbr",
             "county_code",
+            "county_name",
+            "city_name",
+            "cbsa_name",
             "site_num",
+            "epa_region",
             "latitude",
             "longitude",
         ]
         if daily:
-            site_vns.extend(["local_site_name", "address", "city_name", "msa_name"])
-        # NOTE: time_local not included since it varies in time as well
-        if not daily:
-            df = df.merge(meta, on="siteid", how="left")
+            site_vns.extend(["local_site_name", "address", "msa_name"])
+        else:
             site_vns.append("utcoffset")
+        # NOTE: time_local not included since it varies in time as well
+
+        df = df.merge(meta, on="siteid", how="left", suffixes=(None, "_meta"))
 
         ds_site = (
             df[site_vns]
