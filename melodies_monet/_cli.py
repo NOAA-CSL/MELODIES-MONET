@@ -1035,7 +1035,7 @@ def get_aqs(
             meta0 = pd.read_csv(
                 "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
                 encoding="ISO-8859-1",
-                usecols=[0, 1, 2, 17],
+                usecols=[0, 1, 2, 17, 24, 25],
                 dtype=str,
             )
             meta = (
@@ -1046,6 +1046,12 @@ def get_aqs(
                 )
                 .drop(
                     columns=["State Code", "County Code", "Site Number", "GMT Offset"],
+                )
+                .rename(
+                    columns={
+                        "City Name": "city",
+                        "CBSA Name": "cbsa_name",
+                    }
                 )
             )
 
