@@ -27,7 +27,11 @@ obs:
         main_data_quality_flag_max: 0
         var_applied: ['vertical_column_troposphere']
       vertical_column_troposphere:
-        ylabel_plot: 'NO2 trop. columns'
+        ylabel_plot: 'NO2 trop. column'
+      pressure: {}
+      tropopause_pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
 
 
 model:
@@ -40,6 +44,7 @@ model:
       tempo_l2_no2:
         no2: "vertical_column_troposphere"
     projection: ~
+    surf_only: False
     
 
 
