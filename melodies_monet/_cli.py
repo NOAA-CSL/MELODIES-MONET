@@ -1079,6 +1079,9 @@ def get_aqs(
 
         meta = meta.merge(counties, on=["state_code", "county_code"], how="left")
 
+        if daily:
+            meta = meta.drop(columns=["utcoffset"])
+
     with _timer("Forming xarray Dataset"):
         # Select requested time period (older monetio doesn't do this)
         df = df[df.time.between(dates[0], dates[-1], inclusive="both")]
