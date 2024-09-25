@@ -28,12 +28,12 @@ from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 from ..plots import savefig
 
 
-def time_avearage(ds, var_name=None, period="1D", time_offset=None):
+def time_average(dset, var_name=None, period="1D", time_offset=None):
     """Calculates 24-hour averages
 
     Parameters
     ----------
-    ds : dataframe
+    dset : dataframe
         Model/obs pair of hourly data
     var_name : None | str
         Column label of observation variable to apply the calculation
@@ -49,7 +49,7 @@ def time_avearage(ds, var_name=None, period="1D", time_offset=None):
     dataframe
         dataframe with applied calculation
     """
-    daily = ds[var_name].resample(time=period, offset=time_offset).mean()
+    daily = dset[var_name].resample(time=period, offset=time_offset).mean()
 
     return daily
 
@@ -145,7 +145,7 @@ def map_projection(f):
 
 
 def make_timeseries(
-    ds,
+    dset,
     var_name=None,
     label=None,
     ax=None,
@@ -164,7 +164,7 @@ def make_timeseries(
 
     Parameters
     ----------
-    ds : xr.Dataset
+    dset : xr.Dataset
         model/obs pair data to plot
     var_name : str
         Variable label of variable to plot
@@ -246,7 +246,7 @@ def make_timeseries(
         print(plot_kwargs)
 
         if avg_window is None:
-            ds[var_name].mean(dim=("y", "x"), skipna=True).plot.line(
+            dset[var_name].mean(dim=("y", "x"), skipna=True).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -257,7 +257,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            ds[var_name].resample(time=avg_window).mean().mean(
+            dset[var_name].resample(time=avg_window).mean().mean(
                 dim=("y", "x")
             ).plot.line(
                 x="time",
@@ -282,7 +282,7 @@ def make_timeseries(
         else:
             plot_kwargs = obs_dict
         if avg_window is None:
-            ds[var_name].mean(dim=("y", "x")).plot.line(
+            dset[var_name].mean(dim=("y", "x")).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -293,8 +293,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            # bug fixed. M.Li
-            ds[var_name].resample(time=avg_window).mean().mean(
+            dset[var_name].resample(time=avg_window).mean().mean(
                 dim=("y", "x")
             ).plot.line(
                 x="time",
@@ -328,11 +327,10 @@ def make_timeseries(
 
 
 def make_taylor(
-    df,
-    df_reg=None,
-    column_o=None,
+    dset,
+    varname_o=None,
     label_o="Obs",
-    column_m=None,
+    varname_m=None,
     label_m="Model",
     dia=None,
     ylabel=None,
@@ -349,10 +347,8 @@ def make_taylor(
 
     Parameters
     ----------
-    df : dataframe
+    dset : xr.Dataset
         model/obs pair data to plot
-    df_reg: not currently enabled. empty argument for symmetry with surfplots
-        model/obs paired regulatory data to plot
     column_o : str
         Column label of observational variable to plot
     label_o : str
@@ -389,9 +385,9 @@ def make_taylor(
         Taylor diagram class defined in MONET
 
     """
-    nan_ind = (~np.isnan(df[column_o].values)) & (~np.isnan(df[column_m].values))
+    nan_ind = (~np.isnan(dset[varname_o].values)) & (~np.isnan(dset[varname_m].values))
     # First define items for all plots
-    if debug == False:
+    if not debug:
         plt.ioff()
 
     # set default text size
@@ -402,7 +398,7 @@ def make_taylor(
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = column_o
+        ylabel = varname_o
     # Then, if no plot has been created yet, create a plot and plot the first pair.
     if dia is None:
         # create the figure
@@ -413,25 +409,25 @@ def make_taylor(
         sns.set_style("ticks")
         # plot the line
         dia = td(
-            df[column_o].std().values, scale=ty_scale, fig=f, rect=111, label=label_o
+            dset[varname_o].std().values, scale=ty_scale, fig=f, rect=111, label=label_o
         )
         plt.grid(linewidth=1, alpha=0.5)
         cc = corrcoef(
-            df[column_o].values[nan_ind].flatten(),
-            df[column_m].values[nan_ind].flatten(),
+            dset[varname_o].values[nan_ind].flatten(),
+            dset[varname_m].values[nan_ind].flatten(),
         )[0, 1]
         dia.add_sample(
-            df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+            dset[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
         )
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot another model
         cc = corrcoef(
-            df[column_o].values[nan_ind].flatten(),
-            df[column_m].values[nan_ind].flatten(),
+            dset[varname_o].values[nan_ind].flatten(),
+            dset[varname_m].values[nan_ind].flatten(),
         )[0, 1]
         dia.add_sample(
-            df[column_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+            dset[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
         )
     # Set parameters for all plots
     contours = dia.add_contours(colors="0.5")
@@ -467,7 +463,7 @@ def make_taylor(
 
 
 def calculate_boxplot(
-    ds,
+    dset,
     var_name=None,
     label=None,
     plot_dict=None,
@@ -478,7 +474,7 @@ def calculate_boxplot(
 
     Parameters
     ----------
-    ds : xr.Dataset
+    dset : xr.Dataset
          model/obs pair data to plot
     var_name : str
         Dataset label of variable to plot
@@ -514,7 +510,7 @@ def calculate_boxplot(
     # For all, a column to the dataframe and append the label info to the list.
     plot_kwargs["var_name"] = var_name
     plot_kwargs["label"] = label
-    comb_bx[label] = ds[var_name]
+    comb_bx[label] = dset[var_name]
     label_bx.append(plot_kwargs)
 
     return comb_bx, label_bx
@@ -572,7 +568,7 @@ def make_boxplot(
         box plot
 
     """
-    if debug == False:
+    if not debug:
         plt.ioff()
     # First define items for all plots
     # set default text size
@@ -638,7 +634,7 @@ def make_boxplot(
     savefig(
         outname + ".png",
         loc=4,
-        height_logo=100,
+        logo_height=100,
         decorate=True,
         bbox_inches="tight",
         dpi=200,
@@ -785,7 +781,7 @@ def make_spatial_bias_gridded(
     savefig(
         outname + ".png",
         loc=4,
-        height_logo=100,
+        logo_height=100,
         decorate=True,
         bbox_inches="tight",
         dpi=150,
