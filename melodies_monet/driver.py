@@ -1335,7 +1335,7 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify
+        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1403,9 +1403,14 @@ class analysis:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
                 domain_types = grp_dict['domain_type']
                 domain_names = grp_dict['domain_name']
+                if "domain_query" in grp_dict.keys():
+                    domain_queries = grp_dict['domain_query']
+                else:
+                    domain_queries = [True] * len(domain_types)
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
+                    domain_query = domain_queries[domain]
 
                     # Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
@@ -1509,7 +1514,24 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            if domain_query:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            else: 
+                                if domain_type == 'epa_region':
+                                    bounds = get_epa_region_bounds(acronym=domain_name)
+                                elif domain_type == 'giorgi_region':
+                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
+                                else:
+                                    raise ValueError("Currently, region selections whithout a domain query have only"
+                                                     + "been implemented for Giorgi and EPA regions. You asked for"
+                                                     + f" {domain_type}. Soon, arbitrary rectangular boxes, US states and"
+                                                     + "others will be included.")
+                                pairdf = pairdf_all.loc[
+                                             (pairdf_all["latitude"] > bounds[0])
+                                             & (pairdf_all["longitude"] > bounds[1])
+                                             & (pairdf_all["latitude"] < bounds[2])
+                                             & (pairdf_all["longitude"] < bounds[3])
+                                             ]
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
