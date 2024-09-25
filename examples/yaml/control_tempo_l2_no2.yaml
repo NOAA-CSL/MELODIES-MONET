@@ -1,9 +1,9 @@
 analysis:
-  start_time: '2019-09-01'
-  end_time: '2019-09-02'
+  start_time: '2024-08-22'
+  end_time: '2024-08-23'
   debug: True
-  output_dir: /Users/plichtig/melodies-monet/outdata
-  output_dir_read: /Users/plichtig/melodies-monet/outdata/save_intermediate
+  output_dir: /Users/plichtig/melodies_monet/outdata
+  output_dir_read: /Users/plichtig/melodies_monet/outdata/save_intermediate
   save:
     paired:
       method: 'netcdf'
@@ -19,7 +19,7 @@ analysis:
 obs:
   tempo_l2_no2:
     debug: True
-    filename: /Users/plichtig/tempo_data/*
+    filename: /Users/plichtig/tempo_data/TEMPO_NO2_L2_V03_20240822*_S00[8-9]*
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
     variables:
@@ -53,17 +53,18 @@ plots:
     type: 'timeseries'
     fig_kwargs:
       figsize: [12,6]
-    defalt_plot_kwargs:
+    default_plot_kwargs:
       linewidth: 2.0
       markersize: 10.
     test_kwargs:
       fontsize: 18.
     domain_type: ["all"]
     domain_name: ["CONUS"]
-    data: ["tempo_l2_no2_wrfchem"]
+    data: ["tempo_l2_no2_wrfchem_v4.2"]
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
+      set_axis: True
 
   plot_grp2:
     type: 'gridded_spatial_bias'
@@ -74,7 +75,7 @@ plots:
       fontsize: 16
     domain_type: ['all']
     domain_name: ['CONUS']
-    data: ['tempo_l2_no2_wrfchem']
+    data: ['tempo_l2_no2_wrfchem_v4.2']
     data_proc:
       set_axis: True
 
