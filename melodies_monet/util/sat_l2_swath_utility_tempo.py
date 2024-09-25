@@ -492,7 +492,7 @@ def regrid_and_apply_weights(
         regridded = _regrid_and_apply_weights(
             obsobj, modobj, method=method, weights=weights, species=species
         )
-        output = regridded.to_dataset(name="NO2_col_wsct")
+        output = regridded.to_dataset(name=spacies[0])
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
         output.attrs["scan_num"] = obsobj.attrs["scan_num"]
@@ -511,7 +511,7 @@ def regrid_and_apply_weights(
                 print(f"Regridding {ref_time}")
             output_multiple[ref_time] = _regrid_and_apply_weights(
                 obsobj[ref_time], modobj, method=method, weights=weights, species=species
-            ).to_dataset(name="NO2_col_wsct")
+            ).to_dataset(name=species[0])
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs[
                 "scan_num"
@@ -691,7 +691,7 @@ def back_to_modgrid_multiscan(
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
                 keys_in_scan = [k]
-        regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan)
+        regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True)
         out_regridded = xr.merge([out_regridded, regridded_scan])
 
     if to_netcdf:
