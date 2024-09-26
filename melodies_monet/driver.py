@@ -1403,14 +1403,9 @@ class analysis:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
                 domain_types = grp_dict['domain_type']
                 domain_names = grp_dict['domain_name']
-                if "domain_query" in grp_dict.keys():
-                    domain_queries = grp_dict['domain_query']
-                else:
-                    domain_queries = [True] * len(domain_types)
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
-                    domain_query = domain_queries[domain]
 
                     # Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
@@ -1514,12 +1509,10 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            if domain_query:
-                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-                            else: 
-                                if domain_type == 'epa_region':
+                            if "auto-region" in domain_type: 
+                                if 'epa_region' in domain_type:
                                     bounds = get_epa_region_bounds(acronym=domain_name)
-                                elif domain_type == 'giorgi_region':
+                                elif 'giorgi_region' in domain_type:
                                     bounds = get_giorgi_region_bounds(acronym=domain_name)
                                 else:
                                     raise ValueError(
@@ -1528,6 +1521,8 @@ class analysis:
                                         f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
                                         "others will be included."
                                     )
+                            else:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                                 pairdf = pairdf_all.loc[
                                              (pairdf_all["latitude"] > bounds[0])
                                              & (pairdf_all["longitude"] > bounds[1])
