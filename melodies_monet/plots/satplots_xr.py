@@ -28,14 +28,14 @@ from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 from ..plots import savefig
 
 
-def time_average(dset, var_name=None, period="1D", time_offset=None):
+def time_average(dset, varname=None, period="1D", time_offset=None):
     """Calculates 24-hour averages
 
     Parameters
     ----------
     dset : dataframe
         Model/obs pair of hourly data
-    var_name : None | str
+    varname : None | str
         Column label of observation variable to apply the calculation
     period : str
         The period over which to average. Should be noted in Pandas style
@@ -49,7 +49,7 @@ def time_average(dset, var_name=None, period="1D", time_offset=None):
     dataframe
         dataframe with applied calculation
     """
-    daily = dset[var_name].resample(time=period, offset=time_offset).mean()
+    daily = dset[varname].resample(time=period, offset=time_offset).mean()
 
     return daily
 
@@ -146,10 +146,10 @@ def map_projection(f):
 
 def make_timeseries(
     dset,
-    var_name=None,
+    varname=None,
     label=None,
     ax=None,
-    avg_window=None,
+    avg_window='h',
     ylabel=None,
     vmin=None,
     vmax=None,
@@ -166,7 +166,7 @@ def make_timeseries(
     ----------
     dset : xr.Dataset
         model/obs pair data to plot
-    var_name : str
+    varname : str
         Variable label of variable to plot
     label : str
         Name of variable to use in plot legend
@@ -216,11 +216,11 @@ def make_timeseries(
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = var_name
+        ylabel = varname
     if label is not None:
         plot_dict["label"] = label
     if (label is None) and (label not in plot_dict.keys()):
-        plot_dict["label"] = var_name
+        plot_dict["label"] = varname
     if vmin is not None and vmax is not None:
         plot_dict["ylim"] = [vmin, vmax]
     # scale the fontsize for the x and y labels by the text_kwargs
@@ -246,7 +246,7 @@ def make_timeseries(
         print(plot_kwargs)
 
         if avg_window is None:
-            dset[var_name].mean(dim=("y", "x"), skipna=True).plot.line(
+            dset[varname].mean(dim=("y", "x"), skipna=True).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -257,7 +257,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[var_name].resample(time=avg_window).mean().mean(
+            dset[varname].resample(time=avg_window).mean().mean(
                 dim=("y", "x")
             ).plot.line(
                 x="time",
@@ -282,7 +282,7 @@ def make_timeseries(
         else:
             plot_kwargs = obs_dict
         if avg_window is None:
-            dset[var_name].mean(dim=("y", "x")).plot.line(
+            dset[varname].mean(dim=("y", "x")).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -293,7 +293,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[var_name].resample(time=avg_window).mean().mean(
+            dset[varname].resample(time=avg_window).mean().mean(
                 dim=("y", "x")
             ).plot.line(
                 x="time",
@@ -332,6 +332,7 @@ def make_taylor(
     label_o="Obs",
     varname_m=None,
     label_m="Model",
+    mean_criteria=None,
     dia=None,
     ylabel=None,
     ty_scale=1.5,
@@ -341,6 +342,7 @@ def make_taylor(
     fig_dict=None,
     text_dict=None,
     debug=False,
+    normalize=False,
 ):
     """Creates taylor plot. Note sometimes model values are off the scale
     on this plot. This will be fixed soon.
@@ -357,6 +359,11 @@ def make_taylor(
         Column label of model variable to plot
     label_m : str
         Name of model variable to use in plot legend
+    mean_criteria : str
+        'None', 'space', 'time'. If None, values and correlations are compared
+        over all dimensions (x, y and time). If 'space', the spatial mean over the
+        comain is calculated before doing the comparison. If 'time', the temporal
+        mean is calculated before doing the comparison.
     dia : dia
         matplotlib ax from previous occurrence so can overlay obs and model
         results on the same plot
@@ -385,10 +392,21 @@ def make_taylor(
         Taylor diagram class defined in MONET
 
     """
-    nan_ind = (~np.isnan(dset[varname_o].values)) & (~np.isnan(dset[varname_m].values))
+    #import pdb; pdb.set_trace()
+
+    if mean_criteria == 'space':
+        dset_forplot = dset.mean(dim=('x', 'y'))
+    elif mean_criteria == 'time':
+        dset_forplot = dset.mean(dim='time')
+    else:
+        dset_forplot = dset
+    #import pdb; pdb.set_trace()
+
+    nan_ind = (~np.isnan(dset_forplot[varname_o].values)) & (~np.isnan(dset_forplot[varname_m].values))
     # First define items for all plots
     if not debug:
         plt.ioff()
+
 
     # set default text size
     def_text = dict(fontsize=14.0)
@@ -400,6 +418,8 @@ def make_taylor(
     if ylabel is None:
         ylabel = varname_o
     # Then, if no plot has been created yet, create a plot and plot the first pair.
+    refstd = dset_forplot[varname_o].std().values
+
     if dia is None:
         # create the figure
         if fig_dict is not None:
@@ -408,27 +428,39 @@ def make_taylor(
             f = plt.figure(figsize=(12, 10))
         sns.set_style("ticks")
         # plot the line
-        dia = td(
-            dset[varname_o].std().values, scale=ty_scale, fig=f, rect=111, label=label_o
-        )
-        plt.grid(linewidth=1, alpha=0.5)
         cc = corrcoef(
-            dset[varname_o].values[nan_ind].flatten(),
-            dset[varname_m].values[nan_ind].flatten(),
+            dset_forplot[varname_o].values[nan_ind].flatten(),
+            dset_forplot[varname_m].values[nan_ind].flatten(),
         )[0, 1]
-        dia.add_sample(
-            dset[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
-        )
+        print(cc)
+        if normalize:
+            dia = td(1, scale=ty_scale, fig=f, rect=111, label=label_o)
+            dia.add_sample(
+                dset_forplot[varname_m].std().values / refstd, cc, zorder=9, label=label_m, **plot_dict
+            )
+        else:
+            dia = td(refstd, scale=ty_scale, fig=f, rect=111, label=label_o)
+            dia.add_sample(
+                dset_forplot[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+            )
+        plt.grid(linewidth=1, alpha=0.5)
+
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot another model
         cc = corrcoef(
-            dset[varname_o].values[nan_ind].flatten(),
-            dset[varname_m].values[nan_ind].flatten(),
+            dset_forplot[varname_o].values[nan_ind].flatten(),
+            dset_forplot[varname_m].values[nan_ind].flatten(),
         )[0, 1]
-        dia.add_sample(
-            dset[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
-        )
+        if normalize:
+            dia.add_sample(
+                dset_forplot[varname_m].std().values / refstd, cc, zorder=9, label=label_m, **plot_dict
+            )
+
+        else:
+            dia.add_sample(
+                dset_forplot[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+            )
     # Set parameters for all plots
     contours = dia.add_contours(colors="0.5")
     # control the clabel format for very high values (e.g., NO2 columns), M.Li
@@ -449,6 +481,8 @@ def make_taylor(
             plt.title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
         else:
             plt.title(domain_name, fontweight="bold", **text_kwargs)
+    
+
     ax = plt.gca()
     ax.axis["left"].label.set_text("Standard Deviation: " + ylabel)
     ax.axis["top"].label.set_text("Correlation")
@@ -456,15 +490,17 @@ def make_taylor(
     ax.axis["top"].label.set_fontsize(text_kwargs["fontsize"])
     ax.axis["left"].label.set_fontweight("bold")
     ax.axis["top"].label.set_fontweight("bold")
+    #ax.axis["left"].label.('%0.0e')
     ax.axis["top"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["left"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
+    #import pdb; pdb.set_trace()
     return dia
 
 
 def calculate_boxplot(
     dset,
-    var_name=None,
+    varname=None,
     label=None,
     plot_dict=None,
     comb_bx=None,
@@ -476,7 +512,7 @@ def calculate_boxplot(
     ----------
     dset : xr.Dataset
          model/obs pair data to plot
-    var_name : str
+    varname : str
         Dataset label of variable to plot
     label : str
         Name of variable to use in plot legend
@@ -508,9 +544,9 @@ def calculate_boxplot(
     else:
         plot_kwargs = plot_dict
     # For all, a column to the dataframe and append the label info to the list.
-    plot_kwargs["var_name"] = var_name
+    plot_kwargs["varname"] = varname
     plot_kwargs["label"] = label
-    comb_bx[label] = dset[var_name]
+    comb_bx[label] = dset[varname]
     label_bx.append(plot_kwargs)
 
     return comb_bx, label_bx
@@ -535,7 +571,7 @@ def make_boxplot(
     Parameters
     ----------
     comb_bx: dataframe
-        dataframe containing information to create box-plot from
+        dataset containing information to create box-plot from
         calculate_boxplot
     label_bx: list
         list of string labels to use in box-plot from calculate_boxplot
@@ -642,10 +678,10 @@ def make_boxplot(
 
 
 def make_spatial_bias_gridded(
-    df,
-    column_o=None,
+    dset,
+    varname_o=None,
     label_o=None,
-    column_m=None,
+    varname_m=None,
     label_m=None,
     ylabel=None,
     vmin=None,
@@ -662,6 +698,12 @@ def make_spatial_bias_gridded(
     """Creates difference plot for satellite and model data.
     For data in swath format, overplots all differences
     For data on regular grid, mean difference.
+    
+    Parameters
+    ----------
+    dset : xr.Dataset
+        Dataset containing the paired data
+    
     """
     if debug == False:
         plt.ioff()
@@ -681,11 +723,11 @@ def make_spatial_bias_gridded(
 
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = column_o
+        ylabel = varname_o
 
     # Take the difference for the model output - the sat output
 
-    diff_mod_min_obs = (df[column_m] - df[column_o]).squeeze()
+    diff_mod_min_obs = (dset[varname_m] - dset[varname_o]).squeeze()
     # Take mean over time,
     if len(diff_mod_min_obs.dims) == 3:
         diff_mod_min_obs = diff_mod_min_obs.mean("time")
@@ -740,7 +782,7 @@ def make_spatial_bias_gridded(
     ax = monet.plots.mapgen.draw_map(crs=map_kwargs["crs"], extent=map_kwargs["extent"])
     # draw scatter plot of model and satellite differences
     c = ax.axes.scatter(
-        df.longitude, df.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
+        dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
     )
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
