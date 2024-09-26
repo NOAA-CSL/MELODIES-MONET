@@ -1522,10 +1522,12 @@ class analysis:
                                 elif domain_type == 'giorgi_region':
                                     bounds = get_giorgi_region_bounds(acronym=domain_name)
                                 else:
-                                    raise ValueError("Currently, region selections whithout a domain query have only"
-                                                     + "been implemented for Giorgi and EPA regions. You asked for"
-                                                     + f" {domain_type}. Soon, arbitrary rectangular boxes, US states and"
-                                                     + "others will be included.")
+                                    raise ValueError(
+                                        "Currently, region selections whithout a domain query have only "
+                                        "been implemented for Giorgi and EPA regions. You asked for "
+                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
+                                        "others will be included."
+                                    )
                                 pairdf = pairdf_all.loc[
                                              (pairdf_all["latitude"] > bounds[0])
                                              & (pairdf_all["longitude"] > bounds[1])
