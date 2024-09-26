@@ -1260,16 +1260,18 @@ class analysis:
 
                         p = pair()
 
-                        paired_data = paired_data_atgrid.reset_index("y") # for saving
-                        paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        # paired_data = paired_data_atgrid.reset_index("y") # for saving
+                        # paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
 
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
                         p.obs_vars = obs_vars
-                        p.obj = paired_data_atgrid
+                        p.obj = paired_data
                         label = '{}_{}'.format(p.obs,p.model)
+                        p.filename = '{}.nc'.format(label)
 
                         self.paired[label] = p
                         
@@ -1352,6 +1354,7 @@ class analysis:
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
+            from .plots import satplots_xr as satplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]

@@ -508,7 +508,7 @@ def regrid_and_apply_weights(
         output_multiple = collections.OrderedDict()
         for ref_time in obsobj.keys():
             if verbose:
-                print(f"Regridding {ref_time}")
+                print(f"Regridding {ref_time} and applying AMF and weights")
             output_multiple[ref_time] = _regrid_and_apply_weights(
                 obsobj[ref_time], modobj, method=method, weights=weights, species=species
             ).to_dataset(name=species[0])
