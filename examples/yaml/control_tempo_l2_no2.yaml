@@ -19,7 +19,7 @@ analysis:
 obs:
   tempo_l2_no2:
     debug: True
-    filename: /Users/plichtig/tempo_data/TEMPO_NO2_L2_V03_20240822*_S00[8-9]*
+    filename: /Users/plichtig/tempo_data/TEMPO_NO2_L2_V03_20240822*_S00[5-9]*
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
     variables:
@@ -56,7 +56,7 @@ plots:
     default_plot_kwargs:
       linewidth: 2.0
       markersize: 10.
-    test_kwargs:
+    text_kwargs:
       fontsize: 18.
     domain_type: ["all"]
     domain_name: ["CONUS"]

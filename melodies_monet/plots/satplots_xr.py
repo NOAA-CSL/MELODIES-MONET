@@ -466,7 +466,7 @@ def make_taylor(
     # control the clabel format for very high values (e.g., NO2 columns), M.Li
     # plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
     plt.clabel(
-        contours, inline=1, fontsize=text_kwargs["fontsize"] * 0.8, fmt="(%1.1e)"
+        contours, inline=1, fontsize=text_kwargs["fontsize"] * 0.8, fmt="(%1.5g)"
     )
 
     plt.grid(alpha=0.5)
@@ -494,6 +494,8 @@ def make_taylor(
     ax.axis["top"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["left"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
+    ax.axis["left"].major_ticklabels.set_axis_direction("bottom")
+    ax.axis["right"].major_ticklabels.set_axis_direction("left")
     #import pdb; pdb.set_trace()
     return dia
 
