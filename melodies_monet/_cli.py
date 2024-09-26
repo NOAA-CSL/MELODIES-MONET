@@ -1075,7 +1075,7 @@ def get_aqs(
                 }
             )
         )
-        counties["epa_region"] = "R" + counties["epa_region"]
+        counties["epa_region"] = "R" + counties["epa_region"].str.lstrip("0")
 
         meta = meta.merge(counties, on=["state_code", "county_code"], how="left")
 
