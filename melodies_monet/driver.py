@@ -1509,10 +1509,11 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            if "auto-region" in domain_type: 
-                                if 'epa_region' in domain_type:
+                            if domain_type.startswith("auto-region"):
+                                _, auto_region_id = domain_type.split(":")
+                                if auto_region_id == 'epa':
                                     bounds = get_epa_region_bounds(acronym=domain_name)
-                                elif 'giorgi_region' in domain_type:
+                                elif auto_region_id == 'giorgi':
                                     bounds = get_giorgi_region_bounds(acronym=domain_name)
                                 else:
                                     raise ValueError(
