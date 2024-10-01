@@ -8,6 +8,7 @@ file: grid_util.py
 
 import math
 import numpy as np
+import numba
 
 
 def update_sparse_data_grid(time_edges, x_edges, y_edges,
@@ -53,7 +54,7 @@ def update_sparse_data_grid(time_edges, x_edges, y_edges,
 
 def normalize_sparse_data_grid(count_grid, data_grid):
     """
-    Normalize accumuxed data on a uniform grid
+    Normalize accumulated data on a uniform grid
 
     Parameters
         count_grid (dict): number of obs points in grid cell
@@ -95,6 +96,7 @@ def sparse_data_to_array(time_edges, x_edges, y_edges,
     return count_grid_array, data_grid_array
 
 
+@numba.jit(nopython=True)
 def update_data_grid(time_edges, x_edges, y_edges,
                      time_obs, x_obs, y_obs, data_obs,
                      count_grid, data_grid):
@@ -125,16 +127,30 @@ def update_data_grid(time_edges, x_edges, y_edges,
             i_time = math.floor((time_obs[i] - time_edges[0]) / time_del)
             i_x = math.floor((x_obs[i] - x_edges[0]) / x_del)
             i_y = math.floor((y_obs[i] - y_edges[0]) / y_del)
+            """
             i_time = np.clip(i_time, 0, ntime - 1)
             i_x = np.clip(i_x, 0, nx - 1)
             i_y = np.clip(i_y, 0, ny - 1)
+            """
+            if i_time < 0:
+                i_time = 0
+            elif i_time >= ntime:
+                i_time = ntime - 1
+            if i_x < 0:
+                i_x = 0
+            elif i_x >= nx:
+                i_x = nx - 1
+            if i_y < 0:
+                i_y = 0
+            elif i_y >= ny:
+                i_y = ny - 1
             count_grid[i_time, i_x, i_y] += 1
             data_grid[i_time, i_x, i_y] += data_obs[i]
 
 
 def normalize_data_grid(count_grid, data_grid):
     """
-    Normalize accumuxed data on a uniform grid
+    Normalize accumulated data on a uniform grid
 
     Parameters
         count_grid (np.array): number of obs points in grid cell
@@ -143,17 +159,15 @@ def normalize_data_grid(count_grid, data_grid):
     Returns
         None
     """
+    mask = (count_grid > 0)
     data_grid[count_grid == 0] = np.nan
-    data_grid[count_grid > 0] /= count_grid[count_grid > 0]
+    data_grid[mask] /= count_grid[mask]
 
-def generate_uniform_grid(paired_dims,start,end,obstime,ntime,nlat,nlon):
+
+def generate_uniform_grid(start, end, ntime, nlat, nlon):
     import pandas as pd
-    #import xarray as xr
-    
     start_timestamp = pd.to_datetime(start).timestamp()
     end_timestamp = pd.to_datetime(end).timestamp()
-    time_stamps = [float(t.timestamp()) for t in obstime]
-    time_stamps = np.array(time_stamps)[:,None]*np.ones((paired_dims['time'],paired_dims['y'])) 
 
     ntime = ntime
     nlat = nlat
@@ -168,9 +182,10 @@ def generate_uniform_grid(paired_dims,start,end,obstime,ntime,nlat,nlon):
     lat_min, lat_max = lat_edges[0:nlat], lat_edges[1:nlat+1]
     lon_edges = np.linspace(lon0, lon0 + 360, nlon+1, endpoint=True, dtype=float)
     lon_grid = 0.5 * (lon_edges[0:nlon] + lon_edges[1:nlon+1])
-    
+
     grid = {'longitude':lon_grid,
-                        'latitude':lat_grid,
-                        'time':time_grid}  
+            'latitude':lat_grid,
+            'time':time_grid}  
     edges = {'time_edges':time_edges,'lon_edges':lon_edges,'lat_edges':lat_edges}
-    return grid,edges,time_stamps
+
+    return grid, edges

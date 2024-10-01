@@ -49,7 +49,7 @@ MONETIO please refer to:
    users_guide/supported_stats
    users_guide/time_chunking
    users_guide/gridded_datasets
-   
+
 .. toctree::
    :hidden:
    :maxdepth: 4

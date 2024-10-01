@@ -34,4 +34,23 @@ def subset_OMPS_l2(file_path,timeinterval):
         for j in fst:
             interval_files.append(j)
     return interval_files
-    
+
+def subset_MODIS_l2(file_path,timeinterval):
+    '''Dependent on filenaming convention
+       MOD04_L2.AYYYYDDD.HHMM.collection.timestamp.hdf
+       MYD04_L2.AYYYYDDD.HHMM.collection.timestamp.hdf
+    '''
+    import pandas as pd
+    from glob import glob
+    import fnmatch
+    all_files = glob(file_path)
+    interval_files = []
+    subset_interval = pd.date_range(start=timeinterval[0],end=timeinterval[-1],freq='h',inclusive='left')
+
+    for i in subset_interval:
+        fst = fnmatch.filter(all_files,'*M?D04_L2.A{}*.hdf'.format(i.strftime('%Y%j.%H')))
+        fst.sort()
+        for j in fst:
+            interval_files.append(j)
+    return interval_files
+
