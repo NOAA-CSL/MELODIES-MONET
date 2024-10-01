@@ -1041,6 +1041,9 @@ class analysis:
                 self.obs[o.label] = o
 
     def setup_obs_grid(self):
+        """
+        Setup a uniform observation grid.
+        """
         from .util import grid_util
         ntime = self.control_dict['obs_grid']['ntime']
         nlat = self.control_dict['obs_grid']['nlat']
@@ -1064,6 +1067,8 @@ class analysis:
     def update_obs_gridded_data(self):
         from .util import grid_util
         """
+        Update observation grid cell values and counts,
+        for all observation datasets and parameters.
         """
         for obs in self.obs:
             for obs_time in self.obs[obs].obj:
@@ -1089,6 +1094,8 @@ class analysis:
     def normalize_obs_gridded_data(self):
         from .util import grid_util
         """
+        Normalize observation grid cell values where counts is not zero.
+        Create data arrays for the obs_gridded_dataset dictionary.
         """
         self.obs_gridded_dataset = xr.Dataset()
 
