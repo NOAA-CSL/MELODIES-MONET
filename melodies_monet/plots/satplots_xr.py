@@ -625,7 +625,6 @@ def make_boxplot(
     for i in range(len(label_bx)):
         order_box.append(label_bx[i]["label"])
         pal[label_bx[i]["label"]] = label_bx[i]["color"]
-    print(order_box)
 
     # Make plot
     if fig_dict is not None:
@@ -655,8 +654,6 @@ def make_boxplot(
             "markersize": 20.0,
         },
     }
-    print(boxplot_kwargs)
-    #import pdb; pdb.set_trace()
     sns.set_style("whitegrid")
     sns.set_style("ticks")
     sns.boxplot(ax=ax, x="variable", y="value", hue="variable", data=pd.melt(comb_bx), **boxplot_kwargs)

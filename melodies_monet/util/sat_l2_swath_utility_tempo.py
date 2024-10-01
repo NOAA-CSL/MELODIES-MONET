@@ -300,7 +300,7 @@ def _calc_layer_thickness(modobj):
     return layer_thickness
 
 
-def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
+def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species='NO2'):
     """Apply the scattering weights and air mass factors accordint to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
     assuming the hydrostatic equation. It does not require temperature
@@ -328,7 +328,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
     scattering_weights = scattering_weights.where(
         modobj["p_mid_tempo"] >= tropopause_pressure
     )
-    modno2 = modobj["NO2"].where(modobj["p_mid_tempo"] >= tropopause_pressure)
+    modno2 = modobj[species].where(modobj["p_mid_tempo"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (
         (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
@@ -343,7 +343,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj):
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
-def apply_weights_mod2tempo_no2(obsobj, modobj):
+def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
     """Apply the scattering weights and air mass factors according to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
 
@@ -360,7 +360,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
         A xr.DataArray containing the NO2 model data after applying
         the air mass factors and scattering weights
     """
-    partial_col = modobj["NO2_col"]
+    partial_col = modobj[f"{species}_col"]
 
     tropopause_pressure = obsobj["tropopause_pressure"] * 100
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
@@ -370,7 +370,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj):
     )
     amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
-    modno2col_trfmd = modno2col_trfmd.where(modobj["NO2_col"].isel(z=0).notnull())
+    modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
     modno2col_trfmd.attrs = {
         "units": "molecules/cm2",
         "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
@@ -439,16 +439,16 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
             )
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
     if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
-        modobj_hs["NO2_col"] = calc_partialcolumn(modobj_hs, var=species[0])
-        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, ["NO2_col"])
-        da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath)
+        modobj_hs[f"{species[0]}_col"] = calc_partialcolumn(modobj_hs, var=species[0])
+        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, [f"{species[0]}_col"])
+        da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(
             "There is no layer_height_agl variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, species)
-        da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath)
+        da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath, species=species[0])
     return da_out.where(np.isfinite(da_out))
 
 
@@ -492,7 +492,7 @@ def regrid_and_apply_weights(
         regridded = _regrid_and_apply_weights(
             obsobj, modobj, method=method, weights=weights, species=species
         )
-        output = regridded.to_dataset(name=spacies[0])
+        output = regridded.to_dataset(name=species[0])
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
         output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
         output.attrs["scan_num"] = obsobj.attrs["scan_num"]
