@@ -490,7 +490,7 @@ def make_taylor(
     ax.axis["top"].label.set_fontsize(text_kwargs["fontsize"])
     ax.axis["left"].label.set_fontweight("bold")
     ax.axis["top"].label.set_fontweight("bold")
-    #ax.axis["left"].label.('%0.0e')
+    # ax.axis["left"].label.('%0.0e')
     ax.axis["top"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["left"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
@@ -548,7 +548,7 @@ def calculate_boxplot(
     # For all, a column to the dataframe and append the label info to the list.
     plot_kwargs["varname"] = varname
     plot_kwargs["label"] = label
-    comb_bx[label] = dset[varname]
+    comb_bx[label] = dset[varname].mean(dim=('x', 'y')).to_dataframe()
     label_bx.append(plot_kwargs)
 
     return comb_bx, label_bx
@@ -617,7 +617,7 @@ def make_boxplot(
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = label_bx[0]
+        ylabel = label_bx[0]['label']
 
     # Fix the order and palate colors
     order_box = []
@@ -625,6 +625,7 @@ def make_boxplot(
     for i in range(len(label_bx)):
         order_box.append(label_bx[i]["label"])
         pal[label_bx[i]["label"]] = label_bx[i]["color"]
+    print(order_box)
 
     # Make plot
     if fig_dict is not None:
@@ -654,12 +655,15 @@ def make_boxplot(
             "markersize": 20.0,
         },
     }
+    print(boxplot_kwargs)
+    #import pdb; pdb.set_trace()
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-    sns.boxplot(ax=ax, x="variable", y="value", data=pd.melt(comb_bx), **boxplot_kwargs)
+    sns.boxplot(ax=ax, x="variable", y="value", hue="variable", data=pd.melt(comb_bx), **boxplot_kwargs)
     ax.set_xlabel("")
     ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
     ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+    ax.yaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
     if domain_type is not None and domain_name is not None:
         if domain_type == "epa_region":
             ax.set_title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
@@ -781,7 +785,7 @@ def make_spatial_bias_gridded(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = monet.plots.mapgen.draw_map(crs=map_kwargs["crs"], extent=map_kwargs["extent"])
+    ax = monet.plots.mapgen.draw_map(crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True)
     # draw scatter plot of model and satellite differences
     c = ax.axes.scatter(
         dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
@@ -820,6 +824,8 @@ def make_spatial_bias_gridded(
         width=2.0,
         grid_linewidth=2.0,
     )
+
+    cax.yaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
 
     # plt.tight_layout(pad=0)
     savefig(
