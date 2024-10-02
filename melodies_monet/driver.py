@@ -1337,8 +1337,8 @@ class analysis:
                 region_list = grp_dict['region_list']
                 model_name_list = grp_dict['model_name_list']     
 
-            #read-in special settings for vertical_single_date
-            if plot_type == 'vertical_single_date':
+            #read-in special settings for ozone sonder related plots
+            if plot_type == 'vertical_single_date' or 'vertical_boxplot_os' or 'density_scatter_plot_os':
                 model_name_list = grp_dict['model_name_list']
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
@@ -1347,32 +1347,12 @@ class analysis:
                 monet_logo_position = grp_dict['monet_logo_position']
                 cds = grp_dict['compare_date_single']
                 release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
-                fill_color_list = grp_dict['fill_color_list']
 
-            #read-in special settings for vertical_boxplot
-            if plot_type == 'vertical_boxplot_os':
-                model_name_list = grp_dict['model_name_list']
-                altitude_range = grp_dict['altitude_range']
-                altitude_method = grp_dict['altitude_method']
-                ozone_range = grp_dict['ozone_range']
-                station_name = grp_dict['station_name']
-                monet_logo_position = grp_dict['monet_logo_position']
-                cds = grp_dict['compare_date_single']
-                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
-                altitude_threshold_list = grp_dict['altitude_threshold_list']
-                fill_color_list = grp_dict['fill_color_list']
-
-            #read-in special settings for density scatter plot for ozone sonder
-            if plot_type == 'density_scatter_plot_os':
-                model_name_list = grp_dict['model_name_list']
-                altitude_range = grp_dict['altitude_range']
-                altitude_method = grp_dict['altitude_method']
-                ozone_range = grp_dict['ozone_range']
-                station_name = grp_dict['station_name']
-                monet_logo_position = grp_dict['monet_logo_position']
-                cds = grp_dict['compare_date_single']
-                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
-                cmap_method = grp_dict['cmap_method']
+                if plot_type == 'vertical_boxplot_os':
+                    altitude_threshold_list = grp_dict['altitude_threshold_list']
+                    fill_color_list = grp_dict['fill_color_list']
+                elif plot_type == 'density_scatter_plot_os':
+                    cmap_method = grp_dict['cmap_method']
                 
             #read-in special settings for scorecard
             if plot_type == 'scorecard':
@@ -1802,8 +1782,13 @@ class analysis:
                         elif plot_type.lower() == 'vertical_single_date':
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                                #print('in driver 0 plot dict',plot_dict)
+                                #print('in driver 0 comb bx',comb_bx)
+                                print('in driver 0 label bx',label_bx)
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
-
+                            #print('in driver i plot dict',plot_dict)
+                            #print('in driver i comb bx',comb_bx)
+                            print('in driver i label bx',label_bx)
                             if p_index == len(pair_labels) - 1:
                                 sonderplots.make_vertical_single_date(pairdf,
                                                                       comb_bx,
@@ -1813,8 +1798,7 @@ class analysis:
                                                                       ozone_range=ozone_range,
                                                                       station_name=station_name,
                                                                       release_time=release_time,
-                                                                      fill_color_list=fill_color_list,
-                                                                      plot_dict=plot_dict,
+                                                                      label_bx=label_bx,
                                                                       fig_dict=fig_dict,
                                                                       text_dict=text_dict
                                                                       )

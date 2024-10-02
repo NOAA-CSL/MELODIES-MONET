@@ -25,7 +25,7 @@ from .surfplots import make_24hr_regulatory,calc_24hr_ave_v1,make_8hr_regulatory
 
 
 #Define ozone sonder, vertical single date plot
-def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,ozone_range,station_name,release_time,label_bx,fig_dict,text_dict):
+def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,ozone_range,station_name,release_time,fill_color_list,plot_dict,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
     len_combx = np.shape(comb_bx)[1]
@@ -41,28 +41,23 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
     if altitude_method[0] == 'ground level':
         height_value = df_height.loc[df_height['station']==station_name[0]].values[0][1]
         ALT_gl = ALT_sl - height_value
-    #1 set default figure size
+    #set default figure size
     if fig_dict is not None:
         f,ax = plt.subplots(**fig_dict)
     else:
         f,ax = plt.subplots(figsize=(8,8))
-    #2 set default text size
+    #set default text size
     def_text = dict(fontsize=20)
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    #3 set default plot key words
-    for i in range(len(label_bx)):
-        label_bx[i].pop('column')
 
-#Make plot
+    #Make plot
     if altitude_method[0] =='sea level':
-        plot_dict = label_bx[0]
-        ax.plot(O3_OBS,ALT_sl,**plot_dict)
-        for i in range(len(O3_MODEL_ALL)):
-            plot_dict = label_bx[i+1]
-            ax.plot(O3_MODEL_ALL[i],ALT_sl,**plot_dict)
+        ax.plot(O3_OBS,ALT_sl,'-*',color=fill_color_list[0],label = 'OBS:'+model_name_list[0])
+        for i in range(len(O3_MODEL_ALL)): 
+            ax.plot(O3_MODEL_ALL[i],ALT_sl,'-*',color=fill_color_list[i+1],label = 'MOD:'+model_name_list[i+1])
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
         plt.legend()
         plt.ylim(altitude_range[0],altitude_range[1])
@@ -70,11 +65,9 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
         ax.set_ylabel('ALT-sea level (km)')
         ax.set_xlabel('O3 (ppbv)')
     elif altitude_method[0] == 'ground level':
-        plot_dict = label_bx[0]
-        ax.plot(O3_OBS,ALT_gl,**plot_dict)
+        ax.plot(O3_OBS,ALT_gl,'-*',color=fill_color_list[0],label = 'OBS:'+model_name_list[0])
         for i in range(len(O3_MODEL_ALL)):
-            plot_dict = label_bx[i+1]
-            ax.plot(O3_MODEL_ALL[i],ALT_gl,**plot_dict)
+            ax.plot(O3_MODEL_ALL[i],ALT_gl, '-*',color=fill_color_list[i+1],label = 'MOD:'+model_name_list[i+1])     
         plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC')
         plt.legend()
         plt.ylim(altitude_range[0],altitude_range[1])
