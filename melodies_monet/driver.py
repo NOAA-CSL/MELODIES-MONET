@@ -1,4 +1,4 @@
-
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
 # SPDX-License-Identifier: Apache-2.0
 #
 """
@@ -598,6 +598,9 @@ class model:
                 #self.obj.monet.scrip = self.obj_scrip      
             elif "camx" in self.model.lower():
                 self.mod_kwargs.update({"var_list": list_input_var})
+                self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
+                self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
+                self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
@@ -1694,14 +1697,14 @@ class analysis:
                             
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
-                            elif filter_criteria is None:
-                                if 'altitude' in pairdf.columns:
-                                    vmin_y2 = pairdf['altitude'].min()
-                                    vmax_y2 = pairdf['altitude'].max()
-                                else:
-                                    vmin_y2 = vmax_y2 = None
-                            else:
-                                vmin_y2 = vmax_y2 = None
+                            # elif filter_criteria is None:
+                            #     if 'altitude' in pairdf.columns:
+                            #         vmin_y2 = pairdf['altitude'].min()
+                            #         vmax_y2 = pairdf['altitude'].max()
+                            #     else:
+                            #         vmin_y2 = vmax_y2 = None
+                            # else:
+                            #     vmin_y2 = vmax_y2 = None
                             
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)

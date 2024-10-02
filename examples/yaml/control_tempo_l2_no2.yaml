@@ -45,7 +45,17 @@ model:
         no2: "vertical_column_troposphere"
     projection: ~
     surf_only: False
-    
+
+  camx_v3.2:
+    files: /Users/plichtig/melodies_monet/camx_output/mgolbazi/CAMx.nf3d.out.v7.10.cb6r5.20180801.avrg.grd01
+    mod_type: 'camx'
+    files_vert: /Users/plichtig/melodies_monet/camx_output/mgolbazi/met/camx.3d.12km.180801.bin
+    mapping:
+      tempo_l2_no2:
+        NO2: "vertical_column_troposphere"
+    projection: ~
+    surf_only: False
+
 
 
 plots:
