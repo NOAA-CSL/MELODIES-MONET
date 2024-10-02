@@ -299,6 +299,10 @@ class observation:
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
+            elif self.sat_type == 'tempo_l2_no2':
+                print('Reading TEMPO L2 NO2')
+                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
+                    self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
                 raise ValueError
@@ -599,6 +603,9 @@ class model:
                 #self.obj.monet.scrip = self.obj_scrip      
             elif "camx" in self.model.lower():
                 self.mod_kwargs.update({"var_list": list_input_var})
+                self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
+                self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
+                self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
                 if len(self.files) > 1:
@@ -1354,6 +1361,33 @@ class analysis:
                         label = '{}_{}'.format(p.obs,p.model)
 
                         self.paired[label] = p
+
+                    if obs.sat_type == 'tempo_l2_no2':
+                        from .util import sat_l2_swath_utility_tempo as sutil
+
+                        mod_no2 = [k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"]
+                        # import pdb; pdb.set_trace()
+                        paired_data_atswath = sutil.regrid_and_apply_weights(obs.obj, mod.obj, species=mod_no2, method='bilinear')
+                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(paired_data_atswath, model_obj, method='bilinear')
+
+                        self.models[model_label].obj = model_obj
+
+                        p = pair()
+
+                        # paired_data = paired_data_atgrid.reset_index("y") # for saving
+                        # paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = '{}_{}'.format(p.obs,p.model)
+                        p.filename = '{}.nc'.format(label)
+
+                        self.paired[label] = p
                         
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
@@ -1436,6 +1470,7 @@ class analysis:
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
+            from .plots import satplots_xr as satplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1755,14 +1790,14 @@ class analysis:
                             
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
-                            elif filter_criteria is None:
-                                if 'altitude' in pairdf.columns:
-                                    vmin_y2 = pairdf['altitude'].min()
-                                    vmax_y2 = pairdf['altitude'].max()
-                                else:
-                                    vmin_y2 = vmax_y2 = None
-                            else:
-                                vmin_y2 = vmax_y2 = None
+                            # elif filter_criteria is None:
+                            #     if 'altitude' in pairdf.columns:
+                            #         vmin_y2 = pairdf['altitude'].min()
+                            #         vmax_y2 = pairdf['altitude'].max()
+                            #     else:
+                            #         vmin_y2 = vmax_y2 = None
+                            # else:
+                            #     vmin_y2 = vmax_y2 = None
                             
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)

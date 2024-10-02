@@ -1,0 +1,91 @@
+analysis:
+  start_time: '2024-08-22'
+  end_time: '2024-08-23'
+  debug: True
+  output_dir: /Users/plichtig/melodies_monet/outdata
+  output_dir_read: /Users/plichtig/melodies_monet/outdata/save_intermediate
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: '201907'
+      data: all
+    read:
+      paired:
+        method: 'netcdf'
+      filenames:
+        {tempo_l2_no2_wrfchem: ['Regridded_XYZ.nc']}
+
+
+obs:
+  tempo_l2_no2:
+    debug: True
+    filename: /Users/plichtig/tempo_data/TEMPO_NO2_L2_V03_20240822*_S00[5-9]*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_no2
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column_troposphere']
+      vertical_column_troposphere:
+        ylabel_plot: 'NO2 trop. column'
+      pressure: {}
+      tropopause_pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
+
+
+model:
+  wrfchem_v4.2:
+    files: /Users/plichtig/wrf_output/forPablo/wrfout_hourly_d01_2019-09-0[1-2]*
+    mod_type: 'wrfchem'
+    mod_kwargs:
+      mech: 'racm_esrl_vcp'
+    mapping:
+      tempo_l2_no2:
+        no2: "vertical_column_troposphere"
+    projection: ~
+    surf_only: False
+
+  camx_v3.2:
+    files: /Users/plichtig/melodies_monet/camx_output/mgolbazi/CAMx.nf3d.out.v7.10.cb6r5.20180801.avrg.grd01
+    mod_type: 'camx'
+    files_vert: /Users/plichtig/melodies_monet/camx_output/mgolbazi/met/camx.3d.12km.180801.bin
+    mapping:
+      tempo_l2_no2:
+        NO2: "vertical_column_troposphere"
+    projection: ~
+    surf_only: False
+
+
+
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["all"]
+    domain_name: ["CONUS"]
+    data: ["tempo_l2_no2_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+
+  plot_grp2:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: 
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 16
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['tempo_l2_no2_wrfchem_v4.2']
+    data_proc:
+      set_axis: True
+
