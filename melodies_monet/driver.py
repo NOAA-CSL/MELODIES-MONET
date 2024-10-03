@@ -1330,7 +1330,10 @@ class analysis:
                         from .util import cal_mod_no2col as mutil
 
                         # calculate model no2 trop. columns. M.Li
-                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        # to fix the "time" duplicate error
+                        model_obj = mod.obj
+                        model_obj = model_obj.rename_dims({'time':'t'})
+                        model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         if mod.apply_ak == True:
@@ -1756,7 +1759,8 @@ class analysis:
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
                             elif filter_criteria is None:
-                                if 'altitude' in pairdf.columns:
+                                #if 'altitude' in pairdf.columns: # pairdf is dataset object, don't have columns
+                                if 'altitude' in list(pairdf.data_vars.keys()):
                                     vmin_y2 = pairdf['altitude'].min()
                                     vmax_y2 = pairdf['altitude'].max()
                                 else:
