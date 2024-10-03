@@ -8,12 +8,51 @@ for advice on how to add new model and observational datasets to MELODIES MONET.
 Supported Models
 ----------------
 
-   * `CMAQ <https://www.epa.gov/cmaq/>`_
-   * `WRF-Chem <https://ruc.noaa.gov/wrf/wrf-chem/>`_
-   * `CESM/CAM-chem <https://www2.acom.ucar.edu/gcm/cam-chem>`_
-   * `RRFS-CMAQ (under development) <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_ 
-   * `RAQMS <http://raqms-ops.ssec.wisc.edu/>`_
-   
+.. list-table:: Currently Connected Capabilities for Model Readers
+   :widths: 20 20 30 30
+   :header-rows: 1
+
+   * - Model
+     - Surface
+     - Aircraft
+     - Satellite
+   * - `MERRA2 <https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/>`_
+     - Yes
+     - Needs testing
+     - MODIS
+   * - `WRF-Chem <https://www2.acom.ucar.edu/wrf-chem>`_
+     - Yes
+     - Yes
+     - TROPOMI, TEMPO
+   * - `CESM/CAM-chem FV <https://www2.acom.ucar.edu/gcm/cam-chem>`_
+     - Yes
+     - Needs testing
+     - Needs testing
+   * - `CESM/CAM-chem SE <https://www2.acom.ucar.edu/gcm/cam-chem>`_
+     - Yes
+     - | Needs testing & to 
+       | add unstructured 
+       | grid capabilities
+     - | Needs testing & to 
+       | add unstructured 
+       | grid capabilities
+   * - `CMAQ <https://www.epa.gov/cmaq/>`_
+     - Yes
+     - Needs testing
+     - Needs testing
+   * - `UFS-AQM (RRFS) <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_
+     - Yes
+     - Yes
+     - Needs testing
+   * - `CAMx <https://www.camx.com/>`_
+     - Yes
+     - Needs testing
+     - TROPOMI, TEMPO
+   * - `RAQMS <http://raqms-ops.ssec.wisc.edu/>`_
+     - Yes
+     - Needs testing
+     - MOPITT, OMPS
+
 In general, processing requires input to be in netCDF format. For the above 
 models, scripts to configure the model data into a standard format for 
 MELODIES MONET are available. If input datasets are in netCDF format and  

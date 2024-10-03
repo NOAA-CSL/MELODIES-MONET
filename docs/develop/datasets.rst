@@ -21,3 +21,58 @@ While a part of the MONETIO repository,
 the private MELODIES MONET readers are designated with prefix ``_mm``.
 
 Support for additional models is also under developed.
+
+Standard variables are required to be computed in each model reader for each capability including surface, aircraft, and satellite as specified in the table below.
+
+.. list-table:: Required Variables for Model Readers
+   :widths: 10 30 30 30
+   :header-rows: 1
+
+   * - Capability
+     - | Variable Name 
+       | in Code
+     - Description
+     - Additional Requirements
+   * - Surface
+     - | time
+       | latitude
+       | longitude
+     - | Time in datetime64[ns] format
+       | Latitude in degrees
+       | Longitude in degrees
+     - | Provide only surface model data 
+       | or if provide vertical model data, 
+       | first level must be the level 
+       | nearest to the surface.
+       | All gases are in ppb and 
+       | all aerosols are in µg/m3.
+   * - Aircraft
+     - | time
+       | latitude
+       | longitude
+       | pres_pa_mid
+       | temperature_k
+     - | Time in datetime64[ns] format
+       | Latitude in degrees
+       | Longitude in degrees
+       | Mid-level pressure in pascals
+       | Mid-level temperature in Kelvin
+     - | Provide vertical model data. 
+       | All gases are in ppb and 
+       | all aerosols are in µg/m3.
+   * - Satellites
+     - | time
+       | latitude
+       | longitude
+       | pres_pa_mid
+       | temperature_k
+       | dz_m
+       | surfpres_pa
+     - | Time in datetime64[ns] format
+       | Latitude in degrees
+       | Longitude in degrees
+       | Mid-level pressure in pascals
+       | Mid-level temperature in Kelvin
+       | Layer thickness in meters
+       | Surface pressure in pascals
+     - | Provide vertical model data.
