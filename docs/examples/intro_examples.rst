@@ -19,6 +19,10 @@ Other examples:
 * :doc:`save_paired_data`
 * :doc:`read_paired_data`
 
+Aircraft evaluation examples:
+
+* :doc:`aircraft_pairing`
+
 Execution statistics
 --------------------
 
