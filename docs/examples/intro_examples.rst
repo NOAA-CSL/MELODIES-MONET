@@ -22,6 +22,7 @@ Other examples:
 Aircraft evaluation examples:
 
 * :doc:`aircraft_pairing`
+* :doc:`AEROMMA_UFS-AQM_Plots`
 
 Execution statistics
 --------------------

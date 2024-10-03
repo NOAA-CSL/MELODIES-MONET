@@ -25,6 +25,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     import xarray as xr
     from glob import glob
     import os
+    from .. import tutorial
     
     # Determine where to read files from
     if getattr(analysis,'output_dir_read') is not None:
@@ -47,7 +48,11 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
                 if isinstance(filenames[group],str):
                     files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in [filenames[group]]] for file in sublist])
                 else:
-                    files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames[group]] for file in sublist])
+                     if filenames[group][0].startswith("example:"):
+                        files[group] = sorted([file for sublist in [
+                            [tutorial.fetch_example(":".join(s.strip() for s in file.split(":")[1:]))] for file in filenames[group]] for file in sublist])
+                     else:
+                         files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames[group]] for file in sublist])
                 if not files[group]:
                     raise FileNotFoundError('No such file: ', filenames[group])
         else:

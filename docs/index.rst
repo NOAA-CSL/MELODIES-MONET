@@ -84,6 +84,7 @@ MONETIO please refer to:
    examples/save_paired_data
    examples/read_paired_data
    examples/aircraft_pairing
+   examples/AEROMMA_UFS-AQM_Plots
    
 .. toctree::
    :hidden:
