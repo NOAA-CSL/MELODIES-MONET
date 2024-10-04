@@ -1522,11 +1522,11 @@ class analysis:
                                         f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
                                         "others will be included."
                                     )
-                                pairdf = pairdf_all.loc[
-                                             (pairdf_all["latitude"] > bounds[0])
-                                             & (pairdf_all["longitude"] > bounds[1])
-                                             & (pairdf_all["latitude"] < bounds[2])
-                                             & (pairdf_all["longitude"] < bounds[3])
+                                pairdf_all = pairdf_all.loc[
+                                                (pairdf_all["latitude"] > bounds[0])
+                                                & (pairdf_all["longitude"] > bounds[1])
+                                                & (pairdf_all["latitude"] < bounds[2])
+                                                & (pairdf_all["longitude"] < bounds[3])
                                              ]
                             else:
                                 pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
