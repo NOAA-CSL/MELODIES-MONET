@@ -602,6 +602,9 @@ class model:
                 #self.obj.monet.scrip = self.obj_scrip      
             elif "camx" in self.model.lower():
                 self.mod_kwargs.update({"var_list": list_input_var})
+                self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
+                self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
+                self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
                 if time_interval is not None:
