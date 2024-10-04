@@ -47,11 +47,11 @@ Standard variables are required to be computed in each model reader for each cap
        | All gases are in ppb and 
        | all aerosols are in µg/m3.
    * - Aircraft
-     - | time
-       | latitude
-       | longitude
-       | pres_pa_mid
-       | temperature_k
+     - | ``time``
+       | ``latitude``
+       | ``longitude``
+       | ``pres_pa_mid``
+       | ``temperature_k``
      - | Time in datetime64[ns] format
        | Latitude in degrees
        | Longitude in degrees
