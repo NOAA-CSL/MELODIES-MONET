@@ -1339,7 +1339,6 @@ class analysis:
 
             #read-in special settings for ozone sonder related plots
             if plot_type == 'vertical_single_date' or 'vertical_boxplot_os' or 'density_scatter_plot_os':
-                model_name_list = grp_dict['model_name_list']
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
                 station_name = grp_dict['station_name']
@@ -1351,6 +1350,7 @@ class analysis:
                     altitude_threshold_list = grp_dict['altitude_threshold_list']
                 elif plot_type == 'density_scatter_plot_os':
                     cmap_method = grp_dict['cmap_method']
+                    model_name_list = grp_dict['model_name_list']
                 
             #read-in special settings for scorecard
             if plot_type == 'scorecard':
@@ -1794,17 +1794,10 @@ class analysis:
                             #begin plotting
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
-                                #print('in driver 0 plot dict',plot_dict)
-                                #print('in driver 0 comb bx',comb_bx)
-                                print('in driver 0 label bx',label_bx)
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
-                            #print('in driver i plot dict',plot_dict)
-                            #print('in driver i comb bx',comb_bx)
-                            print('in driver i label bx',label_bx)
                             if p_index == len(pair_labels) - 1:
                                 sonderplots.make_vertical_single_date(pairdf,
                                                                       comb_bx,
-                                                                      model_name_list=model_name_list,
                                                                       altitude_range=altitude_range,
                                                                       altitude_method=altitude_method,
                                                                       vmin=vmin,
@@ -1843,8 +1836,6 @@ class analysis:
                                 sonderplots.make_vertical_boxplot_os(pairdf,
                                                                      comb_bx,
                                                                      label_bx=label_bx,
-
-                                                                     model_name_list=model_name_list,
                                                                      altitude_range=altitude_range,
                                                                      altitude_method=altitude_method,
                                                                      vmin=vmin,

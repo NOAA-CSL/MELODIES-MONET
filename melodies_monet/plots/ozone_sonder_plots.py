@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 sns.set_context('paper')
 
 #Define ozone sonder, vertical single date plot
-def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude_method,vmin, vmax,station_name,release_time,label_bx,fig_dict,text_dict):
+def make_vertical_single_date(df,comb_bx,altitude_range,altitude_method,vmin, vmax,station_name,release_time,label_bx,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
     len_combx = np.shape(comb_bx)[1]
@@ -62,7 +62,7 @@ def make_vertical_single_date(df,comb_bx,model_name_list,altitude_range,altitude
     ax.set_xlabel(ylabel+' (ppbv)',fontsize=text_kwargs['fontsize']*0.8)
 
 #Define ozone sonder, vertical single date plot
-def make_vertical_boxplot_os(df,comb_bx,label_bx,model_name_list,altitude_range,altitude_method,vmin, vmax,altitude_threshold_list,station_name,release_time,fig_dict,text_dict):
+def make_vertical_boxplot_os(df,comb_bx,label_bx,altitude_range,altitude_method,vmin, vmax,altitude_threshold_list,station_name,release_time,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
     len_combx = np.shape(comb_bx)[1]
