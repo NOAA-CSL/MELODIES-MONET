@@ -80,6 +80,7 @@ MONETIO please refer to:
    examples/airnow_wrfchem
    examples/airnow_camchem_se
    examples/camchem
+   examples/airnow_wrfchem_reg
    examples/idealized
    examples/save_paired_data
    examples/read_paired_data

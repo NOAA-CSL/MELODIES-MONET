@@ -22,6 +22,14 @@ _examples = {
             "example_model_data/wrfchem_example/racm_esrl_vcp/wrfout_d01_tutorial",
             "sha256:67e0f126031dba9775a1baaeec377d04144da66d040fd27909e418c3be31a0f9",
         ),
+        "racm_esrl_reg": (
+            "example_model_data/wrfchem_example/racm_esrl/tutorial_reg_racm_esrl.nc",
+            "sha256:31fda3e8c1bbf70ca83a17ec62b4644818f2280489e0dce80f2ebbce0d377227",
+        ),
+        "racm_esrl_vcp_reg": (
+            "example_model_data/wrfchem_example/racm_esrl_vcp/tutorial_reg_racm_esrl_vcp.nc",
+            "sha256:6750eabb110ef8a3ce6819788e16c1025d08ae993721d1e7474f0768928df802",
+        ),
     },
     "airnow": {
         "2019-09": (
