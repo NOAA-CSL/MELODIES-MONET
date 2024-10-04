@@ -1760,7 +1760,7 @@ class analysis:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
                             elif filter_criteria is None:
                                 #if 'altitude' in pairdf.columns: # pairdf is dataset object, don't have columns
-                                if 'altitude' in list(pairdf.data_vars.keys()):
+                                if 'altitude' in pairdf.variables: # for xarray that might be a coordinate variable
                                     vmin_y2 = pairdf['altitude'].min()
                                     vmax_y2 = pairdf['altitude'].max()
                                 else:
