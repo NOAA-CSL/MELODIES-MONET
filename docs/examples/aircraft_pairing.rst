@@ -77,7 +77,7 @@ General Procedure
 -----------------
 
 Users can use MELODIES MONET to pair aircraft observations to model output
-and save the paired data for each flight as a netcdf. Users can then read 
+and save the paired data for each flight as a netCDF. Users can then read 
 these files back into MELODIES MONET to create plots and calculate statistics 
 or use this paired data output file to do their own analysis. Pairing aircraft 
 data takes time and memory, so it is recommended that users first pair the data 
