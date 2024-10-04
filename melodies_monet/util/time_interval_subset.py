@@ -57,7 +57,6 @@ def subset_mopitt_l3(file_path,timeinterval):
         fst.sort()
         for j in fst:
             interval_files.append(j)
-    print(interval_files)
     return interval_files
 
 def subset_MODIS_l2(file_path,timeinterval):

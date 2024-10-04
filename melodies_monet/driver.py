@@ -285,7 +285,6 @@ class observation:
                 if time_interval is not None:
                     flst = tsub.subset_mopitt_l3(self.file,time_interval)
                 else: flst = self.file
-                print(flst)
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
@@ -611,12 +610,11 @@ class model:
                     file_list = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%HZ','6H',time_interval)
                 else:
                     file_list = self.files
-                #print(file_list)
                 if len(file_list) > 1:
                     self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
                 else:
                     self.obj = mio.models.raqms.open_dataset(file_list)
-                print('RAQMS files loaded')
+
             else:
                 print('**** Reading Unspecified model output. Take Caution...')
                 if len(self.files) > 1:
