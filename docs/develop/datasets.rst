@@ -52,7 +52,7 @@ Standard variables are required to be computed in each model reader for each cap
        | ``longitude``
        | ``pres_pa_mid``
        | ``temperature_k``
-     - | Time in datetime64[ns] format
+     - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
        | Mid-level pressure in pascals
