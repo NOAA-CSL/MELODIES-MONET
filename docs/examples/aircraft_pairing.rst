@@ -92,7 +92,7 @@ All of the examples referred to below can be found in the
 `on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
 
 You can select the resampling time window. For testing purposes you can choose 
-600 s and only pair 1-2 flight days to reduce memory constraints and run a 
+600 s and only pair 1--2 flight days to reduce memory constraints and run a 
 jupyter notebook. This Jupyter notebook 
 ``examples/jupyter_notebooks/AEROMMA_UFS-AQM_Aircraft_Pairing.ipynb``
 pairs `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_ observational data with 
