@@ -68,7 +68,7 @@ Standard variables are required to be computed in each model reader for each cap
        | temperature_k
        | dz_m
        | surfpres_pa
-     - | Time in datetime64[ns] format
+     - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
        | Mid-level pressure in pascals
