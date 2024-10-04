@@ -1522,14 +1522,14 @@ class analysis:
                                         f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
                                         "others will be included."
                                     )
-                            else:
-                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                                 pairdf = pairdf_all.loc[
                                              (pairdf_all["latitude"] > bounds[0])
                                              & (pairdf_all["longitude"] > bounds[1])
                                              & (pairdf_all["latitude"] < bounds[2])
                                              & (pairdf_all["longitude"] < bounds[3])
                                              ]
+                            else:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
