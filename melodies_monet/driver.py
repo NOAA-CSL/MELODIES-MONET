@@ -1342,7 +1342,6 @@ class analysis:
                 model_name_list = grp_dict['model_name_list']
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
-                ozone_range = grp_dict['ozone_range']
                 station_name = grp_dict['station_name']
                 monet_logo_position = grp_dict['monet_logo_position']
                 cds = grp_dict['compare_date_single']
@@ -1350,7 +1349,6 @@ class analysis:
 
                 if plot_type == 'vertical_boxplot_os':
                     altitude_threshold_list = grp_dict['altitude_threshold_list']
-                    fill_color_list = grp_dict['fill_color_list']
                 elif plot_type == 'density_scatter_plot_os':
                     cmap_method = grp_dict['cmap_method']
                 
@@ -1645,6 +1643,7 @@ class analysis:
                             else:
                                 vmin_y2 = vmax_y2 = None
                             
+
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
                             if filter_criteria:
@@ -1780,6 +1779,19 @@ class analysis:
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
                         elif plot_type.lower() == 'vertical_single_date':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            #begin plotting
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
                                 #print('in driver 0 plot dict',plot_dict)
@@ -1795,7 +1807,8 @@ class analysis:
                                                                       model_name_list=model_name_list,
                                                                       altitude_range=altitude_range,
                                                                       altitude_method=altitude_method,
-                                                                      ozone_range=ozone_range,
+                                                                      vmin=vmin,
+                                                                      vmax=vmax,
                                                                       station_name=station_name,
                                                                       release_time=release_time,
                                                                       label_bx=label_bx,
@@ -1809,6 +1822,19 @@ class analysis:
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
 
                         elif plot_type.lower() == 'vertical_boxplot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+                            #begin plotting
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
@@ -1821,12 +1847,11 @@ class analysis:
                                                                      model_name_list=model_name_list,
                                                                      altitude_range=altitude_range,
                                                                      altitude_method=altitude_method,
+                                                                     vmin=vmin,
+                                                                     vmax=vmax,
                                                                      altitude_threshold_list=altitude_threshold_list,
-                                                                     ozone_range=ozone_range,
                                                                      station_name=station_name,
                                                                      release_time=release_time,
-                                                                     fill_color_list=fill_color_list,
-                                                                     plot_dict=plot_dict,
                                                                      fig_dict=fig_dict,
                                                                      text_dict=text_dict)
                                 #save plot
@@ -1835,8 +1860,22 @@ class analysis:
                                 del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
 
                         elif plot_type.lower() == 'density_scatter_plot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+
+                            #begin plotting
                             plt.figure()
-                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,ozone_range,station_name,altitude_method,cmap_method)
+                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
                             plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
                             plt.tight_layout()
                             savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
