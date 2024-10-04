@@ -36,6 +36,30 @@ def subset_OMPS_l2(file_path,timeinterval):
             interval_files.append(j)
     return interval_files
 
+def subset_mopitt_l3(file_path,timeinterval):
+    '''Dependent on filenaming conventions
+    MOP03J-YYYYMMDD-
+    MOP03JM-201909-
+    '''
+    import pandas as pd
+    from glob import glob
+    import fnmatch
+    all_files = glob(file_path)
+    interval_files = []
+    if 'MOP03JM-' in all_files[0]:
+        subset_interval = pd.date_range(start=timeinterval[0],end=timeinterval[-1],freq='M')
+        strfmt = '%Y%m'
+    else:
+        subset_interval = pd.date_range(start=timeinterval[0],end=timeinterval[-1],freq='D')
+        strfmt = '%Y%m%d'
+    for i in subset_interval:
+        fst = fnmatch.filter(all_files,'*MOP*-{}*'.format(i.strftime(strfmt)))
+        fst.sort()
+        for j in fst:
+            interval_files.append(j)
+    print(interval_files)
+    return interval_files
+
 def subset_MODIS_l2(file_path,timeinterval):
     '''Dependent on filenaming convention
        MOD04_L2.AYYYYDDD.HHMM.collection.timestamp.hdf

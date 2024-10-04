@@ -271,7 +271,7 @@ class observation:
                 else: flst = self.file
 
                 self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
-                
+
                 # couple of changes to move to reader
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
                 self.obj = self.obj.sortby('time') # enforce time in order. 
@@ -279,10 +279,14 @@ class observation:
                 # additional development to deal with files crossing intervals needed (eg situtations where orbit start at 23hrs, ends next day).
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
-                    
+
             elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
-                self.obj = mio.sat._mopitt_l3_mm.open_dataset(self.file, ['column','pressure_surf','apriori_col',
+                if time_interval is not None:
+                    flst = tsub.subset_mopitt_l3(self.file,time_interval)
+                else: flst = self.file
+                print(flst)
+                self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
@@ -601,10 +605,18 @@ class model:
                 self.mod_kwargs.update({"var_list": list_input_var})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
-                if len(self.files) > 1:
-                    self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                if time_interval is not None:
+                    # fill filelist with subset
+                    print('subsetting model files to interval')
+                    file_list = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%HZ','6H',time_interval)
                 else:
-                    self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
+                    file_list = self.files
+                #print(file_list)
+                if len(file_list) > 1:
+                    self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
+                else:
+                    self.obj = mio.models.raqms.open_dataset(file_list)
+                print('RAQMS files loaded')
             else:
                 print('**** Reading Unspecified model output. Take Caution...')
                 if len(self.files) > 1:
