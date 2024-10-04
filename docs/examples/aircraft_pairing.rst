@@ -93,7 +93,7 @@ All of the examples referred to below can be found in the
 
 You can select the resampling time window. For testing purposes you can choose 
 600 s and only pair 1--2 flight days to reduce memory constraints and run a 
-jupyter notebook. This Jupyter notebook 
+Jupyter notebook. This Jupyter notebook 
 ``examples/jupyter_notebooks/AEROMMA_UFS-AQM_Aircraft_Pairing.ipynb``
 pairs `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_ observational data with 
 the UFS-AQM model with a long resampling window of 600 s for testing purposes. This 
