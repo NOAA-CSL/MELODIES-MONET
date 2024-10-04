@@ -116,8 +116,8 @@ python script calls this YAML file ``examples/yaml/control_aircraft_looping_AERO
 which describes how to perform the analysis. This supplementary YAML file 
 ``examples/yaml/supplementary_yaml/supplementary_aircraft_looping_file_pairs_AEROMMA_UFSAQM-submit.yaml``,
 is called to describe which observations and model data files should be combined.
-This bash script ``examples/submit_jobs/submit_hera_aircraft_AEROMMA.sh`` is an example for 
-how to run this python script on Hera (NOAA's HPC) and can be easily adapted to other computers as well.
+This Bash script ``examples/submit_jobs/submit_hera_aircraft_AEROMMA.sh`` is an example for 
+how to run this Python script on Hera (NOAA's HPC) and can be easily adapted to other computers as well.
 
 
 Steps for Pairing Procedure
