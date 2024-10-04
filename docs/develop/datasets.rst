@@ -37,7 +37,7 @@ Standard variables are required to be computed in each model reader for each cap
      - | time
        | latitude
        | longitude
-     - | Time in datetime64[ns] format
+     - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
      - | Provide only surface model data 
