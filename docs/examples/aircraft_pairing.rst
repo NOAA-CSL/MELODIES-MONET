@@ -109,7 +109,7 @@ observational data with the UFS-AQM model and runs on the NOAA Hera HPC system. 
 for pairing aircraft data is much faster, so this is the recommended approach except for testing 
 or debugging.
 
-This python script ``examples/submit_jobs/run_aircraft_pairing_loop_AEROMMA.py`` 
+This Python script ``examples/submit_jobs/run_aircraft_pairing_loop_AEROMMA.py`` 
 pairs `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_ observational data with 
 the UFS-AQM model with a short resampling window of 30 s for full analysis. This 
 python script calls this YAML file ``examples/yaml/control_aircraft_looping_AEROMMA_UFSAQM-submit.yaml``,
