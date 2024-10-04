@@ -32,7 +32,7 @@ def cal_model_no2columns(modobj):
     no2    = modobj['no2']
     tb     = modobj['temperature_k']
     pb2    = modobj['pres_pa_mid'] # time,z,y,x
-    zh     = modobj['zstag'] # time, bottom_up_stag, y,x
+    dzh    = modobj['dz_m'] # time,z,y,x, the model layer thickness 
     time   = modobj.coords['time']
     modlon = modobj.coords['longitude']
 
@@ -71,7 +71,7 @@ def cal_model_no2columns(modobj):
     for vl in range(nz):
         ad = pb2[:,vl,:,:] * (28.97e-3)/(8.314*tb[:,vl,:,:])
         #zh = ((ph[:,vl+1,:,:] + phb[:,vl+1,:,:]) - (ph[:,vl,:,:]+phb[:,vl,:,:]))/9.81
-        value[:,:,:]= no2[:,vl,:,:]*(zh[:,vl+1,:,:] - zh[:,vl,:,:])*6.022e23/(28.97e-3)*1e-10*ad[:,:,:] # timex y x x
+        value[:,:,:]= no2[:,vl,:,:]*dzh[:,vl,:,:]*6.022e23/(28.97e-3)*1e-10*ad[:,:,:] # timex y x x
         no2col[:,vl,:,:] = value[:,:,:]
 
     # add to model
