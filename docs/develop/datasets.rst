@@ -34,9 +34,9 @@ Standard variables are required to be computed in each model reader for each cap
      - Description
      - Additional Requirements
    * - Surface
-     - | time
-       | latitude
-       | longitude
+     - | ``time``
+       | ``latitude``
+       | ``longitude``
      - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
@@ -55,24 +55,24 @@ Standard variables are required to be computed in each model reader for each cap
      - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
-       | Mid-level pressure in pascals
-       | Mid-level temperature in Kelvin
+       | Mid-level pressure in pascals (Pa)
+       | Mid-level temperature in kelvin (K)
      - | Provide vertical model data. 
        | All gases are in ppb and 
        | all aerosols are in µg/m3.
    * - Satellites
-     - | time
-       | latitude
-       | longitude
-       | pres_pa_mid
-       | temperature_k
-       | dz_m
-       | surfpres_pa
+     - | ``time``
+       | ``latitude``
+       | ``longitude``
+       | ``pres_pa_mid``
+       | ``temperature_k``
+       | ``dz_m``
+       | ``surfpres_pa``
      - | Time in ``datetime64[ns]`` format
        | Latitude in degrees
        | Longitude in degrees
-       | Mid-level pressure in pascals
-       | Mid-level temperature in Kelvin
-       | Layer thickness in meters
-       | Surface pressure in pascals
+       | Mid-level pressure in pascals (Pa)
+       | Mid-level temperature in kelvin (K)
+       | Layer thickness in meters (m)
+       | Surface pressure in pascals (Pa)
      - | Provide vertical model data.
