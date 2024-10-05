@@ -54,46 +54,46 @@ def time_average(dset, varname=None, period="1D", time_offset=None):
     return daily
 
 
-def calc_default_colors(p_index):
-    """List of default colors, lines, and markers to use if user does not
-    specify them in the input yaml file.
+# def calc_default_colors(p_index):
+#     """List of default colors, lines, and markers to use if user does not
+#     specify them in the input yaml file.
+#
+#     Parameters
+#     ----------
+#     p_index : integer
+#         Number of pairs in analysis class
+#
+#     Returns
+#     -------
+#     list
+#         List of dictionaries containing default colors, lines, and
+#         markers to use for plotting for the number of pairs in analysis class
+#
+#     """
+#     x = [
+#         dict(color="b", linestyle="--", marker="x"),
+#         dict(color="g", linestyle="-.", marker="o"),
+#         dict(color="r", linestyle=":", marker="v"),
+#         dict(color="c", linestyle="--", marker="^"),
+#         dict(color="m", linestyle="-.", marker="s"),
+#     ]
+#     # Repeat these 5 instances over and over if more than 5 lines.
+#     return x[p_index % 5]
 
-    Parameters
-    ----------
-    p_index : integer
-        Number of pairs in analysis class
 
-    Returns
-    -------
-    list
-        List of dictionaries containing default colors, lines, and
-        markers to use for plotting for the number of pairs in analysis class
-
-    """
-    x = [
-        dict(color="b", linestyle="--", marker="x"),
-        dict(color="g", linestyle="-.", marker="o"),
-        dict(color="r", linestyle=":", marker="v"),
-        dict(color="c", linestyle="--", marker="^"),
-        dict(color="m", linestyle="-.", marker="s"),
-    ]
-    # Repeat these 5 instances over and over if more than 5 lines.
-    return x[p_index % 5]
-
-
-def new_color_map():
-    """Creates new color map for difference plots
-
-    Returns
-    -------
-    colormap
-        Orange and blue color map
-
-    """
-    top = mpl.cm.get_cmap("Blues_r", 128)
-    bottom = mpl.cm.get_cmap("Oranges", 128)
-    newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
-    return ListedColormap(newcolors, name="OrangeBlue")
+# def new_color_map():
+#     """Creates new color map for difference plots
+#
+#     Returns
+#     -------
+#     colormap
+#         Orange and blue color map
+#
+#     """
+#     top = mpl.cm.get_cmap("Blues_r", 128)
+#     bottom = mpl.cm.get_cmap("Oranges", 128)
+#     newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
+#     return ListedColormap(newcolors, name="OrangeBlue")
 
 
 def map_projection(f):
@@ -113,9 +113,7 @@ def map_projection(f):
     import cartopy.crs as ccrs
 
     if f.model.lower() == "cmaq":
-        proj = ccrs.LambertConformal(
-            central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT
-        )
+        proj = ccrs.LambertConformal(central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)
     elif f.model.lower() == "wrfchem" or f.model.lower() == "rapchem":
         if f.obj.MAP_PROJ == 1:
             proj = ccrs.LambertConformal(
@@ -149,7 +147,7 @@ def make_timeseries(
     varname=None,
     label=None,
     ax=None,
-    avg_window='h',
+    avg_window="h",
     ylabel=None,
     vmin=None,
     vmax=None,
@@ -229,9 +227,7 @@ def make_timeseries(
     # Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None:
         # First define the colors for the observations.
-        obs_dict = dict(
-            color="k", linestyle="-", marker="*", linewidth=1.2, markersize=6.0
-        )
+        obs_dict = dict(color="k", linestyle="-", marker="*", linewidth=1.2, markersize=6.0)
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the obs_dict here.
             plot_kwargs = {**obs_dict, **plot_dict}
@@ -257,9 +253,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[varname].resample(time=avg_window).mean().mean(
-                dim=("y", "x")
-            ).plot.line(
+            dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -273,9 +267,7 @@ def make_timeseries(
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
-        mod_dict = dict(
-            color=None, linestyle="-", marker="*", linewidth=1.2, markersize=6.0
-        )
+        mod_dict = dict(color=None, linestyle="-", marker="*", linewidth=1.2, markersize=6.0)
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the mod_dict here.
             plot_kwargs = {**mod_dict, **plot_dict}
@@ -293,9 +285,7 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[varname].resample(time=avg_window).mean().mean(
-                dim=("y", "x")
-            ).plot.line(
+            dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -343,6 +333,7 @@ def make_taylor(
     text_dict=None,
     debug=False,
     normalize=False,
+    scale_factor=1,
 ):
     """Creates taylor plot. Note sometimes model values are off the scale
     on this plot. This will be fixed soon.
@@ -392,21 +383,22 @@ def make_taylor(
         Taylor diagram class defined in MONET
 
     """
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
-    if mean_criteria == 'space':
-        dset_forplot = dset.mean(dim=('x', 'y'))
-    elif mean_criteria == 'time':
-        dset_forplot = dset.mean(dim='time')
+    if mean_criteria == "space":
+        dset_forplot = dset.mean(dim=("x", "y"))
+    elif mean_criteria == "time":
+        dset_forplot = dset.mean(dim="time")
     else:
         dset_forplot = dset
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
-    nan_ind = (~np.isnan(dset_forplot[varname_o].values)) & (~np.isnan(dset_forplot[varname_m].values))
+    nan_ind = (~np.isnan(dset_forplot[varname_o].values)) & (
+        ~np.isnan(dset_forplot[varname_m].values)
+    )
     # First define items for all plots
     if not debug:
         plt.ioff()
-
 
     # set default text size
     def_text = dict(fontsize=14.0)
@@ -434,10 +426,20 @@ def make_taylor(
         )[0, 1]
         print(cc)
         if normalize:
+            scale_factor = refstd
             dia = td(1, scale=ty_scale, fig=f, rect=111, label=label_o)
             dia.add_sample(
-                dset_forplot[varname_m].std().values / refstd, cc, zorder=9, label=label_m, **plot_dict
+                dset_forplot[varname_m].std().values / scale_factor,
+                cc,
+                zorder=9,
+                label=label_m,
+                **plot_dict,
             )
+        elif scale_factor != 1:
+            dset_forplot[varname_m].attrs[
+                "units"
+            ] = f"{scale_factor} {dset_forplot[varname_m].attrs['units']}"
+
         else:
             dia = td(refstd, scale=ty_scale, fig=f, rect=111, label=label_o)
             dia.add_sample(
@@ -454,7 +456,11 @@ def make_taylor(
         )[0, 1]
         if normalize:
             dia.add_sample(
-                dset_forplot[varname_m].std().values / refstd, cc, zorder=9, label=label_m, **plot_dict
+                dset_forplot[varname_m].std().values / refstd,
+                cc,
+                zorder=9,
+                label=label_m,
+                **plot_dict,
             )
 
         else:
@@ -465,9 +471,7 @@ def make_taylor(
     contours = dia.add_contours(colors="0.5")
     # control the clabel format for very high values (e.g., NO2 columns), M.Li
     # plt.clabel(contours, inline=1, fontsize=text_kwargs['fontsize']*0.8)
-    plt.clabel(
-        contours, inline=1, fontsize=text_kwargs["fontsize"] * 0.8, fmt="(%1.5g)"
-    )
+    plt.clabel(contours, inline=1, fontsize=text_kwargs["fontsize"] * 0.8, fmt="(%1.5g)")
 
     plt.grid(alpha=0.5)
     plt.legend(
@@ -481,7 +485,6 @@ def make_taylor(
             plt.title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
         else:
             plt.title(domain_name, fontweight="bold", **text_kwargs)
-    
 
     ax = plt.gca()
     ax.axis["left"].label.set_text("Standard Deviation: " + ylabel)
@@ -496,7 +499,7 @@ def make_taylor(
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["left"].major_ticklabels.set_axis_direction("bottom")
     ax.axis["right"].major_ticklabels.set_axis_direction("left")
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     return dia
 
 
@@ -535,9 +538,7 @@ def calculate_boxplot(
         comb_bx = pd.DataFrame()
         label_bx = []
         # First define the colors for the observations.
-        obs_dict = dict(
-            color="gray", linestyle="-", marker="x", linewidth=1.2, markersize=6.0
-        )
+        obs_dict = dict(color="gray", linestyle="-", marker="x", linewidth=1.2, markersize=6.0)
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the obs_dict here.
             plot_kwargs = {**obs_dict, **plot_dict}
@@ -548,7 +549,7 @@ def calculate_boxplot(
     # For all, a column to the dataframe and append the label info to the list.
     plot_kwargs["varname"] = varname
     plot_kwargs["label"] = label
-    comb_bx[label] = dset[varname].mean(dim=('x', 'y')).to_dataframe()
+    comb_bx[label] = dset[varname].mean(dim=("x", "y")).to_dataframe()
     label_bx.append(plot_kwargs)
 
     return comb_bx, label_bx
@@ -617,7 +618,7 @@ def make_boxplot(
         text_kwargs = def_text
     # set ylabel to column if not specified.
     if ylabel is None:
-        ylabel = label_bx[0]['label']
+        ylabel = label_bx[0]["label"]
 
     # Fix the order and palate colors
     order_box = []
@@ -656,7 +657,9 @@ def make_boxplot(
     }
     sns.set_style("whitegrid")
     sns.set_style("ticks")
-    sns.boxplot(ax=ax, x="variable", y="value", hue="variable", data=pd.melt(comb_bx), **boxplot_kwargs)
+    sns.boxplot(
+        ax=ax, x="variable", y="value", hue="variable", data=pd.melt(comb_bx), **boxplot_kwargs
+    )
     ax.set_xlabel("")
     ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
     ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
@@ -701,12 +704,12 @@ def make_spatial_bias_gridded(
     """Creates difference plot for satellite and model data.
     For data in swath format, overplots all differences
     For data on regular grid, mean difference.
-    
+
     Parameters
     ----------
     dset : xr.Dataset
         Dataset containing the paired data
-    
+
     """
     if debug == False:
         plt.ioff()
@@ -743,9 +746,7 @@ def make_spatial_bias_gridded(
         lonmax = -60.0
         title_add = domain_name + ": "
     elif domain_type == "epa_region" and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(
-            index=None, acronym=domain_name
-        )
+        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
         title_add = "EPA Region " + domain_name + ": "
     else:
         latmin = -90
@@ -782,7 +783,9 @@ def make_spatial_bias_gridded(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = monet.plots.mapgen.draw_map(crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True)
+    ax = monet.plots.mapgen.draw_map(
+        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True
+    )
     # draw scatter plot of model and satellite differences
     c = ax.axes.scatter(
         dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
