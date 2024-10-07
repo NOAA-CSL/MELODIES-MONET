@@ -140,11 +140,10 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
     mod_col_obsgrid = grid_adjust(column)
     # Aggregate time-step to daily means
-    daily_mean = mod_col_obsgrid.groupby('time.date').mean(numeric_only=True).compute()
-    
+    daily_mean = mod_col_obsgrid.resample(time='1D').mean()
     # change dimension name for date to time
-    daily_mean = daily_mean.rename({'date':'time'})
     daily_mean = daily_mean.rename(ozone_ppbv_varname)
+
     return xr.merge([daily_mean,obs_data])
 
 def space_and_time_pairing(model_data,obs_data,pair_variables):
