@@ -21,7 +21,7 @@ else:
     ish_reachable = True
 
 try:
-    r = requests.head("https://www1.ncdc.noaa.gov/pub/data/noaa/isd-lite/")
+    requests.head("https://www1.ncdc.noaa.gov/pub/data/noaa/isd-lite/")
 except Exception:
     ish_lite_reachable = False
 else:
