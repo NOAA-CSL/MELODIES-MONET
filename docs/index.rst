@@ -78,9 +78,9 @@ MONETIO please refer to:
    examples/intro_examples
    examples/tutorial-data
    examples/airnow_wrfchem
+   examples/airnow_wrfchem_reg
    examples/airnow_camchem_se
    examples/camchem
-   examples/airnow_wrfchem_reg
    examples/idealized
    examples/save_paired_data
    examples/read_paired_data
