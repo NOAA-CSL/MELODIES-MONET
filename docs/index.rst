@@ -78,6 +78,7 @@ MONETIO please refer to:
    examples/intro_examples
    examples/tutorial-data
    examples/airnow_wrfchem
+   examples/airnow_wrfchem_reg
    examples/airnow_camchem_se
    examples/camchem
    examples/idealized
