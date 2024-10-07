@@ -7,9 +7,25 @@ Check for consistency with the tutorial datasets and that options work.
 import subprocess
 
 import numpy as np
+import pytest
+import requests
 import xarray as xr
 
 from melodies_monet.tutorial import fetch_example
+
+try:
+    requests.head("https://www1.ncdc.noaa.gov/pub/data/noaa/")
+except Exception:
+    ish_reachable = False
+else:
+    ish_reachable = True
+
+try:
+    r = requests.head("https://www1.ncdc.noaa.gov/pub/data/noaa/isd-lite/")
+except Exception:
+    ish_lite_reachable = False
+else:
+    ish_lite_reachable = True
 
 ds0_aeronet = xr.open_dataset(fetch_example("aeronet:2019-09"))
 ds0_airnow = xr.open_dataset(fetch_example("airnow:2019-09"))
@@ -84,6 +100,7 @@ def test_get_airnow_comp(tmp_path):
         assert (np.abs(ds[vn] - ds0[vn]).to_series().dropna() < 3e-7).all()
 
 
+@pytest.mark.xfail(not ish_lite_reachable, reason="data not reachable")
 def test_get_ish_lite_box(tmp_path):
     fn = "x.nc"
     cmd = [
@@ -100,6 +117,7 @@ def test_get_ish_lite_box(tmp_path):
     assert np.unique(ds.state) == ["CO"]
 
 
+@pytest.mark.xfail(not ish_reachable, reason="data not reachable")
 def test_get_ish_box(tmp_path):
     fn = "x.nc"
     cmd = [
