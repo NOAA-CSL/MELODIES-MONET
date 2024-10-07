@@ -185,7 +185,7 @@ Generalizing this to include other surface observations is under development.
 **filename:**  The file directory location and name. These observations need 
 to be preprocessed prior to incorporating them into MELODIES MONET.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
-See :doc:`../tutorial/downloading_obs` for more details.
+See :doc:`../getting_started/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
@@ -231,7 +231,7 @@ nan_values are set to NaN first and then the unit conversion is applied.
      (in %) is used to calculate the percentile (e.g., 5, 50, 95). Currently only
      used for "spatial_bias" plots. Will work with data as is and regulatory metrics.
    * **regulatory:** If false (default), use data as is. If set to true, the
-     regulatory metric is calculated as explained under :doc:`/background/supported_analyses`.
+     regulatory metric is calculated as explained under :doc:`/users_guide/supported_diagnostics`.
      Only works for "OZONE" and "PM2.5" variables.
    * **ylabel_reg_plot:** String to use as ylabel in plot for regulatory calculation.
      Useful for adding units or instrument information. Only used if regulatory = True.
@@ -276,7 +276,7 @@ Plots
 -----
 All input for each plotting group. A plotting group consists of one plotting 
 type. The plotting types are described in 
-:doc:`/background/supported_plots`. All model /
+:doc:`/users_guide/supported_plots`. All model /
 observational pairs and domains specified for the plotting group will be 
 included. You may include as many plotting groups as you like.
 
@@ -317,6 +317,10 @@ For example, ::
 **domain_type:** List of domain types to be plotted. These correspond with
 the columns in the observation file. (e.g., airnow: epa_region, state_name, 
 siteid, etc.).
+For automatic EPA or Giorgi region boxes (if they are not included
+with the columns in the observation file), choose ``auto-region:epa`` or
+``auto-region:giorgi``. Take into account that ``auto-region:epa`` is only a rough
+approximation, since it assumes perfect, rectangular lonlat boxes.
 
 **domain_name:** List of domain names to be plotted. If domain_type = all, all 
 data will be used and the domain_name is used only in the plot title. If 
@@ -397,7 +401,7 @@ Stats
 -----
 All input needed to calculate the statistics. The supported statistics available 
 in MELODIES MONET are described in 
-:doc:`/background/supported_stats`. All model /
+:doc:`/users_guide/supported_stats`. All model /
 observational pairs and domains specified will be included. You may include as 
 many statistics as you like. Note however that the calculation of the statistics 
 is relatively slow right now. Optimizing this code is under development.
@@ -407,7 +411,7 @@ use Kelvin. Wind direction has special calculations for AirNow if the observatio
 name is 'WD'. 
 
 **stat_list:** List of acronyms of statistics to calculate as defined in 
-:doc:`/background/supported_stats`. (e.g., ['MB', 'MdnB',
+:doc:`/users_guide/supported_stats`. (e.g., ['MB', 'MdnB',
 'NMB', 'NMdnB','R2', 'RMSE']). A dictionary of definitions is also included in 
 MELODIES-MONET/melodies_monet/stats/proc_stats.py. 
 

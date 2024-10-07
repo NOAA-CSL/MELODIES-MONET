@@ -1,5 +1,0 @@
-Time Chunking
-================
-
-Time chunking
-

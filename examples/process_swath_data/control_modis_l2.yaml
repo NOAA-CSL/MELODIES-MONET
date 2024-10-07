@@ -1,0 +1,57 @@
+analysis:
+  # 2020 September 9 - September 11 253 - 255
+  start_time: '2020-09-09'
+  end_time:   '2020-09-12'
+  time_interval: '24h'
+  output_dir: $HOME/Plots
+  debug: True
+  regrid: True
+  target_grid: obs_grid
+
+obs_grid:
+  start_time: '2020-09-09'
+  end_time:   '2020-09-12'
+  ntime: 72
+  nlat: 180
+  nlon: 360
+
+obs:
+  Terra_MODIS:
+    # MOD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
+    debug: False
+    obs_type: 'sat_swath_clm'
+    sat_type: 'modis_l2'
+    filename: $HOME/Data/MODIS/Terra/C61/2020/*/MOD04_L2.*.hdf
+    variables:
+      AOD_550_Dark_Target_Deep_Blue_Combined:
+        minimum: 0.0
+        maximum: 10.0
+        scale: 0.001
+        units: none
+
+  Aqua_MODIS:
+    # MYD04_L2.AYYYYDDD.HHMM.0XX.timestamp.hdf
+    debug: False
+    obs_type: 'sat_swath_clm'
+    sat_type: 'modis_l2'
+    filename: $HOME/Data/MODIS/Aqua/C61/2020/*/MYD04_L2.*.hdf
+    variables:
+      AOD_550_Dark_Target_Deep_Blue_Combined:
+        minimum: 0.0
+        maximum: 10.0
+        scale: 0.001
+        units: none
+
+model:
+  MERRA2:
+    mod_type: reanalysis
+    files: $HOME/Data/MERRA2/tavg1_2d_aer_Nx/*nc4
+    regrid:
+      base_grid: $HOME/Data/Grids/merra2_grid.nc
+      method: bilinear
+    mapping:
+      Terra_MODIS:
+        TOTEXTTAU: AOD_550_Dark_Target_Deep_Blue_Combined
+      Aqua_MODIS:
+        TOTEXTTAU: AOD_550_Dark_Target_Deep_Blue_Combined
+
