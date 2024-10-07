@@ -1,0 +1,235 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: '2023-06-27-00:00:00' #UTC
+  end_time: '2023-06-28-23:59:00' #UTC
+  output_dir: ./output/aeromma_ufsaqm # relative to the program using this control file
+  debug: True
+  read:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          filenames: {'aeromma_ufsaqm':['example:ufsaqm:merge_0627_L1',
+          'example:ufsaqm:merge_0627_L2',
+          'example:ufsaqm:merge_0628_L1']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}  Any wildcards will be expanded
+          # filenames: {'airnow_wrfchem_v4.2':['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}
+          # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
+      # models:
+      # obs:
+model:
+  ufsaqm: # model label
+    files: example:ufsaqm:model_data
+    mod_type: 'rrfs'
+    radius_of_influence: 19500 #meters
+    mapping: #model species name : obs species name
+      aeromma:
+        no2_ave: NO2_LIF
+        no_ave: NO_LIF
+        o3_ave: O3_CL
+        co: CO_LGR
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'temperature_k':
+            rename: temp_model # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+    projection: null
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: '^'
+      linestyle: ':' 
+obs:
+  aeromma: # obs label
+    filename: example:ufsaqm:AEROMMA
+    obs_type: aircraft
+    time_var: Time_Start
+    resample: '30s' 
+    variables: #Opt 
+      'O3_CL':
+        unit_scale: 1 #Opt Scaling factor 
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'O3 (ppbv)'
+      'NO_LIF':
+        unit_scale: 1000. #Opt Scaling factor 
+        unit_scale_method: '/' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO (ppbv)'
+      'NO2_LIF':
+        unit_scale: 1000. #Opt Scaling factor 
+        unit_scale_method: '/' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO2 (ppbv)'
+      'CO_LGR':
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'CO (ppbv)'
+      'G_LAT':
+            rename: latitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'G_LONG':
+            rename: longitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'PW':
+            rename: pressure_obs # name to convert this variable to
+            unit_scale: 100 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'TW':
+            rename: temp_obs # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'G_ALT':
+          rename: altitude # name to convert this variable to
+          unit_scale: 1 #Opt Scaling factor 
+          unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'Time_Start':
+            rename: time # name to convert this variable to
+
+plots:
+  plot_grp1:
+    type: 'timeseries' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 5.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      #See 'altitde_yax2' list below for secondary y-axis options
+      #altitude_variable: altitude  
+      #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      #ts_avg_window: #'h' # pandas resample rule (e.g., 'h', 'D'). No averaging is done if ts_avg_window is null or not specified.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      #vmin2, vmax2 filter not needed as filter_dict option added in 'altitude_yax2' to subset the paireddf as per altitude secondary-axis limits
+      #vmin2: #0  #Optional
+      #vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
+      altitude_yax2:
+        altitude_variable: altitude
+        altitude_ticks: 1000
+        ylabel2: Altitude (m)
+        plot_kwargs_y2:
+          color: g
+        altitude_unit: m
+        altitude_scaling_factor: 1
+        #filter_dict: #Default is min and max if filter_dict doesn't define the options below (or if they are commented out)
+        #  altitude:
+        #    oper: "between"
+        #    value: [2000,8000] # values are [vmin_y2, vmax_y2] 
+  plot_grp2:
+    type: 'vertprofile'  # plot type
+    fig_kwargs:  # Opt to define figure options
+      figsize: [10, 14]  # figure size
+    default_plot_kwargs:  # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:  # Opt
+      fontsize: 18.
+    domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ['Los Angeles']  # List of domain names. If domain_type = all, domain_name is used in plot title.
+    data: ['aeromma_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
+      interquartile_style: 'shading' # or 'box'
+    #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
+    altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
+    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
+    vertprofile_bins: [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000] # meters
+    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
+    vmin: #0  #Optional
+    vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+  plot_grp3:
+    type: 'violin'
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 25.
+    domain_type: ['all']
+    domain_name: ['Los Angeles']
+    data: ['aeromma_ufsaqm']
+    data_proc:
+      rem_obs_nan: True 
+      set_axis: False   
+  plot_grp4:
+    type: 'scatter_density'
+    fig_kwargs:
+      figsize: [10, 10]
+    default_plot_kwargs:
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ['all']
+    domain_name: ['Los Angeles']
+    data: ['aeromma_ufsaqm']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False #True
+      vmin_x: #0
+      vmax_x: #100
+      vmin_y: #0
+      vmax_y: #100
+    color_map: #'RdBu_r' # Default Colormap for the density plot can be used. Options include:
+                        # 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+                        # 'jet', 'hot', 'cool', 'spring', 'summer', 'autumn', 'winter',
+                        # 'RdBu_r', 'seismic', 'coolwarm',
+                        # 'Blues', 'BuGn', 'YlOrRd', 'Greys'
+        #To use a custom colormap: Use the following options otherwise use the above default color_map(s) AND COMMENT THESE
+        colors: ['royalblue', 'cyan', 'yellow', 'orange']
+        over: 'red'
+        under: 'blue'
+    xlabel: 'Model'
+    ylabel: 'Observation'
+    title: 'Scatter Density Plot'
+    fill: True #True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
+    shade_lowest: True #False      # Set to True if you want to shade the lowest contour (if fill=TRUE for KDE plots)
+    # Add other seaborn.kdeplot keyword arguments here as needed
+    vcenter: #0  # Central value for TwoSlopeNorm
+    extensions: ['min', 'max']  # Extensions for the colorbar  
+  plot_grp5:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add ty_scale for each variable in obs.
+  plot_grp6:
+    type: 'boxplot' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 6] # figure size 
+    text_kwargs: #Opt
+      fontsize: 20.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.

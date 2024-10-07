@@ -188,7 +188,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             tamf_org   = obsobj[days][ns]['air_mass_factor_troposphere']
             amf_total  = obsobj[days][ns]['air_mass_factor_total']
             troppres   = obsobj[days][ns]['troppres'] # TM5 tropopause pressure, Pa 
-            tpreslev   = obsobj[days][ns]['preslev']
+            tpreslev   = obsobj[days][ns]['preslev'] # z,y,x
             scatwts    = obsobj[days][ns]['averaging_kernel']
 
             nysat, nxsat, nzsat = scatwts.shape
@@ -201,7 +201,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             wrfpres[:,:,:] =  np.nan 
             wrfno2         =  np.zeros([nysat, nxsat, nz], dtype = np.float32)
             wrfno2[:,:,:]  =  np.nan
-            modvalue_pb2   =  np.nanmean(modobj_tm['PB2'].values, axis = 0)
+            modvalue_pb2   =  np.nanmean(modobj_tm['pres_pa_mid'].values, axis = 0)
             modvalue_no2   =  np.nanmean(modobj_tm['no2col'].values, axis = 0)
 
             for l in range(nz):
@@ -261,7 +261,8 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     from scipy import interpolate
 
     nsaty, nsatx, nz    = wrfpreslayer.shape
-    nsaty, nsatx, nsatz = tpreslev.shape
+    nsatz, nsaty, nsatx = tpreslev.shape # mli, update to new dimension
+
 
     nume             = np.zeros([nsaty, nsatx], dtype=np.float32)
     deno             = np.zeros([nsaty, nsatx], dtype=np.float32)
@@ -276,7 +277,7 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     
     
     # set the surface pressure to wrf one
-    tpreslev[:,:,0] = wrfpreslayer[:,:,0] 
+    tpreslev[0,:,:] = wrfpreslayer[:,:,0] 
 
     # relationship between pressure to avk
     tpreslev = tpreslev.values 
@@ -294,7 +295,7 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     for llb in range(len(lb[0])):
         yy = lb[0][llb]
         xx = lb[1][llb]
-        vertical_pres = tpreslev[yy,xx,:]
+        vertical_pres = tpreslev[:,yy,xx] # mli, update to new dimension
         vertical_scatw = scatw[yy,xx,:]
         vertical_wrfp = wrfpreslayer[yy,xx,:]
 

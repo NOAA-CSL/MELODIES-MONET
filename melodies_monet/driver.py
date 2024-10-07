@@ -1343,7 +1343,10 @@ class analysis:
                         from .util import cal_mod_no2col as mutil
 
                         # calculate model no2 trop. columns. M.Li
-                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        # to fix the "time" duplicate error
+                        model_obj = mod.obj
+                        model_obj = model_obj.rename_dims({'time':'t'})
+                        model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         if mod.apply_ak == True:
@@ -1441,7 +1444,7 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify
+        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1615,7 +1618,27 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            if domain_type.startswith("auto-region"):
+                                _, auto_region_id = domain_type.split(":")
+                                if auto_region_id == 'epa':
+                                    bounds = get_epa_region_bounds(acronym=domain_name)
+                                elif auto_region_id == 'giorgi':
+                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
+                                else:
+                                    raise ValueError(
+                                        "Currently, region selections whithout a domain query have only "
+                                        "been implemented for Giorgi and EPA regions. You asked for "
+                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
+                                        "others will be included."
+                                    )
+                                pairdf_all = pairdf_all.loc[
+                                                (pairdf_all["latitude"] > bounds[0])
+                                                & (pairdf_all["longitude"] > bounds[1])
+                                                & (pairdf_all["latitude"] < bounds[2])
+                                                & (pairdf_all["longitude"] < bounds[3])
+                                             ]
+                            else:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
@@ -1694,7 +1717,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 
@@ -1769,7 +1792,8 @@ class analysis:
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
                             elif filter_criteria is None:
-                                if 'altitude' in pairdf.keys():
+
+                                if 'altitude' in pairdf:
                                     vmin_y2 = pairdf['altitude'].min()
                                     vmax_y2 = pairdf['altitude'].max()
                                 else:
@@ -2756,7 +2780,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 

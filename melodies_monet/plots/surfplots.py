@@ -70,7 +70,7 @@ def calc_8hr_rolling_max_v1(df, col=None, window=None):
     df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean(numeric_only=True).reset_index().dropna()
     # JianHe: select sites with nobs >=18, 75% completeness based on EPA
     df_rolling.index = df_rolling.time_local
-    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18, numeric_only=True).reset_index(drop=True).dropna()
+    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18, numeric_only=True).reset_index().dropna()
     df = df.reset_index(drop=True)
     return df.merge(df_rolling_max, on=["siteid", "time_local"])
 

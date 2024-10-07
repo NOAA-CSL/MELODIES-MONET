@@ -22,6 +22,14 @@ _examples = {
             "example_model_data/wrfchem_example/racm_esrl_vcp/wrfout_d01_tutorial",
             "sha256:67e0f126031dba9775a1baaeec377d04144da66d040fd27909e418c3be31a0f9",
         ),
+        "racm_esrl_reg": (
+            "example_model_data/wrfchem_example/racm_esrl/tutorial_reg_racm_esrl.nc",
+            "sha256:31fda3e8c1bbf70ca83a17ec62b4644818f2280489e0dce80f2ebbce0d377227",
+        ),
+        "racm_esrl_vcp_reg": (
+            "example_model_data/wrfchem_example/racm_esrl_vcp/tutorial_reg_racm_esrl_vcp.nc",
+            "sha256:6750eabb110ef8a3ce6819788e16c1025d08ae993721d1e7474f0768928df802",
+        ),
     },
     "airnow": {
         "2019-09": (
@@ -51,6 +59,29 @@ _examples = {
             "sha256:890e1e98f52a5687c57cb15e52f481aa17c6b9eea2bf8e860cae2301697cc027",
         ),
     },
+    "ufsaqm": {
+        "merge_0627_L1": (
+            "example_model_data/ufsaqm_example/0627_L1_aeromma_ufsaqm.nc4",
+            "sha256:c0a0f9e09d0049063a51ab6de9e18aa3d11ef4f8eb2557b307fe12a9728924c5",
+        ),
+        "merge_0627_L2": (
+            "example_model_data/ufsaqm_example/0627_L2_aeromma_ufsaqm.nc4",
+            "sha256:01174c41b84740eca9cfe88806ce62268fe82fcff20e6b420d3e8f39406d853b",
+        ),
+        "merge_0628_L1": (
+            "example_model_data/ufsaqm_example/0628_L1_aeromma_ufsaqm.nc4",
+            "sha256:2711a2eb64a9136cb7e7853354db060e63a8e2ebae47345a74ee642ad485837d",
+        ),
+        "model_data": (
+            "example_model_data/ufsaqm_example/aqm.t12z.dyn.f001.nc",
+            "sha256:de8335f0280429088fc2874a21fb085d7f4ff5b7471e57d8b68a8ab383f907f9",
+        ),
+        "AEROMMA": (
+            "example_model_data/ufsaqm_example/short_AEROMMA-Merge_20230627_L1_20240410_1459.csv",
+            "sha256:81d60854f71eab73eed41b66f93ff6e2aeac4957ef955060c685ca9407845764",
+        ),   
+    },
+
     "aeronet": {
         "2019-09": (
             "example_observation_data/surface/AERONET_L15_20190901_20190930.nc",

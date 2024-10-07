@@ -26,26 +26,6 @@ via pull requests.
 Forks of the central repository should follow the same
 branching conventions.
 
-develop_aircraft
-________________
-The *develop_aircraft* branch is the place
-for adding new features related to aircraft observations.
-
-develop_satellite
-_________________
-The *develop_satellite* branch is intended
-for adding support for reading and processing
-satellite observations.
-This includes both gridded satellite data products
-and swath or geostationary disk data products.
-Sub-branches are sometimes created off of *develop_satellite*,
-such as *develop_satellite_swath*.
-
-develop_testsuite
-_________________
-The *develop_testsuite* branch holds modules
-under development for unit tests and regression tests.
-
 .. _dev-install-instructions:
 
 Setting up your development environment
