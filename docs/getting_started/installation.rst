@@ -30,9 +30,24 @@ General instructions
 --------------------
 
 If you are a user and are not planning to modify MELODIES MONET itself,
-installing it is relatively simple.
-The stable branch of MELODIES MONET (``main``) should always be compatible with the
+installing it is relatively simple. There are two methods available.
+
+Option 1) Using Conda
+^^^^^^^^^^^^^^^^^^^^^
+We have recently created a conda-forge release of MELODIES MONET to make installation very simple 
+with just 1 line of code below::
+
+    $ conda create --name melodies-monet -y -c conda-forge python=3.9 melodies-monet wrf-python jupyterlab
+
+.. note::
+   Currently, the wrf-python conda package is not compatible with Apple Silicon (Apple machines using Intel should be fine). If you need to run the WRF-Chem reader and only have access to a machine using Apple Silicon, you can try compiling it from source code from the official repos.
+
+Option 2) Using Conda and GitHub
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You are also welcome to install using our old method. The stable branch of MELODIES MONET (``main``) 
+should always be the same as the conda-forge release of MELODIES MONET and be compatible with the
 conda-forge releases of MONET/MONETIO.
+
 First create and activate a conda environment::
 
     $ conda create --name melodies-monet python=3.9
@@ -40,10 +55,7 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch
-
-.. note::
-   Currently, the wrf-python conda package is not compatible with Apple Silicon (Apple machines using Intel should be fine). If you need to run the WRF-Chem reader and only have access to a machine using Apple Silicon, you can try compiling it from souce code from the official repos.
+    $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
    
 Now, install the stable branch of MELODIES MONET to the environment::
 

@@ -242,7 +242,7 @@ class observation:
                         self.obj = self.obj.rename({v:d['rename']})
                         self.variable_dict[d['rename']] = self.variable_dict.pop(v)
 
-    def open_sat_obs(self,time_interval=None):
+    def open_sat_obs(self, time_interval=None, control_dict=None):
         """Methods to opens satellite data observations. 
         Uses in-house python code to open and load observations.
         Alternatively may use the satpy reader.
@@ -285,10 +285,15 @@ class observation:
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(self.file, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
-                from monetio import modis_l2
+                # from monetio import modis_l2
                 print('Reading MODIS L2')
-                self.obj = modis_l2.read_mfdataset(
-                    self.file, self.variable_dict, debug=self.debug)
+                flst = tsub.subset_MODIS_l2(self.file,time_interval)
+                # self.obj = mio.sat._modis_l2_mm.read_mfdataset(
+                #     self.file, self.variable_dict, debug=self.debug)
+                self.obj = mio.sat._modis_l2_mm.read_mfdataset(
+                    flst, self.variable_dict, debug=self.debug)
+                # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
+                #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == 'tropomi_l2_no2':
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
@@ -300,7 +305,7 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
-        
+
     def filter_obs(self):
         """Filter observations based on filter_dict.
         
@@ -715,6 +720,11 @@ class analysis:
         self.target_grid = None
         self.obs_regridders = None
         self.model_regridders = None
+        self.obs_grid = None
+        self.obs_edges = None
+        self.obs_gridded_data = {}
+        self.obs_gridded_count = {}
+        self.obs_gridded_dataset = None
 
     def __repr__(self):
         return (
@@ -883,8 +893,11 @@ class analysis:
         """
         from .util import regrid_util
         if self.regrid:
-            self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
-            self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
+            if self.target_grid == 'obs_grid':
+                self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model', target_grid=self.da_obs_grid)
+            else:
+                self.obs_regridders = regrid_util.setup_regridder(self.control_dict, config_group='obs')
+                self.model_regridders = regrid_util.setup_regridder(self.control_dict, config_group='model')
 
     def open_models(self, time_interval=None,load_files=True):
         """Open all models listed in the input yaml file and create a :class:`model` 
@@ -1025,11 +1038,91 @@ class analysis:
                 if load_files:
                     if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
-                        o.open_sat_obs(time_interval=time_interval)
+                        o.open_sat_obs(time_interval=time_interval, control_dict=self.control_dict)
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
 
+    def setup_obs_grid(self):
+        """
+        Setup a uniform observation grid.
+        """
+        from .util import grid_util
+        ntime = self.control_dict['obs_grid']['ntime']
+        nlat = self.control_dict['obs_grid']['nlat']
+        nlon = self.control_dict['obs_grid']['nlon']
+        self.obs_grid, self.obs_edges = grid_util.generate_uniform_grid(
+            self.control_dict['obs_grid']['start_time'],
+            self.control_dict['obs_grid']['end_time'],
+            ntime, nlat, nlon)
+
+        self.da_obs_grid = xr.DataArray(dims=['lon', 'lat'],
+            coords={'lon': self.obs_grid['longitude'],
+                    'lat': self.obs_grid['latitude']})
+        # print(self.da_obs_grid)
+
+        for obs in self.control_dict['obs']:
+            for var in self.control_dict['obs'][obs]['variables']:
+                print('initializing gridded data and counts ', obs, var)
+                self.obs_gridded_data[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.float32)
+                self.obs_gridded_count[obs + '_' + var] = np.zeros([ntime, nlon, nlat], dtype=np.int32)
+
+    def update_obs_gridded_data(self):
+        from .util import grid_util
+        """
+        Update observation grid cell values and counts,
+        for all observation datasets and parameters.
+        """
+        for obs in self.obs:
+            for obs_time in self.obs[obs].obj:
+                print('updating obs time: ', obs, obs_time)
+                obs_timestamp = pd.to_datetime(
+                    obs_time, format='%Y%j%H%M').timestamp()
+                # print(obs_timestamp)
+                for var in self.obs[obs].obj[obs_time]:
+                    key = obs + '_' + var
+                    print(key)
+                    n_obs = self.obs[obs].obj[obs_time][var].size
+                    grid_util.update_data_grid(
+                        self.obs_edges['time_edges'],
+                        self.obs_edges['lon_edges'],
+                        self.obs_edges['lat_edges'],
+                        np.full(n_obs, obs_timestamp, dtype=np.float32),
+                        self.obs[obs].obj[obs_time].coords['lon'].values.flatten(),
+                        self.obs[obs].obj[obs_time].coords['lat'].values.flatten(),
+                        self.obs[obs].obj[obs_time][var].values.flatten(),
+                        self.obs_gridded_count[key],
+                        self.obs_gridded_data[key])
+
+    def normalize_obs_gridded_data(self):
+        from .util import grid_util
+        """
+        Normalize observation grid cell values where counts is not zero.
+        Create data arrays for the obs_gridded_dataset dictionary.
+        """
+        self.obs_gridded_dataset = xr.Dataset()
+
+        for obs in self.obs:
+            for var in self.control_dict['obs'][obs]['variables']:
+                key = obs + '_' + var
+                print(key)
+                grid_util.normalize_data_grid(
+                    self.obs_gridded_count[key],
+                    self.obs_gridded_data[key])
+                da_data = xr.DataArray(
+                    self.obs_gridded_data[key],
+                    dims=['time', 'lon', 'lat'],
+                    coords={'time': self.obs_grid['time'],
+                            'lon': self.obs_grid['longitude'],
+                            'lat': self.obs_grid['latitude']})
+                da_count = xr.DataArray(
+                    self.obs_gridded_count[key],
+                    dims=['time', 'lon', 'lat'],
+                    coords={'time': self.obs_grid['time'],
+                            'lon': self.obs_grid['longitude'],
+                            'lat': self.obs_grid['latitude']})
+                self.obs_gridded_dataset[key + '_data'] = da_data
+                self.obs_gridded_dataset[key + '_count'] = da_count
 
     def pair_data(self, time_interval=None):
         """Pair all observations and models in the analysis class
@@ -1237,7 +1330,10 @@ class analysis:
                         from .util import cal_mod_no2col as mutil
 
                         # calculate model no2 trop. columns. M.Li
-                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        # to fix the "time" duplicate error
+                        model_obj = mod.obj
+                        model_obj = model_obj.rename_dims({'time':'t'})
+                        model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         if mod.apply_ak == True:
@@ -1335,7 +1431,7 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify
+        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1509,7 +1605,27 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            if domain_type.startswith("auto-region"):
+                                _, auto_region_id = domain_type.split(":")
+                                if auto_region_id == 'epa':
+                                    bounds = get_epa_region_bounds(acronym=domain_name)
+                                elif auto_region_id == 'giorgi':
+                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
+                                else:
+                                    raise ValueError(
+                                        "Currently, region selections whithout a domain query have only "
+                                        "been implemented for Giorgi and EPA regions. You asked for "
+                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
+                                        "others will be included."
+                                    )
+                                pairdf_all = pairdf_all.loc[
+                                                (pairdf_all["latitude"] > bounds[0])
+                                                & (pairdf_all["longitude"] > bounds[1])
+                                                & (pairdf_all["latitude"] < bounds[2])
+                                                & (pairdf_all["longitude"] < bounds[3])
+                                             ]
+                            else:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
@@ -1588,7 +1704,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 
@@ -1663,7 +1779,8 @@ class analysis:
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
                             elif filter_criteria is None:
-                                if 'altitude' in pairdf.columns:
+                                #if 'altitude' in pairdf.columns: # pairdf is dataset object, don't have columns
+                                if 'altitude' in pairdf:
                                     vmin_y2 = pairdf['altitude'].min()
                                     vmax_y2 = pairdf['altitude'].max()
                                 else:
@@ -2650,7 +2767,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 

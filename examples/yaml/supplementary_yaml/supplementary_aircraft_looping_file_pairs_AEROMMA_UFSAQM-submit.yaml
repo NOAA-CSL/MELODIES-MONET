@@ -1,0 +1,22 @@
+# This is an example file for specifying groups of files to loop over when using .util.tools.loop_pairing()
+#
+# First group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
+# each top level group will always consist of only 'model' and 'obs' as groups
+'0627_L1': # file prefix label to be used when saving this group
+  model: 
+    # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
+    ufsaqm: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.20230627/12/*dyn**.nc'
+  obs: 
+    # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
+    aeromma: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/obs_short/short_AEROMMA-Merge_20230627_L1_20240410_1459.csv'
+# Second group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
+'0627_L2': # file prefix label to be used when saving this group
+  model:
+    ufsaqm: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.20230627/12/*dyn**.nc'
+  obs:
+    aeromma: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/obs_short/short_AEROMMA-Merge_20230627_L2_20240410_1502.csv'
+'0628_L1': # file prefix label to be used when saving this group
+  model:
+    ufsaqm: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.20230628/12/*dyn**.nc'
+  obs:
+    aeromma: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/obs_short/short_AEROMMA-Merge_20230628_L1_20240410_1504.csv'

@@ -46,7 +46,7 @@ jobs:
           python -c "import monet;   print('monet.__version__',   getattr(monet, '__version__', '?'))"
 
       - name: pytest
-        run: python -m pytest -v melodies_monet
+        run: python -m pytest -v -rsx melodies_monet
       
       - name: Run docs/examples notebooks as scripts
         run: |

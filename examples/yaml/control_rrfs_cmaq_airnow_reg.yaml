@@ -202,22 +202,6 @@ plots:
       #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: True #If select True, add vdiff_plot for each variable in obs.
-  plot_grp4:
-    type: 'spatial_overlay' # plot type
-    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
-      states: True
-      figsize: [10, 5] # figure size 
-    text_kwargs: #Opt
-      fontsize: 16.
-    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['airnow_cmaq_oper','airnow_cmaq_nacc','airnow_rrfs_v150_a'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-    data_proc:
-      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
-      #filter_string: state_name in ['CA','NY'] and WS < 1 #  Uses pandas query method.
-      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
-      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-      set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp5:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
