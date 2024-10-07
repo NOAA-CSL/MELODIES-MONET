@@ -198,6 +198,8 @@ linkcheck_ignore = [
     "https://www2.cisl.ucar.edu/resources/conda-environments",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    # NCEI sites having problems
+    "https://www.ncdc.noaa.gov/crn/",
 ]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 
