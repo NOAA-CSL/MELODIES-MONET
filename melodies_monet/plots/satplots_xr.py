@@ -4,29 +4,24 @@
 # Code to create plots for satellite observations
 # Copied from surfplots and altered to use xarray syntax instead of pandas
 
-import os
 
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import monet as monet
-import monetio as mio
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
 from numpy import corrcoef
 
-sns.set_context("paper")
-import math
-
-from matplotlib.colors import ListedColormap
 from monet.plots.taylordiagram import TaylorDiagram as td
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 
 from ..plots import savefig
 
+sns.set_context("paper")
 
 def time_average(dset, varname=None, period="1D", time_offset=None):
     """Calculates 24-hour averages
@@ -669,7 +664,7 @@ def make_spatial_bias_gridded(
         Dataset containing the paired data
 
     """
-    if debug == False:
+    if not debug:
         plt.ioff()
 
     def_map = dict(states=True, figsize=[15, 8])
@@ -706,6 +701,9 @@ def make_spatial_bias_gridded(
     elif domain_type == "epa_region" and domain_name is not None:
         latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
         title_add = "EPA Region " + domain_name + ": "
+    elif domain_type == "giorgi_region" and domain_name is not None:
+        latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
+        title_add = "Giorgi Region " + domain_name + ": "
     else:
         latmin = -90
         lonmin = -180
@@ -723,7 +721,7 @@ def make_spatial_bias_gridded(
         map_kwargs["crs"] = proj
 
     # First determine colorbar
-    if vmin == None and vmax == None:
+    if vmin is None and vmax is None:
         # vmin = vmodel_mean.quantile(0.01)
         vmax = np.max(
             (
@@ -733,7 +731,7 @@ def make_spatial_bias_gridded(
         )
         vmin = -vmax
 
-    if nlevels == None:
+    if nlevels is None:
         nlevels = 21
     print(vmin, vmax)
     clevel = np.linspace(vmin, vmax, nlevels)
@@ -795,3 +793,154 @@ def make_spatial_bias_gridded(
         dpi=150,
     )
     return ax
+
+
+def make_multi_boxplot(
+    comb_bx,
+    label_bx,
+    region_bx,
+    region_list=None,
+    model_name_list=None,
+    ylabel=None,
+    vmin=None,
+    vmax=None,
+    outname="plot",
+    domain_type=None,
+    domain_name=None,
+    plot_dict=None,
+    fig_dict=None,
+    text_dict=None,
+    debug=False,
+):
+    """Creates box-plot.
+
+    Parameters
+    ----------
+    comb_bx : dataframe
+        dataframe containing information to create box-plot from
+        calculate_boxplot
+    label_bx : list
+        list of string labels to use in box-plot from calculate_boxplot
+    region_bx : dataframe
+        dataframe containing information of stations to help create multi-box-plot
+        from calculate_boxplot
+    model_name_list : list of str
+        list of models and observation sources used for x-labels in plot
+    ylabel : str
+        Title of y-axis
+    vmin : real number
+        Min value to use on y-axis
+    vmax : real number
+        Max value to use on y-axis
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair
+        (e.g., color, linestyle, markerstyle)
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for
+        submitting jobs to supercomputer turn off interactive mode.
+
+    Returns
+    -------
+    plot
+        multi-box plot
+
+    """
+    if not debug:
+        plt.ioff()
+    # First define items for all plots
+    # set default text size
+    def_text = dict(fontsize=14)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = label_bx[0]["column"]
+
+    # Fix the order and palate colors
+    order_box = []
+    pal = {}
+    for i in range(len(label_bx)):
+        order_box.append(label_bx[i]["label"])
+        pal[label_bx[i]["label"]] = label_bx[i]["color"]
+
+    # Make plot
+    if fig_dict is not None:
+        f, ax = plt.subplots(**fig_dict)
+    else:
+        f, ax = plt.subplots(figsize=(8, 8))
+    # Define characteristics of boxplot.
+    boxprops = {"edgecolor": "k", "linewidth": 1.5}
+    lineprops = {"color": "k", "linewidth": 1.5}
+    boxplot_kwargs = {
+        "boxprops": boxprops,
+        "medianprops": lineprops,
+        "whiskerprops": lineprops,
+        "capprops": lineprops,
+        "fliersize": 2.0,
+        "flierprops": dict(
+            marker="*", markerfacecolor="blue", markeredgecolor="none", markersize=6.0
+        ),
+        "width": 0.75,
+        "palette": pal,
+        "order": order_box,
+        "showmeans": True,
+        "meanprops": {
+            "marker": ".",
+            "markerfacecolor": "black",
+            "markeredgecolor": "black",
+            "markersize": 20.0,
+        },
+    }
+    sns.set_style("whitegrid")
+    sns.set_style("ticks")
+    len_combx = len(comb_bx.columns)
+
+    data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]: "Value"}, axis=1)
+    data_obs["model"] = model_name_list[0]
+    data_obs["Regions"] = region_bx["set_regions"].values
+    to_concat = []
+    to_concat.append(data_obs[["Value", "model", "Regions"]])
+
+    for i in range(1, len_combx):
+        data_model = (
+            comb_bx[comb_bx.columns[i]].to_frame().rename({comb_bx.columns[i]: "Value"}, axis=1)
+        )
+        data_model["model"] = model_name_list[i]
+        data_model["Regions"] = region_bx["set_regions"].values
+        to_concat.append(data_model[["Value", "model", "Regions"]])
+
+    tdf = pd.concat(to_concat)
+    acro = region_list
+    sns.boxplot(
+        x="Regions",
+        y="Value",
+        hue="model",
+        data=tdf.loc[tdf.Regions.isin(acro)],
+        order=acro,
+        showfliers=False,
+    )
+    ax.set_xlabel("")
+    ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
+    ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+    if domain_type is not None and domain_name is not None:
+        if domain_type == "epa_region":
+            ax.set_title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
+        else:
+            ax.set_title(domain_name, fontweight="bold", **text_kwargs)
+    if vmin is not None and vmax is not None:
+        ax.set_ylim(ymin=vmin, ymax=vmax)
+
+    plt.tight_layout()
+    savefig(outname + ".png", loc=4, logo_height=100)
