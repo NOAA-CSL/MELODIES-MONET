@@ -54,48 +54,6 @@ def time_average(dset, varname=None, period="1D", time_offset=None):
     return daily
 
 
-# def calc_default_colors(p_index):
-#     """List of default colors, lines, and markers to use if user does not
-#     specify them in the input yaml file.
-#
-#     Parameters
-#     ----------
-#     p_index : integer
-#         Number of pairs in analysis class
-#
-#     Returns
-#     -------
-#     list
-#         List of dictionaries containing default colors, lines, and
-#         markers to use for plotting for the number of pairs in analysis class
-#
-#     """
-#     x = [
-#         dict(color="b", linestyle="--", marker="x"),
-#         dict(color="g", linestyle="-.", marker="o"),
-#         dict(color="r", linestyle=":", marker="v"),
-#         dict(color="c", linestyle="--", marker="^"),
-#         dict(color="m", linestyle="-.", marker="s"),
-#     ]
-#     # Repeat these 5 instances over and over if more than 5 lines.
-#     return x[p_index % 5]
-
-
-# def new_color_map():
-#     """Creates new color map for difference plots
-#
-#     Returns
-#     -------
-#     colormap
-#         Orange and blue color map
-#
-#     """
-#     top = mpl.cm.get_cmap("Blues_r", 128)
-#     bottom = mpl.cm.get_cmap("Oranges", 128)
-#     newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
-#     return ListedColormap(newcolors, name="OrangeBlue")
-
-
 def map_projection(f):
     """Defines map projection. This needs updating to make it more generic.
 

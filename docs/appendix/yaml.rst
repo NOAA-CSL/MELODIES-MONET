@@ -317,6 +317,10 @@ For example, ::
 **domain_type:** List of domain types to be plotted. These correspond with
 the columns in the observation file. (e.g., airnow: epa_region, state_name, 
 siteid, etc.).
+For automatic EPA or Giorgi region boxes (if they are not included
+with the columns in the observation file), choose ``auto-region:epa`` or
+``auto-region:giorgi``. Take into account that ``auto-region:epa`` is only a rough
+approximation, since it assumes perfect, rectangular lonlat boxes.
 
 **domain_name:** List of domain names to be plotted. If domain_type = all, all 
 data will be used and the domain_name is used only in the plot title. If 

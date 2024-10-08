@@ -271,7 +271,7 @@ class observation:
                 else: flst = self.file
 
                 self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
-                
+
                 # couple of changes to move to reader
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
                 self.obj = self.obj.sortby('time') # enforce time in order. 
@@ -279,10 +279,13 @@ class observation:
                 # additional development to deal with files crossing intervals needed (eg situtations where orbit start at 23hrs, ends next day).
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
-                    
+
             elif self.sat_type == 'mopitt_l3':
                 print('Reading MOPITT')
-                self.obj = mio.sat._mopitt_l3_mm.open_dataset(self.file, ['column','pressure_surf','apriori_col',
+                if time_interval is not None:
+                    flst = tsub.subset_mopitt_l3(self.file,time_interval)
+                else: flst = self.file
+                self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
@@ -608,10 +611,17 @@ class model:
                 self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             elif 'raqms' in self.model.lower():
-                if len(self.files) > 1:
-                    self.obj = mio.raqms.open_mfdataset(self.files,**self.mod_kwargs)
+                if time_interval is not None:
+                    # fill filelist with subset
+                    print('subsetting model files to interval')
+                    file_list = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%HZ','6H',time_interval)
                 else:
-                    self.obj = mio.raqms.open_dataset(self.files,**self.mod_kwargs)
+                    file_list = self.files
+                if len(file_list) > 1:
+                    self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
+                else:
+                    self.obj = mio.models.raqms.open_dataset(file_list)
+
             else:
                 print('**** Reading Unspecified model output. Take Caution...')
                 if len(self.files) > 1:
@@ -1337,7 +1347,10 @@ class analysis:
                         from .util import cal_mod_no2col as mutil
 
                         # calculate model no2 trop. columns. M.Li
-                        model_obj = mutil.cal_model_no2columns(mod.obj)
+                        # to fix the "time" duplicate error
+                        model_obj = mod.obj
+                        model_obj = model_obj.rename_dims({'time':'t'})
+                        model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         if mod.apply_ak == True:
@@ -1462,7 +1475,7 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify
+        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1637,7 +1650,27 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            if domain_type.startswith("auto-region"):
+                                _, auto_region_id = domain_type.split(":")
+                                if auto_region_id == 'epa':
+                                    bounds = get_epa_region_bounds(acronym=domain_name)
+                                elif auto_region_id == 'giorgi':
+                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
+                                else:
+                                    raise ValueError(
+                                        "Currently, region selections whithout a domain query have only "
+                                        "been implemented for Giorgi and EPA regions. You asked for "
+                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
+                                        "others will be included."
+                                    )
+                                pairdf_all = pairdf_all.loc[
+                                                (pairdf_all["latitude"] > bounds[0])
+                                                & (pairdf_all["longitude"] > bounds[1])
+                                                & (pairdf_all["latitude"] < bounds[2])
+                                                & (pairdf_all["longitude"] < bounds[3])
+                                             ]
+                            else:
+                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
@@ -1716,7 +1749,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 
@@ -1790,14 +1823,15 @@ class analysis:
                             
                             if filter_criteria and 'altitude' in filter_criteria:
                                 vmin_y2, vmax_y2 = filter_criteria['altitude']['value']
-                            # elif filter_criteria is None:
-                            #     if 'altitude' in pairdf.columns:
-                            #         vmin_y2 = pairdf['altitude'].min()
-                            #         vmax_y2 = pairdf['altitude'].max()
-                            #     else:
-                            #         vmin_y2 = vmax_y2 = None
-                            # else:
-                            #     vmin_y2 = vmax_y2 = None
+                            elif filter_criteria is None:
+
+                                if 'altitude' in pairdf:
+                                    vmin_y2 = pairdf['altitude'].min()
+                                    vmax_y2 = pairdf['altitude'].max()
+                                else:
+                                    vmin_y2 = vmax_y2 = None
+                            else:
+                                vmin_y2 = vmax_y2 = None
                             
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
@@ -2778,7 +2812,7 @@ class analysis:
                                 pairdf.copy()
                                 .groupby("siteid")
                                 .resample('h', on='time_local')
-                                .mean()
+                                .mean(numeric_only=True)
                                 .reset_index()
                             )
 

@@ -1,0 +1,75 @@
+analysis:
+  output_dir:  /scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/processed/submit/
+  debug: False
+  
+model:
+  ufsaqm: # model label
+    mod_type: 'rrfs'
+    radius_of_influence: 19500 #meters
+    mapping: #model species name : obs species name
+      aeromma:
+        no2_ave: NO2_LIF
+        no_ave: NO_LIF
+        o3_ave: O3_CL
+        co: CO_LGR
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'temperature_k':
+            rename: temp_model # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+    projection: null
+obs:
+  aeromma: # obs label
+    obs_type: aircraft
+    time_var: Time_Start
+    resample: '30s' # 
+    variables: #Opt 
+      'O3_CL':
+        unit_scale: 1 #Opt Scaling factor 
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+      'NO_LIF':
+        unit_scale: 1000. #Opt Scaling factor 
+        unit_scale_method: '/' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+      'NO2_LIF':
+        unit_scale: 1000. #Opt Scaling factor 
+        unit_scale_method: '/' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+      'CO_LGR':
+        nan_value: -7777 # Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit        
+      'G_LAT':
+            rename: latitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'G_LONG':
+            rename: longitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'PW':
+            rename: pressure_obs # name to convert this variable to
+            unit_scale: 100 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'TW':
+            rename: temp_obs # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'      
+      'G_ALT':
+          rename: altitude # name to convert this variable to
+          unit_scale: 1 #Opt Scaling factor 
+          unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'Time_Start':
+            rename: time # name to convert this variable to
+   
