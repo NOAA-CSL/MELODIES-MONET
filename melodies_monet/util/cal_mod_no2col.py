@@ -6,11 +6,9 @@
 # contact: meng.li.atm@gmail.com
 #
 
-import xesmf as xe
 import numpy as np
 import xarray as xr
 import pandas as pd
-from datetime import datetime
 
 def cal_model_no2columns(modobj):
 
@@ -19,12 +17,13 @@ def cal_model_no2columns(modobj):
     
     Parameters
     ------
-    modobj         : model data
+    modobj : xarray.Dataset
+        model data
   
     Output
     ------
-    modobj        : revised model data with 'no2col' and 'localtime' added
-
+    modobj : xarray.Dataset
+        revised model data with 'no2col' and 'localtime' added
     """
 
     # calculate the no2 tropospheric vertical columns and pressure from wrf-chem
