@@ -65,7 +65,10 @@ nb_execution_mode = "auto"  # don't execute if all cells have output (default)
 # nb_execution_mode = "cache"  # to speed build when working on other things
 # nb_execution_mode = "off"
 nb_execution_excludepatterns = [
-    "examples/airnow_wrfchem.ipynb",
+    "examples/AEROMMA_*.ipynb",
+    "examples/airnow_*.ipynb",
+    "examples/camchem.ipynb",
+    "examples/*_paired_data.ipynb",
 ]
 nb_execution_show_tb = True
 
