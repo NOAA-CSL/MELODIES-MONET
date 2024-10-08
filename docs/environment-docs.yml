@@ -16,6 +16,7 @@ dependencies:
   - pillow<10
   #
   # Extras
+  - numba
   - pooch
   - timezonefinder
   - typer
