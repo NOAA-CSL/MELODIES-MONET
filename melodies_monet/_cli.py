@@ -7,6 +7,7 @@ melodies-monet -- MELODIES MONET CLI
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from typing import List
 
 try:
     import typer
@@ -18,6 +19,8 @@ except ImportError as e:
         f"The error message was: {e}"
     )
     raise SystemExit(1)
+
+from typing import Tuple
 
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN
@@ -146,7 +149,14 @@ def run(
         an.open_obs()
 
     with _timer("Pairing"):
-        an.pair_data()
+        if an.read is not None:
+            an.read_analysis()
+        else:
+            an.pair_data()
+
+    if an.save is not None:
+        with _timer("Saving paired datasets"):
+            an.save_analysis()
 
     if an.control_dict.get("plots") is not None:
         with _timer("Plotting and saving the figures"), _ignore_pandas_numeric_only_futurewarning():
@@ -176,7 +186,7 @@ def get_aeronet(
     start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
     end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
     daily: bool = typer.Option(False, help="Whether to retrieve the daily averaged data product."),
-    freq: str = typer.Option("H", "-f", "--freq", help=(
+    freq: str = typer.Option("h", "-f", "--freq", help=(
             "Frequency to resample to. "
             "Mean is used to reduce the time groups (as opposed to nearest, e.g.)."
         )
@@ -349,11 +359,16 @@ def get_airnow(
 
     DEBUG = debug
 
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
     typer.echo(HEADER)
 
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
-    dates = pd.date_range(start_date, end_date, freq="H" if not daily else "D")
+    dates = pd.date_range(start_date, end_date, freq="h" if not daily else "D")
     if verbose:
         print("Dates:")
         print(dates)
@@ -403,7 +418,7 @@ def get_airnow(
             "state_name",
             "epa_region",
         ]
-        # NOTE: time_local not included since it varies in time as well
+        # NOTE: time_local not included since it varies in time as well as by site
         if daily:
             site_vns.remove("utcoffset")  # not present in the daily data product
 
@@ -463,6 +478,680 @@ def get_airnow(
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
+
+
+@app.command()
+def get_ish_lite(
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    country: str = typer.Option(None, "--country",
+        help=(
+            "Two-letter country code (e.g., in order of site count, "
+            "US, RS, CA, AS, BR, IN, CH, NO, JA, UK, FR, ...)."
+        )
+    ),
+    state: str = typer.Option(None, "--state", help="Two-letter state code (e.g., MD, ...)."),
+    box: Tuple[float, float, float, float] = typer.Option((None, None, None, None), "--box",
+        help=(
+            "Bounding box for site selection. "
+            "(latmin, lonmin, latmax, lonmax) in [-180, 180) format. "
+            "Can't be used if specifying country or state."
+        )
+    ),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'ISH-Lite_<start-date>_<end-date>.nc'."
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default output file name)."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download ISH-Lite data using monetio and reformat for MM usage.
+    
+    Note that the data are stored in yearly files by site, so the runtime
+    mostly depends on the number of unique years that your date range includes,
+    as well as any site selection narrowing.
+    You can use --country or --state or --box to select groups of sites.
+    ISH-Lite is an hourly product.
+    """
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
+    typer.echo(HEADER)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="h")
+    if verbose:
+        print("Dates:")
+        print(dates)
+
+    if box == (None, None, None, None):
+        box = None
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"ISH-Lite_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    with _timer("Fetching data with monetio"):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            df = mio.ish_lite.add_data(
+                dates,
+                box=box,
+                state=state,
+                country=country,
+                resample=False,
+                n_procs=num_workers,
+                verbose=verbose,
+            )
+
+    with _timer("Computing UTC offset for selected ISH-Lite sites"):
+        import datetime
+
+        from timezonefinder import TimezoneFinder
+        from pytz import timezone, utc
+
+        tf = TimezoneFinder(in_memory=True)
+        ref_date = datetime.datetime(2022, 1, 1, 0, 0)
+
+        def get_utc_offset(*, lat, lon):
+            s = tf.timezone_at(lng=lon, lat=lat)
+            assert s is not None
+
+            tz_target = timezone(s)
+            ref_date_tz_target = tz_target.localize(ref_date)
+            ref_date_utc = utc.localize(ref_date)
+            uo_h = (ref_date_utc - ref_date_tz_target).total_seconds() / 3600
+
+            return uo_h
+
+
+        locs = df[["siteid", "latitude", "longitude"]].groupby("siteid").first().reset_index()
+        locs["utcoffset"] = locs.apply(lambda r: get_utc_offset(lat=r.latitude, lon=r.longitude), axis="columns")
+
+        df = df.merge(locs[["siteid", "utcoffset"]], on="siteid", how="left")
+
+
+    with _timer("Forming xarray Dataset"):
+        df = df.dropna(subset=["latitude", "longitude"])
+
+        df = df.rename(
+            columns={
+                "station name": "station_name",
+                "elev(m)": "elevation",
+            },
+            errors="ignore",
+        )
+
+        site_vns = [
+            "siteid",
+            "latitude",
+            "longitude",
+            "country",
+            "state",
+            "station_name",
+            "usaf",
+            "wban",
+            "icao",
+            "elevation",
+            "utcoffset",
+            "begin",
+            "end",
+        ]
+        # NOTE: time_local not included since it varies in time as well as by site
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .swap_dims(siteid="x")
+        )
+
+        # TODO: units?
+        units = {}
+
+        cols = list(df.columns)
+        ds = (
+            df[cols]
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .swap_dims(siteid="x")
+            .drop_vars(site_vns)
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Add units
+        for k, u in units.items():
+            vn = k
+            ds[vn].attrs.update(units=u)
+
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        ds["time_local"] = ds.time + (ds.utcoffset * 60).astype("timedelta64[m]")
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
+
+
+@app.command()
+def get_ish(
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    freq: str = typer.Option("h", "-f", "--freq", help=(
+            "Frequency to resample to. "
+            "Mean is used to reduce the time groups (as opposed to nearest, e.g.)."
+        )
+    ),
+    country: str = typer.Option(None, "--country",
+        help=(
+            "Two-letter country code (e.g., in order of site count, "
+            "US, RS, CA, AS, BR, IN, CH, NO, JA, UK, FR, ...)."
+        )
+    ),
+    state: str = typer.Option(None, "--state", help="Two-letter state code (e.g., MD, ...)."),
+    box: Tuple[float, float, float, float] = typer.Option((None, None, None, None), "--box",
+        help=(
+            "Bounding box for site selection. "
+            "(latmin, lonmin, latmax, lonmax) in [-180, 180) format. "
+            "Can't be used if specifying country or state."
+        )
+    ),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'ISH_<start-date>_<end-date>.nc'."
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default output file name)."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download ISH data using monetio and reformat for MM usage.
+    
+    Note that the data are stored in yearly files by site, so the runtime
+    mostly depends on the number of unique years that your date range includes,
+    as well as any site selection narrowing.
+    You can use --country or --state or --box to select groups of sites.
+    Time resolution may be sub-hourly, depending on site,
+    thus we resample to hourly by default.
+    """
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
+    typer.echo(HEADER)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="h")
+    if verbose:
+        print("Dates:")
+        print(dates)
+
+    if box == (None, None, None, None):
+        box = None
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"ISH_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    with _timer("Fetching data with monetio"), _ignore_pandas_numeric_only_futurewarning():
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            df = mio.ish.add_data(
+                dates,
+                box=box,
+                state=state,
+                country=country,
+                resample=True,
+                window=freq,
+                n_procs=num_workers,
+                verbose=verbose,
+            )
+
+    with _timer("Computing UTC offset for selected ISH sites"):
+        import datetime
+
+        from timezonefinder import TimezoneFinder
+        from pytz import timezone, utc
+
+        tf = TimezoneFinder(in_memory=True)
+        ref_date = datetime.datetime(2022, 1, 1, 0, 0)
+
+        def get_utc_offset(*, lat, lon):
+            s = tf.timezone_at(lng=lon, lat=lat)
+            assert s is not None
+
+            tz_target = timezone(s)
+            ref_date_tz_target = tz_target.localize(ref_date)
+            ref_date_utc = utc.localize(ref_date)
+            uo_h = (ref_date_utc - ref_date_tz_target).total_seconds() / 3600
+
+            return uo_h
+
+
+        locs = df[["siteid", "latitude", "longitude"]].groupby("siteid").first().reset_index()
+        locs["utcoffset"] = locs.apply(lambda r: get_utc_offset(lat=r.latitude, lon=r.longitude), axis="columns")
+
+        df = df.merge(locs[["siteid", "utcoffset"]], on="siteid", how="left")
+
+
+    with _timer("Forming xarray Dataset"):
+        df = (
+            df.dropna(subset=["latitude", "longitude"])
+            .rename(
+                columns={
+                    "station name": "station_name",
+                    "elev(m)": "elevation",
+                },
+              errors="ignore",
+            )
+            .drop(columns=["elev"], errors="ignore")  # keep just elevation from the site meta file
+        )
+
+        site_vns = [
+            "siteid",
+            "latitude",
+            "longitude",
+            "country",
+            "state",
+            "station_name",
+            "usaf",
+            "wban",
+            "icao",
+            "elevation",
+            "utcoffset",
+            "begin",
+            "end",
+        ]
+        # NOTE: time_local not included since it varies in time as well as by site
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .swap_dims(siteid="x")
+        )
+
+        # TODO: units?
+        units = {}
+
+        cols = list(df.columns)
+        ds = (
+            df[cols]
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .swap_dims(siteid="x")
+            .drop_vars(site_vns)
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Add units
+        for k, u in units.items():
+            vn = k
+            ds[vn].attrs.update(units=u)
+
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        ds["time_local"] = ds.time + (ds.utcoffset * 60).astype("timedelta64[m]")
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
+
+
+@app.command()
+def get_aqs(
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    daily: bool = typer.Option(False, help=(
+            "Whether to retrieve the daily averaged data product. "
+            "By default, the hourly data is fetched."
+        )
+    ),
+    param: List[str] = typer.Option(["O3", "PM2.5", "PM10"], "-p", "--params", help=(
+            "Parameter groups. "
+            "Use '-p' more than once to get multiple groups. "
+            "Other examples: 'SPEC' (speciated PM2.5), 'PM10SPEC' (speciated PM10), "
+            "'VOC', 'NONOxNOy', 'SO2', 'NO2', 'CO', 'PM2.5_FRM'."
+        )
+    ),
+    # TODO: add network selection option once working in monetio
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'AQS_<start-date>_<end-date>.nc'."
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default output file name)."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download EPA AQS data using monetio and reformat for MM usage.
+
+    These are archived data, stored in per-year per-parameter-group files, described at
+    https://aqs.epa.gov/aqsweb/airdata/download_files.html
+
+    Recent-past data are generally not available from this source.
+    """
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    if verbose:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
+    typer.echo(HEADER)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    dates = pd.date_range(start_date, end_date, freq="h" if not daily else "D")
+    if verbose:
+        print("Dates:")
+        print(dates)
+        print("Params:")
+        print(param)
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"AQS_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    with _timer("Fetching data with monetio"):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="The (error|warn)_bad_lines argument has been deprecated"
+            )
+            try:
+                df = mio.aqs.add_data(
+                    dates,
+                    param=param,
+                    daily=daily,
+                    network=None,
+                    download=False,
+                    local=False,
+                    wide_fmt=True,  # column for each variable
+                    n_procs=num_workers,
+                    meta=False,  # TODO: enable or add option once monetio fixes released
+                )
+            except KeyError as e:
+                if daily and str(e) == "'time'":
+                    typer.echo("Note that the daily option currently requires monetio >0.2.5")
+                raise
+
+    if not daily:
+        with _timer("Fetching site metadata"):
+            # Need UTC offset in order to compute local time
+            # But currently the `meta=True` option doesn't work
+            meta0 = pd.read_csv(
+                "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
+                encoding="ISO-8859-1",
+                usecols=[0, 1, 2, 17],
+                dtype=str,
+            )
+            meta = (
+                meta0.copy()
+                .assign(
+                    siteid=meta0["State Code"] + meta0["County Code"] + meta0["Site Number"],
+                    utcoffset=meta0["GMT Offset"].astype(int),
+                )
+                .drop(
+                    columns=["State Code", "County Code", "Site Number", "GMT Offset"],
+                )
+            )
+
+    with _timer("Forming xarray Dataset"):
+        # Select requested time period (older monetio doesn't do this)
+        df = df[df.time.between(dates[0], dates[-1], inclusive="both")]
+
+        df = df.dropna(subset=["latitude", "longitude"])
+
+        # Variables associated with a measurement,
+        # currently not properly useful in the wide format.
+        if daily:
+            v_vns = [
+                "parameter_code",
+                "poc",
+                "parameter_name",
+                "sample_duration",
+                "pollutant_standard",
+                "event_type",
+                "observation_count",
+                "observation_percent",
+                "1st_max_value",
+                "1st_max_hour",
+                "aqi",
+                "method_code",
+                "method_name",
+            ]
+        else:
+            v_vns = [
+                "parameter_code",
+                "poc",  # parameter occurrence code
+                "parameter_name",
+                "mdl",  # method detection limit
+                "uncertainty",
+                "method_type",
+                "method_code",
+                "method_name",
+            ]
+        df = df.drop(columns=v_vns).drop_duplicates()
+        # TODO: may be better to get long fmt and drop these first and then pivot
+        # TODO: option to average duplicate measurements at same site instead of keeping first?
+        if "datum" in df:
+            df = df.drop(columns=["datum"])
+
+        site_vns = [
+            "siteid",
+            "state_code",
+            "county_code",
+            "site_num",
+            "latitude",
+            "longitude",
+        ]
+        if daily:
+            site_vns.extend(["local_site_name", "address", "city_name", "msa_name"])
+        # NOTE: time_local not included since it varies in time as well
+        if not daily:
+            df = df.merge(meta, on="siteid", how="left")
+            site_vns.append("utcoffset")
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .swap_dims(siteid="x")
+        )
+
+        # Extract units info so we can add as attrs
+        unit_suff = "_unit"
+        unit_cols = [n for n in df.columns if n.endswith(unit_suff)]
+        assert (df[unit_cols].nunique() == 1).all()
+        units = df[unit_cols][~df[unit_cols].isnull()].iloc[0].to_dict()
+
+        cols = [n for n in df.columns if not n.endswith(unit_suff)]
+        ds = (
+            df[cols]
+            .drop(columns=[vn for vn in site_vns if vn != "siteid"])
+            .drop_duplicates(["time", "siteid"], keep="first")
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .swap_dims(siteid="x")
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Add units
+        for k, u in units.items():
+            vn = k[:-len(unit_suff)]
+            ds[vn].attrs.update(units=u)
+
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        if not daily:
+            ds["time_local"] = ds.time + ds.utcoffset.astype("timedelta64[h]")
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+        # Can't have `/` in variable name for netCDF
+        to_rename = [vn for vn in ds.data_vars if "/" in vn]
+        ds = ds.rename_vars({vn: vn.replace("/", "_") for vn in to_rename})
 
     with _timer("Writing netCDF file"):
         if compress:

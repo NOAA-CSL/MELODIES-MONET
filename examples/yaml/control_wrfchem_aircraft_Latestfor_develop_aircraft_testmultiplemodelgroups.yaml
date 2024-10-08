@@ -1,0 +1,321 @@
+# General Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: '2019-09-05-12:00:00' #UTC
+  end_time: '2019-09-06-00:00:00' #UTC
+  output_dir: /wrk/qrasool/output_testaircraft_PR189_uptoviolin_multiplemodels_racmesrlvcpFTPnew  ##/wrk/qrasool/output_testaircraft_PR189_uptoviolin_multiplemodels #/wrk/charkins/melodies_monet/NOAA_CSL_main/test_pull_189_aircraft/output #/wrk/charkins/melodies_monet/aircraft/analysis #Opt if not specified plots stored in code directory.
+  debug: True
+model:
+  wrfchem_v4.2: # model label
+    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    files: /wrk/qrasool/FIREX20190905wrfout_Newftp2024/racm_esrl_vcp/* #/wrk/d2/rschwantes/wrf/firex_mech/racm_esrl_vcp/*  (above path same as this) ##/wrk/qrasool/firex_mech_qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/* #/wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    mod_type: 'wrfchem'
+    mod_kwargs: 
+      mech: 'racm_esrl_vcp'
+    radius_of_influence: 12000 #meters
+    mapping: #model species name : obs species name
+      firexaq:
+        no2: NO2_CL_RYERSON
+        'no': 'NO_CL_RYERSON'
+        #PM2_5_DRY: "PM2.5"
+        o3: "O3_CL_RYERSON"
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 100 #1 #Opt Scaling factor 
+            unit_scale_method: '/' #convert to hPa (1 hPa=100 Pa) #'*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'temperature_k':
+            rename: temp_model # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: '^'
+      linestyle: ':' 
+  wrfchem_v4.2_test: # model label
+    # files: /wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    files: /wrk/qrasool/FIREX20190905wrfout_Newftp2024/racm_esrl_vcp/* ##/wrk/qrasool/firex_mech_qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/* #/wrk/d2/rschwantes/wrf/firex_mech/qzhu/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*
+    mod_type: 'wrfchem'
+    mod_kwargs: 
+      mech: 'racm_esrl_vcp'
+    radius_of_influence: 12000 #meters
+    mapping: #model species name : obs species name
+      firexaq:
+        no2: NO2_CL_RYERSON
+        'no': 'NO_CL_RYERSON'
+        #PM2_5_DRY: "PM2.5"
+        o3: "O3_CL_RYERSON"
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 100 #1 #Opt Scaling factor 
+            unit_scale_method: '/' #convert to hPa (1 hPa=100 Pa) #'*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'temperature_k':
+            rename: temp_model # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'no2':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'no':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        'o3':
+            unit_scale: 2 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+    projection: None
+    plot_kwargs: #Opt
+      color: 'goldenrod'
+      marker: 's'
+      linestyle: '-'
+
+obs:
+  firexaq: # obs label
+    filename: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
+    obs_type: aircraft
+    #resample: '60S' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    variables: #Opt 
+      'O3_CL_RYERSON':
+        unit_scale: 1 #Opt Scaling factor 
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -777777 # Opt Set this value to NaN
+        LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'Ozone (ppbv)'
+        vmin_plot: 0 #15.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 100 #55.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 20.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
+        # nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
+      'NO_CL_RYERSON':
+        nan_value: -777777 # Set this value to NaN
+        LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO (ppbv)' #Optional to set ylabel so can include units and/or instr etc.
+        vmin_plot: 0.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1 #20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
+      'NO2_CL_RYERSON':
+        nan_value: -777777 # Set this value to NaN
+        LLOD_value: -888888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO2 (ppbv)' #Optional to set ylabel so can include units and/or instr etc.
+        vmin_plot: 0.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1 #20.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 15.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
+      'Latitude_YANG':
+            rename: latitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'Longitude_YANG':
+            rename: longitude # name to convert this variable to
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'P_BUI':
+            rename: pressure_obs # name to convert this variable to
+            unit_scale: 1 #remain in hPa #100 # hpa to Pa  #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+      'MSL_GPS_Altitude_YANG':
+          rename: altitude # name to convert this variable to
+          unit_scale: 1 #Opt Scaling factor 
+          unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+   
+plots:
+  plot_grp1:
+    type: 'timeseries' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      #See 'altitde_yax2' list below for secondary y-axis options
+      #altitude_variable: altitude  
+      #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      ts_avg_window: #'h' # pandas resample rule (e.g., 'h', 'D'). No averaging is done if ts_avg_window is null or not specified.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      #vmin2, vmax2 filter not needed as filter_dict option added in 'altitude_yax2' to subset the paireddf as per altitude secondary-axis limits
+      #vmin2: #0  #Optional
+      #vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
+      altitude_yax2:
+        altitude_variable: altitude
+        altitude_ticks: 1000
+        ylabel2: Altitude (m)
+        plot_kwargs_y2:
+          color: g
+        altitude_unit: m
+        altitude_scaling_factor: 1
+        #filter_dict: #Default is min and max if filter_dict doesn't define the options below (or if they are commented out)
+         # altitude:
+          #  oper: "between"
+           # value: [2000,8000] # values are [vmin_y2, vmax_y2] 
+            
+  plot_grp2:
+    type: 'vertprofile'  # plot type
+    fig_kwargs:  # Opt to define figure options
+      figsize: [10, 14]  # figure size
+    default_plot_kwargs:  # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:  # Opt
+      fontsize: 18.
+    domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ['CONUS']  # List of domain names. If domain_type = all, domain_name is used in plot title.
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
+      interquartile_style: 'shading' # or 'box'
+    #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
+    altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
+    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
+    vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # meters
+    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
+    vmin: #0  #Optional
+    vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+
+  plot_grp3:
+    type: 'violin'
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
+    data_proc:
+      rem_obs_nan: True 
+      set_axis: False
+    
+  plot_grp4:
+    type: 'scatter_density'
+    fig_kwargs:
+      figsize: [10, 10]
+    default_plot_kwargs:
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False #True
+      vmin_x: #0
+      vmax_x: #100
+      vmin_y: #0
+      vmax_y: #100
+    color_map: #'RdBu_r' # Default Colormap for the density plot can be used. Options include:
+                        # 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+                        # 'jet', 'hot', 'cool', 'spring', 'summer', 'autumn', 'winter',
+                        # 'RdBu_r', 'seismic', 'coolwarm',
+                        # 'Blues', 'BuGn', 'YlOrRd', 'Greys'
+        #To use a custom colormap: Use the following options otherwise use the above default color_map(s) AND COMMENT THESE
+        colors: ['royalblue', 'cyan', 'yellow', 'orange']
+        over: 'red'
+        under: 'blue'
+    xlabel: 'Model'
+    ylabel: 'Observation'
+    title: 'Scatter Density Plot'
+    fill: True #True #False              # Set to True if you want to fill the area under the density curve (for kde plot), False for sactterplot
+    shade_lowest: True #False      # Set to True if you want to shade the lowest contour (if fill=TRUE for KDE plots)
+    # Add other seaborn.kdeplot keyword arguments here as needed
+    vcenter: #0  # Central value for TwoSlopeNorm
+    extensions: ['min', 'max']  # Extensions for the colorbar  
+
+  plot_grp5:
+    type: 'curtain'
+    fig_kwargs:
+      figsize: [20,14] #[12, 8]
+    default_plot_kwargs:
+      #linewidth: 4.0
+      markersize: 40.
+    text_kwargs:
+      fontsize: 25 #18
+      fontweight: 'bold'
+      labelsize: 16
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      altitude_variable: 'altitude'
+    ##To use a custom Matplotlib colormap, set “color_map_custom”=True and specify “colors” and "color_levels" like the example below. To use a standard Matplotlib colormap, set “color_map_custom” = False and specify a “color_map”:
+    color_map_custom: True #False 
+    colors: ["#ff8cff", "#dd6ff2", "#bb52e5", "#9935d8", "#7718cb",
+        "#0000bb", "#002ccc", "#0058dd", "#0084ee", "#00afff",
+        "#00ebff", "#27ffd7", "#63ff9b", "#a3ff5b", "#d3ff2b",
+        "#ffff00", "#ffcf00", "#ff9f00", "#ff6f00", "#ff3f00",
+        "#ff0000", "#d8000f", "#b2001f", "#8c002f", "#66003f",
+        "#343434", "#606060", "#8c8c8c", "#b8b8b8", "#e4e4e4"] # Example gradient
+    color_levels: 30   # Define the number of distinct colors in the color bar (see te numbers of colors in 'colors' key above is matching)
+    #color_map: 'Spectral_r' #'jet'  # This can be set instead of color_map_custom, color_levels and color_levels to set a colormap defined in matplotlob.  
+    vmin: 50 #in hPa #5000 #120000 #Pressure in Pa  #0  #Optional (y-axis limits)
+    vmax: 1200 # in hPa #120000 #5000 # Optional #need to be edited as per min and max altitude (i.e., vmin and vmax)
+    num_levels: 100   # Number of vertical levels for interpolation
+    interval: 100 #hPa #10000 #Pa   # Y-axis tick interval in Pa (e.g., ticks every 10,000 Pa)
+    pressure_units: 'hPa' #'Pa' (units for y-axis)
+    
+  plot_grp6:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: True #If select True, add ty_scale for each variable in obs.
+      
+  plot_grp7:
+    type: 'boxplot' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 6] # figure size 
+    text_kwargs: #Opt
+      fontsize: 20.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+      
+stats:
+  #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  #Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ['MB', 'MdnB','R2', 'RMSE'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
+  #Full calc list ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1','E1', 'IOA', 'AC']
+  round_output: 2 #Opt, defaults to rounding to 3rd decimal place.
+  output_table: False #Always outputs a .txt file. Optional to also output as a table.
+  output_table_kwargs: #Opt 
+    figsize: [7, 3] # figure size 
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: 'horizontal'
+  domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+  domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['firexaq_wrfchem_v4.2','firexaq_wrfchem_v4.2_test'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+
+  
+

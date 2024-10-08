@@ -39,31 +39,33 @@ MONETIO please refer to:
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Background
+   :caption: User's Guide
 
-   background/introduction
-   background/description
-   background/supported_datasets
-   background/supported_analyses
-   background/supported_plots
-   background/supported_stats
-   
+   users_guide/introduction
+   users_guide/description
+   users_guide/supported_datasets
+   users_guide/supported_diagnostics
+   users_guide/supported_plots
+   users_guide/supported_stats
+   users_guide/time_chunking
+   users_guide/gridded_datasets
+
 .. toctree::
    :hidden:
    :maxdepth: 4
-   :caption: Tutorial
+   :caption: Getting Started
 
-   tutorial/installation
-   tutorial/getting_started
-   tutorial/downloading_obs
-   tutorial/how_to_run
+   getting_started/installation
+   getting_started/software_architecture
+   getting_started/downloading_obs
+   getting_started/how_to_run
 
 .. toctree::
    :maxdepth: 1
    :caption: Contribute
    
    develop/contribute
-   develop/workshops
+   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets
@@ -76,11 +78,14 @@ MONETIO please refer to:
    examples/intro_examples
    examples/tutorial-data
    examples/airnow_wrfchem
+   examples/airnow_wrfchem_reg
    examples/airnow_camchem_se
    examples/camchem
    examples/idealized
    examples/save_paired_data
    examples/read_paired_data
+   examples/aircraft_pairing
+   examples/AEROMMA_UFS-AQM_Plots
    
 .. toctree::
    :hidden:
@@ -99,5 +104,6 @@ MONETIO please refer to:
    cli
    appendix/machine-specific-install
    appendix/yaml
+   appendix/troubleshooting
 
 

@@ -1,5 +1,5 @@
-Supported Analyses
-==================
+Supported Diagnostics
+=====================
 
 Supported data analysis options in MELODIES MONET are explained below.
 
@@ -8,7 +8,7 @@ Calculating Regulatory Metrics
 
 MDA8 (8-hour daily maximum) ozone and 24 hour average PM\ :sub:`2.5` \ can be
 calculated within MELODIES MONET from hourly observational and model data. All plots
-except for the "spatial_overlay" plot and all stats will work with the regulatory
+except for the ``spatial_overlay`` and ``scorecard`` plots and all stats will work with the regulatory
 metrics.
 
 The MDA8 ozone metric is calculated based on the following:

@@ -9,8 +9,17 @@ so that users do not have to re-download observational data over and over again
 for the same analysis period. We will work on automating this process further 
 in the future. 
 
-Examples of preprocessed observational data for MELODIES MONET are here:
+
+Note: for users using MELODIES MONET on the NOAA Hera machine (or other machines 
+with download restrictions), you will need to run these jupyter notebooks on a 
+machine without download restrictions and manually copy the netCDF files produced 
+onto the NOAA Hera machine.
+
+Examples of preprocessed surface observational data for MELODIES MONET are here:
 `MELODIES MONET Example Datasets <https://csl.noaa.gov/groups/csl4/modeldata/melodies-monet/>`_. 
+
+Surface
+-------
 
 In order to preprocess the observational data for additional time periods 
 follow the instructions in the jupyter notebooks in the 
@@ -24,11 +33,12 @@ the following observational datasets are provided.
 Adapting these scripts for other observational datasets should be straight 
 forward.
 
-Note: for users using MELODIES MONET on the NOAA Hera machine (or other machines 
-with download restrictions), you will need to run these jupyter notebooks on a 
-machine without download restrictions and manually copy the netCDF files produced 
-onto the NOAA Hera machine.
+Aircraft
+--------
 
+Under development. Some functionality is alrady available, and can be looked at in the official `Github repo routine <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/melodies_monet/plots/aircraftplots.py/>`__.
 
+Satellite
+---------
 
-
+Under development. Some functionality is already available, and can be looked at  in the official `Github repo routine <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/melodies_monet/plots/satplots.py/>`__.

@@ -40,8 +40,8 @@ extensions = [
 ]
 
 extlinks = {
-    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH'),
-    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR'),
+    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH %s'),
+    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR %s'),
 }
 
 autosummary_generate = True  # default in Sphinx v4
@@ -88,7 +88,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -198,7 +198,10 @@ linkcheck_ignore = [
     "https://www2.cisl.ucar.edu/resources/conda-environments",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    # NCEI sites having problems
+    "https://www.ncdc.noaa.gov/crn/",
 ]
+user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 
 autosectionlabel_prefix_document = True
 autosectionlabel_maxdepth = 2

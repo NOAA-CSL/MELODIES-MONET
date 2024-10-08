@@ -1,5 +1,5 @@
-Tutorials & Workshops
-=====================
+Other Resources
+===============
 
 Check out our upcoming and past tutorials, workshops, surveys, etc. below.
 

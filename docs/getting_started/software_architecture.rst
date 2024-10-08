@@ -1,5 +1,5 @@
-Getting Started
-===============
+Software Architecture
+=====================
 
 The User Interface
 ------------------
@@ -65,9 +65,9 @@ we aim for the average user of MELODIES MONET to be able to easily understand
 the core code and contribute new components.
 
 To learn more about current capabilities and future development objectives
-see the :doc:`/background/supported_datasets` ,
-:doc:`/background/supported_plots`, and
-:doc:`/background/supported_stats` pages in the
+see the :doc:`/users_guide/supported_datasets` ,
+:doc:`/users_guide/supported_plots`, and
+:doc:`/users_guide/supported_stats` pages in the
 Background section of this guide.
 
 

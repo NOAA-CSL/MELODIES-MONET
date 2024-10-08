@@ -25,6 +25,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     import xarray as xr
     from glob import glob
     import os
+    from .. import tutorial
     
     # Determine where to read files from
     if getattr(analysis,'output_dir_read') is not None:
@@ -47,7 +48,11 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
                 if isinstance(filenames[group],str):
                     files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in [filenames[group]]] for file in sublist])
                 else:
-                    files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames[group]] for file in sublist])
+                     if filenames[group][0].startswith("example:"):
+                        files[group] = sorted([file for sublist in [
+                            [tutorial.fetch_example(":".join(s.strip() for s in file.split(":")[1:]))] for file in filenames[group]] for file in sublist])
+                     else:
+                         files[group] = sorted([file for sublist in [glob(os.path.join(read_dir,file)) for file in filenames[group]] for file in sublist])
                 if not files[group]:
                     raise FileNotFoundError('No such file: ', filenames[group])
         else:
@@ -127,16 +132,17 @@ def read_analysis_ncf(filenames,xr_kws={}):
     import xarray as xr
     
     if len(filenames)==1:
-        print('Reading: ', filenames[0])
+        print('Reading:', filenames[0])
         ds_out = xr.open_dataset(filenames[0],**xr_kws)
         
     elif len(filenames)>1:
         for count, file in enumerate(filenames):
-            print('Reading: ', file)
+            print('Reading:', file)
 
             if count==0:
                 ds_out = xr.open_dataset(file,**xr_kws)
                 group_name1 =  ds_out.attrs['group_name']
+
             else:
                 ds_append = xr.open_dataset(file,**xr_kws)
                 # Test if all the files have the same group to prevent merge issues
@@ -182,3 +188,35 @@ def xarray_to_class(class_type,group_ds):
         class_dict[group]=c
 
     return class_dict
+
+def read_aircraft_obs_csv(filename,time_var=None):
+    """Function to read .csv formatted aircraft observations.
+
+    Parameters
+    ----------
+    filename : str 
+        Filename of .csv file to be read
+    time_var : optional
+        The variable in the dataset that should be converted to 
+        datetime format, renamed to `time` and set as a dimension.
+        
+    Returns
+    -------
+    ds_out : xarray.Dataset
+        Xarray dataset containing information from .csv file
+
+    """
+    import xarray as xr
+    import pandas as pd
+    
+    df = pd.read_csv(filename)
+    if time_var is not None:
+        df.rename(columns={time_var:'time'},inplace=True)
+        df['time']  = pd.to_datetime(df['time'])
+        
+    # Sort the values based on time
+    df.sort_values(by='time',inplace=True,ignore_index=True)
+        
+    df.set_index('time',inplace=True)
+    
+    return xr.Dataset.from_dataframe(df)

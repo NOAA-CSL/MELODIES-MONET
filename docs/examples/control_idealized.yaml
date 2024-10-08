@@ -61,7 +61,7 @@ plots:
     data_proc:  # These four seem to be required for time series
       rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time'  # 'time' for UTC or 'time_local'
-      ts_avg_window: '3H'  # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      ts_avg_window: '3h'  # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
       # ^ TODO: null setting seems not working
       set_axis: False  # If True, add vmin_plot and vmax_plot for each variable in obs.
 
