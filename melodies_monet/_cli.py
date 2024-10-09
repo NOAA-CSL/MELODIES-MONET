@@ -1028,26 +1028,59 @@ def get_aqs(
                     typer.echo("Note that the daily option currently requires monetio >0.2.5")
                 raise
 
-    if not daily:
-        with _timer("Fetching site metadata"):
-            # Need UTC offset in order to compute local time
-            # But currently the `meta=True` option doesn't work
-            meta0 = pd.read_csv(
-                "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
-                encoding="ISO-8859-1",
-                usecols=[0, 1, 2, 17],
-                dtype=str,
+    with _timer("Fetching site metadata"):
+        # Need UTC offset in order to compute local time
+        # But currently the `meta=True` option doesn't work
+        meta0 = pd.read_csv(
+            "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
+            encoding="ISO-8859-1",
+            usecols=[0, 1, 2, 17, 24, 25],
+            dtype=str,
+        )
+        meta = (
+            meta0.copy()
+            .assign(
+                siteid=meta0["State Code"] + meta0["County Code"] + meta0["Site Number"],
+                utcoffset=meta0["GMT Offset"].astype(int),
             )
-            meta = (
-                meta0.copy()
-                .assign(
-                    siteid=meta0["State Code"] + meta0["County Code"] + meta0["Site Number"],
-                    utcoffset=meta0["GMT Offset"].astype(int),
-                )
-                .drop(
-                    columns=["State Code", "County Code", "Site Number", "GMT Offset"],
-                )
+            .drop(
+                columns=["Site Number", "GMT Offset"],
             )
+            .rename(
+                columns={
+                    "State Code": "state_code",
+                    "County Code": "county_code",
+                    "City Name": "city_name",
+                    "CBSA Name": "cbsa_name",
+                }
+            )
+        )
+        meta.loc[meta["city_name"] == "Not in a City", "city_name"] = "Not in a city"  # normalize
+
+        counties0 = pd.read_csv(
+            "https://aqs.epa.gov/aqsweb/documents/codetables/states_and_counties.csv",
+            encoding="ISO-8859-1",
+            dtype=str,
+        )
+        counties = (
+            counties0.copy()
+            .rename(
+                columns={
+                    "State Code": "state_code",
+                    "State Name": "state_name",
+                    "State Abbreviation": "state_abbr",
+                    "County Code": "county_code",
+                    "County Name": "county_name",
+                    "EPA Region": "epa_region",  # note without R prefix
+                }
+            )
+        )
+        counties["epa_region"] = "R" + counties["epa_region"].str.lstrip("0")
+
+        meta = meta.merge(counties, on=["state_code", "county_code"], how="left")
+
+        if daily:
+            meta = meta.drop(columns=["utcoffset"])
 
     with _timer("Forming xarray Dataset"):
         # Select requested time period (older monetio doesn't do this)
@@ -1093,17 +1126,24 @@ def get_aqs(
         site_vns = [
             "siteid",
             "state_code",
+            "state_name",
+            "state_abbr",
             "county_code",
+            "county_name",
+            "city_name",
+            "cbsa_name",
             "site_num",
+            "epa_region",
             "latitude",
             "longitude",
         ]
         if daily:
-            site_vns.extend(["local_site_name", "address", "city_name", "msa_name"])
-        # NOTE: time_local not included since it varies in time as well
-        if not daily:
-            df = df.merge(meta, on="siteid", how="left")
+            site_vns.extend(["local_site_name", "address", "msa_name"])
+        else:
             site_vns.append("utcoffset")
+        # NOTE: time_local not included since it varies in time as well
+
+        df = df.merge(meta, on="siteid", how="left", suffixes=(None, "_meta"))
 
         ds_site = (
             df[site_vns]
@@ -1123,6 +1163,7 @@ def get_aqs(
         ds = (
             df[cols]
             .drop(columns=[vn for vn in site_vns if vn != "siteid"])
+            .drop(columns=[col for col in df.columns if col.endswith("_meta")])
             .drop_duplicates(["time", "siteid"], keep="first")
             .set_index(["time", "siteid"])
             .to_xarray()
