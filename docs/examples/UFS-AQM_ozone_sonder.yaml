@@ -1,0 +1,204 @@
+#eneral Description:  
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: '2023-06-24-00:00:00' #UTC
+  end_time: '2023-06-25-00:00:00' #UTC
+  output_dir: ./output/ufsaqm_ozonesonder 
+  debug: True
+
+model:
+  ufsaqm: # model label
+    files: /work2/noaa/stmp/btang6/cmaq_results/BeimingRun_54_OriRave1_2023June_BeforeEmisBugFix/Ozone_Sonder/0624/dyn.f*
+    mod_type: 'rrfs'
+    radius_of_influence: 19500 #meters: horizontal resolution * 1.5
+    mapping: #model species name : obs species name
+      ozone_sonder:
+        o3_ave: 'o3'
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model 
+            unit_scale: 1
+            unit_scale_method: '*'
+    projection: ~
+    plot_kwargs: #Opt
+      color: 'red'
+      marker: '.'
+      linestyle: '-'
+
+obs:
+  ozone_sonder: # obs label
+    filename: /home/btang6/python/OBS_DATA/ozone_sonder/gml-os-all.nc 
+    #resample: '600s' #10 mins default for aircraft
+    obs_type: ozone_sonder
+    variables: #Opt 
+      o3:
+        unit_scale: 1000 #Opt Scaling factor (original ppmv, convert to ppbv)
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0 # Opt Set this value to NaN
+        ylabel_plot: 'Ozone (ppbv)'
+        vmin_plot: 10.0 #Opt Min for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 100.0 #Opt Max for y-axis during plotting. To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 20.0 #Opt +/- range to use in bias plots. To apply to a plot, change restrict_yaxis = True.
+        #nlevels_plot: 21 #Opt number of levels used in colorbar for contourf plot.
+        #regulatory: False #Opt compute regulatory functions
+      'latitude':
+        rename: latitude # name to convert this variable to
+        unit_scale: 1  
+        unit_scale_method: '*'
+      'longitude':
+        rename: longitude # name to convert this variable to
+        unit_scale: 1  
+        unit_scale_method: '*'
+      'press':
+        rename: pressure_obs # name to convert this variable to
+        unit_scale: 100  # convert model hPa to Pa
+        unit_scale_method: '*'
+#      temp:
+#        rename: temperature_obs # name to convert this variable to
+#        unit_scale: 0     # original in degree C
+#        unit_scale_method: '-'
+
+plots:
+  plot_grp1:
+    type: 'vertical_single_date' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [14,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 5.
+    text_kwargs: #Opt
+      fontsize: 36.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+ 
+    altitude_range: [0,10]
+    altitude_method: ['sea level'] #choose from 'ground level' or 'sea level'
+    station_name: ['Trinidad Head, California']
+    compare_date_single: [2023,6,24,20,30,18]
+    monet_logo_position: [1] #1 is lower left, 4 is upper left.    
+    data: ['ozone_sonder_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+
+    data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+  plot_grp2:
+    type: 'vertical_boxplot_os' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [14,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 5.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+
+    altitude_range: [0,10]
+    altitude_method: ['ground level'] #choose from 'ground level' or 'sea level'
+    station_name: ['Trinidad Head, California']
+    compare_date_single: [2023,6,24,20,30,18]
+    monet_logo_position: [1] #1 is lower left, 4 is upper left.
+    altitude_threshold_list: [0,1,2,3,4,5,6,7,8,9,10]    
+    data: ['ozone_sonder_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    
+    data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+  plot_grp3:
+    type: 'density_scatter_plot_os' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [14,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 5.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+
+    model_name_list: ['Ozone_Sonder','ufsaqm']
+    altitude_range: [0,10]
+    altitude_method: ['ground level'] #choose from 'ground level' or 'sea level'
+
+#    station_name: ['Boulder, Colorado']
+#    compare_date_single: [2023,6,7,16,40,50]
+#    compare_date_single: [2023,6,15,16,6,29]
+#    compare_date_single: [2023,6,21,16,8,1]
+#    compare_date_single: [2023,6,28,18,23,44]
+#    compare_date_single: [2023,7,13,15,21,03]
+#    compare_date_single: [2023,7,17,16,17,04]
+#    compare_date_single: [2023,7,24,16,04,18]
+#    compare_date_single: [2023,8,1,15,23,46]
+#    compare_date_single: [2023,8,9,16,3,55]
+#    compare_date_single: [2023,8,16,13,59,47]
+#    compare_date_single: [2023,8,23,16,14,12]
+#    compare_date_single: [2023,8,29,16,25,12]
+
+    station_name: ['Trinidad Head, California']
+#    compare_date_single: [2023,6,12,1,2,7]
+#    compare_date_single: [2023,6,14,23,5,6]
+    compare_date_single: [2023,6,24,20,30,18]
+#    compare_date_single: [2023,7,03,20,38,41]
+#    compare_date_single: [2023,7,22,21,43,40]
+#    compare_date_single: [2023,8,4,22,16,11]
+#    compare_date_single: [2023,8,10,20,25,51]
+#    compare_date_single: [2023,8,18,20,9,52]
+    cmap_method: ['turbo']
+    monet_logo_position: [1] #1 is lower left, 4 is upper left.
+
+    data: ['ozone_sonder_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+
+    data_proc:
+      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+      #filter_string: state_name in ['CA','NY'] and WS < 1 # Uses pandas query method.
+      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+      set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
+
+#  plot_grp4:
+#    type: 'aggregate_plot_os' # plot type
+#    fig_kwargs: #Opt to define figure options
+#      figsize: [14,6] # figure size if multiple plots
+#    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+#      linewidth: 2.0
+#      markersize: 5.
+#    text_kwargs: #Opt
+#      fontsize: 18.
+#    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+#    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+
+#    threshold_list: [1,2,3,4,5,6,7,8,9,10]
+#    model_name_list: ['Ozone_Sonder','cmaq54_OriRAVE','cmaq52_POCFix_OriRAVE']
+##    altitude_range: [0,10]
+#    altitude_method: ['ground level'] #choose from 'ground level' or 'sea level'
+#    station_name: ['Boulder, Colorado']
+#    fill_color_list: ['b','orange','g']
+#    compare_date_multi: [[2023,8,9,16,3,55],[2023,8,16,13,59,47]]
+#    monet_logo_position: [1] #1 is lower left, 4 is upper left.    
+#    data: ['ozone_sonder_cmaq54_OriRAVE','ozone_sonder_cmaq52_POCFix_OriRAVE'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+
+#    data_proc:
+#      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
+#      #filter_string: state_name in ['CA','NY'] and WS < 1 # Uses pandas query method.
+#      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
+#      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+#      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+#      #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
+#      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.

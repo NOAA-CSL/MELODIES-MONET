@@ -1267,7 +1267,51 @@ class analysis:
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
-                
+
+                elif obs.obs_type.lower() == 'ozone_sonder':
+                    from .util.tools import vert_interp
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
+ 
+                    import datetime 
+                    plot_dict_ozone_sonder = self.control_dict['plots']
+                    for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
+                        plot_type_ozone_sonder = grp_dict_ozone_sonder['type']
+                        plot_os_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
+                        if plot_type_ozone_sonder in plot_os_type_list_all:
+                           station_name_os = grp_dict_ozone_sonder['station_name']
+                           cds_os = grp_dict_ozone_sonder['compare_date_single']
+                           obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
+                           obs.obj=obs.obj.loc[datetime.datetime(cds_os[0],cds_os[1],cds_os[2],cds_os[3],cds_os[4],cds_os[5])]
+                           break
+                   
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs','pressure_obs'])
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    print('In pair function, After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.type = 'ozone_sonder'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file 
                 # If mobile surface data or single ground site surface data
                 elif obs.obs_type.lower() == 'mobile' or obs.obs_type.lower() == 'ground':
                     from .util.tools import mobile_and_ground_pair
@@ -1452,6 +1496,7 @@ class analysis:
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
+            from .plots import ozone_sonder_plots as sonderplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1486,8 +1531,22 @@ class analysis:
                 region_name = grp_dict['region_name'] 
                 region_list = grp_dict['region_list']
                 model_name_list = grp_dict['model_name_list']     
-            
 
+            #read-in special settings for ozone sonder related plots
+            if plot_type == 'vertical_single_date' or 'vertical_boxplot_os' or 'density_scatter_plot_os':
+                altitude_range = grp_dict['altitude_range']
+                altitude_method = grp_dict['altitude_method']
+                station_name = grp_dict['station_name']
+                monet_logo_position = grp_dict['monet_logo_position']
+                cds = grp_dict['compare_date_single']
+                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
+
+                if plot_type == 'vertical_boxplot_os':
+                    altitude_threshold_list = grp_dict['altitude_threshold_list']
+                elif plot_type == 'density_scatter_plot_os':
+                    cmap_method = grp_dict['cmap_method']
+                    model_name_list = grp_dict['model_name_list']
+                
             #read-in special settings for scorecard
             if plot_type == 'scorecard':
                 region_list = grp_dict['region_list']
@@ -1681,7 +1740,7 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground']:
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']: 
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
@@ -1801,6 +1860,7 @@ class analysis:
                             else:
                                 vmin_y2 = vmax_y2 = None
                             
+
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
                             if filter_criteria:
@@ -2082,9 +2142,100 @@ class analysis:
                                 savefig(outname + '.png', logo_height=150)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
-                        
+                        elif plot_type.lower() == 'vertical_single_date':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            #begin plotting
+                            if p_index ==0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
+                            if p_index == len(pair_labels) - 1:
+                                sonderplots.make_vertical_single_date(pairdf,
+                                                                      comb_bx,
+                                                                      altitude_range=altitude_range,
+                                                                      altitude_method=altitude_method,
+                                                                      vmin=vmin,
+                                                                      vmax=vmax,
+                                                                      station_name=station_name,
+                                                                      release_time=release_time,
+                                                                      label_bx=label_bx,
+                                                                      fig_dict=fig_dict,
+                                                                      text_dict=text_dict
+                                                                      )
+                                #save plot
+                                plt.tight_layout()
+                                savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
 
-                        
+                                del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
+
+                        elif plot_type.lower() == 'vertical_boxplot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+                            #begin plotting
+                            if p_index ==0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
+
+                            if p_index == len(pair_labels) - 1:
+                                sonderplots.make_vertical_boxplot_os(pairdf,
+                                                                     comb_bx,
+                                                                     label_bx=label_bx,
+                                                                     altitude_range=altitude_range,
+                                                                     altitude_method=altitude_method,
+                                                                     vmin=vmin,
+                                                                     vmax=vmax,
+                                                                     altitude_threshold_list=altitude_threshold_list,
+                                                                     station_name=station_name,
+                                                                     release_time=release_time,
+                                                                     fig_dict=fig_dict,
+                                                                     text_dict=text_dict)
+                                #save plot
+                                plt.tight_layout()
+                                savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
+                                del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
+
+                        elif plot_type.lower() == 'density_scatter_plot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis == True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+
+                            #begin plotting
+                            plt.figure()
+                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
+                            plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
+                            plt.tight_layout()
+                            savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
+                            del (pairdf)
+                            
                         elif plot_type.lower() == 'violin':
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
