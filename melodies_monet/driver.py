@@ -1378,10 +1378,16 @@ class analysis:
                     if obs.sat_type == 'tempo_l2_no2':
                         from .util import sat_l2_swath_utility_tempo as sutil
 
-                        mod_no2 = [k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"]
-                        # import pdb; pdb.set_trace()
-                        paired_data_atswath = sutil.regrid_and_apply_weights(obs.obj, mod.obj, species=mod_no2, method='bilinear')
-                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(paired_data_atswath, model_obj, method='bilinear')
+                        mod_sp = [
+                            k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"
+                        ]
+                        regrid_method = obs.obj("regridding_method", "bilinear")
+                        paired_data_atswath = sutil.regrid_and_apply_weights(
+                            obs.obj, mod.obj, species=mod_sp, method=regrid_method
+                        )
+                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(
+                            paired_data_atswath, model_obj, method=regrid_method
+                        )
 
                         self.models[model_label].obj = model_obj
 
@@ -1390,6 +1396,11 @@ class analysis:
                         # paired_data = paired_data_atgrid.reset_index("y") # for saving
                         # paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
+                        
+                        #Reset index. This should dissappear when moving to satplots_xr
+                        # paired_data = paired_data.rename_dims({"y": "ll"})
+                        # paired_data = paired_data.stack(y=["x", "ll"])
+                        # paired_data = paired_data.reset_index("y")
 
                         p.type = obs.obs_type
                         p.obs = obs.label
@@ -1397,8 +1408,8 @@ class analysis:
                         p.model_vars = keys
                         p.obs_vars = obs_vars
                         p.obj = paired_data
-                        label = '{}_{}'.format(p.obs,p.model)
-                        p.filename = '{}.nc'.format(label)
+                        label = "{}_{}".format(p.obs,p.model)
+                        p.filename = "{}.nc".format(label)
 
                         self.paired[label] = p
                         

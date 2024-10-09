@@ -377,8 +377,8 @@ def make_taylor(
             dset_forplot[varname_o].values[nan_ind].flatten(),
             dset_forplot[varname_m].values[nan_ind].flatten(),
         )[0, 1]
-        print(cc)
         if normalize:
+            print(f"Base standard deviation: {refstd: 1.3g}")
             scale_factor = refstd
             dia = td(1, scale=ty_scale, fig=f, rect=111, label=label_o)
             dia.add_sample(
@@ -408,8 +408,9 @@ def make_taylor(
             dset_forplot[varname_m].values[nan_ind].flatten(),
         )[0, 1]
         if normalize:
+            scale_factor = refstd
             dia.add_sample(
-                dset_forplot[varname_m].std().values / refstd,
+                dset_forplot[varname_m].std().values / scale_factor,
                 cc,
                 zorder=9,
                 label=label_m,
@@ -446,13 +447,9 @@ def make_taylor(
     ax.axis["top"].label.set_fontsize(text_kwargs["fontsize"])
     ax.axis["left"].label.set_fontweight("bold")
     ax.axis["top"].label.set_fontweight("bold")
-    # ax.axis["left"].label.('%0.0e')
     ax.axis["top"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["left"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs["fontsize"] * 0.8)
-    ax.axis["left"].major_ticklabels.set_axis_direction("bottom")
-    ax.axis["right"].major_ticklabels.set_axis_direction("left")
-    # import pdb; pdb.set_trace()
     return dia
 
 
@@ -881,28 +878,6 @@ def make_multi_boxplot(
     else:
         f, ax = plt.subplots(figsize=(8, 8))
     # Define characteristics of boxplot.
-    boxprops = {"edgecolor": "k", "linewidth": 1.5}
-    lineprops = {"color": "k", "linewidth": 1.5}
-    boxplot_kwargs = {
-        "boxprops": boxprops,
-        "medianprops": lineprops,
-        "whiskerprops": lineprops,
-        "capprops": lineprops,
-        "fliersize": 2.0,
-        "flierprops": dict(
-            marker="*", markerfacecolor="blue", markeredgecolor="none", markersize=6.0
-        ),
-        "width": 0.75,
-        "palette": pal,
-        "order": order_box,
-        "showmeans": True,
-        "meanprops": {
-            "marker": ".",
-            "markerfacecolor": "black",
-            "markeredgecolor": "black",
-            "markersize": 20.0,
-        },
-    }
     sns.set_style("whitegrid")
     sns.set_style("ticks")
     len_combx = len(comb_bx.columns)
@@ -937,6 +912,8 @@ def make_multi_boxplot(
     if domain_type is not None and domain_name is not None:
         if domain_type == "epa_region":
             ax.set_title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
+        elif domain_type == "giorgi_region":
+            ax.set_title("Giorgi Region" + domain_name, fontweight="bold", **text_kwargs)
         else:
             ax.set_title(domain_name, fontweight="bold", **text_kwargs)
     if vmin is not None and vmax is not None:
