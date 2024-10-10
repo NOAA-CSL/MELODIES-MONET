@@ -23,6 +23,7 @@ from ..plots import savefig
 
 sns.set_context("paper")
 
+
 def time_average(dset, varname=None, period="1D", time_offset=None):
     """Calculates 24-hour averages
 
@@ -633,6 +634,161 @@ def make_boxplot(
     )
 
 
+def make_spatial_dist(
+    dset,
+    varname=None,
+    label=None,
+    ylabel=None,
+    vmin=None,
+    vmax=None,
+    nlevels=None,
+    proj=None,
+    outname="plot",
+    domain_type=None,
+    domain_name=None,
+    fig_dict=None,
+    text_dict=None,
+    debug=False,
+):
+    """Creates difference plot for satellite and model data.
+    For data in swath format, overplots all differences
+    For data on regular grid, mean difference.
+
+    Parameters
+    ----------
+    dset : xr.Dataset
+        Dataset containing the paired data
+
+    """
+    if not debug:
+        plt.ioff()
+
+    def_map = dict(states=True, figsize=[15, 8])
+    if fig_dict is not None:
+        map_kwargs = {**def_map, **fig_dict}
+    else:
+        map_kwargs = def_map
+
+    # set default text size
+    def_text = dict(fontsize=20)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = varname
+
+    # Take the difference for the model output - the sat output
+
+    var2plot = dset[varname]  # Take mean over time,
+
+    if len(var2plot.dims) == 3:
+        var2plot = var2plot.mean("time")
+
+    # Determine the domain
+    if domain_type == "all" and domain_name == "CONUS":
+        latmin = 25.0
+        lonmin = -130.0
+        latmax = 50.0
+        lonmax = -60.0
+        title_add = domain_name + ": "
+    elif domain_type == "epa_region" and domain_name is not None:
+        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
+        title_add = "EPA Region " + domain_name + ": "
+    elif domain_type == "giorgi_region" and domain_name is not None:
+        latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
+        title_add = "Giorgi Region " + domain_name + ": "
+    else:
+        latmin = -90
+        lonmin = -180
+        latmax = 90
+        lonmax = 180
+        title_add = domain_name + ": "
+
+    # Map the model output first.
+    cbar_kwargs = dict(aspect=15, shrink=0.8)
+
+    # Add options that this could be included in the fig_kwargs in yaml file too.
+    if "extent" not in map_kwargs:
+        map_kwargs["extent"] = [lonmin, lonmax, latmin, latmax]
+    if "crs" not in map_kwargs:
+        map_kwargs["crs"] = proj
+
+    # First determine colorbar
+    if vmin is None and vmax is None:
+        # vmin = vmodel_mean.quantile(0.01)
+        vmax = np.max(
+            (
+                np.abs(var2plot.quantile(0.99)),
+                np.abs(var2plot.quantile(0.01)),
+            )
+        )
+        vmin = -vmax
+
+    if nlevels is None:
+        nlevels = 21
+    print(vmin, vmax)
+    clevel = np.linspace(vmin, vmax, nlevels)
+    cmap = mpl.cm.get_cmap("bwr", nlevels - 1)
+    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
+
+    # I add extend='both' here because the colorbar is setup to plot the values outside the range
+    ax = monet.plots.mapgen.draw_map(
+        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True
+    )
+    # draw scatter plot of model and satellite differences
+    c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
+    plt.gcf().canvas.draw()
+    plt.tight_layout(pad=0)
+    plt.title(title_add + label, fontweight="bold", **text_kwargs)
+    ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
+
+    # Uncomment these lines if you update above just to verify colorbars are identical.
+    # Also specify plot above scatter = ax.axes.scatter etc.
+    # cbar = ax.figure.get_axes()[1]
+    plt.colorbar(c, ax=ax, extend="both")
+
+    # Update colorbar
+    f = plt.gcf()
+
+    model_ax = f.get_axes()[0]
+    cax = f.get_axes()[1]
+
+    # get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+    position_m = model_ax.get_position()
+    position_c = cax.get_position()
+    cax.set_position(
+        [
+            position_c.x0,
+            position_m.y0,
+            position_c.x1 - position_c.x0,
+            (position_m.y1 - position_m.y0) * 1.1,
+        ]
+    )
+    cax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
+    cax.tick_params(
+        labelsize=text_kwargs["fontsize"] * 0.8,
+        length=10.0,
+        width=2.0,
+        grid_linewidth=2.0,
+    )
+
+    cax.yaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
+
+    # plt.tight_layout(pad=0)
+    savefig(
+        outname + ".png",
+        loc=4,
+        logo_height=100,
+        decorate=True,
+        bbox_inches="tight",
+        dpi=150,
+    )
+    return ax
+
+
 def make_spatial_bias_gridded(
     dset,
     varname_o=None,
@@ -819,7 +975,7 @@ def make_multi_boxplot(
     label_bx : list
         list of string labels to use in box-plot from calculate_boxplot
     region_bx : dataframe
-        dataframe containing information of stations to help create multi-box-plot
+        dataframe containing information of boxes to help create multi-box-plot
         from calculate_boxplot
     model_name_list : list of str
         list of models and observation sources used for x-labels in plot
