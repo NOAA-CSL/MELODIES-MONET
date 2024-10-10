@@ -1869,9 +1869,9 @@ class analysis:
                                 plot_params = {'dset': pairdf, 'varname': obsvar}
                             else:
                                 make_timeseries = splots.make_timeseries
-                                plot_params = {'pairdf': pairdf,
-                                               'pairdf_reg': pairdf_reg,
-                                               'column':obsvar}
+                                plot_params = {
+                                    'pairdf': pairdf, 'pairdf_reg': pairdf_reg, 'column':obsvar
+                                }
                                 import pdb; pdb.set_trace()
                                 plot_params = {
                                     **plot_params,
@@ -2455,51 +2455,50 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
+                            if pair1.obs == 'tempo_l2_no2':
+                                make_taylor = satplots.make_taylor
+                                plot_params = {
+                                    'dset': pairdf,
+                                    'varname_o': obsvar,
+                                    'varname_m': modvar,
+                                    'normalize': True,
+                                }
+                            else:
+                                make_taylor = splots.make_taylor
+                                plot_params = {
+                                    'df': pairdf,
+                                    'column_o': obsvar,
+                                    'column_m': modvar,
+                                }
+                            plot_params = {
+                                **plot_params,
+                                **{
+                                    'label_o': p.obs,
+                                    'label_m': p.model,
+                                    'ylabel': use_ylabel,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': plot_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                }
+                            }
+
                             if set_yaxis == True:
-                                import pdb; pdb.set_trace()
                                 if 'ty_scale' in obs_plot_dict.keys():
-                                    ty_scale = obs_plot_dict['ty_scale']
+                                    plot_params["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
-                                    ty_scale = 1.5  # Use default
+                                    plot_params["ty_scale"] = 1.5  # Use default
                             else:
                                 ty_scale = 1.5  # Use default
                             if p_index == 0:
                                 # Plot initial obs/model
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(**plot_params)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    dia=dia,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = splots.make_taylor(dia=dia, **plot_params)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
@@ -2540,9 +2539,9 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             if pair1.obj == 'tempo_l2_no2':
                                 make_spatial_bias_gridded = satplots.make_spatial_bias_gridded
-                                plot_params = {'dset': pairdf,
-                                               'varname_o': obsvar,
-                                               'varname_m': modvar}
+                                plot_params = {
+                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar
+                                }
                             else:
                                 make_spatial_bias_gridded = splots.make_spatial_bias_gridded
                                 plot_params = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
