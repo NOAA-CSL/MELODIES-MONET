@@ -303,7 +303,7 @@ def get_aeronet(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(site_vns)
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
@@ -459,7 +459,7 @@ def get_airnow(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -670,7 +670,7 @@ def get_ish_lite(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -889,7 +889,7 @@ def get_ish(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -1129,7 +1129,7 @@ def get_aqs(
             .swap_dims(siteid="x")
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
