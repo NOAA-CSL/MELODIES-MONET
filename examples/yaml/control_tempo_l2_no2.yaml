@@ -68,8 +68,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 18.
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
+    domain_type: ["all", "auto-region:giorgi"]
+    domain_name: ["CONUS", "CNA"]
     data: ["tempo_l2_no2_wrfchem_v4.2"]
     data_proc:
       ts_offset: (-4, 'h')
@@ -88,4 +88,18 @@ plots:
     data: ['tempo_l2_no2_wrfchem_v4.2']
     data_proc:
       set_axis: True
+
+  plot_grp3:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+    text_kwargs:
+      fontsize: 16
+    domain_type: ['all']
+    domain_name: ['CONUS']
+    data: ['tempo_l2_no2_wrfchem_v4.2']
+    data_proc:
+      set_axis: True
+      vmax: 1e15
+      vmin: 0
 
