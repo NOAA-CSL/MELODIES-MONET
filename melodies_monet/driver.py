@@ -2578,6 +2578,10 @@ class analysis:
                                 "text_dict": text_dict,
                                 "debug": self.debug,
                             }
+                            if isinstance(plot_params["vmax"], str):
+                                plot_params["vmax"] = float(plot_params["vmax"])
+                            if isinstance(plot_params["vmin"], str):
+                                plot_params["vmin"] = float(plot_params["vmin"])
                             satplots.make_spatial_dist(**plot_params)
                             plot_params["varname"] = modvar
                             plot_params["label"] = p.model
