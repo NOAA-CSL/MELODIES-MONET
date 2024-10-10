@@ -1381,7 +1381,7 @@ class analysis:
                         mod_sp = [
                             k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"
                         ]
-                        regrid_method = obs.obj("regridding_method", "bilinear")
+                        regrid_method = obs.get("regridding_method", "bilinear")
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod.obj, species=mod_sp, method=regrid_method
                         )
