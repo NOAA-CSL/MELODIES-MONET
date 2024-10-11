@@ -264,6 +264,9 @@ def make_timeseries(
         bbox_to_anchor=(1.0, 0.9),
         loc="center left",
     )
+    ax.tick_params(axis='both', which='major', labelsize=text_kwargs["fontsize"] * 0.8)
+    ax.yaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
+    ax.xaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
     if domain_type is not None and domain_name is not None:
         if domain_type == "epa_region":
             ax.set_title("EPA Region " + domain_name, fontweight="bold", **text_kwargs)
@@ -665,9 +668,7 @@ def make_spatial_dist(
     text_dict=None,
     debug=False,
 ):
-    """Creates difference plot for satellite and model data.
-    For data in swath format, overplots all differences
-    For data on regular grid, mean difference.
+    """Creates a plot for satellite or model data.
 
     Parameters
     ----------
@@ -746,7 +747,7 @@ def make_spatial_dist(
         nlevels = 21
     print(vmin, vmax)
     clevel = np.linspace(vmin, vmax, nlevels)
-    cmap = mpl.cm.get_cmap("bwr", nlevels - 1)
+    cmap = mpl.cm.get_cmap("plasma", nlevels - 1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
@@ -757,7 +758,9 @@ def make_spatial_dist(
     c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
-    plt.title(title_add + label, fontweight="bold", **text_kwargs)
+    timestamps = (
+        f" {dset['time'][0].values.astype(str)[:16]}--{dset['time'][-1].values.astype(str)[:16]}")
+    plt.title(title_add + label + timestamps, fontweight="bold", **text_kwargs)
     ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
 
     # Uncomment these lines if you update above just to verify colorbars are identical.

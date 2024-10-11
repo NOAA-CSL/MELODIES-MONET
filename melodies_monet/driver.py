@@ -1381,7 +1381,10 @@ class analysis:
                         mod_sp = [
                             k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"
                         ]
-                        regrid_method = obs.obj("regridding_method", "bilinear")
+                        try:
+                            regrid_method = obs.regridding
+                        except AttributeError:
+                            regrid_method = "bilinear"
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod.obj, species=mod_sp, method=regrid_method
                         )
@@ -1491,6 +1494,7 @@ class analysis:
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
             from .plots import satplots as splots,savefig
+            from .plots import satplots_xr as satplots
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
@@ -1674,12 +1678,20 @@ class analysis:
                                         f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
                                         "others will be included."
                                     )
-                                pairdf_all = pairdf_all.loc[
-                                                (pairdf_all["latitude"] > bounds[0])
-                                                & (pairdf_all["longitude"] > bounds[1])
-                                                & (pairdf_all["latitude"] < bounds[2])
-                                                & (pairdf_all["longitude"] < bounds[3])
-                                             ]
+                                if isinstance(pairdf_all, pd.DataFrame):
+                                    pairdf_all = pairdf_all.loc[
+                                                    (pairdf_all["latitude"] > bounds[0])
+                                                    & (pairdf_all["longitude"] > bounds[1])
+                                                    & (pairdf_all["latitude"] < bounds[2])
+                                                    & (pairdf_all["longitude"] < bounds[3])
+                                                 ]
+                                else:
+                                    pairdf_all = pairdf_all.where(
+                                                    (pairdf_all["latitude"] > bounds[0])
+                                                    & (pairdf_all["longitude"] > bounds[1])
+                                                    & (pairdf_all["latitude"] < bounds[2])
+                                                    & (pairdf_all["longitude"] < bounds[3])
+                                                 )
                             else:
                                 pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
                         
@@ -1855,41 +1867,42 @@ class analysis:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
+                            if pair1.obs == 'tempo_l2_no2':
+                                make_timeseries = satplots.make_timeseries
+                                plot_params = {'dset': pairdf, 'varname': obsvar}
+                            else:
+                                make_timeseries = splots.make_timeseries
+                                plot_params = {
+                                    'pairdf': pairdf, 'pairdf_reg': pairdf_reg, 'column':obsvar
+                                }
+                                import pdb; pdb.set_trace()
+                                plot_params = {
+                                    **plot_params,
+                                    **{
+                                        'label':p.obs,
+                                        'avg_window': a_w,
+                                        'ylabel': use_ylabel,
+                                        'vmin':vmin,
+                                        'vmax':vmax,
+                                        'domain_type': domain_type,
+                                        'domain_name': domain_name,
+                                        'plot_dict': obs_dict,
+                                        'fig_dict': fig_dict,
+                                        'text_dict': text_dict,
+                                        'debug': self.debug,
+                                    }
+                                }
                             if p_index == 0:
                                 # First plot the observations.
-                                ax = splots.make_timeseries(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column=obsvar,
-                                    label=p.obs,
-                                    avg_window=a_w,
-                                    ylabel=use_ylabel,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                ax = make_timeseries(**plot_params)
                             # For all p_index plot the model.
-                            ax = splots.make_timeseries(
-                                pairdf,
-                                pairdf_reg,
-                                column=modvar,
-                                label=p.model,
-                                ax=ax,
-                                avg_window=a_w,
-                                ylabel=use_ylabel,
-                                vmin=vmin,
-                                vmax=vmax,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                plot_dict=plot_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                            )
+                            if pair1.obs == "tempo_l2_no2":
+                                plot_params['varname']=modvar
+                            else:
+                                plot_params['column']=modvar
+                            plot_params['label'] = p.model
+                            plot_params['ax'] = ax
+                            ax = make_timeseries(**plot_params)
 
                             # Extract text_kwargs from the appropriate plot group
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
@@ -2445,50 +2458,50 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
+                            if pair1.obs == 'tempo_l2_no2':
+                                make_taylor = satplots.make_taylor
+                                plot_params = {
+                                    'dset': pairdf,
+                                    'varname_o': obsvar,
+                                    'varname_m': modvar,
+                                    'normalize': True,
+                                }
+                            else:
+                                make_taylor = splots.make_taylor
+                                plot_params = {
+                                    'df': pairdf,
+                                    'column_o': obsvar,
+                                    'column_m': modvar,
+                                }
+                            plot_params = {
+                                **plot_params,
+                                **{
+                                    'label_o': p.obs,
+                                    'label_m': p.model,
+                                    'ylabel': use_ylabel,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': plot_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                }
+                            }
+
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
-                                    ty_scale = obs_plot_dict['ty_scale']
+                                    plot_params["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
-                                    ty_scale = 1.5  # Use default
+                                    plot_params["ty_scale"] = 1.5  # Use default
                             else:
                                 ty_scale = 1.5  # Use default
                             if p_index == 0:
                                 # Plot initial obs/model
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(**plot_params)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    dia=dia,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = splots.make_taylor(dia=dia, **plot_params)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
@@ -2526,22 +2539,55 @@ class analysis:
                                 debug=self.debug
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
-                            splots.make_spatial_bias_gridded(
-                                p.obj,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=modvar,
-                                label_m=p.model,
-                                ylabel=use_ylabel,
-                                #vdiff=vdiff,
-                                outname=outname,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                                )    
+                            outname = "{}.{}".format(outname, p_label)
+                            if pair1.obj == 'tempo_l2_no2':
+                                make_spatial_bias_gridded = satplots.make_spatial_bias_gridded
+                                plot_params = {
+                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar
+                                }
+                            else:
+                                make_spatial_bias_gridded = splots.make_spatial_bias_gridded
+                                plot_params = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
+
+                            plot_params = {
+                                **plot_params,
+                                **{
+                                    "label_o": p.obs,
+                                    "label_m": p.model,
+                                    "ylabel": use_ylabel,
+                                    "outname": outname,
+                                    "domain_type": domain_type,
+                                    "domain_name": domain_name,
+                                    "fig_dict": fig_dict,
+                                    "text_dict": text_dict,
+                                    "debug": self.debug
+                                }
+                            }
+                            make_spatial_bias_gridded(**plot_params)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        elif plot_type.lower() == 'spatial_dist':
+                            outname = "{}.{}".format(outname, p_label)
+                            plot_params = {
+                                "dset": p.obj,
+                                "varname": obsvar,
+                                "label": p.obs,
+                                "ylabel": use_ylabel,
+                                "domain_type": domain_type,
+                                "domain_name": domain_name,
+                                "vmax": grp_dict["data_proc"].get("vmax", None),
+                                "vmin": grp_dict["data_proc"].get("vmin", None),
+                                "fig_dict": fig_dict,
+                                "text_dict": text_dict,
+                                "debug": self.debug,
+                            }
+                            if isinstance(plot_params["vmax"], str):
+                                plot_params["vmax"] = float(plot_params["vmax"])
+                            if isinstance(plot_params["vmin"], str):
+                                plot_params["vmin"] = float(plot_params["vmin"])
+                            satplots.make_spatial_dist(**plot_params)
+                            plot_params["varname"] = modvar
+                            plot_params["label"] = p.model
+                            satplots.make_spatial_dist(**plot_params)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
                                 if set_yaxis == True:
