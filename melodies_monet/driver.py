@@ -1643,7 +1643,7 @@ class analysis:
                             use_ylabel = None
 
                         # Determine if set axis values or use defaults
-                        if grp_dict['data_proc']['set_axis'] == True:
+                        if grp_dict['data_proc'].get('set_axis', False):
                             if obs_plot_dict:  # Is not null
                                 set_yaxis = True
                             else:
@@ -1875,7 +1875,6 @@ class analysis:
                                 plot_params = {
                                     'pairdf': pairdf, 'pairdf_reg': pairdf_reg, 'column':obsvar
                                 }
-                                import pdb; pdb.set_trace()
                                 plot_params = {
                                     **plot_params,
                                     **{
@@ -2495,13 +2494,17 @@ class analysis:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
                                     plot_params["ty_scale"] = 1.5  # Use default
                             else:
-                                ty_scale = 1.5  # Use default
+                                plot_params["ty_scale"] = 1.5  # Use default
+                            try: 
+                                plot_params["ty_scale"] = grp_dict["data_proc"].get("ty_scale", 1.5)
+                            except KeyError:
+                                plot_params["ty_scale"]=2
                             if p_index == 0:
                                 # Plot initial obs/model
                                 dia = make_taylor(**plot_params)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = splots.make_taylor(dia=dia, **plot_params)
+                                dia = make_taylor(dia=dia, **plot_params)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)

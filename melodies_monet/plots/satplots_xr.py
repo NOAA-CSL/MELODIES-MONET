@@ -744,7 +744,7 @@ def make_spatial_dist(
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
-        f" {dset['time'][0].values.astype(str)[:16]}--{dset['time'][-1].values.astype(str)[:16]}")
+        f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}")
     plt.title(title_add + label + timestamps, fontweight="bold", **text_kwargs)
     ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
 
