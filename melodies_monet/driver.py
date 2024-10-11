@@ -2576,6 +2576,7 @@ class analysis:
                             plot_params = {
                                 "dset": p.obj,
                                 "varname": obsvar,
+                                "outname": outname,
                                 "label": p.obs,
                                 "ylabel": use_ylabel,
                                 "domain_type": domain_type,
