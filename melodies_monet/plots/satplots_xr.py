@@ -264,7 +264,7 @@ def make_timeseries(
         bbox_to_anchor=(1.0, 0.9),
         loc="center left",
     )
-    ax.tick_params(axis='both', which='major', labelsize=text_kwargs["fontsize"] * 0.8)
+    ax.tick_params(axis="both", which="major", labelsize=text_kwargs["fontsize"] * 0.8)
     ax.yaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
     ax.xaxis.get_offset_text().set_fontsize(text_kwargs["fontsize"] * 0.8)
     if domain_type is not None and domain_name is not None:
@@ -735,12 +735,7 @@ def make_spatial_dist(
     # First determine colorbar
     if vmin is None and vmax is None:
         # vmin = vmodel_mean.quantile(0.01)
-        vmax = np.max(
-            (
-                np.abs(var2plot.quantile(0.99)),
-                np.abs(var2plot.quantile(0.01)),
-            )
-        )
+        vmax = np.max((np.abs(var2plot.quantile(0.99)), np.abs(var2plot.quantile(0.01))))
         vmin = -vmax
 
     if nlevels is None:
@@ -759,7 +754,8 @@ def make_spatial_dist(
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
-        f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}")
+        f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}"
+    )
     plt.title(title_add + label + timestamps, fontweight="bold", **text_kwargs)
     ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
 
@@ -1095,3 +1091,26 @@ def make_multi_boxplot(
 
     plt.tight_layout()
     savefig(outname + ".png", loc=4, logo_height=100)
+
+def sel_region(domain_type=None, domain_name=None):
+    """ Selects box for region. It's limited to regions
+
+    """
+    if domain_type == "all" and domain_name == "CONUS":
+        latmin = 25.0
+        lonmin = -130.0
+        latmax = 50.0
+        lonmax = -60.0
+        title_add = domain_name + ": "
+    elif domain_type == "epa_region" and domain_name is not None:
+        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
+        title_add = "EPA Region " + domain_name + ": "
+    elif domain_type == "giorgi_region" and domain_name is not None:
+        latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
+        title_add = "Giorgi Region " + domain_name + ": "
+    else:
+        latmin = -90
+        lonmin = -180
+        latmax = 90
+        lonmax = 180
+        title_add = domain_name + ": "
