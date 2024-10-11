@@ -21,6 +21,8 @@ from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 
 from ..plots import savefig
 
+plt.set_loglevel(level="warning")
+
 sns.set_context("paper")
 
 
@@ -397,7 +399,11 @@ def make_taylor(
         else:
             dia = td(refstd, scale=ty_scale, fig=f, rect=111, label=label_o)
             dia.add_sample(
-                dset_forplot[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+                dset_forplot[varname_m].std().values,
+                cc,
+                zorder=9,
+                label=label_m,
+                **plot_dict,
             )
         plt.grid(linewidth=1, alpha=0.5)
 
@@ -420,7 +426,11 @@ def make_taylor(
 
         else:
             dia.add_sample(
-                dset_forplot[varname_m].std().values, cc, zorder=9, label=label_m, **plot_dict
+                dset_forplot[varname_m].std().values,
+                cc,
+                zorder=9,
+                label=label_m,
+                **plot_dict,
             )
     # Set parameters for all plots
     contours = dia.add_contours(colors="0.5")
@@ -609,7 +619,12 @@ def make_boxplot(
     sns.set_style("whitegrid")
     sns.set_style("ticks")
     sns.boxplot(
-        ax=ax, x="variable", y="value", hue="variable", data=pd.melt(comb_bx), **boxplot_kwargs
+        ax=ax,
+        x="variable",
+        y="value",
+        hue="variable",
+        data=pd.melt(comb_bx),
+        **boxplot_kwargs,
     )
     ax.set_xlabel("")
     ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
