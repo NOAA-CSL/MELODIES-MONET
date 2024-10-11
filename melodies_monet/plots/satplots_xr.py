@@ -716,6 +716,10 @@ def make_spatial_dist(
     elif domain_type == "giorgi_region" and domain_name is not None:
         latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
         title_add = "Giorgi Region " + domain_name + ": "
+    elif domain_name == "model":
+        latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
+        lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
+        title_add = ""
     else:
         latmin = -90
         lonmin = -180
@@ -746,8 +750,10 @@ def make_spatial_dist(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
+    states = fig_dict.get('states', True)
+    counties = fig_dict.get('counties', False)
     ax = monet.plots.mapgen.draw_map(
-        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True
+        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
     c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
@@ -871,6 +877,10 @@ def make_spatial_bias_gridded(
     elif domain_type == "giorgi_region" and domain_name is not None:
         latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
         title_add = "Giorgi Region " + domain_name + ": "
+    elif domain_name == "model":
+        latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
+        lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
+        title_add = ""
     else:
         latmin = -90
         lonmin = -180
@@ -906,8 +916,10 @@ def make_spatial_bias_gridded(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
+    states = fig_dict.get('states', True)
+    counties = fig_dict.get('counties', False)
     ax = monet.plots.mapgen.draw_map(
-        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=True, counties=True
+        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
     c = ax.axes.scatter(
