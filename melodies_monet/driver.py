@@ -1557,8 +1557,8 @@ class analysis:
             # loop through obs variables
             for obsvar in obs_vars:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                domain_types = grp_dict['domain_type']
-                domain_names = grp_dict['domain_name']
+                domain_types = grp_dict.get('domain_type', [None])
+                domain_names = grp_dict.get('domain_name', [None])
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
@@ -1671,6 +1671,8 @@ class analysis:
                                     bounds = get_epa_region_bounds(acronym=domain_name)
                                 elif auto_region_id == 'giorgi':
                                     bounds = get_giorgi_region_bounds(acronym=domain_name)
+                                elif auto_region_id == 'custom':
+                                    bounds = grp_dict["domain_box"]
                                 else:
                                     raise ValueError(
                                         "Currently, region selections whithout a domain query have only "
@@ -1690,7 +1692,8 @@ class analysis:
                                                     (pairdf_all["latitude"] > bounds[0])
                                                     & (pairdf_all["longitude"] > bounds[1])
                                                     & (pairdf_all["latitude"] < bounds[2])
-                                                    & (pairdf_all["longitude"] < bounds[3])
+                                                    & (pairdf_all["longitude"] < bounds[3]),
+                                                    drop=True
                                                  )
                             else:
                                 pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
@@ -2546,7 +2549,7 @@ class analysis:
                             if pair1.obj == 'tempo_l2_no2':
                                 make_spatial_bias_gridded = satplots.make_spatial_bias_gridded
                                 plot_params = {
-                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar
+                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
                                 }
                             else:
                                 make_spatial_bias_gridded = splots.make_spatial_bias_gridded

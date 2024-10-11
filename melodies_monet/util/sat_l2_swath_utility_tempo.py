@@ -14,11 +14,11 @@ import logging
 import warnings
 
 import cf_xarray as cfxr
+import monetio as mio
 import numba
 import numpy as np
 import xarray as xr
 import xesmf as xe
-import monetio as mio
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -366,14 +366,14 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
-def discard_nonpairable(obsobj, modobj):
+def is_nonpairable(obsobj, k, modobj):
     """Discards inplace granules from obsobj that do not match modobj's
     domain, or granules that are all NaN. If the domain is small,
     it can considerably speed up the regridding process.
 
     Parameters
     ----------
-    obsobj : collections.OrderedDict[str, xr.Dataset]
+    obsobj : dict[str, xr.Dataset]
         tempo data
     modobj : xr.Dataset
         model data
@@ -382,18 +382,17 @@ def discard_nonpairable(obsobj, modobj):
     ------
     collections.OrderedDict[str, xr.Dataset]
     """
-    for k in obsobj.keys():
-        if obsobj[k]["lon"].max() < modobj["longitude"].min():
-            del obsobj[k]
-        elif obsobj[k]["lon"].min() > modobj["longitude"].max():
-            del obsobj[k]
-        elif obsobj[k]["lat"].max() < modobj["latitude"].min():
-            del obsobj[k]
-        elif obsobj[k]["lat"].min() > modobj["latitude"].max():
-            del obsobj[k]
-        elif np.all(obsobj[k]["vertical_column_troposphere"].isnull().values):
-            del obsobj[k]
-
+    if obsobj[k]["lon"].max() < modobj["longitude"].min():
+        return True
+    elif obsobj[k]["lon"].min() > modobj["longitude"].max():
+        return True
+    elif obsobj[k]["lat"].max() < modobj["latitude"].min():
+        return True
+    elif obsobj[k]["lat"].min() > modobj["latitude"].max():
+        return True
+    elif np.all(obsobj[k]["vertical_column_troposphere"].isnull().values):
+        return True
+    return False
 
 def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"]):
     """Does the complete process of regridding and
@@ -465,6 +464,8 @@ def regrid_and_apply_weights(
         "bilinear" or "patch". Check xesmf documentation for details.
     weights : None | str
         If present, a weightfile (as in "weights") is applied
+    discard_useless: boolean
+        If True, satellite granules that don't match the model domain are not used.
 
     Returns
     -------
@@ -498,6 +499,9 @@ def regrid_and_apply_weights(
     if isinstance(obsobj, dict):
         output_multiple = {}
         for ref_time in obsobj.keys():
+            if is_nonpairable(obsobj, ref_time, modobj):
+                warnings.warn(f"{ref_time} granule domain has no overlap with model. Discarding.")
+                continue
             if verbose:
                 print(f"Regridding {ref_time} and applying AMF and weights")
             output_multiple[ref_time] = _regrid_and_apply_weights(
@@ -816,101 +820,102 @@ def select_by_keys(data_names, period="per_scan"):
     return [date_names_sorted]
 
 
-def read_objs_andpair(
-    obs_path,
-    vars_for_obs: None,
-    modobj,
-    period="per_scan",
-    save_swath=True,
-    to_modgrid=True,
-    save_gridded=True,
-    discard_useless=True,
-    regrid_method="conservative",
-    regrid_weights=None,
-    output=".",
-):
-    """Read observations and pair to model data. The current implementation requires the
-    model to be loaded at once.
-
-    Parameters
-    ----------
-    obs_path : str
-        Path to the observations.
-    modobj : xr.Dataset
-        Model object, as read by MONETIO.
-    period : str
-        'per_scan',  'per_swath' or 'all'. Looping period to save memory.
-    save_swath : boolean
-        Whether each swath should be saved.
-    to_modgrid : boolean
-        Whether the data should be regridded back to the model grid.
-    save_gridded : boolean
-        Whether the gridded data should be saved.
-    discard_useless : boolean
-        Whether granules that don't match the model domain should be discarded.
-    regrid_method : str
-        Regrid method to use with xesmf. Generally, it should be 'conservative' or 'bilinear'.
-    regrid_weights : str
-        If provided, regrid_weights are read for speeding up the script.
-    output : str
-        Path to output
-
-    Returns
-    -------
-    xr.Dataset
-        Paired dataset at all timesteps
-    """
-    obs_path = sorted(glob.glob(obs_path))
-    looping_strategy = select_by_keys(obs_path, period)
-    # Sanity check
-    if period in ("per_scan", "per_swath"):
-        if not save_swath and not save_gridded:
-            raise ValueError(
-                f"You asked to loop on a period of {period}, but to not save either swaths"
-                + "or regridded data. This would render it impossible to recover the data"
-                + "after each loop. Please change save_swath and/or save_gridded to True."
-            )
-    if save_gridded and not to_modgrid:
-        warnings.warn(
-            "to_modgrid is False, but save_gridded is True. save_gridded will be ignored."
-        )
-
-    required_sat = {
-        "vertical_column_troposphere": {},
-        "main_data_quality_flag": {"max": 0},
-        "surface_pressure": {},
-        "pressure": {},
-        "scattering_weights": {},
-        "amf_troposphere": {},
-        "tropopause_pressure": {},
-    }
-    for i in looping_strategy:
-        if vars_for_obs is None:
-            obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, required_sat)
-        else:
-            obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, vars_for_obs)
-
-        if discard_useless:
-            discard_nonpairable(obsobj, modobj)
-
-        paired_swath = regrid_and_apply_weights(
-            obsobj, modobj, method=regrid_method, weights=regrid_weights
-        )
-        if save_swath:
-            save_paired_swath(paired_swath, path=f"{output}/Paired_swath_XYZ.nc")
-        if to_modgrid:
-            paired_modspace = back_to_modgrid_multiscan(
-                paired_swath,
-                modobj,
-                to_netcdf=save_gridded,
-                path=f"{output}/Regridded_paired_model_tempo_XYZ.nc",
-            )
-    if period == "all":
-        if to_modgrid:
-            return paired_modspace
-        return paired_swath
-
-    if to_modgrid:
-        return read_paired_gridded_tempo_model(f"{output}/Regridded_paired_model_tempo_*.nc")
-
-    return read_paired_swath(f"{output}/Paired_swath_*.nc")
+# TODO: faster control system
+# def read_objs_andpair(
+#     obs_path,
+#     vars_for_obs: None,
+#     modobj,
+#     period="per_scan",
+#     save_swath=True,
+#     to_modgrid=True,
+#     save_gridded=True,
+#     discard_useless=True,
+#     regrid_method="conservative",
+#     regrid_weights=None,
+#     output=".",
+# ):
+#     """Read observations and pair to model data. The current implementation requires the
+#     model to be loaded at once.
+# 
+#     Parameters
+#     ----------
+#     obs_path : str
+#         Path to the observations.
+#     modobj : xr.Dataset
+#         Model object, as read by MONETIO.
+#     period : str
+#         'per_scan',  'per_swath' or 'all'. Looping period to save memory.
+#     save_swath : boolean
+#         Whether each swath should be saved.
+#     to_modgrid : boolean
+#         Whether the data should be regridded back to the model grid.
+#     save_gridded : boolean
+#         Whether the gridded data should be saved.
+#     discard_useless : boolean
+#         Whether granules that don't match the model domain should be discarded.
+#     regrid_method : str
+#         Regrid method to use with xesmf. Generally, it should be 'conservative' or 'bilinear'.
+#     regrid_weights : str
+#         If provided, regrid_weights are read for speeding up the script.
+#     output : str
+#         Path to output
+# 
+#     Returns
+#     -------
+#     xr.Dataset
+#         Paired dataset at all timesteps
+#     """
+#     obs_path = sorted(glob.glob(obs_path))
+#     looping_strategy = select_by_keys(obs_path, period)
+#     # Sanity check
+#     if period in ("per_scan", "per_swath"):
+#         if not save_swath and not save_gridded:
+#             raise ValueError(
+#                 f"You asked to loop on a period of {period}, but to not save either swaths"
+#                 + "or regridded data. This would render it impossible to recover the data"
+#                 + "after each loop. Please change save_swath and/or save_gridded to True."
+#             )
+#     if save_gridded and not to_modgrid:
+#         warnings.warn(
+#             "to_modgrid is False, but save_gridded is True. save_gridded will be ignored."
+#         )
+# 
+#     required_sat = {
+#         "vertical_column_troposphere": {},
+#         "main_data_quality_flag": {"max": 0},
+#         "surface_pressure": {},
+#         "pressure": {},
+#         "scattering_weights": {},
+#         "amf_troposphere": {},
+#         "tropopause_pressure": {},
+#     }
+#     for i in looping_strategy:
+#         if vars_for_obs is None:
+#             obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, required_sat)
+#         else:
+#             obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, vars_for_obs)
+# 
+#         if discard_useless:
+#             discard_nonpairable(obsobj, modobj)
+# 
+#         paired_swath = regrid_and_apply_weights(
+#             obsobj, modobj, method=regrid_method, weights=regrid_weights
+#         )
+#         if save_swath:
+#             save_paired_swath(paired_swath, path=f"{output}/Paired_swath_XYZ.nc")
+#         if to_modgrid:
+#             paired_modspace = back_to_modgrid_multiscan(
+#                 paired_swath,
+#                 modobj,
+#                 to_netcdf=save_gridded,
+#                 path=f"{output}/Regridded_paired_model_tempo_XYZ.nc",
+#             )
+#     if period == "all":
+#         if to_modgrid:
+#             return paired_modspace
+#         return paired_swath
+# 
+#     if to_modgrid:
+#         return read_paired_gridded_tempo_model(f"{output}/Regridded_paired_model_tempo_*.nc")
+# 
+#     return read_paired_swath(f"{output}/Paired_swath_*.nc")
