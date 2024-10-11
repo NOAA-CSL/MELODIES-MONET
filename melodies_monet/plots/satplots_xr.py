@@ -1092,25 +1092,50 @@ def make_multi_boxplot(
     plt.tight_layout()
     savefig(outname + ".png", loc=4, logo_height=100)
 
-def sel_region(domain_type=None, domain_name=None):
-    """ Selects box for region. It's limited to regions
 
+def sel_region(domain_type=None, domain_name=None, domain_box=None):
+    """Selects box for region.
+    If the region has a domain name, it is selected using
+    get_epa_bounds or get_giorgi_bounds.
+    Otherwise, if there is a domain_box, it is selected as
+    a whole. The current implementation cannot deal with
+    domain boxes containing the antimeridian.
+
+    Parameters
+    ----------
+    domain_type: str
+        'all', 'epa_region', 'giorgi_region', 'auto-region:giorgi',
+        'auto-region:CNA', 'custom'
+    domain_name: str
+        EPA or Giorgi region acronym
+    domain_box: list[int|float, int|float, int|float, int|float]
+        domain box conatining the region to be plotted. Only read if
+        region is 'custom'. Expected order: latmin, lonmin, latmax, lonmax
+
+    Returns
+    -------
+    Boundaries for the plotting
     """
+    title_add = ""
     if domain_type == "all" and domain_name == "CONUS":
         latmin = 25.0
         lonmin = -130.0
         latmax = 50.0
         lonmax = -60.0
         title_add = domain_name + ": "
-    elif domain_type == "epa_region" and domain_name is not None:
+    elif "epa" in domain_type and domain_name is not None:
         latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
         title_add = "EPA Region " + domain_name + ": "
-    elif domain_type == "giorgi_region" and domain_name is not None:
+    elif "giorgi" in domain_type and domain_name is not None:
         latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
         title_add = "Giorgi Region " + domain_name + ": "
-    else:
+    elif domain_type == "custom":
+        assert lonmax <= 180, "Longitude must be in range -180, 180"
+        latmin, lonmin, latmax, lonmax = domain_box
+    elif domain_type == "all":
         latmin = -90
         lonmin = -180
         latmax = 90
         lonmax = 180
         title_add = domain_name + ": "
+    return latmin, lonmin, latmax, lonmax, title_add
