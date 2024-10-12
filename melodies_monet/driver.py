@@ -2572,7 +2572,7 @@ class analysis:
                             make_spatial_bias_gridded(**plot_params)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_dist':
-                            outname = "{}.{}".format(outname, p_label)
+                            outname = "{}.{}".format(outname, p.obs)
                             plot_params = {
                                 "dset": p.obj,
                                 "varname": obsvar,
@@ -2594,6 +2594,7 @@ class analysis:
                             satplots.make_spatial_dist(**plot_params)
                             plot_params["varname"] = modvar
                             plot_params["label"] = p.model
+                            plot_params["outname"] = outname.replace(p.obs, p.model)
                             satplots.make_spatial_dist(**plot_params)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
