@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 from melodies_monet import driver
 
 an = driver.analysis()
@@ -23,9 +25,17 @@ print(an.obs_gridded_dataset)
 
 an.obs_gridded_dataset.to_netcdf('MODIS.nc')
 
+varname_terra_aod = 'Terra_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined_data'
+varname_aqua_aod = 'Aqua_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined_data'
+
+an.obs_gridded_dataset[varname_terra_aod].plot()
+plt.savefig('terra_aod.png')
+
+"""
 for model in an.models:
     print(an.models[model].obj)
     regridder = an.model_regridders[model]
     print(regridder)
     ds_model_regrid = regridder(an.models[model].obj)
+"""
 
