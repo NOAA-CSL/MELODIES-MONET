@@ -28,7 +28,7 @@ an.obs_gridded_dataset.to_netcdf('MODIS.nc')
 varname_terra_aod = 'Terra_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined_data'
 varname_aqua_aod = 'Aqua_MODIS_AOD_550_Dark_Target_Deep_Blue_Combined_data'
 
-an.obs_gridded_dataset[varname_terra_aod].plot()
+an.obs_gridded_dataset[varname_terra_aod][24,:,:].plot()
 plt.savefig('terra_aod.png')
 
 """
