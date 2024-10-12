@@ -261,36 +261,10 @@ def calc_partialcolumn(modobj, var="NO2"):
     ppbv2molmol = 1e-9
     m2_to_cm2 = 1e4
     fac_units = ppbv2molmol * NA / m2_to_cm2
-    if "dz_m" not in modobj.keys():
-        dz_m = _calc_layer_thickness(modobj)
-    else:
-        dz_m = modobj["dz_m"]
     partial_col = (
-        modobj[var] * modobj["pres_pa_mid"] * dz_m * fac_units / (R * modobj["temperature_k"])
+        modobj[var] * modobj["pres_pa_mid"] * modobj["dz_m"] * fac_units / (R * modobj["temperature_k"])
     )
     return partial_col
-
-
-def _calc_layer_thickness(modobj):
-    """Calculates layer thickness
-
-    Parameters
-    ----------
-    modbj : xr.Dataset
-        Model data as produced by the MONETIO reader.
-
-    Returns
-    -------
-    xr.DataArray
-        Layer thickness in m.
-    """
-    height_agl = modobj["layer_height_agl"]
-    layer_thickness = xr.zeros_like(height_agl)
-    layer_thickness[0, :, :] = height_agl.isel(z=0).values
-    layer_thickness[1:, :, :] = (
-        height_agl.isel(z=slice(1, None)).values - height_agl.isel(z=slice(0, -1)).values
-    )
-    return layer_thickness
 
 
 def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
@@ -364,8 +338,6 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
     }
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
-
-
 def is_nonpairable(obsobj, k, modobj):
     """Discards inplace granules from obsobj that do not match modobj's
     domain, or granules that are all NaN. If the domain is small,
