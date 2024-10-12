@@ -262,7 +262,11 @@ def calc_partialcolumn(modobj, var="NO2"):
     m2_to_cm2 = 1e4
     fac_units = ppbv2molmol * NA / m2_to_cm2
     partial_col = (
-        modobj[var] * modobj["pres_pa_mid"] * modobj["dz_m"] * fac_units / (R * modobj["temperature_k"])
+        modobj[var]
+        * modobj["pres_pa_mid"]
+        * modobj["dz_m"]
+        * fac_units
+        / (R * modobj["temperature_k"])
     )
     return partial_col
 
@@ -271,7 +275,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
     """Apply the scattering weights and air mass factors accordint to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
     assuming the hydrostatic equation. It does not require temperature
-    nor geometric layer_thickness.
+    nor geometric layer thickness.
 
     Parameters
     ----------
@@ -338,6 +342,8 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
     }
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
+
+
 def is_nonpairable(obsobj, k, modobj):
     """Discards inplace granules from obsobj that do not match modobj's
     domain, or granules that are all NaN. If the domain is small,
@@ -365,6 +371,7 @@ def is_nonpairable(obsobj, k, modobj):
     elif np.all(obsobj[k]["vertical_column_troposphere"].isnull().values):
         return True
     return False
+
 
 def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"]):
     """Does the complete process of regridding and
@@ -808,7 +815,7 @@ def select_by_keys(data_names, period="per_scan"):
 # ):
 #     """Read observations and pair to model data. The current implementation requires the
 #     model to be loaded at once.
-# 
+#
 #     Parameters
 #     ----------
 #     obs_path : str
@@ -831,7 +838,7 @@ def select_by_keys(data_names, period="per_scan"):
 #         If provided, regrid_weights are read for speeding up the script.
 #     output : str
 #         Path to output
-# 
+#
 #     Returns
 #     -------
 #     xr.Dataset
@@ -851,7 +858,7 @@ def select_by_keys(data_names, period="per_scan"):
 #         warnings.warn(
 #             "to_modgrid is False, but save_gridded is True. save_gridded will be ignored."
 #         )
-# 
+#
 #     required_sat = {
 #         "vertical_column_troposphere": {},
 #         "main_data_quality_flag": {"max": 0},
@@ -866,10 +873,10 @@ def select_by_keys(data_names, period="per_scan"):
 #             obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, required_sat)
 #         else:
 #             obsobj = mio.sat._tempo_l2_no2_mm.open_dataset(i, vars_for_obs)
-# 
+#
 #         if discard_useless:
 #             discard_nonpairable(obsobj, modobj)
-# 
+#
 #         paired_swath = regrid_and_apply_weights(
 #             obsobj, modobj, method=regrid_method, weights=regrid_weights
 #         )
@@ -886,8 +893,8 @@ def select_by_keys(data_names, period="per_scan"):
 #         if to_modgrid:
 #             return paired_modspace
 #         return paired_swath
-# 
+#
 #     if to_modgrid:
 #         return read_paired_gridded_tempo_model(f"{output}/Regridded_paired_model_tempo_*.nc")
-# 
+#
 #     return read_paired_swath(f"{output}/Paired_swath_*.nc")
