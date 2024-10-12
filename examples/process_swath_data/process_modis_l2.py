@@ -36,6 +36,7 @@ varname_merra2_aod = 'TOTEXTTAU'
 
 ax = plt.subplot(projection=ccrs.PlateCarree())
 an.obs_gridded_dataset[varname_terra_aod].isel(time=19).plot.pcolormesh(
+    cmap=plt.cm.turbo,
     cbar_kwargs={'location': 'bottom', 'label': 'AOD'},
     x='lon', y='lat', vmin=0, vmax=2, ax=ax)
 ax.set_title('Terra MODIS')
@@ -52,6 +53,7 @@ for model in an.models:
 
     ax = plt.subplot(projection=ccrs.PlateCarree())
     ds_model_regrid[varname_merra2_aod].isel(time=19).plot.pcolormesh(
+        cmap=plt.cm.turbo,
         cbar_kwargs={'location': 'bottom', 'label': 'AOD'},
         x='lon', y='lat', vmin=0, vmax=2, ax=ax)
     ax.set_title(model)
