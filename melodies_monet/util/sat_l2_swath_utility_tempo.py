@@ -304,7 +304,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
     modno2col_trfmd = modno2col_trfmd / amf_troposphere
     modno2col_trfmd.attrs = {
         "units": "molecules/cm2",
-        "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
+        "description": "model NO2 tropospheric column after applying TEMPO scattering weights and AMF",
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2_hydrostatic, TEMPO util",
     }
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
@@ -338,10 +338,78 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
     modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
     modno2col_trfmd.attrs = {
         "units": "molecules/cm2",
-        "description": "model tropospheric column after applying TEMPO scattering weights and AMF",
+        "description": "model NO2 tropospheric column after applying TEMPO scattering weights and AMF",
         "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
     }
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
+
+
+def apply_weights_mod2tempo_hcho_hydrostatic(obsobj, modobj, species="HCHO"):
+    """Apply the scattering weights and air mass factors accordint to
+    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
+    assuming the hydrostatic equation. It does not require temperature
+    nor geometric layer thickness.
+
+    Parameters
+    ----------
+    obsobj : xr.Dataset
+        TEMPO data, including pressure and scattering weights
+    modobj : xr.Dataset
+        Model data, already interpolated to TEMPO grid
+
+    Returns
+    -------
+    xr.DataArray
+        A xr.DataArray containing the NO2 model data after applying
+        the air mass factors and scattering weights
+    """
+    unit_c = 6.022e23 * 9.8 / 1e4  # NA * g / m2_to_cm2
+    dp = _calc_dp(obsobj).rename({"swt_level": "z"})
+    ppbv2molmol = 1e-9
+    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
+    scattering_weights = scattering_weights.rename({"swt_level": "z"})
+    modhcho = modobj[species]
+    amf = obsobj["amf"]
+    modhcho_col = (dp * scattering_weights * modhcho).sum(dim="z") * unit_c * ppbv2molmol
+    modhcho_col = modhcho_col / amf
+    modhcho_col.attrs = {
+        "units": "molecules/cm2",
+        "description": "model HCHO column after applying TEMPO scattering weights and AMF",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_hcho_hydrostatic, TEMPO util",
+    }
+    return modhcho_col.where(np.isfinite(modhcho_col))
+
+
+def apply_weights_mod2tempo_hcho(obsobj, modobj, species="HCHO"):
+    """Apply the scattering weights and air mass factors according to
+    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
+
+    Parameters
+    ----------
+    obsobj : xr.Dataset
+        TEMPO data, including pressure and scattering weights
+    modobj : xr.Dataset
+        Model data, already interpolated to TEMPO grid
+
+    Returns
+    -------
+    xr.DataArray
+        A xr.DataArray containing the NO2 model data after applying
+        the air mass factors and scattering weights
+    """
+    partial_col = modobj[f"{species}_col"]
+
+    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
+    scattering_weights = scattering_weights.rename({"swt_level": "z"})
+    amf = obsobj["amf"]
+    modhcho_col = (scattering_weights * partial_col).sum(dim="z") / amf
+    modhcho_col = modhcho_col.where(modobj[f"{species}_col"].isel(z=0).notnull())
+    modhcho_col.attrs = {
+        "units": "molecules/cm2",
+        "description": "model HCHO column after applying TEMPO scattering weights and AMF",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_hcho, TEMPO util",
+    }
+    return modhcho_col.where(np.isfinite(modhcho_col))
 
 
 def is_nonpairable(obsobj, k, modobj):
@@ -368,12 +436,10 @@ def is_nonpairable(obsobj, k, modobj):
         return True
     elif obsobj[k]["lat"].min() > modobj["latitude"].max():
         return True
-    elif np.all(obsobj[k]["vertical_column_troposphere"].isnull().values):
-        return True
     return False
 
 
-def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"]):
+def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"], tempo_sp="NO2"):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -388,6 +454,8 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
         "bilinear" or "patch". Check xesmf documentation for details.
     weights : str
         Path to the weightfile. If present, the weights won't be calculated again.
+    tempo_sp: str
+        NO2 or HCHO, to apply the correct Air Mass Factors and scattering weights.
 
     Returns
     -------
@@ -395,6 +463,13 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
         Model data regridded to the TEMPO grid,
         with the averaging kernel.
     """
+    if tempo_sp == "NO2":
+        apply_weights = apply_weights_mod2tempo_no2
+        apply_weights_hydrostatic = apply_weights_mod2tempo_no2_hydrostatic
+    else:
+        assert tempo_sp == "HCHO", "TEMPO species must be HCHO or NO2."
+        apply_weights = apply_weights_mod2tempo_hcho
+        apply_weights_hydrostatic = apply_weights_mod2tempo_hcho_hydrostatic
     if method == "conservative":
         if "lat_b" not in modobj:
             modobj["lat_b"], modobj["lon_b"] = calc_grid_corners(modobj)
@@ -404,14 +479,14 @@ def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=Non
     if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
         modobj_hs[f"{species[0]}_col"] = calc_partialcolumn(modobj_hs, var=species[0])
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, [f"{species[0]}_col"])
-        da_out = apply_weights_mod2tempo_no2(obsobj, modobj_swath, species=f"{species[0]}")
+        da_out = apply_weights(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(
             "There is no layer_height_agl variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, species)
-        da_out = apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj_swath, species=species[0])
+        da_out = apply_weights_hydrostatic(obsobj, modobj_swath, species=species[0])
     return da_out.where(np.isfinite(da_out))
 
 
@@ -423,6 +498,7 @@ def regrid_and_apply_weights(
     method="conservative",
     weights=None,
     species=["NO2"],
+    tempo_sp = "NO2"
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -445,6 +521,8 @@ def regrid_and_apply_weights(
         If present, a weightfile (as in "weights") is applied
     discard_useless: boolean
         If True, satellite granules that don't match the model domain are not used.
+    tempo_sp: str
+        NO2 for the NO2 product, HCHO for the HCHO product
 
     Returns
     -------
@@ -459,9 +537,15 @@ def regrid_and_apply_weights(
     #     "lon_b": np.asfortranarray(modobj["lat"].values),
     #     "lat_b": np.asfortranarray(modobj["lat"].values),
     # }
+    if tempo_sp == "NO2":
+        sat_species_name = "vertical_column_troposphere"
+    else:
+        assert tempo_sp=="HCHO", "TEMPO species must be HCHO or NO2."
+        sat_species_name = "vertical_column"
+
     if isinstance(obsobj, xr.Dataset):
         regridded = _regrid_and_apply_weights(
-            obsobj, modobj, method=method, weights=weights, species=species
+            obsobj, modobj, method=method, weights=weights, species=species, tempo_sp=tempo_sp
         )
         output = regridded.to_dataset(name=species[0])
         output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
@@ -469,11 +553,11 @@ def regrid_and_apply_weights(
         output.attrs["scan_num"] = obsobj.attrs["scan_num"]
         output.attrs["granule_number"] = obsobj.attrs["granule_number"]
         if pair:
-            output = xr.merge([output, obsobj["vertical_column_troposphere"]])
+            output = xr.merge([output, obsobj[sat_species_name]])
         if "lat" in output.variables:
             output = output.rename({"lat": "latitude", "lon": "longitude"})
         if pair:
-            output = xr.merge([output, obsobj["vertical_column_troposphere"]])
+            output = xr.merge([output, obsobj[sat_species_name]])
         return output
     if isinstance(obsobj, dict):
         output_multiple = {}
@@ -489,6 +573,7 @@ def regrid_and_apply_weights(
                 method=method,
                 weights=weights,
                 species=species,
+                tempo_sp=tempo_sp,
             ).to_dataset(name=species[0])
             output_multiple[ref_time].attrs["reference_time_string"] = ref_time
             output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
@@ -502,7 +587,7 @@ def regrid_and_apply_weights(
                 output_multiple[ref_time] = xr.merge(
                     [
                         output_multiple[ref_time],
-                        obsobj[ref_time]["vertical_column_troposphere"],
+                        obsobj[ref_time][sat_species_name],
                     ]
                 )
             if "lat" in output_multiple[ref_time].variables:
@@ -510,7 +595,7 @@ def regrid_and_apply_weights(
                     {"lat": "latitude", "lon": "longitude"}
                 )
         return output_multiple
-    raise TypeError("Obsobj must be xr.Dataset or collections.OrderedDict")
+    raise TypeError("Obsobj must be xr.Dataset or dict")
 
 
 def back_to_modgrid(

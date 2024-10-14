@@ -302,8 +302,8 @@ class observation:
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            elif self.sat_type == 'tempo_l2_no2':
-                print('Reading TEMPO L2 NO2')
+            elif "tempo_l2" in self.sat_type:
+                print('Reading TEMPO L2')
                 self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
@@ -1375,18 +1375,30 @@ class analysis:
 
                         self.paired[label] = p
 
-                    if obs.sat_type == 'tempo_l2_no2':
+                    if 'tempo_l2' in obs.sat_type:
                         from .util import sat_l2_swath_utility_tempo as sutil
 
+                        if obs.sat_type == 'tempo_l2_no2':
+                            sat_sp = 'NO2'
+                            sp = 'vertical_column_troposphere'
+                            key = "tempo_l2_no2"
+                        elif obs.sat_type == 'tempo_l2_hcho':
+                            sat_sp = 'HCHO'
+                            sp = 'vertical_column'
+                            key = "tempo_l2_hcho"
+                        else:
+                            raise KeyError(f" You asked for {obs.sat_type}. "
+                                           + "Only NO2 and HCHO L2 data have been implemented")
                         mod_sp = [
-                            k_no2 for k_no2, v in mod.mapping["tempo_l2_no2"].items() if v=="vertical_column_troposphere"
+                            k_sp for k_sp, v in mod.mapping[key].items() if v==sp
                         ]
+                        # Try catch following EAFP stategy
                         try:
                             regrid_method = obs.regridding
                         except AttributeError:
                             regrid_method = "bilinear"
                         paired_data_atswath = sutil.regrid_and_apply_weights(
-                            obs.obj, mod.obj, species=mod_sp, method=regrid_method
+                            obs.obj, mod.obj, species=mod_sp, method=regrid_method, tempo_sp=sat_sp
                         )
                         paired_data_atgrid = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method
@@ -1870,7 +1882,7 @@ class analysis:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
-                            if pair1.obs == 'tempo_l2_no2':
+                            if 'tempo_l2' in pair1.obs:
                                 make_timeseries = satplots.make_timeseries
                                 plot_params = {'dset': pairdf, 'varname': obsvar}
                             else:
@@ -1898,7 +1910,7 @@ class analysis:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_params)
                             # For all p_index plot the model.
-                            if pair1.obs == "tempo_l2_no2":
+                            if "tempo_l2" in pair1.obs:
                                 plot_params['varname']=modvar
                             else:
                                 plot_params['column']=modvar
@@ -2460,7 +2472,7 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
-                            if pair1.obs == 'tempo_l2_no2':
+                            if "tempo_l2" in pair1.obs:
                                 make_taylor = satplots.make_taylor
                                 plot_params = {
                                     'dset': pairdf,
@@ -2546,7 +2558,7 @@ class analysis:
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             outname = "{}.{}".format(outname, p_label)
-                            if pair1.obj == 'tempo_l2_no2':
+                            if 'tempo_l2' in pair1.obs:
                                 make_spatial_bias_gridded = satplots.make_spatial_bias_gridded
                                 plot_params = {
                                     'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
