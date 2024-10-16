@@ -5,6 +5,8 @@
 # Copied from surfplots and altered to use xarray syntax instead of pandas
 
 
+import logging
+
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -13,15 +15,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
-from numpy import corrcoef
-
 from monet.plots.taylordiagram import TaylorDiagram as td
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
+from numpy import corrcoef
 
 from ..plots import savefig
 
 plt.set_loglevel(level="warning")
+logging.getLogger("PIL").setLevel(logging.WARNING)
 
 sns.set_context("paper")
 
@@ -750,8 +752,8 @@ def make_spatial_dist(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
-    states = fig_dict.get('states', True)
-    counties = fig_dict.get('counties', False)
+    states = fig_dict.get("states", True)
+    counties = fig_dict.get("counties", False)
     ax = monet.plots.mapgen.draw_map(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
@@ -916,8 +918,8 @@ def make_spatial_bias_gridded(
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
-    states = fig_dict.get('states', True)
-    counties = fig_dict.get('counties', False)
+    states = fig_dict.get("states", True)
+    counties = fig_dict.get("counties", False)
     ax = monet.plots.mapgen.draw_map(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
@@ -927,7 +929,10 @@ def make_spatial_bias_gridded(
     )
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
-    plt.title(title_add + label_m + " - " + label_o, fontweight="bold", **text_kwargs)
+    timestamps = (
+        f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}"
+    )
+    plt.title(title_add + label_m + " - " + label_o + timestamps, fontweight="bold", **text_kwargs)
     ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
 
     # Uncomment these lines if you update above just to verify colorbars are identical.

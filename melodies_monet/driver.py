@@ -2815,10 +2815,16 @@ class analysis:
                         # for satellite no2 trop. columns paired data, M.Li
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol' 
+                        
+                        # TODO: Cleanup TEMPO code for stats
 
                         # convert to dataframe
                         # handle different dimensios, M.Li
-                        if ('y' in p.obj.dims) and ('x' in p.obj.dims):
+                        if 'tempo_l2' in p.obs:
+                            stacked = p.obj.rename({"y": "ll"}).stack(y=("x", "ll")).drop("x")
+                            pairdf_all = stacked.to_dataframe(dim_order=["time", "y"])
+                            del stacked
+                        elif ('y' in p.obj.dims) and ('x' in p.obj.dims):
                             pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
                         elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
                             pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])

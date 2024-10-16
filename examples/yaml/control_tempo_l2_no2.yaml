@@ -1,5 +1,5 @@
 analysis:
-  start_time: '2024-09-06'
+  start_time: '2024-09-05'
   end_time: '2024-09-07'
   debug: True
   output_dir: ./
@@ -20,6 +20,7 @@ obs:
   tempo_l2_no2:
     debug: True
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240906*_S0*
+    #filename: //glade/derecho/scratch/plichtig/TEMPO/*nc
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
     variables:
@@ -36,7 +37,7 @@ obs:
 
 model:
   wrfchem_v4.2:
-    files: /glade/campaign/acom/acom-da/shawnh/AQ_WATCH/20240905/wrf/wrfout_hourly_d02_2024-09-0[6-7]*
+    files: /glade/campaign/acom/acom-da/shawnh/AQ_WATCH/20240905/wrf/wrfout_hourly_d02_2024-09-0[5-7]*
     mod_type: 'wrfchem'
     mod_kwargs:
       mech: 'racm_esrl_vcp'
@@ -116,5 +117,29 @@ plots:
     default_plot_kwargs:
       markersize: 10.
       marker: 's'
-    
 
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  # ^ List stats to calculate. Dictionary of definitions included
+  #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
+  #   Full calc list:
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
+  #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
+  #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
+  #    'E1', 'IOA', 'AC']
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: False
+  # ^ Always outputs a .txt file.
+  #   Optional to also output a Matplotlib figure table (image).
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all"]
+  domain_name: ["CONUS"]
+  data: ["tempo_l2_no2_wrfchem_v4.2"]
