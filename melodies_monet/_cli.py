@@ -1187,6 +1187,8 @@ def get_openaq(
             "Only applicable to the web API methods ('api-v2')."
         )
     ),
+    reference_grade: bool = typer.Option(True, help="Include reference-grade sensors."),
+    low_cost: bool = typer.Option(False, help="Include low-cost sensors."),
     method: str = typer.Option("api-v2", "-m", "--method", help=(
             "Method (reader) to use for fetching data. "
             "Options: 'api-v2', 'openaq-fetches'."
@@ -1254,6 +1256,18 @@ def get_openaq(
             dst = p.parent
             out_name = p.name
 
+    sensor_types = []
+    if reference_grade:
+        sensor_types.append("reference grade")
+    if low_cost:
+        sensor_types.append("low-cost sensor")
+    if not sensor_types and method in {"api-v2"}:
+        typer.secho(
+            "Error: no sensor types selected. Use --reference-grade and/or --low-cost",
+            fg=ERROR_COLOR,
+        )
+        raise typer.Exit(2)
+
     if verbose and method in {"openaq-fetches"}:
         from dask.diagnostics import ProgressBar
 
@@ -1281,7 +1295,7 @@ def get_openaq(
             df = mio.obs.openaq_v2.add_data(
                 dates,
                 parameters=param,
-                sensor_type="reference grade",
+                sensor_type=sensor_types,
                 wide_fmt=True,
                 timeout=60,
                 retry=15,
