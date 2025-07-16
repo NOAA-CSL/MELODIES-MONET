@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
+import os
+import warnings
+import pandas as pd
+import xarray as xr
+import glob
+
+
 def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     """Read previously saved dict containing melodies-monet data (:attr:`paired`, :attr:`models`, or :attr:`obs`)
     from pickle file or netcdf file, populating the :attr:`paired`, :attr:`models`, or :attr:`obs` dict.
@@ -21,9 +28,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     -------
     None
     """
-    import xarray as xr
     from glob import glob
-    import os
     from .. import tutorial
     
     # Determine where to read files from
@@ -128,8 +133,6 @@ def read_analysis_ncf(filenames,xr_kws={}):
         Xarray dataset containing merged files.
 
     """
-    import xarray as xr
-    
     if len(filenames)==1:
         print('Reading:', filenames[0])
         ds_out = xr.open_dataset(filenames[0],**xr_kws)
@@ -205,9 +208,6 @@ def read_aircraft_obs_csv(filename,time_var=None):
         Xarray dataset containing information from .csv file
 
     """
-    import xarray as xr
-    import pandas as pd
-    
     df = pd.read_csv(filename)
     if time_var is not None:
         df.rename(columns={time_var:'time'},inplace=True)
@@ -219,3 +219,273 @@ def read_aircraft_obs_csv(filename,time_var=None):
     df.set_index('time',inplace=True)
     
     return xr.Dataset.from_dataframe(df)
+
+
+def read_site_excel(data_path, site_data, site_number=None, **kwargs):
+    """Load a site from from an MS Excel sheet.
+    Currently optimized for CDPHE's VOC canister data.
+
+    Parameters
+    ----------
+    data_path: str
+        Path to the excel file containing the data
+    site_data: dict
+        dict containing the data of the site.
+        Required keys are:
+            'coords': {'latitude': float, 'longitude': float}
+                Coordinates of the site
+            'sheet_name': str
+                name of the excel sheet containing the site
+        Optional keys:
+            skiprows: int
+                rows that should be skipped when reading the excel sheet.
+                Defaults to 0.
+            headers: int | list[int]
+                rows with headers for building the data frame.
+                Take into account that 'skiprows' takes precedence.
+                I.e., if the headers are in rows [15,16], but you
+                already typed 'skiprows': 15, you should type
+                'headers': [0,1].
+                Defaults to 0.
+            site_id: str
+                ID of the site. Defaults to sheet_name.
+            qualifier_name: str
+                Name of row containing the qualifiers.
+                If None, 'Qualifier' is assumed.
+            ignore_qualifiers: None
+                If None, only data without qualifiers is plotted.
+            na_values: scalar | str | list-like | dict | default None
+                Values that are NaN
+    site_number: int
+        Number of site. If only one site is provided, it should be 0.
+        This keyword is set for clearer compilation of multiple sites.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing the information of the site
+    """
+    params = {
+        **{
+            "skiprows": None,
+            "headers": 0,
+            "site_id": site_data["sheet_name"],
+            "qualifier_name": "Qualifier",
+            "keep_qualifiers": None,
+            "na_values": None,
+            "timezone": "UTC",
+            "analyte": ("Analysis", "Analyte"),
+            "time_var": ("Sample", "Date"),
+            "unit_var": ("Detection", "Units"),
+            "results": ('CAS', 'Result'),
+            "repeated_values": None,
+            "sampling_start_hour": 6,
+            "sampling_length": 3,
+        },
+        **site_data,
+    }
+    site_number = 0 if site_number is None else site_number
+    if isinstance(params['na_values'], str):
+        params['na_values'] = [params['na_values']]
+    data = pd.read_excel(
+        data_path,
+        sheet_name=params["sheet_name"],
+        skiprows=params["skiprows"],
+        header=params["header"],
+        na_values=(params["na_values"] + [r'^\s*$']),
+        keep_default_na=True,
+    ).dropna(how='all')
+
+    data = _apply_qualifiers(data, params['qualifier_name'], params['keep_qualifiers'])
+    data.loc[:, "time_local"] = (
+            data[params["time_var"]].dt.normalize()
+            + pd.Timedelta(params['sampling_start_hour'], 'h')
+    )
+    data.loc[:, "time_utc"] = (
+            data["time_local"].dt.tz_localize(params["timezone"]).dt.tz_convert(None)
+    ).copy()
+    variables = data[params["analyte"]].unique()
+    compiled_data = xr.Dataset()
+    for v in variables:
+        tmp_data = data.loc[data[params["analyte"]] == v]
+        tmp_ds = xr.Dataset()
+        tmp_ds["time"] = (("time",), tmp_data["time_utc"].values)
+        tmp_ds["x"] = (("x",), [site_number])
+        if params["timezone"] not in ['UTC', 'UCT', 'Etc/UTC', 'Etc/UCT', 'Etc/Universal']:
+            tmp_ds["time_local"] = (("time", "x"), tmp_data["time_local"].values[..., None])
+            time_local = tmp_ds["time_local"].drop_duplicates(dim='time')
+        tmp_ds[v] = (("time", "x"), tmp_data[params["results"]].values[..., None])
+        try:
+            tmp_ds[v].attrs = {"units": tmp_data[params["unit_var"]].unique()}
+        except KeyError:
+            tmp_ds[v].attrs = {"units": params["unit_var"]}
+        try:
+            tmp_ds = tmp_ds.groupby('time').mean()
+        except ValueError:
+            pass
+        tmp_ds["time_local"] = time_local
+        compiled_data = xr.merge([compiled_data, tmp_ds])
+
+    compiled_data["longitude"] = (("x",), [params["site_coords"]["longitude"]])
+    compiled_data["latitude"] = (("x",), [params["site_coords"]["latitude"]])
+    compiled_data["siteid"] = (("x",), [params["site_id"]])
+    return compiled_data
+
+
+def _apply_qualifiers(data, qa_name, keep_qualifiers):
+    """Apply a qualifier
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        Dataframe containing the data
+    qa_name: str | tuple
+        Name of the column containing the qualifiers
+    keep_qualifiers: str | list[str] | 
+        Qualifiers to keep
+    """
+    if keep_qualifiers is None or keep_qualifiers != "no":
+        return data[data[*qa_name].isnull()]
+    elif keep_qualifiers != "all":
+        return data[data[*qa_name].isnull() | data[*qa_name].isin(list(keep_qualifiers))]
+    return data
+
+
+def compile_sites_excel(data_path, site_dict):
+    """Compiles all sites in a file
+    Currently optimized for CDPHE VOC canister data, but should work for most.
+
+    Parameters
+    ----------
+    data_path : str
+        Path to the excel file containing the data.
+    site_dict : dict
+        Dictionary containing a key per site (ideally, the site's name)
+        and a dict as site_value, to pass to read_cdphe_site
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with all sites compiled
+    """
+
+    compiled_data = xr.Dataset()
+    for n, s in enumerate(list(site_dict.keys())):
+        site_data = site_dict[s]
+        ds = read_site_excel(data_path, site_data, site_number=n)
+        compiled_data = xr.merge([compiled_data, ds])
+    return compiled_data
+
+
+def control_reading_excel(data_path, site_type, site_dict):
+    """Controls the reading and file preparation process.
+
+    Parameters
+    ----------
+    path : str | list | glob object
+        Path to files that should be opened
+    site_type : str
+        Type of site/excel to read. Currently, only CDPHE VOC Canisters are implemented
+    site_dict : dict
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with excel compiled
+    """
+    if site_type != "pt_sfc":
+        warnings.warn("site_type is not pt_sfc. Will attempt to read anyway")
+    return compile_sites_excel(data_path, site_dict)
+
+
+def read_pandora(path):
+    """Calls tools for reading Pandora Global Network text files.
+    It is only a wrapper around the pandonia_global_network.py tool
+
+
+    Parameters
+    ----------
+    path: str | list[str]
+        String containing the paths
+
+    Returns
+    -------
+    xr.Dataset
+        Formatted dataset. Should work for MELODIES-MONET.
+    """
+    from .pandonia_global_network import open_mfdataset as read_and_format
+    return read_and_format(path)
+
+
+def read_noaa_gml(filename):
+    """Function to read .dat formatted NOAA GML observations.
+
+    Parameters
+    ----------
+    filename : str
+        Filename of .dat file to be read
+
+    Returns
+    -------
+    xarray.Dataset
+        Xarray dataset containing information from .dat file
+
+    """
+
+    # Ignore preamble
+    preamble_end_line = 0
+    with open(filename, 'r') as f:
+        for i, line in enumerate(f):
+            if line.strip() and line.strip().split()[0] == 'STN':
+                preamble_end_line = i
+                break
+
+    # Read the file again, skipping the identified preamble lines
+    df = pd.read_csv(
+        filename,
+        skiprows=preamble_end_line,
+        sep=r"\s+",
+    )
+    df = df.rename(
+        columns={"YEAR": "year", "MON": "month", "DAY": "day", "HR": "hour", "STN": "siteid"}
+    )
+    df['time'] = pd.to_datetime(df[["year", "month", "day", "hour"]])
+    siteid = df["siteid"][0]
+    df = df[df.columns[~df.columns.isin(["year", "month", "day", "hour"])]]
+
+    # Sort the values based on time
+    df = df.sort_values(by='time', ignore_index=True)
+    df = df.set_index('time')
+    ds = xr.Dataset.from_dataframe(df)
+    return ds
+
+
+def read_noaa_gml_multifile(filenames):
+    """Function to read .dat formatted NOAA GML observations.
+
+    Parameters
+    ----------
+    filenames : str | list[str]
+        Filenames of .dat file to be read
+
+    Returns
+    -------
+    xarray.Dataset
+        Xarray dataset containing information from .dat file
+
+    """
+    if isinstance(filenames, str):
+        files = sorted(glob.glob(filenames))
+    else:
+        files = []
+        for file in filenames:
+            file.expand(sorted(glob.glob(filenames)))
+
+    data = read_noaa_gml(files[0])
+    if len(files) > 1:
+        for file in len(files):
+            data2 = read_noaa_gml(file)
+            if data['siteid'][0].values != data['siteid'][0].values:
+                raise Exception('Only one station at a time is supported')
+            data = xr.merge([data, data2], dim='time')
+    return data.sortby('time')
