@@ -487,7 +487,10 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
+    if fig_dict is not None:
+        cmap = mpl.cm.get_cmap(fig_dict.get('cmap', 'Spectral_r'), nlevels-1)
+    else:
+        cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     #I add extend='both' here because the colorbar is setup to plot the values outside the range
@@ -745,7 +748,10 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     print(vmin,vmax)
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = mpl.cm.get_cmap('bwr',nlevels-1) 
+    if fig_dict is not None:
+        cmap = mpl.cm.get_cmap(fig_dict.get('cmap', 'bwr'), nlevels-1)
+    else:
+        cmap = mpl.cm.get_cmap('bwr',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     #I add extend='both' here because the colorbar is setup to plot the values outside the range

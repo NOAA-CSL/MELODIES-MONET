@@ -247,7 +247,7 @@ def get_utcoffset(lat,lon):
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
+                      domain_type=None, domain_name=None, domain_info=None, fig_dict=None,
                       text_dict=None,debug=False):
         
     """Creates surface spatial bias plot. 
@@ -319,6 +319,11 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         ylabel = 'Mean '+ylabel
     else:
         ylabel = '{:02d}'.format(ptile)+'th percentile '+ylabel
+
+    if fig_dict is not None:
+        cmap = fig_dict.get('cmap', 'OrangeBlue')
+    else:
+        cmap = 'OrangeBlue'
  
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
@@ -331,7 +336,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o+'_reg', col2=column_m+'_reg', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
+            cmap=cmap, edgecolor='k',linewidth=.8)
     else:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -343,7 +348,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
-            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
+            cmap=cmap, edgecolor='k',linewidth=.8)
 
     if domain_type == 'all' and domain_name == 'CONUS':
         latmin= 25.0
@@ -354,6 +359,26 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     elif domain_type == 'epa_region' and domain_name is not None:
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
+    elif domain_type == 'custom:box' and domain_name is not None:
+        lonmin,lonmax,latmin,latmax = domain_info['bounds']
+        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
+    elif domain_type.startswith('custom') or domain_name.startswith('auto-region'):
+        import xarray as xr
+        from ..util.region_select import select_region
+        _lon = np.arange(-179.995, 180, 0.01)
+        _lat = np.arange(-89.995, 90, 0.01)
+        _da = xr.DataArray(dims=["lat", "lon"], coords={
+            "lon": (["lon"], _lon),
+            "lat": (["lat"], _lat)
+        })
+        _da = 1
+        _da = select_region(_da, domain_type, domain_name, domain_info)
+        valid_data = _da.notnull()
+        lons = _da.longitude.where(valid_data)
+        lats = _da.latitude.where(valid_data)
+        del _da, _lon, lons, lats, valid_data
+        latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
+        title_add = domain_name + ': '
     else:
         latmin= math.floor(min(df.latitude))
         lonmin= math.floor(min(df.longitude))
@@ -465,7 +490,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_kwargs)
         else:
             if avg_window is None:
-                ax = df[column].plot(ax=ax, **plot_kwargs)  
+                ax = df.groupby('time').mean(numeric_only=True)[column].plot(ax=ax, **plot_kwargs)  
             else:
                 ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_kwargs) 
 
@@ -476,7 +501,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax = df_reg.set_index("time_local")[column+'_reg'].resample('D').mean().plot(ax=ax, legend=True, **plot_dict)
         else:
             if avg_window is None:
-                ax = df[column].plot(ax=ax, legend=True, **plot_dict)
+                ax = df.groupby('time').mean(numeric_only=True)[column].plot(ax=ax, legend=True, **plot_dict)
             else:
                 ax = df[column].resample(avg_window).mean().plot(ax=ax, legend=True, **plot_dict) 
     
@@ -737,7 +762,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
+                      domain_type=None, domain_name=None, domain_info=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
     """Creates spatial overlay plot. 
@@ -819,13 +844,27 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         latmax= 50.0
         lonmax=-60.0
         title_add = domain_name + ': '
-    elif domain_type == 'epa_region' and domain_name is not None:
+    elif (domain_type == 'epa_region' or domain_type == 'auto-region:epa') and domain_name is not None:
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
-    elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
-        valid_data = vmodel.notnull()
-        lons = vmodel.longitude.where(valid_data)
-        lats = vmodel.latitude.where(valid_data)
+    elif domain_type == 'custom:box' and domain_name is not None:
+        lonmin,lonmax,latmin,latmax = domain_info['bounds']
+        title_add = domain_name + ': '
+    elif domain_type.startswith('custom') or domain_name.startswith('auto-region'):
+        import xarray as xr
+        from ..util.region_select import select_region
+        _lon = np.arange(-179.995, 180, 0.01)
+        _lat = np.arange(-89.995, 90, 0.01)
+        _da = xr.DataArray(dims=["lat", "lon"], coords={
+            "lon": (["lon"], _lon),
+            "lat": (["lat"], _lat)
+        })
+        _da = 1
+        _da = select_region(_da, domain_type, domain_name, domain_info)
+        valid_data = _da.notnull()
+        lons = _da.longitude.where(valid_data)
+        lats = _da.latitude.where(valid_data)
+        del _da, _lon, lons, lats, valid_data
         latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
         title_add = domain_name + ': '
     else:
@@ -855,7 +894,10 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
-    cmap = plt.get_cmap('Spectral_r',nlevels-1)
+    if fig_dict is not None:
+        cmap = plt.get_cmap(fig_dict.get('cmap', 'Spectral_r'), nlevels-1)
+    else:
+        cmap = plt.get_cmap('Spectral_r',nlevels-1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     # For unstructured grid, we need a more advanced plotting code
@@ -1635,7 +1677,11 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
     ax2.set_yticks([i+0.5 for i in range(len(region_list)*2)],y2_labels)  
 
     #plot and set colorbar
-    plot1= plt.pcolormesh(output_matrix,cmap='coolwarm',edgecolor='k',vmin=-100,vmax=100)
+    if fig_dict is not None:
+        cmap = fig_dict.get('cmap', 'coolwarm')
+    else:
+        cmap = 'coolwarm'
+    plot1= plt.pcolormesh(output_matrix,cmap=cmap,edgecolor='k',vmin=-100,vmax=100)
     cb = f.colorbar(plot1,ticks=[-100,-50,-20,0,20,50,100],pad=0.1)
     cb.ax.set_yticklabels(['99.9% Worse','99% Worse','95% Worse','No Significant Difference',
                            '95% Better','99% Better','99.9% Better'])
@@ -1827,12 +1873,16 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         .reset_index(drop=True)
     )
 
+    if fig_dict is not None:
+        cmap = fig_dict.get('cmap', 'OrangeBlue')
+    else:
+        cmap = 'OrangeBlue'
     if not df_reg.empty:
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
-            cmap="OrangeBlue", edgecolor='k',linewidth=.8)
+            cmap=cmap, edgecolor='k',linewidth=.8)
 
         if domain_type == 'all' and domain_name == 'CONUS':
             latmin= 25.0

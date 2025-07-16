@@ -679,10 +679,11 @@ def make_spatial_dist(
         lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
         title_add = ""
     else:
-        latmin = -90
-        lonmin = -180
-        latmax = 90
-        lonmax = 180
+        valid_domain = dset.where(dset[varname].notnull(), drop=True)
+        latmin = valid_domain["latitude"].min().values
+        lonmin = valid_domain["longitude"].min().values
+        latmax = valid_domain["latitude"].max().values
+        lonmax = valid_domain["longitude"].max().values
         title_add = domain_name + ": "
 
     # Map the model output first.
@@ -704,7 +705,10 @@ def make_spatial_dist(
         nlevels = 21
     print(vmin, vmax)
     clevel = np.linspace(vmin, vmax, nlevels)
-    cmap = mpl.cm.get_cmap("plasma", nlevels - 1)
+    if fig_dict is not None:
+        cmap = mpl.cm.get_cmap(fig_dict.get('cmap', 'plasma'), nlevels - 1)
+    else:
+        cmap = mpl.cm.get_cmap("plasma", nlevels - 1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
@@ -783,7 +787,7 @@ def make_spatial_bias_gridded(
     fig_dict=None,
     text_dict=None,
     debug=False,
-    **kwargs
+    **kwargs,
 ):
     """Creates difference plot for satellite and model data.
     For data in swath format, overplots all differences
@@ -863,10 +867,11 @@ def make_spatial_bias_gridded(
         lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
         title_add = ""
     else:
-        latmin = -90
-        lonmin = -180
-        latmax = 90
-        lonmax = 180
+        valid_domain = dset.where(dset[varname_o].notnull() | dset[varname_m].notnull(), drop=True)
+        latmin = valid_domain["latitude"].min().values
+        lonmin = valid_domain["longitude"].min().values
+        latmax = valid_domain["latitude"].max().values
+        lonmax = valid_domain["longitude"].max().values
         title_add = domain_name + ": "
 
     # Map the model output first.
@@ -874,7 +879,10 @@ def make_spatial_bias_gridded(
 
     # Add options that this could be included in the fig_kwargs in yaml file too.
     if "extent" not in map_kwargs:
-        map_kwargs["extent"] = [lonmin, lonmax, latmin, latmax]
+        try:
+            map_kwargs["extent"] = [lonmin, lonmax, latmin, latmax]
+        except:
+            map_kwargs["extent"] = None
     if "crs" not in map_kwargs:
         map_kwargs["crs"] = proj
 
@@ -891,14 +899,17 @@ def make_spatial_bias_gridded(
         nlevels = 21
 
     clevel = np.linspace(-vdiff, vdiff, nlevels)
-    cmap = mpl.cm.get_cmap("RdBu_r", nlevels - 1)
+    if fig_dict is not None:
+        cmap = mpl.cm.get_cmap(fig_dict.get("cmap", "RdBu_r"), nlevels - 1)
+    else:
+        cmap = mpl.cm.get_cmap("RdBu_r", nlevels - 1)
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
     states = fig_dict.get("states", True)
     counties = fig_dict.get("counties", False)
     ax = monet.plots.mapgen.draw_map(
-        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
+        crs=map_kwargs["crs"], extent=map_kwargs.get("extent", None), states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(
@@ -948,7 +959,7 @@ def make_spatial_bias_gridded(
     # plt.tight_layout(pad=0)
     savefig(
         outname + ".png",
-        loc=4,
+        loc=3,
         logo_height=100,
         bbox_inches="tight",
         dpi=150,
@@ -1153,7 +1164,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     dset_diurnal = dset_diurnal_group.median()
 
     # Set some defaults
-    text_kwargs = {"fontsize": 14}
+    text_kwargs = {"fontsize": 14, "fontweight": "bold"}
     style_dict = {"linestyle": "-", "marker": "*", "linewidth": "1.2", "markersize": "6.0"}
     if ax is None:
         style_dict["color"] = "k"
