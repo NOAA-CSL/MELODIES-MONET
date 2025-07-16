@@ -1,0 +1,344 @@
+### General parameters ###
+analysis:
+  start_time: '2024-07-01'
+  end_time: '2024-07-31 23:59:59'
+  debug: True
+  output_dir: ./output/tempo/
+  output_dir_read: ./
+  output_dir_save: ./
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: '2024-02_filtered'
+      data: all
+  read:
+    paired:
+      method: 'netcdf'
+      filenames:
+        'tempo_l2_no2_wrfchem_v4.2': '/glade/work/plichtig/melodies_monet/test_cases/tempo_pairing/202407*_tempo_l2_no2_wrfchem_v4.2.nc4'
+        'tempo_l2_hcho_wrfchem_v4.2': '/glade/work/plichtig/melodies_monet/test_cases/tempo_pairing/202407*_tempo_l2_hcho_wrfchem_v4.2.nc4'
+        'tempo_l2_no2_cesm_fv': '/glade/derecho/scratch/nmariscal/tempo_files/cesm-fv/202407/202407*_tempo_l2_no2_cesm_fv.nc4'
+        'tempo_l2_hcho_cesm_fv': '/glade/derecho/scratch/nmariscal/tempo_files/cesm-fv/202407/202407*_tempo_l2_hcho_cesm_fv.nc4'
+
+### MODEL data ###
+model:
+  cesm_fv:
+    files: "/glade/u/home/plichtig/tempo/fortest/wrfout_hourly_d02_2024-08-2[6-7]*" #Change if you need to open the model
+    mod_type: 'cesm_fv'
+    mapping:
+      tempo_l2_no2:
+        NO2: "vertical_column_troposphere"
+      tempo_l2_hcho:
+        CH2O: "vertical_column_troposphere"
+    projection: ~
+    surf_only: False
+  wrfchem_v4.2:
+    files: "/glade/u/home/plichtig/tempo/fortest/wrfout_hourly_d02_2024-08-2[6-7]*" #Change if you need to open the model
+    mod_type: 'wrfchem'
+    mapping:
+      tempo_l2_no2:
+        no2: "vertical_column_troposphere"
+      tempo_l2_hcho:
+        hcho: "vertical_column_troposphere"
+    projection: ~
+    surf_only: False
+
+### OBS data ###
+obs:
+  tempo_l2_no2:
+    debug: False
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240201*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_no2
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column_troposphere']
+      vertical_column_troposphere:
+        ylabel_plot: 'NO$_2$ trop. column'
+        ty_scale: 2
+        vmin: 0
+        vmax: 4e15
+      pressure: {}
+      tropopause_pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
+      solar_zenith_angle: {}
+      eff_cloud_fraction: {}
+    data_proc:
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+      vmax_plot: 4e15
+  tempo_l2_hcho:
+    debug: False
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240201*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_hcho
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column']
+      vertical_column:
+        ylabel_plot: 'HCHO column'
+        vmin_plot: 0
+        vmax_plot: 4.5e+15
+      pressure: {}
+      scattering_weights: {}
+      amf: {}
+      solar_zenith_angle: {}
+      eff_cloud_fraction: {}
+    data_proc:
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+
+### PLOTTING DATA ###
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    settings:
+      vmin: 0
+      vmax: 1.0e+16
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+      vmax_plot: 4.0e+15
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ]
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_cesm_fv", "tempo_l2_no2_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_yaxis: True
+
+  
+  plot_grp2:
+    type: 'diurnal'
+    settings:
+      range_shading: 'IQR'
+      vmax: 1.2e+16
+      vmin_plot: 0.0
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ]
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_cesm_fv", "tempo_l2_no2_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_yaxis: True
+      range_shading: IQR
+
+
+  plot_grp3:
+    type: 'timeseries'
+    settings:
+      vmin: 0.
+      vmax: 2.5e+16
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ]
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_hcho_cesm_fv", "tempo_l2_hcho_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+
+  plot_grp4:
+    type: 'diurnal'
+    settings:
+      range_shading: 'IQR'
+      vmin: 0
+      vmax: 2e+16
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ]
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_hcho_cesm_fv", "tempo_l2_hcho_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_yaxis: True
+      range_shading: IQR
+
+  plot_grp5:
+    type: 'timeseries'
+    settings:
+      vmin: 0.
+      vmax: 12.
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_FNR_cesm_fv", "tempo_l2_FNR_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_yaxis: True
+
+  plot_grp6:
+    type: 'diurnal'
+    settings:
+      range_shading: 'IQR'
+      vmin: 0. 
+      vmax: 10.
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ]
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_FNR_cesm_fv", "tempo_l2_FNR_wrfchem_v4.2"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_yaxis: True
+      range_shading: IQR
+
+  plot_grp7:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 16
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_cesm_fv", "tempo_l2_no2_wrfchem_v4.2"]
+    data_proc:
+      set_axis: True
+      vmax: 1e16
+      vmin: 0
+
+  plot_grp8:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 16
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_hcho_cesm_fv", "tempo_l2_hcho_wrfchem_v4.2"]
+    data_proc:
+      set_axis: True
+      vmax: 3.0e+16
+      vmin: 0
+      
+  plot_grp9:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 16
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ['tempo_l2_FNR_cesm_fv', 'tempo_l2_FNR_wrfchem_v4.2']
+    data_proc:
+      set_axis: True
+      vmax: 10
+      vmin: 0
+      
+  plot_grp10:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: 
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 14
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_cesm_fv", "tempo_l2_no2_wrfchem_v4.2"]
+    data_proc:
+      set_axis: True
+
+  plot_grp11:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: 
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 14
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_hcho_cesm_fv", "tempo_l2_hcho_wrfchem_v4.2"]
+    data_proc:
+      set_axis: True
+
+  plot_grp12:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: 
+      states: True
+      counties: True
+    default_plot_kwargs:
+      vdiff: 4
+    text_kwargs:
+      fontsize: 14
+    domain_type: ["custom:box", ]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ['tempo_l2_FNR_cesm_fv', 'tempo_l2_FNR_wrfchem_v4.2']
+    data_proc:
+      set_axis: True
+

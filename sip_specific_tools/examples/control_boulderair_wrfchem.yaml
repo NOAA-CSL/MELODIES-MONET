@@ -1,0 +1,193 @@
+#### GENERAL SETTINGS ####
+analysis:
+  start_time: "2022-07-11 00:00:00" # UTC
+  end_time: "2022-07-17 23:59:59" # UTC
+  output_dir: ./output/boulderair
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+  read:
+    paired:
+      method: netcdf
+      filenames: {'boulderair_wrfchem': ['boulderair_wrfchem.nc4']}
+
+#### MODEL INFO ####
+model:
+  wrfchem: # model label
+    files: /glade/work/plichtig/melodies_monet/AQE/Tutorial/input_data/wrfout_hourly_d02_2022-07-1[1-7]*
+    mod_type: "wrfchem"
+    surf_only: True
+    surf_only_nc: True
+    radius_of_influence: 6000 # meters
+    variable_summing:
+      nox:
+        vars: ['no', 'no2']
+    mapping:
+      boulderair: 
+        nox: "nox"
+        TOL_SFC: "toluene"
+    projection: ~
+    plot_kwargs:
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+
+#### OBS INFO ####
+obs:
+  boulderair:
+    filename: "./input_data/boulder_air.nc"
+    obs_type: pt_sfc
+    variables:
+      "no": {}
+      no2: {}
+      nox:
+        ylabel_plot: "NOx (ppbv)"
+      toluene:
+        ylabel_plot: "Toluene (ppbv)"
+        vmax_plot: 1.5
+    variable_summing:
+      nox:
+        vars: ["no", "no2"]
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "NOx (ppbv)"
+      
+
+#### PLOTTING ####
+plots:
+  plot_grp1:
+    type: "timeseries" 
+    fig_kwargs: 
+      figsize: [12, 6] 
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time" 
+      ts_avg_window: "D"
+      set_axis: True
+      
+  plot_grp10:
+    type: "diurnal"
+    fig_kwargs:
+      figsize: [12, 6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: 
+      fontsize: 24.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    settings:
+      shading_range: IQR
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time" 
+      ts_avg_window: "h"
+      set_axis: True
+      shading_range: 'IQR'
+
+  plot_grp2:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+      counties: True
+      extent: [-105.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-105.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      crop_model: True
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+#### STATS CALCULATION ####
+stats:
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2
+  output_table: True
+  output_table_kwargs:
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all"]
+  domain_name: ["CONUS"]
+  data: ["boulderair_wrfchem"]

@@ -1,0 +1,195 @@
+# General Description:
+# - Any key that is specific for a plot type will begin with `ts` for timeseries, `ty` for taylor.
+# - Some keys/groups are optional.
+# - For now, all plots except time series average over the analysis window.
+# - Setting axis values
+#   - If set_axis = True in data_proc section of each plot_grp,
+#     the yaxis for the plot will be set based on the values
+#     specified in the obs section for each variable.
+#   - If set_axis is set to False, then defaults will be used.
+#   - 'vmin_plot' and 'vmax_plot' are needed for
+#     'timeseries', 'spatial_overlay', and 'boxplot'.
+#   - 'vdiff_plot' is needed for 'spatial_bias' plots
+#   - 'ty_scale' is needed for 'taylor' plots.
+#   - 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot.
+#   - If set_axis = True and the proper limits are not provided in the obs section,
+#     a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: "2022-07-11 00:00:00" # UTC
+  end_time: "2022-07-17 23:00:00" # UTC
+  output_dir: ./output/pandora/ # relative to the program using this control file
+  #   Currently, the directory must exist or plot saving will error and fail.
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+  read:
+    paired:
+      method: netcdf
+      filenames: {'pandora_wrfchem': ['pandora_wrfchem.nc4']}
+
+model:
+  wrfchem: # model label
+    files: /glade/work/plichtig/melodies_monet/AQE/Tutorial/input_data/wrfout_hourly_d02_2022-07-1[1-7]*
+    mod_type: "wrfchem"
+    surf_only: False
+    surf_only_nc: False
+    radius_of_influence: 6000 # meters
+    mapping:
+      pandora: 
+        no2: "NO2"
+    projection: ~
+    preprocessing:
+      total_columns: "no2"
+
+
+obs:
+  pandora: # obs label
+    filename: /glade/work/plichtig/Data/Pandora/Pandora*s1_BoulderCO*_L2_rnvh3p1-8.txt
+    obs_type: pandora
+    variables: # optional
+      "Column 62":
+         unit_scale: 6.02e+19 # mol/m2 to molec/cm2
+         unit_scale_method: "*"
+         ylabel: 'NO$_2$ (molec/cm2)'
+         use_ylabel: True
+         vmax: 1e16
+         rename: NO2
+      "Column 36": {}
+    data_proc:
+      filter_dict: {"Column 36": {"oper": "isin", "value": [0, 10]}, "NO2": {"oper": ">=", "value": 0}} 
+      
+           
+
+    
+plots:
+  plot_grp1:
+    type: "timeseries"
+    fig_kwargs:
+      figsize: [12, 6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all", "custom:box"]
+    domain_name: ["CONUS", "Front Range"]
+    domain_info:
+      'Front Range':
+        bounds: [-106., -104, 39.16, 40.5]  
+    data: ["pandora_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+
+  plot_grp10:
+    type: "diurnal" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      'Front Range':
+        bounds: [-106., -104, 39.16, 40.5]  
+    data: ["pandora_wrfchem"]
+    settings:
+      shading_range: IQR
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time"
+      ts_avg_window: "h"
+      set_axis: True
+      shading_range: 'IQR'
+
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  # such as whether to show the state boundaries
+      figsize: [10, 5]
+      counties: True
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["Front Range"]
+    domain_info:
+      'Front Range':
+        bounds: [-106, -104., 39.16, 40.5]  
+    data: ["pandora_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      use_ylabel: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["Front Range"]
+    domain_info:
+      'Front Range':
+        bounds: [-106, -104., 39.16, 40.5] 
+    data: ["pandora_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      ylabel: "NO$_2$"
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["custom:box"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["Front Range"]
+    domain_info:
+      'Front Range':
+        bounds: [-106, -104., 39.16, 40.5]
+    data: ["pandora_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+
+stats:
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  # ^ Always outputs a .txt file.
+  #   Optional to also output a Matplotlib figure table (image).
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+  edges: "horizontal"
+  domain_type: ["custom:box"]
+  domain_name: ["Front Range"]
+  domain_info:
+    'Front Range':
+      bounds: [-106, -104., 39.16, 40.5]
+  data: ["pandora_wrfchem"]
