@@ -185,7 +185,7 @@ class observation:
                 self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
             elif extension in ['.dat']:
                 from .util.read_util import read_noaa_gml_multifile
-                self.obj = read_noaa_gml_multifile(filename=files[0])
+                self.obj = read_noaa_gml_multifile(filenames=files)
             elif extension in ['.xls', '.xlsx']:
                 from .util.read_util import control_reading_excel
                 assert len(files) == 1, "MELODIES-MONET can only read one excel file"

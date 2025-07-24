@@ -474,12 +474,13 @@ def read_noaa_gml_multifile(filenames):
         Xarray dataset containing information from .dat file
 
     """
+    import pdb; pdb.set_trace()
     if isinstance(filenames, str):
         files = sorted(glob.glob(filenames))
     else:
         files = []
         for file in filenames:
-            file.expand(sorted(glob.glob(filenames)))
+            files.extend(sorted(glob.glob(file)))
 
     data = read_noaa_gml(files[0])
     if len(files) > 1:
