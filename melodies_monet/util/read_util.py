@@ -474,7 +474,6 @@ def read_noaa_gml_multifile(filenames):
         Xarray dataset containing information from .dat file
 
     """
-    import pdb; pdb.set_trace()
     if isinstance(filenames, str):
         files = sorted(glob.glob(filenames))
     else:
