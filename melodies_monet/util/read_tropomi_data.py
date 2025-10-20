@@ -28,12 +28,12 @@ def _open_one_dataset(fname, variable_dict):
     ds = xr.Dataset()
     dso = nc4.Dataset(fname, "r")
     ds.attrs = dso.__dict__
-    time = _walktree_search("time", dso)  # base unit in seconds since...
-    dtime = _walktree_search("delta_time", dso)  # in ms
+    time = open_var_no_format("time", dso)  # base unit in seconds since...
+    dtime = open_var_no_format("delta_time", dso)  # in ms
     time_cast = xr.DataArray(data=time[:], dims=time.dimensions, attrs=time.__dict__)
     ds["time"] = xr.conventions.decode_cf_variable("time", time_cast.variable)
-    lon = _walktree_search("longitude", dso)
-    lat = _walktree_search("latitude", dso)
+    lon = open_var_no_format("longitude", dso)
+    lat = open_var_no_format("latitude", dso)
     ds["pres_pa_mid"], ds["pres_pa_int"] = _calc_pressure_levels(dso)
     ds = ds.assign_coords(
         {
@@ -133,7 +133,7 @@ def _add_time_granule(time, dtime):
     return time_granule
 
 
-def _walktree_search(variable, netcdf_dataset):
+def _walktree_search(variable, netcdf_dataset, path=""):
     """Recursive search for each variable
 
     Parameters
@@ -142,20 +142,28 @@ def _walktree_search(variable, netcdf_dataset):
         Variable name
     netcdf_dataset : nc4.Dataset
         netCDF4 dataset with data to search
+    path : str, optional
+        Path within the netCDF4 dataset, by default ""
 
     Returns
     -------
-    nc4.Variable | None
-        nc4 Variable that was searched for.
+    str
+        str path that was searched for.
+
+    Raises
+    ------
+    ValueError
+        If variable is not found
     """
     if variable in netcdf_dataset.variables:
-        return netcdf_dataset[variable]
+        return f"{path}/{variable}"
     groups = netcdf_dataset.groups
     for group in groups:
-        var = _walktree_search(variable, netcdf_dataset[group])
-        if var is not None:
-            return var
-    return None
+        try:
+            return _walktree_search(variable, netcdf_dataset[group], f"{path}/{group}")
+        except ValueError:
+            continue
+    raise ValueError(f"{variable} not found in {netcdf_dataset}")
 
 
 def _add_variable(variable, netcdf_dataset):
@@ -174,17 +182,36 @@ def _add_variable(variable, netcdf_dataset):
         DataArray with the variable that was searched for, formatted
         for MELODIES-MONET
     """
-    var = _walktree_search(variable, netcdf_dataset)
+    var = open_var_no_format(variable, netcdf_dataset)
     _replacements = {"layer": "z", "scanline": "y", "ground_pixel": "x"}
     _dimensions = list(var.dimensions)
     dimensions = [_replacements[x] if x in _replacements else x for x in _dimensions]
     if np.issubdtype(var.dtype, np.integer):
-        da = xr.DataArray(data=var[:].round(), dims=dimensions, attrs=var.__dict__).astype(
+        var_dtype = np.iinfo(var.dtype)
+        var_values = var[:].filled(np.iinfo(var.dtype).min)
+        da = xr.DataArray(data=var_values, dims=dimensions, attrs=var.__dict__).astype(
             var.dtype
         )
     else:
         da = xr.DataArray(data=var[:], dims=dimensions, attrs=var.__dict__).astype(var.dtype)
     return da
+
+
+def open_var_no_format(variable, netcdf_dataset):
+    """Opens only one variable from a netCDF4 dataset
+
+    Parameters
+    ----------
+    variable : str
+        Variable name
+    netcdf_dataset : nc4.Dataset
+        nc4.Dataset with data to search
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray with the variable that was searched for    """
+    return netcdf_dataset[_walktree_search(variable, netcdf_dataset)]
 
 
 def _calc_pressure_levels(netcdf_tropomi):
@@ -201,9 +228,9 @@ def _calc_pressure_levels(netcdf_tropomi):
         Two DataArrays containing the midlevel pressure and the
         pressure at the layer interface respectively.
     """
-    tm5_constant_a = _walktree_search("tm5_constant_a", netcdf_tropomi)
-    tm5_constant_b = _walktree_search("tm5_constant_b", netcdf_tropomi)
-    surface_pressure = _walktree_search("surface_pressure", netcdf_tropomi)
+    tm5_constant_a = open_var_no_format("tm5_constant_a", netcdf_tropomi)
+    tm5_constant_b = open_var_no_format("tm5_constant_b", netcdf_tropomi)
+    surface_pressure = open_var_no_format("surface_pressure", netcdf_tropomi)
     num_times, num_y, num_x = surface_pressure.shape
     num_layers = len(tm5_constant_a[:, 0])
     midlayer_pressure = xr.DataArray(
@@ -310,5 +337,17 @@ def open_datasets(all_files, variable_dict):
     for data in datasets:
         d = _open_one_dataset(data, variable_dict)
         # Select time coverage start as key, removing the trailing Z
-        ds_collection[np.datetime64(d.attrs["time_coverage_start"].replace("Z", ""))] = d
+        ds_collection[d.attrs["time_coverage_start"].replace("Z", "")] = d
     return ds_collection
+
+
+if __name__ == "__main__":
+    path = "/glade/derecho/scratch/plichtig/TROPOMI"
+    test_dataset = (
+        f"{path}/S5P_RPRO_L2__NO2____20220720T000819_20220720T014949_24695_03_020400_20230203T042051.nc"
+    )
+
+    all_swaths = open_datasets(
+        test_dataset, variable_dict={"pres_pa_mid": {}, "tm5_tropopause_pressure": {}}
+    )
+    
