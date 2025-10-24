@@ -50,6 +50,40 @@ default_mod_variable_names = {
 }
 
 
+def tropomi_mol_m2_to_molec_cm2(column_data):
+    """Converts column data from mol/m2 to molec/cm2
+
+    Parameters
+    ----------
+    column_data : xr.DataArray
+        DataArray containing the column data in mol/m2
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the column data in molec/cm2
+    """
+    m2_to_cm2 = 1e4
+    original_units = column_data.attrs.get("units", "no unit attribute")
+    if original_units.lower() in ["molec/cm2", "molec cm-2", "molec/cm^2", "molec cm^-2"]:
+        return column_data
+    if original_units.lower() not in ["mol/m2", "mol m-2", "mol/m^2", "mol m^-2"]:
+        raise ValueError(
+            f"Input column data units are not mol/m2, found {original_units}."
+        )
+    with xr.set_options(keep_attrs=True):
+        if "multiplication_factor_to_convert_to_molecules_percm2" in column_data.attrs:
+            column_data_molec_cm2 = (
+                column_data
+                * column_data.attrs["multiplication_factor_to_convert_to_molecules_percm2"]
+            )
+            column_data_molec_cm2.attrs.pop("multiplication_factor_to_convert_to_molecules_percm2")
+        else:
+            column_data_molec_cm2 = column_data * N_A / m2_to_cm2
+    column_data_molec_cm2.attrs["units"] = "molec/cm2"
+    return column_data_molec_cm2
+
+
 def interp_horizontal_mod2sat(obsobj, modobj, method="bilinear", isglobal=False, **kwargs):
     """Interpolates model horizontally to satellite
 
@@ -110,23 +144,51 @@ def interpolate_time(modelobj, overpass_time=None):
     days = np.unique(modelobj["time"].dt.floor("D"))
     interpolated_data = []
     for day in days:
-        day_min = day - np.timedelta64(1, "D")
-        day_max = day + np.timedelta64(1, "D")
-        modelobj_day = modelobj.sel(time=slice(day_min, day_max))
+        modelobj_day = modelobj.sel(
+            time=slice(day - np.timedelta64(1, "D"), day + np.timedelta64(1, "D"))
+        )
         target_time = day + np.timedelta64(overpass_ns, "ns")
         localtime = modelobj_day["time"] + utc_offset_nanoseconds
-        previous_index, next_index = _calculate_previous_and_next_indices(localtime, target_time)
-        previous_weight, next_weight = _calculate_time_weights(
-            localtime, target_time, previous_index, next_index
-        )
-        previous_data = modelobj_day.isel(time=previous_index).drop_vars("time")
-        next_data = modelobj_day.isel(time=next_index).drop_vars("time")
-        interp = (previous_weight * previous_data) + (next_weight * next_data)
+        if localtime.min() > target_time or localtime.max() < target_time:
+            warnings.warn(
+                f"Target time {target_time} is outside model time range "
+                f"({np.datetime_as_string(localtime.min().values)} - "
+                f"{np.datetime_as_string(localtime.max().values)}), skipping."
+            )
+            continue
+        interp = _interpolate_time(target_time, localtime, modelobj_day)
         interp = interp.expand_dims("time", axis=0).assign_coords(time=[target_time])
         interp["time_utc"] = target_time - utc_offset_nanoseconds
         interpolated_data.append(interp)
     concat_data = xr.concat(interpolated_data, dim="time")
     return concat_data
+
+
+def _interpolate_time(target_time, localtime, data):
+    """Applies time interpolation to the data.
+
+    Parameters
+    ----------
+    target_time : np.datetime64
+        Target time to interpolate to.
+    localtime : xr.DataArray
+        Local time of the model data.
+    data : xr.DataArray
+        Data to interpolate.
+
+    Returns
+    -------
+    xr.DataArray
+        Interpolated data.
+    """
+    previous_index, next_index = _calculate_previous_and_next_indices(localtime, target_time)
+    previous_weight, next_weight = _calculate_time_weights(
+        localtime, target_time, previous_index, next_index
+    )
+    previous_data = data.isel(time=previous_index).drop_vars("time")
+    next_data = data.isel(time=next_index).drop_vars("time")
+    interp = (previous_weight * previous_data) + (next_weight * next_data)
+    return interp
 
 
 def _calculate_previous_and_next_indices(localtime, target_time):
@@ -299,11 +361,53 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
     xr.DataArray
         DataArray containing the model columns after applying the averaging kernel.
     """
-    m2_to_cm2 = 1e4
+
     if averaging_kernel_params is not None:
         ak_params = {**default_ak_variable_names[sat_type], **averaging_kernel_params}
     else:
         ak_params = default_ak_variable_names[sat_type]
+    if varname is None:
+        varname = default_mod_variable_names[sat_type]
+        warnings.warn(f"Variable name not provided, assuming {varname}.")
+
+    mod_p_cols = calc_partialcolumn(modobj, varname, unit="mol/m2")
+    m2_to_cm2 = 1e4
+    if sat_type == "tropomi_l2_no2":
+        return apply_averaging_kernel_no2(
+            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=averaging_kernel_params
+        )
+    if sat_type == "tropomi_l2_hcho":
+        return apply_averaging_kernel_hcho(
+            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=averaging_kernel_params
+        )
+
+        
+    return column_data_model
+
+
+def apply_averaging_kernel_no2(mod_p_cols, obsobj, varname=None, averaging_kernel_params=None):
+    """Applies the averaging kernel for TROPOMI NO2 and calculates the column
+
+    Parameters
+    ----------
+    mod_p_cols : xr.DataArray
+        DataArray containing the model NO2 partial columns. It has to be
+        previously regridded to satellite space.
+    obsobj : xr.Dataset
+        Dataset containing all the observational data, including the
+        variables related to the averaging kernel.
+    varname : str | None
+        Variable name in the model dataset. If None, "NO2" is used.
+    averaging_kernel_params : dict[str, str]
+        dictionary containing the keys "averaging_kernel" and
+        "tropospheric_averaging_kernel_calc" plus, optionally,
+        "airmass_factor_total" and "airmass_factor_troposphere".
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the model columns after applying the averaging kernel.
+    """
     if ak_params["tropospheric_averaging_kernel_calc"]:
         ak = (
             obsobj[ak_params["airmass_factor_total"]]
@@ -314,16 +418,47 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
         ak = obsobj[ak_params["averaging_kernel"]]
     if "tm5_tropopause_pressure" in obsobj:
         ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
-    if varname is None:
-        varname = {
-            "tropomi_l2_no2": "NO2",
-            "tropomi_l2_hcho": "HCHO",
-            "tropomi_l2_co": "CO",
-        }[sat_type]
-    partial_cols = calc_partialcolumn(modobj, varname, unit="mol/m2")
 
-    column_data_model = xr.dot(ak, partial_cols, dim="z") * N_A / m2_to_cm2
-    column_data_model.attrs["description"] = "column after applying averaging kernel"
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / m2_to_cm2
+    column_data_model.attrs = {"description":"Tropospheric column after applying averaging kernel",
+                               "units":"molec/cm2"}
+    return column_data_model
+
+
+def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kernel_params=None):
+    """Applies the averaging kernel for TROPOMI HCHO and calculates the column.
+    It is in the ATBD documentation, instead of the user guide.
+
+    Parameters
+    ----------
+    mod_p_cols : xr.DataArray
+        DataArray containing the model HCHO partial columns. It has to be
+        previously regridded to satellite space.
+    obsobj : xr.Dataset
+        Dataset containing all the observational data, including the
+        variables related to the averaging kernel.
+    varname : str | None
+        Variable name in the model dataset. If None, "HCHO" is used.
+    averaging_kernel_params : dict[str, str]
+        dictionary containing the keys "averaging_kernel" and
+        "tropospheric_averaging_kernel_calc" plus, optionally,
+        "airmass_factor_total" and "airmass_factor_troposphere".
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the model columns after applying the averaging kernel.
+    """
+    ak = obsobj[ak_params["averaging_kernel"]]
+    if "tm5_tropopause_pressure" in obsobj:
+        ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
+    if varname is None:
+        warnings.warn("Variable name not provided, assuming HCHO.")
+        varname = "HCHO"
+
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / m2_to_cm2
+    column_data_model.attrs = {"description":f"Tropospheric column of model {varname} after applying averaging kernel",
+                               "units":"molec/cm2"}
     return column_data_model
 
 
@@ -407,14 +542,14 @@ def crop_obsobj(obsobj, modobj):
     )
 
     valid_x_indices = lonlat_mask.any(dim="y").values.nonzero()[0]
+    if valid_x_indices.size == 0:
+        return None
     x_min, x_max = valid_x_indices.min(), valid_x_indices.max()
 
     valid_y_indices = lonlat_mask.any(dim="x").values.nonzero()[0]
-    y_min, y_max = valid_y_indices.min(), valid_y_indices.max()
-
-    if (valid_x_indices.size == 0) or (valid_y_indices.size == 0):
-        warnings.warn("No observations are within the model domain.")
+    if valid_y_indices.size == 0:
         return None
+    y_min, y_max = valid_y_indices.min(), valid_y_indices.max()
 
     cropped_obsobj = obsobj.isel(x=slice(x_min, x_max), y=slice(y_min, y_max))
     return cropped_obsobj
@@ -446,6 +581,8 @@ def select_swaths_overlapping_model(obsobj, modobj):
     for k in obsobj.keys():
         if within_model_domain(obsobj[k], bounds):
             output_pair[k] = crop_obsobj(obsobj[k], bounds)
+        else:
+            warnings.warn(f"Swath {k} is outside model domain, skipping.")
     return output_pair
 
 
@@ -461,6 +598,10 @@ def _regrid_and_apply_ak(
         already at overpass time
     obsobj : dict[np.datetime64, xr.Dataset]
         Dictionary containing observations
+    mod_var : str
+        Variable name in the model dataset
+    sat_var : str
+        Variable name in the satellite dataset
 
     Returns
     -------
@@ -469,6 +610,7 @@ def _regrid_and_apply_ak(
         data in satellite space after applying the ak as values
     """
 
+    print("obsobj", obsobj)
     output_pair = {}
     modobj_at_overpass_time = interpolate_time(modobj, overpass_time=13.5)
     modobj_at_overpass_time["altitude"] = calc_altitude_from_thickness(
@@ -482,20 +624,23 @@ def _regrid_and_apply_ak(
             warnings.warn(f"Model does not have data for {d}, skipping.")
             continue
         obsobj_cropped = crop_obsobj(obsobj, modobj)
+        if obsobj_cropped is None:
+            warnings.warn(f"Swath on {d} is outside model domain, skipping.")
+            continue
         # NOTE: We still need to check if this works accross the dateline
         modobj_at_date = modobj_at_overpass_time.where(modobj_dates_granules == d).drop_vars(
             "time_utc"
         )
         modobj_regrid = interp_horizontal_mod2sat(obsobj_cropped, modobj_at_date)
-        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, "NO2")
+        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var)
         # Apply averaging kernel
         modobj_regrid[mod_var] = apply_averaging_kernel(
-            modobj_regrid, obsobj_cropped, "tropomi_l2_no2"
+            modobj_regrid, obsobj_cropped, "tropomi_l2_no2", varname=mod_var
         )
-        starttime_swath = np.datetime_as_string(modobj_regrid["time"].min().values)
+        starttime_swath = np.datetime_as_string(obsobj["time_granule"].min().values)
         output_dataset = xr.Dataset()
         output_dataset[mod_var] = modobj_regrid[mod_var]
-        output_dataset[sat_var] = obsobj_cropped[sat_var]
+        output_dataset[sat_var] = tropomi_mol_m2_to_molec_cm2(obsobj_cropped[sat_var])
         output_pair[starttime_swath] = output_dataset
     return output_pair
 
