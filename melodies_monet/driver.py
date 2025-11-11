@@ -119,6 +119,7 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
         self.sat_type = None
+        self.sat_method = None
         self.data_proc = None
         self.variable_dict = None
         self.variable_summing = None
@@ -135,6 +136,7 @@ class observation:
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
             f"    sat_type={self.sat_type!r},\n"
+            f"    sat_method={self.sat_method!r},\n"
             f"    data_proc={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    resample={self.resample!r},\n"
@@ -306,11 +308,16 @@ class observation:
                     flst, self.variable_dict, debug=self.debug)
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
-            elif self.sat_type == 'tropomi_l2_no2':
+            elif self.sat_type == 'tropomi_l2_no2' and (
+                    self.sat_method == None or self.sat_method == "replace_apriori"):
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
+            elif self.sat_type == 'tropomi_l2_no2' and self.sat_method == "apply_ak":
+                from .util.read_tropomi_data import open_datasets
+                print('Reading TROPOMI L2 NO2 with averaging kernel application')
+                self.obj = open_datasets(self.file, self.variable_dict)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
                 self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
@@ -321,6 +328,11 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
+        self.mask_and_scale()  # mask and scale values from the control values
+        self.rename_vars() # rename any variables as necessary 
+        self.sum_variables() 
+        self.resample_data()
+        self.filter_obs()
 
     def filter_obs(self):
         """Filter observations based on filter_dict.
@@ -1096,6 +1108,7 @@ class analysis:
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+
 
     def setup_obs_grid(self):
         """
