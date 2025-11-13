@@ -28,6 +28,7 @@ numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
 
+M2TOCM2 = 1e4
 default_ak_variable_names = {
     "tropomi_l2_no2": {
         "averaging_kernel": "averaging_kernel",
@@ -63,7 +64,6 @@ def tropomi_mol_m2_to_molec_cm2(column_data):
     xr.DataArray
         DataArray containing the column data in molec/cm2
     """
-    m2_to_cm2 = 1e4
     original_units = column_data.attrs.get("units", "no unit attribute")
     if original_units.lower() in ["molec/cm2", "molec cm-2", "molec/cm^2", "molec cm^-2"]:
         return column_data
@@ -79,7 +79,7 @@ def tropomi_mol_m2_to_molec_cm2(column_data):
             )
             column_data_molec_cm2.attrs.pop("multiplication_factor_to_convert_to_molecules_percm2")
         else:
-            column_data_molec_cm2 = column_data * N_A / m2_to_cm2
+            column_data_molec_cm2 = column_data * N_A / M2TOCM2
     column_data_molec_cm2.attrs["units"] = "molec/cm2"
     return column_data_molec_cm2
 
@@ -371,14 +371,13 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
         warnings.warn(f"Variable name not provided, assuming {varname}.")
 
     mod_p_cols = calc_partialcolumn(modobj, varname, unit="mol/m2")
-    m2_to_cm2 = 1e4
     if sat_type == "tropomi_l2_no2":
         return apply_averaging_kernel_no2(
-            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=averaging_kernel_params
+            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=ak_params
         )
     if sat_type == "tropomi_l2_hcho":
         return apply_averaging_kernel_hcho(
-            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=averaging_kernel_params
+            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=ak_params
         )
 
         
@@ -408,18 +407,18 @@ def apply_averaging_kernel_no2(mod_p_cols, obsobj, varname=None, averaging_kerne
     xr.DataArray
         DataArray containing the model columns after applying the averaging kernel.
     """
-    if ak_params["tropospheric_averaging_kernel_calc"]:
+    if averaging_kernel_params["tropospheric_averaging_kernel_calc"]:
         ak = (
-            obsobj[ak_params["airmass_factor_total"]]
-            / obsobj[ak_params["airmass_factor_troposphere"]]
-            * obsobj[ak_params["averaging_kernel"]]
+            obsobj[averaging_kernel_params["airmass_factor_total"]]
+            / obsobj[averaging_kernel_params["airmass_factor_troposphere"]]
+            * obsobj[averaging_kernel_params["averaging_kernel"]]
         )
     else:
-        ak = obsobj[ak_params["averaging_kernel"]]
+        ak = obsobj[averaging_kernel_params["averaging_kernel"]]
     if "tm5_tropopause_pressure" in obsobj:
         ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
 
-    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / m2_to_cm2
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
     column_data_model.attrs = {"description":"Tropospheric column after applying averaging kernel",
                                "units":"molec/cm2"}
     return column_data_model
@@ -456,7 +455,7 @@ def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kern
         warnings.warn("Variable name not provided, assuming HCHO.")
         varname = "HCHO"
 
-    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / m2_to_cm2
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
     column_data_model.attrs = {"description":f"Tropospheric column of model {varname} after applying averaging kernel",
                                "units":"molec/cm2"}
     return column_data_model
@@ -646,17 +645,17 @@ def _regrid_and_apply_ak(
 
 
 def regrid_and_apply_ak(
-    modobj, obsobj_dict, mod_var="NO2", sat_var="nitrogendioxide_tropospheric_column"
+    obsobj_dict, modobj, mod_var="NO2", sat_var="nitrogendioxide_tropospheric_column"
 ):
     """Regrids and applies AK to multiple swaths.
 
     Parameters
     ----------
+    obsobj_dict : dict[np.datetime64, xr.Dataset]
+        Dictionary containing observations
     modobj : xr.Dataset
         model dataset, as read in by MELODIES-MONET. Model should be
         already at overpass time
-    obsobj_dict : dict[np.datetime64, xr.Dataset]
-        Dictionary containing observations
 
     Returns
     -------
