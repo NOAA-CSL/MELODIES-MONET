@@ -704,4 +704,4 @@ def back_to_structured_grid(paired_object, target_grid):
         output_all.append(regridded_pair)
 
     output_pair = xr.concat(output_all, dim="time")
-    return output_pair
+    return output_pair#.groupby("time").mean()

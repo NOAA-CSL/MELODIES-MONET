@@ -2077,7 +2077,7 @@ class analysis:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
-                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                            if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 plot_kwargs['varname']=modvar
                             else:
                                 plot_kwargs['column']=modvar
