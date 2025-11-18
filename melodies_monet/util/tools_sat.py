@@ -29,8 +29,18 @@ def mask_and_scale_sat(obs):
             obs_tmp = observation()
             obs_tmp.obj = obs.obj[key]
             obs_tmp.variable_dict = obs.variable_dict.copy()
-            obs_tmp.mask_and_scale()
-            obs.obj[key] = obs_tmp.obj
+            if isinstance(obs_tmp.obj, list):
+                new_list = []
+                for item in obs_tmp.obj:
+                    obs_item = observation()
+                    obs_item.obj = item
+                    obs_item.variable_dict = obs_tmp.variable_dict.copy()
+                    obs_item.mask_and_scale()
+                    new_list.append(obs_item.obj)
+                obs_tmp.obj = new_list
+            else:
+                obs_tmp.mask_and_scale()
+                obs.obj[key] = obs_tmp.obj
     else:
         raise TypeError("obs.obj must be either an xarray.Dataset or a dict of xarray.Datasets.")
 
@@ -65,8 +75,19 @@ def sum_variables_sat(obs):
             obs_tmp.obj = obs.obj[key]
             obs_tmp.variable_dict = obs.variable_dict.copy()
             obs_tmp.variable_summing = obs.variable_summing.copy()
-            obs_tmp.sum_variables()
-            obs.obj[key] = obs_tmp.obj
+            if isinstance(obs_tmp.obj, list):
+                new_list = []
+                for item in obs_tmp.obj:
+                    obs_item = observation()
+                    obs_item.obj = item
+                    obs_item.variable_dict = obs_tmp.variable_dict.copy()
+                    obs_item.variable_summing = obs_tmp.variable_summing.copy()
+                    obs_item.sum_variables()
+                    new_list.append(obs_item.obj)
+                obs_tmp.obj = new_list
+            else:
+                obs_tmp.sum_variables()
+                obs.obj[key] = obs_tmp.obj
     else:
         raise TypeError("obs.obj must be either an xarray.Dataset or a dict of xarray.Datasets.")
 
@@ -99,8 +120,19 @@ def filter_obs_sat(obs):
             obs_tmp = observation()
             obs_tmp.obj = obs.obj[key]
             obs_tmp.variable_dict = obs.variable_dict.copy()
-            obs_tmp.filter_dict = obs.filter_dict.copy()
-            obs_tmp.filter_obs()
-            obs.obj[key] = obs_tmp.obj
+            obs_tmp.data_proc = obs.data_proc.copy()
+            if isinstance(obs_tmp.obj, list):
+                new_list = []
+                for item in obs_tmp.obj:
+                    obs_item = observation()
+                    obs_item.obj = item
+                    obs_item.variable_dict = obs_tmp.variable_dict.copy()
+                    obs_item.data_proc = obs_tmp.data_proc.copy()
+                    obs_item.filter_obs()
+                    new_list.append(obs_item.obj)
+                obs_tmp.obj = new_list
+            else:
+                obs_tmp.filter_obs()
+                obs.obj[key] = obs_tmp.obj
     else:
         raise TypeError("obs.obj must be either an xarray.Dataset or a dict of xarray.Datasets.")
