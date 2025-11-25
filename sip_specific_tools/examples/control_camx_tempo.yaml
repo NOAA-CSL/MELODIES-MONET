@@ -35,7 +35,7 @@ obs:
       solar_zenith_angle: {}
       eff_cloud_fraction: {}
     data_proc:
-      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 70}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
   tempo_l2_no2:
     debug: False
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240720*_S0*
