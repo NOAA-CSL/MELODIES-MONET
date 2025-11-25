@@ -335,7 +335,7 @@ class observation:
         sum_variables_sat(self) 
         filter_obs_sat(self)
 
-    def filter_obs(self):
+    def filter_obs(self, drop=True):
         """Filter observations based on filter_dict.
         
         Returns
@@ -349,21 +349,21 @@ class observation:
                     filter_vals = filter_dict[column]['value']
                     filter_op = filter_dict[column]['oper']
                     if filter_op == 'isin':
-                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=True)
+                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=drop)
                     elif filter_op == 'isnotin':
-                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=True)
+                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=drop)
                     elif filter_op == '==':
-                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=drop)
                     elif filter_op == '>':
-                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=drop)
                     elif filter_op == '<':
-                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=drop)
                     elif filter_op == '>=':
-                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=drop)
                     elif filter_op == '<=':
-                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=drop)
                     elif filter_op == '!=':
-                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=drop)
                     else:
                         raise ValueError(f'Filter operation {filter_op!r} is not supported')
         
