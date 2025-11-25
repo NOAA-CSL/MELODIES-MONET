@@ -54,7 +54,7 @@ obs:
       eff_cloud_fraction: {}
       tropopause_pressure: {}
     data_proc:
-      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 70}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
 
 model:
   CAMX: # model label
