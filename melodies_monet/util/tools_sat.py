@@ -128,11 +128,11 @@ def filter_obs_sat(obs):
                     obs_item.obj = item
                     obs_item.variable_dict = obs_tmp.variable_dict.copy()
                     obs_item.data_proc = obs_tmp.data_proc.copy()
-                    obs_item.filter_obs()
+                    obs_item.filter_obs(drop=False)
                     new_list.append(obs_item.obj)
                 obs_tmp.obj = new_list
             else:
-                obs_tmp.filter_obs()
+                obs_tmp.filter_obs(drop=False)
                 obs.obj[key] = obs_tmp.obj
     else:
         raise TypeError("obs.obj must be either an xarray.Dataset or a dict of xarray.Datasets.")
