@@ -1,5 +1,5 @@
 # Comparing CAMx to NOAA GLM surface ozone measurements. 
-# NOAA GLM ASCII data are available from: https://gml.noaa.gov/aftp/data/ozwv/SurfaceOzone/Version_1/
+# NOAA GLM data are available from: https://gml.noaa.gov/aftp/data/bedi/Ozone_and_Water_Vapor/Surface_Ozone/Data/v02/
 # Example for Niwot Ridge (NWR) station
 
 analysis:
@@ -38,7 +38,7 @@ model:
 obs:
   noaa_gml: # obs label
     # use_airnow: True
-    filename: ./noaa/nwr_06_2016_hour.dat
+    filename: ./noaa/ESRL-GMD-OZWV_v2.0_HOUR_NWR_s20160101T000000Z_e20170101T000000Z_c20250423T143348Z.nc  
     obs_type: ground
     ground_coordinate:
       latitude: 40.0531
