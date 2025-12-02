@@ -1,5 +1,6 @@
 # Comparing CAMx to NOAA GLM surface ozone measurements. 
-# NOAA GLM data are available from: https://gml.noaa.gov/aftp/data/bedi/Ozone_and_Water_Vapor/Surface_Ozone/Data/v02/
+# NOAA GLM NETCDF data are available from: https://gml.noaa.gov/aftp/data/bedi/Ozone_and_Water_Vapor/Surface_Ozone/Data/v02/
+# Also works for ASCII data: https://gml.noaa.gov/aftp/data/ozwv/SurfaceOzone/Version_1/
 # Example for Niwot Ridge (NWR) station
 
 analysis:
