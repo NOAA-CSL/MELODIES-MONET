@@ -13,6 +13,8 @@ modular framework that integrates existing and future diverse atmospheric
 chemistry observational datasets with chemistry model results for the
 evaluation of air quality and atmospheric composition.
 
+V1: https://doi.org/10.5281/zenodo.15776660
+
 ## Documentation
 
 Built and hosted by Read the Docs: <https://melodies-monet.readthedocs.io>
