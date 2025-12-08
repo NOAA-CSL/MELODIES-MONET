@@ -1,0 +1,199 @@
+#### GENERAL SETTINGS ####
+analysis:
+  start_time: "2016-06-01-00:00:00" # UTC
+  end_time: "2016-08-31-23:00:00" # UTC
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/airnow
+  debug: True
+  save:
+    paired:
+      output_dir_save: .
+      method: netcdf
+      data: 'all'
+  read:
+    paired:
+      method: netcdf
+      filenames: {'airnow_camx': 'airnow_camx.nc4'}
+
+#### MODEL INFO ####
+model:
+  camx:
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.201607*.runS20.avrg.grd03.nc
+    mod_type: "camx"
+    surf_ony: True
+    radius_of_influence: 12000
+    mapping:
+      airnow:
+        O3: "OZONE"
+        NO2: "NO2"
+    projection: ~
+
+#### OBS INFO ####
+obs:
+  airnow: # obs label
+    use_airnow: True
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/airnow/AIRNOW_20160501_20160930.nc
+    obs_type: pt_sfc
+    variables: # optional
+      OZONE: 
+        # unit_scale: 1
+        # unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "O$_3$ (ppbv)"
+      NO2: 
+        ylabel_plot: "NO$_2$ (ppbv)"
+        nan_value: -1.0
+      
+#### PLOTTING ####
+plots:
+  plot_grp1:
+    type: "timeseries"
+    fig_kwargs:
+      figsize: [12, 6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 24.
+    domain_type: ["custom:box", "siteid"]
+    domain_name: ["Front Range", "080310026"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time_local"
+      ts_avg_window: "D"
+      set_axis: True
+
+  plot_grp10:
+    type: "diurnal"
+    fig_kwargs:
+      figsize: [12, 6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 24.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    settings:
+      shading_range: IQR
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time_local"
+      ts_avg_window: "h"
+      set_axis: True
+      shading_range: 'IQR'
+      
+  plot_grp2:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  # such as whether to show the state boundaries
+      figsize: [10, 5]
+      counties: True
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["state_name", "custom:box"]
+    domain_name: ["CO", "Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      crop_model: True
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+  plot_grp7:
+    type: "multi_boxplot"
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"]
+    domain_name: ["Front Range: siteid"]
+    region_name: ['siteid']
+    region_list: ["080310026", "080590006"] 
+    model_name_list: ['AirNow', 'camx']
+    data: ["airnow_camx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+#### STATS CALCULATION ####
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["state_name", "custom:box"]
+  domain_name: ["CO", "Front Range"]
+  domain_info:
+    "Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+  data: ["airnow_camx"]

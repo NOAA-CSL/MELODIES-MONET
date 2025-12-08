@@ -418,45 +418,73 @@ def read_pandora(path):
 
 
 def read_noaa_gml(filename):
-    """Function to read .dat formatted NOAA GML observations.
+    """Function to read .dat and/or netcdf formatted NOAA GML observations.
 
     Parameters
     ----------
     filename : str
-        Filename of .dat file to be read
+        Filename of .dat or .nc file to be read
 
     Returns
     -------
     xarray.Dataset
-        Xarray dataset containing information from .dat file
+        Xarray dataset containing information from .dat/.nc file
 
     """
 
-    # Ignore preamble
-    preamble_end_line = 0
-    with open(filename, 'r') as f:
-        for i, line in enumerate(f):
-            if line.strip() and line.strip().split()[0] == 'STN':
-                preamble_end_line = i
-                break
+    #NOAA GML files come in two flavors: .dat and .nc
+    if filename.lower().endswith('.nc'): #for netcdf version of files
 
-    # Read the file again, skipping the identified preamble lines
-    df = pd.read_csv(
-        filename,
-        skiprows=preamble_end_line,
-        sep=r"\s+",
-    )
-    df = df.rename(
-        columns={"YEAR": "year", "MON": "month", "DAY": "day", "HR": "hour", "STN": "siteid"}
-    )
-    df['time'] = pd.to_datetime(df[["year", "month", "day", "hour"]])
-    siteid = df["siteid"][0]
-    df = df[df.columns[~df.columns.isin(["year", "month", "day", "hour"])]]
+        #open the netcdf file
+        dset = xr.open_dataset(filename)
+        
+        #get and store the time variable
+        time = dset.time
+        
+        #get the id global attribute from the netCDF file and extract the siteid in lower case format
+        #and replicate along the time dimension...note that index [3] in the line of code 
+        #below assumes that the id global attribute format won't change.
+        siteid=[dset.attrs['id'].split("_")[3].lower()]*time.size
 
-    # Sort the values based on time
-    df = df.sort_values(by='time', ignore_index=True)
-    df = df.set_index('time')
-    ds = xr.Dataset.from_dataframe(df)
+        #get the variable in the file.  Note that their should only be two
+        #variables in the file: time and the data variable.
+        vnames=list(dset.data_vars.keys())
+
+        #Build the xarray dataset to return...currently this is hardwired to 'O3(PPB)', but could be changed
+        #to vnames[0] and properly annotated in the conrol file which would allow for different constituents.
+        ds = xr.Dataset(data_vars={'O3(PPB)':dset[vnames[0]], 'siteid': (('time'),siteid, {'descripton':'replicated siteid'})},coords={'time':time})
+
+        #close the netcdf file when done
+        dset.close()
+
+    else: #for .dat version of files
+
+        # Ignore preamble
+        preamble_end_line = 0
+        with open(filename, 'r') as f:
+            for i, line in enumerate(f):
+                if line.strip() and line.strip().split()[0] == 'STN':
+                    preamble_end_line = i
+                    break
+
+        # Read the file again, skipping the identified preamble lines
+        df = pd.read_csv(
+            filename,
+            skiprows=preamble_end_line,
+            sep=r"\s+",
+        )
+        df = df.rename(
+            columns={"YEAR": "year", "MON": "month", "DAY": "day", "HR": "hour", "STN": "siteid"}
+        )
+        df['time'] = pd.to_datetime(df[["year", "month", "day", "hour"]])
+        siteid = df["siteid"][0]
+        df = df[df.columns[~df.columns.isin(["year", "month", "day", "hour"])]]
+
+        # Sort the values based on time
+        df = df.sort_values(by='time', ignore_index=True)
+        df = df.set_index('time')
+        ds = xr.Dataset.from_dataframe(df)
+
     return ds
 
 

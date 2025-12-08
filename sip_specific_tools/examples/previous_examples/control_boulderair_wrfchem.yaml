@@ -2,7 +2,7 @@
 analysis:
   start_time: "2022-07-11 00:00:00" # UTC
   end_time: "2022-07-17 23:59:59" # UTC
-  output_dir: ./output/boulderair
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/boulderair
   debug: True
   save:
     paired:
@@ -11,12 +11,13 @@ analysis:
   read:
     paired:
       method: netcdf
+      # output filenames should be: {prefix}_{obs}_{model}.nc4
       filenames: {'boulderair_wrfchem': ['boulderair_wrfchem.nc4']}
 
 #### MODEL INFO ####
 model:
   wrfchem: # model label
-    files: /glade/work/plichtig/melodies_monet/AQE/Tutorial/input_data/wrfout_hourly_d02_2022-07-1[1-7]*
+    files: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/wrf_chem/wrfout_hourly_d02_2022-07-1[1-7]*
     mod_type: "wrfchem"
     surf_only: True
     surf_only_nc: True
@@ -37,7 +38,7 @@ model:
 #### OBS INFO ####
 obs:
   boulderair:
-    filename: "./input_data/boulder_air.nc"
+    filename: "/glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/input/boulder_air.nc"
     obs_type: pt_sfc
     variables:
       "no": {}
@@ -177,6 +178,25 @@ plots:
       rem_obs_nan: True
       set_axis: False
 
+  plot_grp7:
+    type: "multi_boxplot"
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["custom:box"]
+    domain_name: ["Front Range"]
+    domain_info:
+      "Front Range":
+        bounds: [-106, -104., 39.16, 40.5]
+    region_name: ['siteid']
+    region_list: ["BRZ", "BSE","LUR","ECC","BNP"] 
+    model_name_list: ['boulderair', 'wrfchem']
+    data: ["boulderair_wrfchem"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      
 #### STATS CALCULATION ####
 stats:
   stat_list: ["MB", "MdnB", "R2", "RMSE"]

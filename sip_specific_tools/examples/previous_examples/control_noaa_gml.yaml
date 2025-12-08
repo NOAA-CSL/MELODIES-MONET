@@ -1,0 +1,219 @@
+# General Description:
+# - Any key that is specific for a plot type will begin with `ts` for timeseries, `ty` for taylor.
+# - Some keys/groups are optional.
+# - For now, all plots except time series average over the analysis window.
+# - Setting axis values
+#   - If set_axis = True in data_proc section of each plot_grp,
+#     the yaxis for the plot will be set based on the values
+#     specified in the obs section for each variable.
+#   - If set_axis is set to False, then defaults will be used.
+#   - 'vmin_plot' and 'vmax_plot' are needed for
+#     'timeseries', 'spatial_overlay', and 'boxplot'.
+#   - 'vdiff_plot' is needed for 'spatial_bias' plots
+#   - 'ty_scale' is needed for 'taylor' plots.
+#   - 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot.
+#   - If set_axis = True and the proper limits are not provided in the obs section,
+#     a warning will print, and the plot will be created using the default limits.
+analysis:
+  start_time: "2016-06-01 00:00:00" # UTC
+  end_time: "2016-06-30 23:59:59" # UTC
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/noaa_gml  # relative to the program using this control file
+  #   Currently, the directory must exist or plot saving will error and fail.
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+  read:
+    paired:
+      method: netcdf
+      filenames: {'noaa_gml_CAMx': ['noaa_gml_CAMx.nc4']}
+
+model:
+  CAMx: # model label
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.201606*.runS20.avrg.grd03.nc
+    mod_type: "camx"
+    surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+    radius_of_influence: 6000 # meters
+    mapping: # of _model_ species name to _obs_ species name
+      noaa_gml: 
+        O3: O3
+    projection: ~
+    plot_kwargs: # optional
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+
+obs:
+  noaa_gml: # obs label
+    # use_airnow: True
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/nwr_06_2016_hour.dat
+    obs_type: ground
+    ground_coordinate:
+      latitude: 40.0531
+      longitude: -105.5864
+    variables: # optional
+      O3(PPB):
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "O3 (ppbv)"
+        rename: "O3"
+
+    
+plots:
+  plot_grp1:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] # , "state_name", "state_name", "state_name", "epa_region"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["Boulder"] #, "PA", "WV", "VA", "R3"]
+    # ^ List of domain names. If domain_type = all,
+    #   the domain name is used in the plot title.
+    data: ["noaa_gml_CAMx"] #, "airnow_RACM_ESRL_VCP"]
+    # ^ make this a list of pairs in obs_model
+    #   where the obs is the obs label and model is the model_label
+    data_proc: # optional??
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+
+  plot_grp10:
+    type: "diurnal" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] # , "state_name", "state_name", "state_name", "epa_region"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["Boulder"] #, "PA", "WV", "VA", "R3"]
+    # ^ List of domain names. If domain_type = all,
+    #   the domain name is used in the plot title.
+    data: ["noaa_gml_CAMx"] #, "airnow_RACM_ESRL_VCP"]
+    # ^ make this a list of pairs in obs_model
+    #   where the obs is the obs label and model is the model_label
+    settings:
+      shading_range: IQR
+    data_proc: # optional??
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+      shading_range: 'IQR'
+
+  plot_grp2:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"]
+    domain_name: ["Boulder"]
+    data: ["noaa_gml_CAMx"] #, "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  # such as whether to show the state boundaries
+      figsize: [10, 5]
+      counties: True
+      extent: [-106.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"] #, "state_name", "state_name", "state_name", "epa_region"]
+    domain_name: ["Colorado"] #, "PA", "WV", "VA", "R3"]
+    data: ["noaa_gml_CAMx"] # , "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-106.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"] #, "state_name", "state_name", "state_name", "epa_region"]
+    domain_name: ["Boulder"] #, "PA", "WV", "VA", "R3"]
+    data: ["noaa_gml_CAMx"] #, "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      crop_model: True
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"]
+    domain_name: ["Boulder"]
+    data: ["noaa_gml_CAMx"] #, "airnow_RACM_ESRL_VCP"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  # ^ List stats to calculate. Dictionary of definitions included
+  #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
+  #   Full calc list:
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
+  #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
+  #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
+  #    'E1', 'IOA', 'AC']
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: False
+  # ^ Always outputs a .txt file.
+  #   Optional to also output a Matplotlib figure table (image).
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all"]
+  domain_name: ["CONUS"]
+  data: ["noaa_gml_CAMx"]

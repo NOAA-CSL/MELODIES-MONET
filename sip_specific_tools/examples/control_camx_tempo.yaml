@@ -1,9 +1,11 @@
+# example yaml file to compare CAMx to TEMPO
+
 analysis:
   start_time: '2024-07-20'
   end_time: '2024-07-20 23:00:00'
   debug: True
-  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/output/tempo
-  output_dir_read: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/output/tempo
+  output_dir: ./output/tempo
+  output_dir_read: ./output/tempo
   save:
     paired:
       method: 'netcdf'
@@ -14,7 +16,6 @@ analysis:
       method: 'netcdf'
       # output filenames should be: {prefix}_{obs}_{model}.nc4
       filenames: {'tempo_l2_no2_CAMX': ['tempo_l2_no2_CAMX.nc4'] , 'tempo_l2_hcho_CAMX': ['tempo_l2_hcho_CAMX.nc4']}
-
 
 obs:
   tempo_l2_hcho:
@@ -34,7 +35,7 @@ obs:
       solar_zenith_angle: {}
       eff_cloud_fraction: {}
     data_proc:
-      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 70}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
   tempo_l2_no2:
     debug: False
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240720*_S0*
@@ -53,12 +54,12 @@ obs:
       eff_cloud_fraction: {}
       tropopause_pressure: {}
     data_proc:
-      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 70}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
 
 model:
   CAMX: # model label
-    files: /glade/work/plichtig/camx/toy_data/CAMx73.cb7r1_cf3.20240720.35.camx.avrg.grd03.nc
-    files_vert: /glade/work/plichtig/toy_data/camx.3d.4km_lonlatcorrected.20240720.nc
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc
+    files_vert: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/camx.3d.4km_lonlatcorrected.20220720.nc
     mod_type: "camx"
     surf_only: False  
     radius_of_influence: 12000 # meters

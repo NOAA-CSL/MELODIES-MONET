@@ -17,7 +17,7 @@
 analysis:
   start_time: "2016-06-01" # UTC
   end_time: "2016-09-30" # UTC
-  output_dir: ./  # relative to the program using this control file
+  output_dir:  /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/canister  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
   save:
@@ -27,7 +27,8 @@ analysis:
   read:
     paired:
       method: netcdf
-      filenames: {'canister_camx': ['canister_camx.nc4']}
+#      filenames: {'canister_camx': ['canister_camx.nc4']}
+      filenames: {'canister_PVCO_CAMX': ['canister_PVCO_CAMX.nc4']}
 
 model:
   CAMX: # model label
@@ -54,7 +55,7 @@ model:
 obs:
   canister_PVCO: # obs label
     #use_canister: True
-    filename: /glade/work/plichtig/melodies_monet/test_cases/examples_se/canisters/RawCDPHEPrecursorData-2016.xlsx
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/input/RawCDPHEPrecursorData-2016.xlsx
     obs_type: pt_sfc
     site_dict:
       # DECO:

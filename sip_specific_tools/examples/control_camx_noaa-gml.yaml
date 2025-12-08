@@ -1,0 +1,185 @@
+# Comparing CAMx to NOAA GLM surface ozone measurements. 
+# NOAA GLM NETCDF data are available from: https://gml.noaa.gov/aftp/data/bedi/Ozone_and_Water_Vapor/Surface_Ozone/Data/v02/
+# Also works for ASCII data: https://gml.noaa.gov/aftp/data/ozwv/SurfaceOzone/Version_1/
+# Example for Niwot Ridge (NWR) station
+
+analysis:
+  start_time: "2016-06-01 00:00:00" # UTC
+  end_time: "2016-06-30 23:59:59" # UTC
+  output_dir: ./  # relative to the program using this control file
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+      prefix: "NWR"
+  read:
+    paired:
+      method: netcdf
+      filenames: { 'noaa_gml_CAMx': ['NWR_noaa_gml_CAMx.nc4']}
+model:
+  CAMx: # model label
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.201606*.runS20.avrg.grd03.nc
+    mod_type: "camx"
+    surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+    radius_of_influence: 6000 # meters
+    mapping: # of _model_ species name to _obs_ species name
+      # noaa_bao: 
+      #  O3: O3_obs
+      noaa_gml: 
+       O3: O3_obs
+      # noaa_tbl: 
+      #   O3: O3_obs
+    projection: ~
+    plot_kwargs: # optional
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+
+obs:
+  noaa_gml: # obs label
+    # use_airnow: True
+    filename: ./noaa/ESRL-GMD-OZWV_v2.0_HOUR_NWR_s20160101T000000Z_e20170101T000000Z_c20250423T143348Z.nc  
+    obs_type: ground
+    ground_coordinate:
+      latitude: 40.0531
+      longitude: -105.5864
+    variables: # optional
+      O3(PPB): 
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "O3 (ppbv)"
+        rename: "O3_obs"
+    data_proc:
+      filter_dict: {"O3_obs": {"oper": ">", "value": 0}, "O3_obs": {"oper": "<", "value": 500}}
+    
+plots:
+  plot_grp2:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] 
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
+      ts_avg_window: "h"
+      set_axis: True
+          
+  plot_grp3:
+    type: "diurnal" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] 
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    settings:
+      shading_range: IQR
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
+      ts_avg_window: "h"
+      set_axis: True
+      shading_range: 'IQR'
+
+  plot_grp5:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"]
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp6:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  # such as whether to show the state boundaries
+      figsize: [10, 5]
+      counties: True
+      extent: [-105.75, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"]
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp7:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-105.75, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"] 
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      crop_model: True
+
+  plot_grp8:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"]
+    domain_name: ["Boulder NWR"] 
+    data: ["noaa_gml_CAMx"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  # ^ List stats to calculate. Dictionary of definitions included
+  #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
+  #   Full calc list:
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
+  #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
+  #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
+  #    'E1', 'IOA', 'AC']
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  # ^ Always outputs a .txt file.
+  #   Optional to also output a Matplotlib figure table (image).
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all"]
+  domain_name: ["Boulder NWR"] 
+  data: ["noaa_gml_CAMx"]

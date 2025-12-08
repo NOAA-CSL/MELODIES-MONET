@@ -1,0 +1,195 @@
+# Comparing BoulderAir surface measurements to CAMx
+# note that you need to run the preprocessor for BoulderAir before using the data in MELODIES MONET 
+# The preprocessor is available from: https://github.com/NCAR/MELODIES-MONET/tree/develop_acom_SIP/sip_specific_tools/preprocessors
+
+analysis:
+  start_time: "2022-07-20 00:00:00" # UTC
+  end_time: "2022-07-20 23:59:59" # UTC
+  output_dir: ./output/boulderair  # relative to the program using this control file
+  #   Currently, the directory must exist or plot saving will error and fail.
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+  read:
+    paired:
+      method: netcdf
+      filenames: {'boulderair_CAMX': ['boulderair_CAMX.nc4']}
+
+model:
+  CAMX: # model label
+    files: /glade/work/plichtig/camx/processors/wrfcamx_v5.2/camx_input/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc
+    mod_type: "camx"
+    surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+    radius_of_influence: 6000 # meters
+    mapping: # of _model_ species name to _obs_ species name
+      boulderair: 
+#        BENZ: "benzene"
+#        TOL: "toluene"
+        "NO": "no"
+        NO2: "no2"
+    projection: ~
+    plot_kwargs: # optional
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+
+obs:
+  boulderair: # obs label
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/BoulderAir/BoulderAir_nox_2022_new.nc
+#    filename: /glade/work/plichtig/melodies_monet/AQE/BoulderAir_2022.nc  # includes VOCs
+    obs_type: pt_sfc
+    variables: 
+      benzene:
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "Benzene (ppbv)"
+        vmin_plot: 10.0
+        vmax_plot: 35.0
+        vdiff_plot: 20.0
+        nlevels_plot: 21
+      toluene:
+        unit_scale: 1
+        # ^ optional; Scaling factor
+        unit_scale_method: "*"
+        # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0
+        ylabel_plot: "Toluene (ppbv)"
+      no:
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "NO (ppbv)"
+      no2:
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "NO2 (ppbv)"
+     
+plots:
+  plot_grp1:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] 
+    domain_name: ["BoulderAir"] 
+    data: ["boulderair_CAMX"]
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time"  
+      ts_avg_window: "h"
+      set_axis: True
+
+  plot_grp10:
+    type: "diurnal" 
+    fig_kwargs: 
+      figsize: [12, 6] 
+    default_plot_kwargs:
+     linewidth: 2.0
+     markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] 
+    domain_name: ["BoulderAir"] 
+    data: ["boulderair_CAMX"] 
+    settings:
+      shading_range: IQR
+    data_proc:
+      rem_obs_nan: True
+      ts_select_time: "time"  
+      ts_avg_window: "h"
+      set_axis: True
+      shading_range: 'IQR'
+
+  plot_grp2:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"]
+    domain_name: ["BoulderAir"]
+    data: ["boulderair_CAMX"] 
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs: 
+      states: True 
+      figsize: [10, 5]
+      counties: True
+      extent: [-105.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"] 
+    domain_name: ["BoulderAir"] 
+    data: ["boulderair_CAMX"] 
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-105.4, -104.9, 39.9, 40.27]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all"] 
+    domain_name: ["BoulderAir"] 
+    data: ["boulderair_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      crop_model: True
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"]
+    domain_name: ["BoulderAir"]
+    data: ["boulderair_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  # ^ List stats to calculate. Dictionary of definitions included
+  #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
+  #   Full calc list:
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
+  #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
+  #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
+  #    'E1', 'IOA', 'AC']
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all"]
+  domain_name: ["BoulderAir"]
+  data: ["boulderair_CAMX"]

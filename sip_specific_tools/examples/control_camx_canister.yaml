@@ -1,0 +1,286 @@
+# Example yaml file to compare CAMx to VOC canister data
+
+analysis:
+  start_time: "2016-06-01" # UTC
+  end_time: "2016-09-30" # UTC
+  output_dir: ./output/canister  # relative to the program using this control file
+  #   Currently, the directory must exist or plot saving will error and fail.
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+  read:
+    paired:
+      method: netcdf
+      filenames: {'canister_PVCO_CAMX': ['canister_PVCO_CAMX.nc4'], 'canister_DECO_CAMX': ['canister_DECO_CAMX.nc4']}
+
+model:
+  CAMX: # model label
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.20160[6-9]*.runS20.avrg.grd03.nc
+    mod_type: "camx"
+    surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+    radius_of_influence: 12000 # meters
+    variables:
+    mapping: # of _model_ species name to _obs_ species name
+      canister_PVCO: 
+        BENZ: "Benzene"
+        TOL: "Toluene"
+      canister_DECO: 
+        BENZ: "Benzene"
+        TOL: "Toluene"
+    projection: ~
+    # plot_kwargs: # optional
+    #   color: "magenta"
+    #   marker: "s"
+    #   linestyle: "-"
+    data_proc:
+      average:
+        start_hour: "obs"
+        nhours: 3
+
+obs:
+  canister_PVCO: # obs label
+    #use_canister: True
+    filename: /glade/work/plichtig/melodies_monet/test_cases/examples_se/canisters/RawCDPHEPrecursorData-2016.xlsx
+    obs_type: pt_sfc
+    site_dict:
+      PVCO:
+        timezone: "America/Denver"
+        site_id: 'PVCO'
+        site_coords: {'latitude': 40.209325, 'longitude': -104.824050}
+        sheet_name: 'NMOC-PVCO'
+        skiprows: 9
+        header: [0, 1]
+        na_values: ND
+        qualifier_name: [CAS, Anote]
+    variables: # optional
+      Benzene:
+        unit_scale: 6
+        # ^ optional; Scaling factor
+        unit_scale_method: "/"
+        # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0
+        # ^ optional; When loading data, set this value to NaN
+        ylabel_plot: "Benzene"
+        # optional; set ylabel in order to include units and/or other info
+        vmin_plot: -0.1
+        # ^ optional; Min for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1
+        # ^ optional; Max for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 1.0
+        # ^ optional; +/- range to use in bias plots.
+        #   To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21
+      Toluene:
+        unit_scale: 7
+        # ^ optional; Scaling factor
+        unit_scale_method: "/"
+        # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0
+        # ^ optional; When loading data, set this value to NaN
+        ylabel_plot: "Toluene"
+        # optional; set ylabel in order to include units and/or other info
+        vmin_plot: -0.1
+        # ^ optional; Min for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 3
+        # ^ optional; Max for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 1.0
+        # ^ optional; +/- range to use in bias plots.
+        #   To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21
+        
+  canister_DECO: # obs label
+    #use_canister: True
+    filename: /glade/work/plichtig/melodies_monet/test_cases/examples_se/canisters/RawCDPHEPrecursorData-2016.xlsx
+    obs_type: pt_sfc
+    site_dict:
+      DECO:
+        timezone: "America/Denver"
+        site_id: 'DECO'
+        site_coords: {'latitude': 39.751190, 'longitude': -104.987630}
+        sheet_name: 'NMOC-DECO'
+        skiprows: 9
+        header: [0, 1]
+        na_values: [ND]
+        qualifier_name: [CAS, Anote]
+        keep_qualifiers: ~
+    variables: # optional
+      Benzene:
+        unit_scale: 6
+        # ^ optional; Scaling factor
+        unit_scale_method: "/"
+        # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0
+        # ^ optional; When loading data, set this value to NaN
+        ylabel_plot: "Benzene"
+        # optional; set ylabel in order to include units and/or other info
+        vmin_plot: -0.1
+        # ^ optional; Min for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 1
+        # ^ optional; Max for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 1.0
+        # ^ optional; +/- range to use in bias plots.
+        #   To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21
+      Toluene:
+        unit_scale: 7
+        # ^ optional; Scaling factor
+        unit_scale_method: "/"
+        # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -1.0
+        # ^ optional; When loading data, set this value to NaN
+        ylabel_plot: "Toluene"
+        # optional; set ylabel in order to include units and/or other info
+        vmin_plot: -0.1
+        # ^ optional; Min for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vmax_plot: 3
+        # ^ optional; Max for y-axis during plotting.
+        #   To apply to a plot, change restrict_yaxis = True.
+        vdiff_plot: 1.0
+        # ^ optional; +/- range to use in bias plots.
+        #   To apply to a plot, change restrict_yaxis = True.
+        nlevels_plot: 21
+
+
+
+plots:
+  plot_grp1:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all",] 
+    domain_name: ["PVCO"]
+    data: ["canister_PVCO_CAMX"]
+    data_proc: # optional??
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      # ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+
+  plot_grp10:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["all"] 
+    domain_name: ["DECO"]
+    data: ["canister_DECO_CAMX"]
+    data_proc: # optional??
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      # ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+
+      
+  plot_grp2:
+    type: "taylor"
+    fig_kwargs:
+      figsize: [8, 8]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all","all"] 
+    domain_name: ["PVCO","DECO"]
+    data: ["canister_PVCO_CAMX","canister_DECO_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp3:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-105.5, -104.5, 39.5, 40.5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all","all"] 
+    domain_name: ["PVCO","DECO"]
+    data: ["canister_PVCO_CAMX","canister_DECO_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp4:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      counties: True
+      figsize: [10, 5]
+      extent: [-105.5, -104.5, 39.5, 40.5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["all","all"] 
+    domain_name: ["PVCO","DECO"]
+    data: ["canister_PVCO_CAMX","canister_DECO_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+
+  plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all","all"] 
+    domain_name: ["PVCO","DECO"]
+    data: ["canister_PVCO_CAMX","canister_DECO_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+
+      
+#### STATS CALCULATION ####
+stats:
+  # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  # Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["all","all"]
+  domain_name: ["PVCO","DECO"]
+  data: ["canister_PVCO_CAMX","canister_PVCO_CAMX"]

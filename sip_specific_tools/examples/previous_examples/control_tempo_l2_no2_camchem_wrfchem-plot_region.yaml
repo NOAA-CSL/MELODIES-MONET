@@ -3,7 +3,7 @@ analysis:
   start_time: '2024-07-01'
   end_time: '2024-07-31 23:59:59'
   debug: True
-  output_dir: ./output/tempo/
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/tempo
   output_dir_read: ./
   output_dir_save: ./
   save:
@@ -33,7 +33,7 @@ model:
     projection: ~
     surf_only: False
   wrfchem_v4.2:
-    files: "/glade/u/home/plichtig/tempo/fortest/wrfout_hourly_d02_2024-08-2[6-7]*" #Change if you need to open the model
+    files: "/glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/wrf_chem/wrfout_hourly_d02_2024-08-2[6-7]*" #Change if you need to open the model
     mod_type: 'wrfchem'
     mapping:
       tempo_l2_no2:
@@ -243,6 +243,7 @@ plots:
     fig_kwargs:
       states: True
       counties: True
+      cmap: 'Spectral_r'
     text_kwargs:
       fontsize: 16
     domain_type: ["custom:box", ]
@@ -261,6 +262,7 @@ plots:
     fig_kwargs:
       states: True
       counties: True
+      cmap: 'Spectral_r'
     text_kwargs:
       fontsize: 16
     domain_type: ["custom:box", ]
@@ -279,6 +281,7 @@ plots:
     fig_kwargs:
       states: True
       counties: True
+      cmap: 'Spectral_r'
     text_kwargs:
       fontsize: 16
     domain_type: ["custom:box"]

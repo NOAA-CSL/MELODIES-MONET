@@ -1,9 +1,7 @@
-# Example yaml file to compare CAMx to NO2 tropospheric columns from PANDORA instruments
-
 analysis:
   start_time: "2022-07-20 00:00:00" # UTC
   end_time: "2022-07-20 23:00:00" # UTC
-  output_dir: ./output/pandora 
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/pandora 
   debug: True
   save:
     paired:
@@ -17,15 +15,14 @@ analysis:
 
 model:
   CAMX: # model label
-    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc
-    files_vert: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/camx.3d.4km_lonlatcorrected.20220720.nc
+    files: '/glade/work/plichtig/camx/processors/wrfcamx_v5.2/camx_input/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc'
+    files_vert: '/glade/work/plichtig/camx/processors/wrfcamx_v5.2/camx_input/camx.3d.4km_lonlatcorrected.20220720.nc'
     mod_type: "camx"
-    surf_only: False  # specify that we have only one vertical level;
-    surf_only_nc: False
+    surf_only: False  # specify that we have only one vertical level; WRF-Chem specific
     radius_of_influence: 6000 # meters
     mapping: # of _model_ species name to _obs_ species name
       pandora: # specifically for the obs labeled 'airnow'
-        NO2: "PANDORA_NO2"
+        NO2: "NO2"
     projection: ~
     preprocessing:
       total_columns: "NO2"
@@ -42,11 +39,11 @@ obs:
          ylabel: 'NO$_2$ (molec/cm2)'
          use_ylabel: True
          vmax: 1e16
-         rename: PANDORA_NO2
-      "Column 39": {}
+         rename: NO2
+      "Column 36": {}
     data_proc:
-      filter_dict: {"Column 39": {"oper": "<=", "value": 12}, "PANDORA_NO2": {"oper": ">=", "value": 0.0}}
-      # Column 39: L2Fit data quality flag, 0=assured high quality, 1=assured medium quality, 2=assured low quality, 10=not-assured high quality, 11=not-assured medium quality, 12=not-assured low quality
+      filter_dict: {"Column 36": {"oper": "isin", "value": [0, 10]}, "NO2": {"oper": ">=", "value": 0}} 
+    
 plots:
   plot_grp1:
     type: "timeseries"
@@ -57,10 +54,10 @@ plots:
       markersize: 10.
     text_kwargs: # optional
       fontsize: 24.
-    domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_type: ["all", "custom:box"]
+    domain_name: ["CONUS", ""]
     domain_info:
-      'Front Range':
+      'NCARBoulder':
         bounds: [-105.5, -104, 39.16, 40.5]  
     data: ["pandora_CAMX"]
     data_proc:
@@ -82,9 +79,9 @@ plots:
     text_kwargs: # optional
       fontsize: 24.
     domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_name: ["NCAR Boulder"]
     domain_info:
-      'Front Range':
+      'NCAR Boulder':
         bounds: [-105.5, -104, 39.16, 40.5]  
     data: ["pandora_CAMX"]
     settings:
@@ -106,7 +103,7 @@ plots:
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_name: ["NCAR Boulder"]
     domain_info:
       'Front Range':
         bounds: [-105.5, -104., 39.16, 40.5]  
@@ -144,7 +141,7 @@ plots:
     domain_type: ["custom:box"]
     # ^ List of domain types: 'all' or any domain in obs file.
     #   (e.g., airnow: epa_region, state_name, siteid, etc.)
-    domain_name: ["Front Range"]
+    domain_name: ["NCAR Boulder"]
     domain_info:
       'Front Range':
         bounds: [-105.5, -104., 39.16, 40.5]

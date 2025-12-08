@@ -1,7 +1,8 @@
-#### GENERAL SETTINGS ####
+# Example yaml file to compare CAMx to AIRNOW surface observations
+
 analysis:
-  start_time: "2016-07-01-00:00:00" # UTC
-  end_time: "2016-07-31-23:00:00" # UTC
+  start_time: "2016-07-10-00:00:00" # UTC
+  end_time: "2016-07-17-23:00:00" # UTC
   output_dir: ./output/airnow
   debug: True
   save:

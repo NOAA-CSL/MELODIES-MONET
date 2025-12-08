@@ -1,0 +1,266 @@
+# example yaml file to compare CAMx to TEMPO
+
+analysis:
+  start_time: '2024-07-20'
+  end_time: '2024-07-20 23:00:00'
+  debug: True
+  output_dir: ./output/tempo
+  output_dir_read: ./output/tempo
+  save:
+    paired:
+      method: 'netcdf'
+      prefix:  #'2024-07-20'
+      data: all
+  read:
+    paired:
+      method: 'netcdf'
+      # output filenames should be: {prefix}_{obs}_{model}.nc4
+      filenames: {'tempo_l2_no2_CAMX': ['2024-07-*_tempo_l2_no2_CAMX.nc4'] , 'tempo_l2_hcho_CAMX': ['2024-07-*_tempo_l2_hcho_CAMX.nc4']}
+
+obs:
+  tempo_l2_hcho:
+    debug: False
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240720*_S00[6-7]*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_hcho
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column']
+      vertical_column:
+        ylabel_plot: 'HCHO column'
+      pressure: {}
+      scattering_weights: {}
+      amf: {}
+      solar_zenith_angle: {}
+      eff_cloud_fraction: {}
+    data_proc:
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+  tempo_l2_no2:
+    debug: False
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240720*_S0*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_no2
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column_troposphere']
+      vertical_column_troposphere:
+        ylabel_plot: 'NO2 column'
+      pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
+      solar_zenith_angle: {}
+      eff_cloud_fraction: {}
+      tropopause_pressure: {}
+    data_proc:
+      filter_dict: {'solar_zenith_angle':{'oper':'<=', 'value': 0.7}, 'eff_cloud_fraction':{'oper':'<=', 'value':0.2}}
+
+model:
+  CAMX: # model label
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc
+    files_vert: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/camx.3d.4km_lonlatcorrected.20220720.nc
+    mod_type: "camx"
+    surf_only: False  
+    radius_of_influence: 12000 # meters
+    mapping: # of _model_ species name to _obs_ species name
+      tempo_l2_no2: 
+        NO2: "vertical_column_troposphere"
+      tempo_l2_hcho:
+        FORM: "vertical_column"
+    projection: ~
+    plot_kwargs: # optional
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    settings:
+      vmin: 0
+      vmax: 2.e+16
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+      
+  plot_grp2:
+    type: 'timeseries'
+    settings:
+      vmin: 0
+      vmax: 6
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_FNR_CAMX"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+      
+  plot_grp3:
+    type: 'diurnal'
+    settings:
+      range_shading: 'IQR'
+      vmin: 0
+      vmax: 2.e+16
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+
+  plot_grp4:
+    type: 'diurnal'
+    settings:
+      range_shading: 'IQR'
+      vmin: 0
+      vmax: 6
+    fig_kwargs:
+      figsize: [12,6]
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs:
+      fontsize: 18.
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_FNR_CAMX"]
+    data_proc:
+      ts_offset: (-4, 'h')
+      ts_avg_window: 'h'
+      set_axis: True
+
+  plot_grp5:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: 
+      states: True
+      counties: True
+    text_kwargs:
+      fontsize: 14
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
+    data_proc:
+      set_axis: True
+
+  plot_grp6:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+      counties: True
+      cmap: 'Spectral_r'
+    text_kwargs:
+      fontsize: 16
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"]
+    data_proc:
+      set_axis: True
+      vmax: 1e16
+      vmin: 0
+
+  plot_grp7:
+    type: 'spatial_dist'
+    fig_kwargs:
+      states: True
+      counties: True
+      cmap: 'Spectral_r'
+    text_kwargs:
+      fontsize: 16
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data: ["tempo_l2_FNR_CAMX"]
+    data_proc:
+      set_axis: True
+      vmax: 6
+      vmin: 0
+
+  plot_grp8:
+    type: 'taylor'
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
+    domain_type: ["custom:box"]
+    domain_name: ["Denver and Northern Front Range" ] 
+    domain_info:
+      "Denver and Northern Front Range":
+        bounds: [-105.5, -104., 39., 40.5]
+    data_proc:
+      set_axis: True
+      ty_scale: 1.5
+    default_plot_kwargs:
+      markersize: 10.
+      marker: 's'
+
+stats:
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  # ^ List stats to calculate. Dictionary of definitions included
+  #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
+  #   Full calc list:
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
+  #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
+  #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
+  #    'E1', 'IOA', 'AC']
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  # ^ Always outputs a .csv file.
+  #   Optional to also output a Matplotlib figure table (image).
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+  domain_type: ["custom:box"]
+  domain_name: ["Denver and Northern Front Range" ] 
+  domain_info:
+    "Denver and Northern Front Range":
+       bounds: [-105.5, -104., 39., 40.5]
+  data: ["tempo_l2_no2_CAMX" ,"tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 

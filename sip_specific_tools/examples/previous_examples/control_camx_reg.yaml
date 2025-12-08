@@ -1,7 +1,7 @@
 analysis:
   start_time: "2016-07-01-06:00:00" # UTC
   end_time: "2016-07-31-05:00:00" # UTC
-  output_dir: ./output/airnow_reg  # relative to the program using this control file
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/airnow
   debug: True
 
 model:
@@ -18,7 +18,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /glade/work/plichtig/Data/AirNow_20160506_20160820.nc
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/airnow/AIRNOW_20160501_20160930.nc
     obs_type: pt_sfc
     variables: # optional
       OZONE:

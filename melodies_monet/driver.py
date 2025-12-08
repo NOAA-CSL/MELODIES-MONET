@@ -174,7 +174,7 @@ class observation:
 
         _, extension = os.path.splitext(files[0])
         try:
-            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+            if self.obs not in {'noaa_gml'} and extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
                 if len(files) > 1:
                     self.obj = xr.open_mfdataset(files)
                 else:
@@ -186,7 +186,7 @@ class observation:
                 from .util.read_util import read_aircraft_obs_csv
                 assert len(files) == 1, "MELODIES-MONET can only read one csv file"
                 self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
-            elif extension in ['.dat']:
+            elif self.obs == 'noaa_gml' and  extension in ['.dat','.nc']:
                 from .util.read_util import read_noaa_gml_multifile
                 self.obj = read_noaa_gml_multifile(filenames=files)
             elif extension in ['.xls', '.xlsx']:

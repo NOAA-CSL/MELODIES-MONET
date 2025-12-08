@@ -17,7 +17,7 @@
 analysis:
   start_time: "2022-07-11 00:00:00" # UTC
   end_time: "2022-07-17 23:00:00" # UTC
-  output_dir: ./output/pandora/ # relative to the program using this control file
+  output_dir: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/output/pandora/ # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
   save:
@@ -27,11 +27,12 @@ analysis:
   read:
     paired:
       method: netcdf
+      # output filenames should be: {prefix}_{obs}_{model}.nc4
       filenames: {'pandora_wrfchem': ['pandora_wrfchem.nc4']}
 
 model:
   wrfchem: # model label
-    files: /glade/work/plichtig/melodies_monet/AQE/Tutorial/input_data/wrfout_hourly_d02_2022-07-1[1-7]*
+    files: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/wrf_chem/wrfout_hourly_d02_2022-07-1[1-7]*
     mod_type: "wrfchem"
     surf_only: False
     surf_only_nc: False
@@ -46,7 +47,7 @@ model:
 
 obs:
   pandora: # obs label
-    filename: /glade/work/plichtig/Data/Pandora/Pandora*s1_BoulderCO*_L2_rnvh3p1-8.txt
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/input/Pandora*s1_BoulderCO*_L2_rnvh3p1-8.txt
     obs_type: pandora
     variables: # optional
       "Column 62":
@@ -83,7 +84,6 @@ plots:
       rem_obs_nan: True
       ts_select_time: "time"  # `ts_` indicates this is time series plot-specific
       # ^ Time used for avg and plotting
-      #   Options: 'time' for UTC or 'time_local'
       ts_avg_window: "h"
       # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
       set_axis: True
@@ -108,7 +108,7 @@ plots:
       shading_range: IQR
     data_proc:
       rem_obs_nan: True
-      ts_select_time: "time"
+      ts_select_time: "time" #name of time variable in data
       ts_avg_window: "h"
       set_axis: True
       shading_range: 'IQR'
@@ -120,6 +120,7 @@ plots:
       states: True  # such as whether to show the state boundaries
       figsize: [10, 5]
       counties: True
+      extent: [-104, -106., 39.16, 40.5]
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]
@@ -128,7 +129,7 @@ plots:
     domain_name: ["Front Range"]
     domain_info:
       'Front Range':
-        bounds: [-106, -104., 39.16, 40.5]  
+        bounds: [-104, -106., 39.16, 40.5]  
     data: ["pandora_wrfchem"]
     data_proc:
       rem_obs_nan: True
@@ -141,6 +142,7 @@ plots:
       states: True
       counties: True
       figsize: [10, 5]
+      extent: [-104, -106., 39.16, 40.5]
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]
@@ -149,7 +151,7 @@ plots:
     domain_name: ["Front Range"]
     domain_info:
       'Front Range':
-        bounds: [-106, -104., 39.16, 40.5] 
+        bounds: [-104, -106., 39.16, 40.5] 
     data: ["pandora_wrfchem"]
     data_proc:
       rem_obs_nan: True
@@ -168,7 +170,7 @@ plots:
     domain_name: ["Front Range"]
     domain_info:
       'Front Range':
-        bounds: [-106, -104., 39.16, 40.5]
+        bounds: [-104, -106., 39.16, 40.5]
     data: ["pandora_wrfchem"]
     data_proc:
       rem_obs_nan: True
@@ -191,5 +193,5 @@ stats:
   domain_name: ["Front Range"]
   domain_info:
     'Front Range':
-      bounds: [-106, -104., 39.16, 40.5]
+      bounds: [-104, -106., 39.16, 40.5]
   data: ["pandora_wrfchem"]
