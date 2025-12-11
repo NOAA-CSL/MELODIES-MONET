@@ -127,7 +127,7 @@ def _add_time_granule(time, dtime):
             data=_time_granule, dims=("time", "y", "x"), attrs=time.__dict__
         )
     else:
-        raise Exception("Could not assign the time of each granule. Check data dimensions.")
+        raise ValueError("Could not assign the time of each granule. Check data dimensions.")
 
     time_granule = xr.conventions.decode_cf_variable("time_granule", time_granule.variable)
     return time_granule
@@ -187,11 +187,8 @@ def _add_variable(variable, netcdf_dataset):
     _dimensions = list(var.dimensions)
     dimensions = [_replacements[x] if x in _replacements else x for x in _dimensions]
     if np.issubdtype(var.dtype, np.integer):
-        var_dtype = np.iinfo(var.dtype)
         var_values = var[:].filled(np.iinfo(var.dtype).min)
-        da = xr.DataArray(data=var_values, dims=dimensions, attrs=var.__dict__).astype(
-            var.dtype
-        )
+        da = xr.DataArray(data=var_values, dims=dimensions, attrs=var.__dict__).astype(var.dtype)
     else:
         da = xr.DataArray(data=var[:], dims=dimensions, attrs=var.__dict__).astype(var.dtype)
     return da
@@ -210,17 +207,19 @@ def open_var_no_format(variable, netcdf_dataset):
     Returns
     -------
     xr.DataArray
-        DataArray with the variable that was searched for    """
+        DataArray with the variable that was searched for"""
     return netcdf_dataset[_walktree_search(variable, netcdf_dataset)]
 
 
-def _calc_pressure_levels(netcdf_tropomi):
+def _calc_pressure_levels(netcdf_tropomi, product="check"):
     """Calculates pressure levels.
 
     Parameters
     ----------
     netcdf_tropomi : nc4.Dataset
         Dataset from TROPOMI files
+    product : str  ("no2" "hcho")
+        str indicating which product it is. If 'check', all are tried
 
     Returns
     -------
@@ -228,9 +227,35 @@ def _calc_pressure_levels(netcdf_tropomi):
         Two DataArrays containing the midlevel pressure and the
         pressure at the layer interface respectively.
     """
-    tm5_constant_a = open_var_no_format("tm5_constant_a", netcdf_tropomi)
-    tm5_constant_b = open_var_no_format("tm5_constant_b", netcdf_tropomi)
-    surface_pressure = open_var_no_format("surface_pressure", netcdf_tropomi)
+    tm5_constant_a = _add_variable("tm5_constant_a", netcdf_tropomi)
+    tm5_constant_b = _add_variable("tm5_constant_b", netcdf_tropomi)
+    surface_pressure = _add_variable("surface_pressure", netcdf_tropomi)
+
+    dims = tm5_constant_a.dims
+    if "vertices" in dims or product=="no2":
+        return _calc_pressure_tropomi_no2(tm5_constant_a, tm5_constant_b, surface_pressure)
+    if "time" in dims or product=="hcho":
+        return _calc_pressure_tropomi_hcho(tm5_constant_a, tm5_constant_b, surface_pressure)
+    raise ValueError(f"Dims in tm5_constant_a {dims=} do not match expectations.")
+
+
+def _calc_pressure_tropomi_no2(tm5_constant_a, tm5_constant_b, surface_pressure):
+    """Calculates the pressure for the TROPOMI L2 NO2 product
+
+    Parameters
+    ----------
+    tm5_constant_a : xr.DataArray
+        constant A to calculate pressure.
+    tm5_constant_b : xr.DataArray
+        constant b to calculate pressure.
+    surface_pressure : xr.DataArray
+        surface pressure of tropomi.
+
+    Returns
+    -------
+    xr.DataArray, xr.DataArray
+        Midlayer pressure and interface pressure
+    """
     num_times, num_y, num_x = surface_pressure.shape
     num_layers = len(tm5_constant_a[:, 0])
     midlayer_pressure = xr.DataArray(
@@ -239,10 +264,10 @@ def _calc_pressure_levels(netcdf_tropomi):
     )
     for i in range(num_layers):
         midlayer_pressure[:, i, :, :] = (
-            tm5_constant_a[i, 0]
-            + tm5_constant_b[i, 0] * surface_pressure[:]
-            + tm5_constant_a[i, 1]
-            + tm5_constant_b[i, 1] * surface_pressure[:]
+            tm5_constant_a[i, 0].values
+            + tm5_constant_b[i, 0].values * surface_pressure[:].values
+            + tm5_constant_a[i, 1].values
+            + tm5_constant_b[i, 1].values * surface_pressure[:].values
         ) / 2
     midlayer_pressure.attrs = {"units": "Pa", "long_name": "midlayer_pressure_in_pa"}
     interface_pressure = xr.DataArray(
@@ -254,6 +279,46 @@ def _calc_pressure_levels(netcdf_tropomi):
         interface_pressure[:, i + 1, :, :] = (
             tm5_constant_a[i, 1] + tm5_constant_b[i, 1] * surface_pressure[:]
         )
+    return midlayer_pressure, interface_pressure
+
+
+def _calc_pressure_tropomi_hcho(tm5_constant_a, tm5_constant_b, surface_pressure):
+    """Calculates the pressure for the TROPOMI L2 NO2 product
+
+    Parameters
+    ----------
+    tm5_constant_a : xr.DataArray
+        constant A to calculate pressure.
+    tm5_constant_b : xr.DataArray
+        constant b to calculate pressure.
+    surface_pressure : xr.DataArray
+        surface pressure of tropomi.
+
+    Returns
+    -------
+    xr.DataArray, xr.DataArray
+        Midlayer pressure and interface pressure
+    """
+    num_times, num_y, num_x = surface_pressure.shape
+    num_layers = len(tm5_constant_a.isel(time=0))
+    interface_pressure = xr.DataArray(
+        data=np.zeros((num_times, num_layers + 1, num_y, num_x), dtype=np.float64),
+        dims=("time", "z_stagg", "y", "x"),
+    )
+    interface_pressure[:, 0, :, :] = surface_pressure[:]
+    for i in range(0, num_layers):
+        interface_pressure[:, i + 1, :, :] = (
+            tm5_constant_a[0,i].values + tm5_constant_b[0, i].values * surface_pressure[:]
+        )
+    midlayer_pressure = xr.DataArray(
+        data=np.zeros((num_times, num_layers, num_y, num_x), dtype=np.float64),
+        dims=("time", "z", "y", "x"),
+    )
+    for i in range(num_layers):
+        midlayer_pressure[:, i, :, :] = (
+            interface_pressure[:, i, :, :].values + interface_pressure[:, i+1, :, :].values
+        ) / 2
+    midlayer_pressure.attrs = {"units": "Pa", "long_name": "midlayer_pressure_in_pa"}
     return midlayer_pressure, interface_pressure
 
 
@@ -339,15 +404,3 @@ def open_datasets(all_files, variable_dict):
         # Select time coverage start as key, removing the trailing Z
         ds_collection[d.attrs["time_coverage_start"].replace("Z", "")] = d
     return ds_collection
-
-
-if __name__ == "__main__":
-    path = "/glade/derecho/scratch/plichtig/TROPOMI"
-    test_dataset = (
-        f"{path}/S5P_RPRO_L2__NO2____20220720T000819_20220720T014949_24695_03_020400_20230203T042051.nc"
-    )
-
-    all_swaths = open_datasets(
-        test_dataset, variable_dict={"pres_pa_mid": {}, "tm5_tropopause_pressure": {}}
-    )
-    

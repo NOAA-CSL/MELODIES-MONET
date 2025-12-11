@@ -68,9 +68,7 @@ def tropomi_mol_m2_to_molec_cm2(column_data):
     if original_units.lower() in ["molec/cm2", "molec cm-2", "molec/cm^2", "molec cm^-2"]:
         return column_data
     if original_units.lower() not in ["mol/m2", "mol m-2", "mol/m^2", "mol m^-2"]:
-        raise ValueError(
-            f"Input column data units are not mol/m2, found {original_units}."
-        )
+        raise ValueError(f"Input column data units are not mol/m2, found {original_units}.")
     with xr.set_options(keep_attrs=True):
         if "multiplication_factor_to_convert_to_molecules_percm2" in column_data.attrs:
             column_data_molec_cm2 = (
@@ -241,7 +239,7 @@ def _calculate_time_weights(localtime, target_time, previous_index, next_index):
     return previous_weight, next_weight
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def _interp_vert(orig, target, data):
     """Performs the numpy interpolation. It is separated from other functions
     for the sake of using the numba jit.
@@ -373,18 +371,17 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
     mod_p_cols = calc_partialcolumn(modobj, varname, unit="mol/m2")
     if sat_type == "tropomi_l2_no2":
         return apply_averaging_kernel_no2(
-            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=ak_params
+            mod_p_cols, obsobj,averaging_kernel_params=ak_params
         )
     if sat_type == "tropomi_l2_hcho":
         return apply_averaging_kernel_hcho(
-            mod_p_cols, obsobj, varname=varname, averaging_kernel_params=ak_params
+            mod_p_cols, obsobj,averaging_kernel_params=ak_params
         )
 
-        
-    return column_data_model
+    return mod_p_cols
 
 
-def apply_averaging_kernel_no2(mod_p_cols, obsobj, varname=None, averaging_kernel_params=None):
+def apply_averaging_kernel_no2(mod_p_cols, obsobj, averaging_kernel_params=None):
     """Applies the averaging kernel for TROPOMI NO2 and calculates the column
 
     Parameters
@@ -395,8 +392,6 @@ def apply_averaging_kernel_no2(mod_p_cols, obsobj, varname=None, averaging_kerne
     obsobj : xr.Dataset
         Dataset containing all the observational data, including the
         variables related to the averaging kernel.
-    varname : str | None
-        Variable name in the model dataset. If None, "NO2" is used.
     averaging_kernel_params : dict[str, str]
         dictionary containing the keys "averaging_kernel" and
         "tropospheric_averaging_kernel_calc" plus, optionally,
@@ -419,8 +414,10 @@ def apply_averaging_kernel_no2(mod_p_cols, obsobj, varname=None, averaging_kerne
         ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
 
     column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
-    column_data_model.attrs = {"description":"Tropospheric column after applying averaging kernel",
-                               "units":"molec/cm2"}
+    column_data_model.attrs = {
+        "description": "Tropospheric column after applying averaging kernel",
+        "units": "molec/cm2",
+    }
     return column_data_model
 
 
@@ -436,8 +433,6 @@ def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kern
     obsobj : xr.Dataset
         Dataset containing all the observational data, including the
         variables related to the averaging kernel.
-    varname : str | None
-        Variable name in the model dataset. If None, "HCHO" is used.
     averaging_kernel_params : dict[str, str]
         dictionary containing the keys "averaging_kernel" and
         "tropospheric_averaging_kernel_calc" plus, optionally,
@@ -448,16 +443,15 @@ def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kern
     xr.DataArray
         DataArray containing the model columns after applying the averaging kernel.
     """
-    ak = obsobj[ak_params["averaging_kernel"]]
+    ak = obsobj[averaging_kernel_params["averaging_kernel"]]
     if "tm5_tropopause_pressure" in obsobj:
         ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
-    if varname is None:
-        warnings.warn("Variable name not provided, assuming HCHO.")
-        varname = "HCHO"
 
     column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
-    column_data_model.attrs = {"description":f"Tropospheric column of model {varname} after applying averaging kernel",
-                               "units":"molec/cm2"}
+    column_data_model.attrs = {
+        "description": f"Tropospheric column of model {varname} after applying averaging kernel",
+        "units": "molec/cm2",
+    }
     return column_data_model
 
 
@@ -586,7 +580,11 @@ def select_swaths_overlapping_model(obsobj, modobj):
 
 
 def _regrid_and_apply_ak(
-    modobj, obsobj, mod_var="NO2", sat_var="nitrogendioxide_tropospheric_column"
+    modobj,
+    obsobj,
+    mod_var="NO2",
+    sat_var="nitrogendioxide_tropospheric_column",
+    sat_type="tropomi_l2_no2",
 ):
     """Regrids and applies AK to one swath.
 
@@ -627,14 +625,14 @@ def _regrid_and_apply_ak(
             warnings.warn(f"Swath on {d} is outside model domain, skipping.")
             continue
         # NOTE: We still need to check if this works accross the dateline
-        modobj_at_date = modobj_at_overpass_time.where(modobj_dates_granules == d).drop_vars(
-            "time_utc"
-        )
+        modobj_at_date = modobj_at_overpass_time.where(
+            modobj_dates_granules == d, drop=True
+        ).drop_vars("time_utc")
         modobj_regrid = interp_horizontal_mod2sat(obsobj_cropped, modobj_at_date)
         modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var)
         # Apply averaging kernel
         modobj_regrid[mod_var] = apply_averaging_kernel(
-            modobj_regrid, obsobj_cropped, "tropomi_l2_no2", varname=mod_var
+            modobj_regrid, obsobj_cropped, sat_type, varname=mod_var
         )
         starttime_swath = np.datetime_as_string(obsobj["time_granule"].min().values)
         output_dataset = xr.Dataset()
@@ -645,7 +643,11 @@ def _regrid_and_apply_ak(
 
 
 def regrid_and_apply_ak(
-    obsobj_dict, modobj, mod_var="NO2", sat_var="nitrogendioxide_tropospheric_column"
+    obsobj_dict,
+    modobj,
+    mod_var="NO2",
+    sat_var="nitrogendioxide_tropospheric_column",
+    sat_type="tropomi_l2_no2",
 ):
     """Regrids and applies AK to multiple swaths.
 
@@ -667,7 +669,7 @@ def regrid_and_apply_ak(
     output_pair = {}
     for k in obsobj_dict.keys():
         regridded_swath = _regrid_and_apply_ak(
-            modobj, obsobj_dict[k], mod_var=mod_var, sat_var=sat_var
+            modobj, obsobj_dict[k], mod_var=mod_var, sat_var=sat_var, sat_type=sat_type
         )
         output_pair.update(regridded_swath)
     return output_pair
@@ -704,4 +706,4 @@ def back_to_structured_grid(paired_object, target_grid):
         output_all.append(regridded_pair)
 
     output_pair = xr.concat(output_all, dim="time")
-    return output_pair#.groupby("time").mean()
+    return output_pair.groupby("time").mean()

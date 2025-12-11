@@ -316,7 +316,7 @@ class observation:
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
-            elif self.sat_type == 'tropomi_l2_no2' and self.sat_method == "apply_ak":
+            elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
                 from .util.read_tropomi_data import open_datasets
                 print('Reading TROPOMI L2 NO2 with averaging kernel application')
                 self.obj = open_datasets(self.file, self.variable_dict)
@@ -1504,7 +1504,7 @@ class analysis:
 
                         self.paired[label] = p
 
-                    if obs.sat_type in ['tropomi_l2_no2', 'tropomi_l2_hcho'] and obs.sat_method == "apply_ak":
+                    if obs.sat_type.startswith('tropomi_l2') and obs.sat_method == "apply_ak":
                         from .util import sat_l2_swath_utility_tropomi as sutil
                         if obs.sat_type == 'tropomi_l2_no2':
                             sat_sp = 'NO2'
@@ -1512,7 +1512,7 @@ class analysis:
                             key = "tropomi_l2_no2"
                         elif obs.sat_type == 'tropomi_l2_hcho':
                             sat_sp = 'HCHO'
-                            sp = 'formaldehyde_column'
+                            sp = 'formaldehyde_tropospheric_vertical_column'
                             key = "tropomi_l2_hcho"
                         else:
                             raise KeyError(f" You asked for {obs.sat_type}. "
@@ -1522,7 +1522,7 @@ class analysis:
                         ][0]
                         #TODO: allow user to select regrid method in yaml
                         paired_data_atswath = sutil.regrid_and_apply_ak(
-                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp
+                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type
                         )
                         paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj)
 
