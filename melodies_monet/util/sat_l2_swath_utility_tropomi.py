@@ -370,13 +370,9 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
 
     mod_p_cols = calc_partialcolumn(modobj, varname, unit="mol/m2")
     if sat_type == "tropomi_l2_no2":
-        return apply_averaging_kernel_no2(
-            mod_p_cols, obsobj,averaging_kernel_params=ak_params
-        )
+        return apply_averaging_kernel_no2(mod_p_cols, obsobj, averaging_kernel_params=ak_params)
     if sat_type == "tropomi_l2_hcho":
-        return apply_averaging_kernel_hcho(
-            mod_p_cols, obsobj,averaging_kernel_params=ak_params
-        )
+        return apply_averaging_kernel_hcho(mod_p_cols, obsobj, averaging_kernel_params=ak_params)
 
     return mod_p_cols
 
@@ -672,6 +668,8 @@ def regrid_and_apply_ak(
             modobj, obsobj_dict[k], mod_var=mod_var, sat_var=sat_var, sat_type=sat_type
         )
         output_pair.update(regridded_swath)
+    if len(output_pair) == 0:
+        raise ValueError("Output pair is empty. Are you sure that there is matching data?")
     return output_pair
 
 
@@ -706,4 +704,6 @@ def back_to_structured_grid(paired_object, target_grid):
         output_all.append(regridded_pair)
 
     output_pair = xr.concat(output_all, dim="time")
+    if len(output_pair.time) == 1:
+        return output_pair
     return output_pair.groupby("time").mean()
