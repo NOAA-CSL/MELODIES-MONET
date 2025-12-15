@@ -312,6 +312,10 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
+        from .util.tools_sat import mask_and_scale_sat, sum_variables_sat, filter_obs_sat
+        filter_obs_sat(self)
+        sum_variables_sat(self)
+        mask_and_scale_sat(self)
 
     def filter_obs(self):
         """Filter observations based on filter_dict.
