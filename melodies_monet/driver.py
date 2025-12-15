@@ -254,7 +254,7 @@ class observation:
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
-                self.obj = mio.sat._omps_l3_mm.open_dataset(self.file)
+                self.obj = mio.sat.omps_l3.open_dataset(self.file)
             elif self.sat_type == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
@@ -262,7 +262,7 @@ class observation:
                 else:
                     flst = self.file
 
-                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
+                self.obj = mio.sat.omps_nadir.read_OMPS_nm(flst)
 
                 # couple of changes to move to reader
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
@@ -278,7 +278,7 @@ class observation:
                     flst = tsub.subset_mopitt_l3(self.file,time_interval)
                 else:
                     flst = self.file
-                self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
+                self.obj = mio.sat.mopitt_l3.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
 
                 # Determine if monthly or daily product and set as attribute
@@ -293,18 +293,18 @@ class observation:
                 flst = tsub.subset_MODIS_l2(self.file,time_interval)
                 # self.obj = mio.sat._modis_l2_mm.read_mfdataset(
                 #     self.file, self.variable_dict, debug=self.debug)
-                self.obj = mio.sat._modis_l2_mm.read_mfdataset(
+                self.obj = mio.sat.modis_l2.read_mfdataset(
                     flst, self.variable_dict, debug=self.debug)
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == 'tropomi_l2_no2':
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
-                self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
+                self.obj = mio.sat.tropomi_l2_no2.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
-                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
+                self.obj = mio.sat.tempo_l2_no2.open_dataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))

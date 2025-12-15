@@ -3,7 +3,7 @@
 import os
 import logging
 import xarray as xr
-from monetio.sat._gridded_eos_mm import read_gridded_eos
+from monetio.sat.gridded_eos import read_gridded_eos
 
 from .analysis_util import fill_date_template, find_file
 

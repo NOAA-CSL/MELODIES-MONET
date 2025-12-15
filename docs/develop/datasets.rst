@@ -82,9 +82,6 @@ Satellite
 Examples for reading satellite datasets can be
 found in the ``monetio/sat`` folder in the MONETIO repository
 `on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
-While a part of the MONETIO repository,
-the private MELODIES MONET readers are designated with prefix ``_`` 
-and suffix ``_mm``.
 
 Models
 ------
