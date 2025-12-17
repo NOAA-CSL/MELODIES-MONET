@@ -219,7 +219,8 @@ def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=Fal
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
-        
+        :w
+
     Returns
     -------
     csv file, plot
@@ -245,6 +246,9 @@ def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=Fal
     rows=df['Stat_FullName'].values.tolist()
     
     df = df.drop(columns=['Stat_FullName'])
+    if "format" in table_kwargs:
+        formatter = table_kwargs["format"].format
+        df = df.map(formatter)
     
     t=ax.table(cellText=df.values, rowLabels=rows,
                colLabels=df.columns,loc='center',edges=table_kwargs['edges'])
