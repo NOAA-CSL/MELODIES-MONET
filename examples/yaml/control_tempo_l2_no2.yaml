@@ -102,8 +102,8 @@ plots:
     data: ['tempo_l2_no2_wrfchem_v4.2']
     data_proc:
       set_axis: True
-      vmax: 1e15
-      vmin: 0
+      vmax_plot: 1e15
+      vmin_plot: 0
 
   plot_grp4:
     type: 'taylor'
