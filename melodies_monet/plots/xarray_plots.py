@@ -895,6 +895,11 @@ def make_spatial_bias_gridded(
             )
         )
 
+    if not isinstance(vdiff, (int, float)):
+        try:
+            vdiff = float(vdiff)
+        except Exception as e:
+            raise Exception(f"{e} error found: vdiff must be a single int or float.")
     if nlevels is None:
         nlevels = 21
 

@@ -515,7 +515,7 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
         ds[var] = ds[var]*convert_std_to_amb_bc
 
 
-def calc_partialcolumn(modobj, var="NO2"):
+def calc_partialcolumn(modobj, var="NO2", unit="molecules/cm2"):
     """Calculates the partial column of a species from its concentration
     within a gridcell.
 
@@ -525,6 +525,9 @@ def calc_partialcolumn(modobj, var="NO2"):
         Model data
     var : str
         variable to calculate the partial column from
+    unit : str
+        units for the output partial column (currently only 'molecules/cm2'
+        and mol/m2 are supported)
 
     Returns
     -------
@@ -532,8 +535,16 @@ def calc_partialcolumn(modobj, var="NO2"):
         DataArray containing the partial column of the species.
     """
     ppbv2molmol = 1e-9
+    if unit not in ["molecules/cm2", "mol/m2"]:
+        raise ValueError(
+            "Unsupported unit for partial column calculation. "
+            "Supported units are 'molecules/cm2' and 'mol/m2'."
+        )
     m2_to_cm2 = 1e4
-    fac_units = ppbv2molmol * N_A / m2_to_cm2
+    if unit == "molecules/cm2":
+        fac_units = ppbv2molmol * N_A / m2_to_cm2
+    else:
+        fac_units = ppbv2molmol
     partial_col = (
         modobj[var]
         * modobj["pres_pa_mid"]
@@ -541,7 +552,7 @@ def calc_partialcolumn(modobj, var="NO2"):
         * fac_units
         / (R * modobj["temperature_k"])
     )
-    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
+    partial_col.attrs = {"units": f"{unit}", "long_name": f"{var} partial column"}
     return partial_col
 
 

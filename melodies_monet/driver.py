@@ -119,12 +119,14 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = 'pt_src'
         self.sat_type = None
+        self.sat_method = None
         self.data_proc = None
         self.variable_dict = None
         self.variable_summing = None
         self.resample = None
         self.time_var = None
         self.regrid_method = None
+        self.debug = False
 
     def __repr__(self):
         return (
@@ -135,6 +137,7 @@ class observation:
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
             f"    sat_type={self.sat_type!r},\n"
+            f"    sat_method={self.sat_method!r},\n"
             f"    data_proc={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    resample={self.resample!r},\n"
@@ -306,11 +309,17 @@ class observation:
                     flst, self.variable_dict, debug=self.debug)
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
-            elif self.sat_type == 'tropomi_l2_no2':
+            elif self.sat_type == 'tropomi_l2_no2' and (
+                    self.sat_method == None or self.sat_method == "replace_apriori"):
                 #from monetio import tropomi_l2_no2
+                self.sat_method = "replace_apriori"
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
                     self.file, self.variable_dict, debug=self.debug)
+            elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
+                from .util.read_tropomi_data import open_datasets
+                print('Reading TROPOMI L2 NO2 with averaging kernel application')
+                self.obj = open_datasets(self.file, self.variable_dict)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
                 self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
@@ -321,8 +330,12 @@ class observation:
         except ValueError as e:
             print('something happened opening file:', e)
             return
+        from .util.tools_sat import mask_and_scale_sat, filter_obs_sat, sum_variables_sat
+        mask_and_scale_sat(self)  # mask and scale values from the control values
+        sum_variables_sat(self) 
+        filter_obs_sat(self)
 
-    def filter_obs(self):
+    def filter_obs(self, drop=True):
         """Filter observations based on filter_dict.
         
         Returns
@@ -336,21 +349,21 @@ class observation:
                     filter_vals = filter_dict[column]['value']
                     filter_op = filter_dict[column]['oper']
                     if filter_op == 'isin':
-                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=True)
+                        self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=drop)
                     elif filter_op == 'isnotin':
-                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=True)
+                        self.obj = self.obj.where(~self.obj[column].isin(filter_vals),drop=drop)
                     elif filter_op == '==':
-                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] == filter_vals,drop=drop)
                     elif filter_op == '>':
-                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] > filter_vals,drop=drop)
                     elif filter_op == '<':
-                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] < filter_vals,drop=drop)
                     elif filter_op == '>=':
-                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] >= filter_vals,drop=drop)
                     elif filter_op == '<=':
-                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] <= filter_vals,drop=drop)
                     elif filter_op == '!=':
-                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=True)
+                        self.obj = self.obj.where(self.obj[column] != filter_vals,drop=drop)
                     else:
                         raise ValueError(f'Filter operation {filter_op!r} is not supported')
         
@@ -1089,6 +1102,8 @@ class analysis:
                     o.site_dict = self.control_dict['obs'][obs]['site_dict']
                 if 'sat_type' in self.control_dict['obs'][obs].keys():
                     o.sat_type = self.control_dict['obs'][obs]['sat_type']
+                if 'sat_method' in self.control_dict['obs'][obs].keys():
+                    o.sat_method = self.control_dict['obs'][obs]['sat_method']
                 if load_files:
                     if o.obs_type in ['sat_swath_sfc', 'sat_swath_clm', 'sat_grid_sfc',\
                                         'sat_grid_clm', 'sat_swath_prof']:
@@ -1096,6 +1111,7 @@ class analysis:
                     else:
                         o.open_obs(time_interval=time_interval, control_dict=self.control_dict)
                 self.obs[o.label] = o
+
 
     def setup_obs_grid(self):
         """
@@ -1442,7 +1458,7 @@ class analysis:
                         label = '{}_{}'.format(p.obs,p.model)
                         self.paired[label] = p
 
-                    if obs.sat_type == 'tropomi_l2_no2':
+                    if obs.sat_type == 'tropomi_l2_no2' and obs.sat_method == "replace_apriori":
                         from .util import sat_l2_swath_utility as no2util
                         from .util import satellite_utilities as sutil
 
@@ -1481,10 +1497,46 @@ class analysis:
                         p.obs = obs.label
                         p.model = mod.label
                         p.model_vars = keys
+                        p.sat_method = obs.sat_method
                         p.obs_vars = obs_vars
                         p.obj = paired_data_cp 
                         label = '{}_{}'.format(p.obs,p.model)
 
+                        self.paired[label] = p
+
+                    if obs.sat_type.startswith('tropomi_l2') and obs.sat_method == "apply_ak":
+                        from .util import sat_l2_swath_utility_tropomi as sutil
+                        if obs.sat_type == 'tropomi_l2_no2':
+                            sat_sp = 'NO2'
+                            sp = 'nitrogendioxide_tropospheric_column'
+                            key = "tropomi_l2_no2"
+                        elif obs.sat_type == 'tropomi_l2_hcho':
+                            sat_sp = 'HCHO'
+                            sp = 'formaldehyde_tropospheric_vertical_column'
+                            key = "tropomi_l2_hcho"
+                        else:
+                            raise KeyError(f" You asked for {obs.sat_type}. "
+                                           + "Only NO2 and HCHO L2 data have been implemented")
+                        mod_sp = [
+                            k_sp for k_sp, v in mod.mapping[key].items() if v == sp
+                        ][0]
+                        #TODO: allow user to select regrid method in yaml
+                        paired_data_atswath = sutil.regrid_and_apply_ak(
+                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type
+                        )
+                        paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj)
+
+                        p = pair()
+                        paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.sat_method = obs.sat_method
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = "{}_{}".format(p.obs,p.model)
+                        p.filename = "{}.nc".format(label)
                         self.paired[label] = p
 
                     if 'tempo_l2' in obs.sat_type:
@@ -1727,7 +1779,7 @@ class analysis:
                             modvar = modvar + '_new'
 
                         # Adjust the modvar for satellite no2 trop. column paring. M.Li
-                        if obsvar == 'nitrogendioxide_tropospheric_column':
+                        if obsvar == 'nitrogendioxide_tropospheric_column' and p.sat_method == "replace_apriori":
                             modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
@@ -1989,7 +2041,7 @@ class analysis:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
                             # Now proceed with plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
-                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                            if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 if plot_type.lower() == 'timeseries':
                                     make_timeseries = xrplots.make_timeseries
                                 else:
@@ -2025,7 +2077,7 @@ class analysis:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
-                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                            if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 plot_kwargs['varname']=modvar
                             else:
                                 plot_kwargs['column']=modvar
@@ -2680,7 +2732,7 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
-                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                            if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 make_taylor = xrplots.make_taylor
                                 plot_kwargs = {
                                     'dset': pairdf,
@@ -2767,7 +2819,7 @@ class analysis:
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             outname = "{}.{}".format(outname, p_label)
-                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                            if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
                                 plot_kwargs = {
                                     'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
@@ -3040,7 +3092,7 @@ class analysis:
                             if obsvar == modvar:
                                 modvar = modvar + '_new'
                             # for satellite no2 trop. columns paired data, M.Li
-                            if obsvar == 'nitrogendioxide_tropospheric_column':
+                            if obsvar == 'nitrogendioxide_tropospheric_column' and p.sat_method == 'replace_apriori':
                                 modvar = modvar + 'trpcol' 
                             
                             # Query selected points if applicable
