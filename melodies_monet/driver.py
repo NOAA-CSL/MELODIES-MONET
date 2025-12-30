@@ -1987,8 +1987,8 @@ class analysis:
                                     vmin = None
                                     vmax = None
                             else:
-                                vmin = None
-                                vmax = None
+                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
+                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
                             # Select time to use as index.
 
                             # 2024-03-01 MEB needs to only apply if pandas. fails for xarray
@@ -2266,8 +2266,8 @@ class analysis:
                                     vmin = None
                                     vmax = None
                             else:
-                                vmin = None
-                                vmax = None
+                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
+                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
                             # Select altitude variable from the .yaml file
                             altitude_variable = grp_dict['altitude_variable']
                             # Define the bins for binning the altitude
@@ -2796,7 +2796,9 @@ class analysis:
                                     print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
                                     vdiff = None
                             else:
-                                vdiff = None
+                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None),
+                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
+                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             splots.make_spatial_bias(
@@ -2818,6 +2820,16 @@ class analysis:
                                 debug=self.debug
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
+                            if set_yaxis is True:
+                                if 'vdiff_plot' in obs_plot_dict.keys():
+                                    vdiff = obs_plot_dict['vdiff_plot']
+                                else:
+                                    print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
+                                    vdiff = None
+                            else:
+                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None),
+                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
+                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
                             outname = "{}.{}".format(outname, p_label)
                             if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
@@ -2837,9 +2849,9 @@ class analysis:
                                     "outname": outname,
                                     "domain_type": domain_type,
                                     "domain_name": domain_name,
-                                    "vdiff": grp_dict["data_proc"].get("vdiff", None),
-                                    "vmax": grp_dict["data_proc"].get("vmax", None),
-                                    "vmin": grp_dict["data_proc"].get("vmin", None),
+                                    "vdiff": vdiff,
+                                    "vmax": vmax,
+                                    "vmin": vmin,
                                     "nlevels": grp_dict["data_proc"].get("nlevels", None),
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
@@ -2849,6 +2861,16 @@ class analysis:
                             make_spatial_bias_gridded(**plot_kwargs)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_dist':
+                            if set_yaxis is True:
+                                vmin = obs_plot_dict.get("vmin_plot", None)
+                                vmax = obs_plot_dict.get("vmax_plot", None)
+                                if vmin is None:
+                                    print('Warning: vmin not specified for ' + obsvar + ', so default used.')
+                                if vmax is None:
+                                    print('Warning: vmax not specified for ' + obsvar + ', so default used.')
+                            else:
+                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
+                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
                             outname = "{}.{}".format(outname, p.obs)
                             plot_kwargs = {
                                 "dset": pairdf,
@@ -2921,9 +2943,9 @@ class analysis:
                                     vmax = None
                                     nlevels = None
                             else:
-                                vmin = None
-                                vmax = None
-                                nlevels = None
+                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
+                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
+                                nlevels = grp_dict.get("data_proc", {}).get("nlevels", None)
                             #Check if z dim is larger than 1. If so select, the first level as all models read through 
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
