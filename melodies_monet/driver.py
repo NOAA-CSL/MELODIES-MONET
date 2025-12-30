@@ -1902,8 +1902,8 @@ class analysis:
                                     vmin = None
                                     vmax = None
                             else:
-                                vmin = None
-                                vmax = None
+                                vmin = grp_dict.get('data_proc', {}).get('vmin_plot', None)
+                                vmax = grp_dict.get('data_proc', {}).get('vmax_plot', None)
                             # Select time to use as index.
 
                             # 2024-03-01 MEB needs to only apply if pandas. fails for xarray
@@ -2711,7 +2711,9 @@ class analysis:
                                     print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
                                     vdiff = None
                             else:
-                                vdiff = None
+                                vdiff = grp_dict.get('data_proc', {}).get('vdiff_plot', None)
+                                vmax = grp_dict.get('data_proc', {}).get('vmin_plot', None)
+                                vmin = grp_dict.get('data_proc', {}).get('vmax_plot', None)
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             splots.make_spatial_bias(
@@ -2751,9 +2753,9 @@ class analysis:
                                     "outname": outname,
                                     "domain_type": domain_type,
                                     "domain_name": domain_name,
-                                    "vdiff": grp_dict["data_proc"].get("vdiff", None),
-                                    "vmax": grp_dict["data_proc"].get("vmax", None),
-                                    "vmin": grp_dict["data_proc"].get("vmin", None),
+                                    "vdiff": vdiff,
+                                    "vmax": vmax,
+                                    "vmin": vmin,
                                     "nlevels": grp_dict["data_proc"].get("nlevels", None),
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
@@ -2772,16 +2774,19 @@ class analysis:
                                 "ylabel": use_ylabel,
                                 "domain_type": domain_type,
                                 "domain_name": domain_name,
-                                "vmax": grp_dict["data_proc"].get("vmax", None),
-                                "vmin": grp_dict["data_proc"].get("vmin", None),
+                                "vdiff": vdiff,
+                                "vmax": vmax,
+                                "vmin": vmin,
                                 "fig_dict": fig_dict,
                                 "text_dict": text_dict,
                                 "debug": self.debug,
                             }
-                            if isinstance(plot_kwargs["vmax"], str):
-                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
+                            if isinstance(plot_kwargs["vdiff"], str):
+                                plot_kwargs["vdiff"] = float(plot_kwargs["vdiff"])
                             if isinstance(plot_kwargs["vmin"], str):
                                 plot_kwargs["vmin"] = float(plot_kwargs["vmin"])
+                            if isinstance(plot_kwargs["vmax"], str):
+                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
                             xrplots.make_spatial_dist(**plot_kwargs)
                             plot_kwargs["varname"] = modvar
                             plot_kwargs["label"] = p.model
@@ -2835,9 +2840,9 @@ class analysis:
                                     vmax = None
                                     nlevels = None
                             else:
-                                vmin = None
-                                vmax = None
-                                nlevels = None
+                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
+                                vmin = grp_dict.get("data_proc", {}).get("vmax_plot", None)
+                                nlevels = grp_dict.get("data_proc", {}).get("nlevels", None)
                             #Check if z dim is larger than 1. If so select, the first level as all models read through 
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
