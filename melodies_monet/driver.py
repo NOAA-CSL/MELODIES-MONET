@@ -2862,15 +2862,15 @@ class analysis:
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_dist':
                             if set_yaxis is True:
-                                vmin = obs_plot_dict.get("vmin_plot", None)
                                 vmax = obs_plot_dict.get("vmax_plot", None)
+                                vmin = obs_plot_dict.get("vmin_plot", None)
                                 if vmin is None:
                                     print('Warning: vmin not specified for ' + obsvar + ', so default used.')
                                 if vmax is None:
                                     print('Warning: vmax not specified for ' + obsvar + ', so default used.')
                             else:
-                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
-                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
+                                 vmax = grp_dict["data_proc"].get("vmax_plot", None)
+                                 vmin = grp_dict["data_proc"].get("vmin_plot", None)
                             outname = "{}.{}".format(outname, p.obs)
                             plot_kwargs = {
                                 "dset": pairdf,
