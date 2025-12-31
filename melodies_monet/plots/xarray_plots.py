@@ -696,10 +696,10 @@ def make_spatial_dist(
         map_kwargs["crs"] = proj
 
     # First determine colorbar
-    if vmin is None and vmax is None:
-        # vmin = vmodel_mean.quantile(0.01)
-        vmax = np.max((np.abs(var2plot.quantile(0.99)), np.abs(var2plot.quantile(0.01))))
-        vmin = 0
+    if vmin is None:
+        vmin = vmodel_mean.quantile(0.01)
+    if vmax is None:
+        vmax = var2plot.quantile(0.99))
 
     if nlevels is None:
         nlevels = 21
