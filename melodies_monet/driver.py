@@ -2880,8 +2880,8 @@ class analysis:
                                 "ylabel": use_ylabel,
                                 "domain_type": domain_type,
                                 "domain_name": domain_name,
-                                "vmax": grp_dict["data_proc"].get("vmax", None),
-                                "vmin": grp_dict["data_proc"].get("vmin", None),
+                                "vmax": vmax
+                                "vmin": vmin
                                 "fig_dict": fig_dict,
                                 "text_dict": text_dict,
                                 "debug": self.debug,
