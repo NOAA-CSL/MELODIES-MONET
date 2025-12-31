@@ -699,7 +699,7 @@ def make_spatial_dist(
     if vmin is None and vmax is None:
         # vmin = vmodel_mean.quantile(0.01)
         vmax = np.max((np.abs(var2plot.quantile(0.99)), np.abs(var2plot.quantile(0.01))))
-        vmin = -vmax
+        vmin = 0
 
     if nlevels is None:
         nlevels = 21
