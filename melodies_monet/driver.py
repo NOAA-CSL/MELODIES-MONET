@@ -2827,9 +2827,7 @@ class analysis:
                                     print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
                                     vdiff = None
                             else:
-                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None),
-                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
-                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
+                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None)
                             outname = "{}.{}".format(outname, p_label)
                             if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
@@ -2850,9 +2848,7 @@ class analysis:
                                     "domain_type": domain_type,
                                     "domain_name": domain_name,
                                     "vdiff": vdiff,
-                                    "vmax": vmax,
-                                    "vmin": vmin,
-                                    "nlevels": grp_dict["data_proc"].get("nlevels", None),
+                                    "nlevels": grp_dict.get("data_proc", {}).get("nlevels", None),
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
                                     "debug": self.debug
