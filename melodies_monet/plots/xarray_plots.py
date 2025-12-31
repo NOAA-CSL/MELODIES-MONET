@@ -686,7 +686,6 @@ def make_spatial_dist(
         lonmax = valid_domain["longitude"].max().values
         title_add = domain_name + ": "
 
-    # Map the model output first.
     cbar_kwargs = dict(aspect=15, shrink=0.8)
 
     # Add options that this could be included in the fig_kwargs in yaml file too.
@@ -696,20 +695,21 @@ def make_spatial_dist(
         map_kwargs["crs"] = proj
 
     # First determine colorbar
-    if vmin is None and vmax is None:
-        # vmin = vmodel_mean.quantile(0.01)
-        vmax = np.max((np.abs(var2plot.quantile(0.99)), np.abs(var2plot.quantile(0.01))))
-        vmin = -vmax
+    if vmin is None:
+        vmin = var2plot.quantile(0.01)
+    if vmax is None:
+        vmax = var2plot.quantile(0.99)
 
     if nlevels is None:
         nlevels = 21
     print(vmin, vmax)
     clevel = np.linspace(vmin, vmax, nlevels)
     if fig_dict is not None:
-        cmap = mpl.cm.get_cmap(fig_dict.get('cmap', 'plasma'), nlevels - 1)
+        cmap = plt.get_cmap(fig_dict.get('cmap', 'plasma'), nlevels + 1)
     else:
-        cmap = mpl.cm.get_cmap("plasma", nlevels - 1)
-    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
+        cmap = plt.get_cmap("plasma", nlevels + 1)
+
+    norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False, extend="both")
 
     # I add extend='both' here because the colorbar is setup to plot the values outside the range
     states = fig_dict.get("states", True)
@@ -720,7 +720,8 @@ def make_spatial_dist(
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
     c = ax.axes.pcolormesh(dset.longitude, dset.latitude, var2plot, cmap=cmap, norm=norm)
-    plt.gcf().canvas.draw()
+    f = plt.gcf()
+    f.canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
         f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}"
@@ -731,10 +732,9 @@ def make_spatial_dist(
     # Uncomment these lines if you update above just to verify colorbars are identical.
     # Also specify plot above scatter = ax.axes.scatter etc.
     # cbar = ax.figure.get_axes()[1]
-    plt.colorbar(c, ax=ax, extend="both", **cbar_kwargs)
 
     # Update colorbar
-    f = plt.gcf()
+    f.colorbar(c, ax=ax, **cbar_kwargs, norm=norm, spacing="proportional")
 
     model_ax = f.get_axes()[0]
     cax = f.get_axes()[1]
