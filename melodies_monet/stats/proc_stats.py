@@ -248,7 +248,14 @@ def create_table(df,outname='plot',title='stats',out_table_kwargs=None,debug=Fal
     df = df.drop(columns=['Stat_FullName'])
     if "format" in table_kwargs:
         formatter = table_kwargs["format"].format
-        df = df.map(formatter)
+        # pandas <=2.1 require applymap, pandas > 2.1 require map
+        try:
+            df = df.map(formatter)
+        except AttributeError:
+            df = df.applymap(formatter)
+        except Exception as err:
+            print(f"Unexpacted {err=}, {type(err)=}")
+            raise
     
     t=ax.table(cellText=df.values, rowLabels=rows,
                colLabels=df.columns,loc='center',edges=table_kwargs['edges'])
