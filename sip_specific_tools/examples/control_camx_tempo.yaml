@@ -77,9 +77,6 @@ model:
 plots:
   plot_grp1:
     type: 'timeseries'
-    settings:
-      vmin: 0
-      vmax: 2.e+16
     fig_kwargs:
       figsize: [12,6]
     default_plot_kwargs:
@@ -96,13 +93,12 @@ plots:
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
-      set_axis: True
+      set_axis: False
+      vmin_plot: 0
+      vmax_plot: 2.e+16
       
   plot_grp2:
     type: 'timeseries'
-    settings:
-      vmin: 0
-      vmax: 6
     fig_kwargs:
       figsize: [12,6]
     default_plot_kwargs:
@@ -119,14 +115,14 @@ plots:
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
-      set_axis: True
+      set_axis: False
+      vmin_plot: 0
+      vmax_plot: 10
       
   plot_grp3:
     type: 'diurnal'
     settings:
       range_shading: 'IQR'
-      vmin: 0
-      vmax: 2.e+16
     fig_kwargs:
       figsize: [12,6]
     default_plot_kwargs:
@@ -143,14 +139,14 @@ plots:
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
-      set_axis: True
-
+      set_axis: False
+      vmin_plot: 0
+      vmax_plot: 2.e+16
+      
   plot_grp4:
     type: 'diurnal'
     settings:
       range_shading: 'IQR'
-      vmin: 0
-      vmax: 6
     fig_kwargs:
       figsize: [12,6]
     default_plot_kwargs:
@@ -167,8 +163,10 @@ plots:
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
-      set_axis: True
-
+      set_axis: False
+      vmin_plot: 0
+      vmax_plot: 6
+      
   plot_grp5:
     type: 'gridded_spatial_bias'
     fig_kwargs: 
@@ -200,9 +198,9 @@ plots:
         bounds: [-105.5, -104., 39., 40.5]
     data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"]
     data_proc:
-      set_axis: True
-      vmax: 1e16
-      vmin: 0
+      set_axis: False
+      vmax_plot: 1e16
+      vmin_plot: 0
 
   plot_grp7:
     type: 'spatial_dist'
@@ -219,9 +217,9 @@ plots:
         bounds: [-105.5, -104., 39., 40.5]
     data: ["tempo_l2_FNR_CAMX"]
     data_proc:
-      set_axis: True
-      vmax: 6
-      vmin: 0
+      set_axis: False
+      vmax_plot: 6
+      vmin_plot: 0
 
   plot_grp8:
     type: 'taylor'
@@ -258,6 +256,7 @@ stats:
     xscale: 1.4
     yscale: 1.4
     edges: "horizontal"
+    format: "{:.2e}"
   domain_type: ["custom:box"]
   domain_name: ["Denver and Northern Front Range" ] 
   domain_info:
