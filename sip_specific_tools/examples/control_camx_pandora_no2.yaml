@@ -41,7 +41,6 @@ obs:
          unit_scale_method: "*"
          ylabel: 'NO$_2$ (molec/cm2)'
          use_ylabel: True
-         vmax: 1e16
          rename: PANDORA_NO2
       "Column 39": {}
     data_proc:
@@ -151,7 +150,7 @@ plots:
     data: ["pandora_CAMX"]
     data_proc:
       rem_obs_nan: True
-      set_axis: False
+      set_axis: True
 
 
 stats:
