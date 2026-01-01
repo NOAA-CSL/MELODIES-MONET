@@ -29,7 +29,7 @@ obs:
         unit_scale_method: "*"
         nan_value: -1.0
         ylabel_plot: "Ozone (ppbv)"
-        vmin_plot: 15.0
+        vmin_plot: 15.0   # these limits are used if set_axis=True in the plots
         vmax_plot: 70.0
         vdiff_plot: 20.0
         nlevels_plot: 21
