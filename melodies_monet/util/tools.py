@@ -666,6 +666,7 @@ def check_for_scientific_floats(value):
                 f"{value} is interpreted as a string. If you wanted a number, make sure to include"
                 " the decimal dot in the mantissa. Else, feel free to ignore this warning."
             )
+            return
     if isinstance(value, Iterable):
         for v in value:
             check_for_scientific_floats(v)
