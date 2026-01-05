@@ -4,8 +4,13 @@ from __future__ import division
 
 from builtins import range
 
+from collections.abs import Iterable
+import re
+import warnings
+
 import numpy as np
 import xarray as xr
+
 
 __author__ = 'barry'
 
@@ -632,3 +637,76 @@ def average_between_hours(data, start_hours, nhours):
             f"{nhours} means, starting at reported time. {data_out.attrs.get('description', '')}"
     )
     return data_out
+
+
+def check_for_scientific_floats(value):
+    """Recognizes that a value read by PyYAML in scientific notation
+    without and explicit decimal point is actually a float and not 
+    a string, and raises a warning.
+
+    Parameters
+    ----------
+    value: iterable | str | int | float
+      The original value as read by PyYAML
+
+    Returns
+    -------
+    None
+
+    Raises
+    -------
+    UserWarning
+        
+    """
+
+    sci_notation_pattern = r"^\d\d*[\.]?\d*e[+-]?\d\d*$"
+    if isinstance(value, str):
+        if re.match(sci_notation_pattern, value):
+            warnings.warn(
+                f"{value} is interpreted as a string. If you wanted a number, make sure to include"
+                " the decimal dot in the mantissa. Else, feel free to ignore this warning."
+            )
+    if isinstance(value, Iterable):
+        for v in value:
+            check_for_scientific_floats(v)
+
+
+def filter_data(data, filters=None, drop=True):
+    """Filters xarray datasets using a filter dict inplace
+
+    Parameters
+    ----------
+    data : xr.Dataset
+        data that requires filtering
+    filters : dict
+        Dictionary with filters
+    drop : bool
+        Whether NaN values should be dropped
+    """
+    if filters is None:
+        return
+    if not isinstance(filters, dict):
+        raise ValueError(f"If filters are provided, they should be a dict. Type {type(filters)}.")
+    for k in filters:
+        filter_vals = filter[k]['value']
+        filter_op = filter_dict[column]['oper']
+        if filter_op == 'isin':
+            data = data.where(data[column].isin(filter_vals),drop=drop)
+        elif filter_op == 'isnotin':
+            data = data.where(~data[column].isin(filter_vals),drop=drop)
+        elif filter_op == '==':
+            data = data.where(data[column] == filter_vals,drop=drop)
+        elif filter_op == '>':
+            data = data.where(data[column] > filter_vals,drop=drop)
+        elif filter_op == '<':
+            data = data.where(data[column] < filter_vals,drop=drop)
+        elif filter_op == '>=':
+            data = data.where(data[column] >= filter_vals,drop=drop)
+        elif filter_op == '<=':
+            data = data.where(data[column] <= filter_vals,drop=drop)
+        elif filter_op == '!=':
+            data = data.where(data[column] != filter_vals,drop=drop)
+        else:
+            raise ValueError(f'Filter operation {filter_op!r} is not supported')
+
+

@@ -342,11 +342,13 @@ class observation:
         -------
         None
         """ 
+        from melodies_monet.util.tools import check_for_scientific_floats
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
                 filter_dict = self.data_proc['filter_dict']
                 for column in filter_dict.keys():
                     filter_vals = filter_dict[column]['value']
+                    check_for_scienfic_floats(filter_vals)
                     filter_op = filter_dict[column]['oper']
                     if filter_op == 'isin':
                         self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=drop)
@@ -555,6 +557,7 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
+        from melodied_monet.util.tools import filter_data
 
         print(self.model.lower())
 
@@ -661,6 +664,8 @@ class model:
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
+        if self.data_proc is not None:
+            self.obj = filter_data(self.obj, self.data_proc.get(filter_dict))
 
         self.preprocessing = control_dict['model'][self.label].get('preprocessing', None)
         if self.preprocessing is not None:
