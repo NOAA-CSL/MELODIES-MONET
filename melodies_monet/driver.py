@@ -348,7 +348,7 @@ class observation:
                 filter_dict = self.data_proc['filter_dict']
                 for column in filter_dict.keys():
                     filter_vals = filter_dict[column]['value']
-                    check_for_scienfic_floats(filter_vals)
+                    check_for_scientific_floats(filter_vals)
                     filter_op = filter_dict[column]['oper']
                     if filter_op == 'isin':
                         self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=drop)
