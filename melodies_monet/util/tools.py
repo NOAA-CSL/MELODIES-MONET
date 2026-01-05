@@ -664,7 +664,10 @@ def check_for_scientific_floats(value):
         if re.match(sci_notation_pattern, value):
             warnings.warn(
                 f"{value} is interpreted as a string. If you wanted a number, make sure to include"
-                " the decimal dot in the mantissa. Else, feel free to ignore this warning."
+                " the decimal dot in the mantissa, and the sign in the exponent (e. g., 1e5 is"
+                " read as a string, but 1.0e+5 is read as a number). If you wanted a string,"
+                " ignore this warning. PyYAML quirks can be confusing, and this requirement"
+                " can vary depending on versions."
             )
             return
     if isinstance(value, Iterable):
