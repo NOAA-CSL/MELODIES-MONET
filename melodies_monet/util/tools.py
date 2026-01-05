@@ -4,7 +4,7 @@ from __future__ import division
 
 from builtins import range
 
-from collections.abs import Iterable
+from collections.abc import Iterable
 import re
 import warnings
 
@@ -672,7 +672,7 @@ def check_for_scientific_floats(value):
 
 
 def filter_data(data, filters=None, drop=True):
-    """Filters xarray datasets using a filter dict inplace
+    """Filters xarray datasets using a filter dict
 
     Parameters
     ----------
@@ -682,31 +682,37 @@ def filter_data(data, filters=None, drop=True):
         Dictionary with filters
     drop : bool
         Whether NaN values should be dropped
+
+    Returns
+    -------
+    xr.Dataset
+        Filtered data
     """
     if filters is None:
         return
     if not isinstance(filters, dict):
         raise ValueError(f"If filters are provided, they should be a dict. Type {type(filters)}.")
     for k in filters:
-        filter_vals = filter[k]['value']
-        filter_op = filter_dict[column]['oper']
+        filter_vals = filters[k]['value']
+        filter_op = filters[k]['oper']
         if filter_op == 'isin':
-            data = data.where(data[column].isin(filter_vals),drop=drop)
+            data = data.where(data[k].isin(filter_vals),drop=drop)
         elif filter_op == 'isnotin':
-            data = data.where(~data[column].isin(filter_vals),drop=drop)
+            data = data.where(~data[k].isin(filter_vals),drop=drop)
         elif filter_op == '==':
-            data = data.where(data[column] == filter_vals,drop=drop)
+            data = data.where(data[k] == filter_vals,drop=drop)
         elif filter_op == '>':
-            data = data.where(data[column] > filter_vals,drop=drop)
+            data = data.where(data[k] > filter_vals,drop=drop)
         elif filter_op == '<':
-            data = data.where(data[column] < filter_vals,drop=drop)
+            data = data.where(data[k] < filter_vals,drop=drop)
         elif filter_op == '>=':
-            data = data.where(data[column] >= filter_vals,drop=drop)
+            data = data.where(data[k] >= filter_vals,drop=drop)
         elif filter_op == '<=':
-            data = data.where(data[column] <= filter_vals,drop=drop)
+            data = data.where(data[k] <= filter_vals,drop=drop)
         elif filter_op == '!=':
-            data = data.where(data[column] != filter_vals,drop=drop)
+            data = data.where(data[k] != filter_vals,drop=drop)
         else:
             raise ValueError(f'Filter operation {filter_op!r} is not supported')
+        return data
 
 

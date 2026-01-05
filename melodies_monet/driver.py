@@ -557,7 +557,7 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
-        from melodied_monet.util.tools import filter_data
+        from melodies_monet.util.tools import filter_data
 
         print(self.model.lower())
 
@@ -665,7 +665,7 @@ class model:
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
         if self.data_proc is not None:
-            self.obj = filter_data(self.obj, self.data_proc.get(filter_dict))
+            self.obj = filter_data(self.obj, self.data_proc.get('filter_dict', None))
 
         self.preprocessing = control_dict['model'][self.label].get('preprocessing', None)
         if self.preprocessing is not None:
