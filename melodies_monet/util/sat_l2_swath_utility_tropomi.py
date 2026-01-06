@@ -451,6 +451,42 @@ def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kern
     return column_data_model
 
 
+def apply_averaging_kernel_hcho_or_co(
+    mod_p_cols, obsobj, varname=None, averaging_kernel_params=None
+):
+    """Applies the averaging kernel for TROPOMI HCHO and calculates the column.
+    It is in the ATBD documentation, instead of the user guide.
+
+    Parameters
+    ----------
+    mod_p_cols : xr.DataArray
+        DataArray containing the model HCHO partial columns. It has to be
+        previously regridded to satellite space.
+    obsobj : xr.Dataset
+        Dataset containing all the observational data, including the
+        variables related to the averaging kernel.
+    averaging_kernel_params : dict[str, str]
+        dictionary containing the keys "averaging_kernel" and
+        "tropospheric_averaging_kernel_calc" plus, optionally,
+        "airmass_factor_total" and "airmass_factor_troposphere".
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the model columns after applying the averaging kernel.
+    """
+    ak = obsobj[averaging_kernel_params["averaging_kernel"]]
+    if "tm5_tropopause_pressure" in obsobj:
+        ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
+
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
+    column_data_model.attrs = {
+        "description": f"Tropospheric column of model {varname} after applying averaging kernel",
+        "units": "molec/cm2",
+    }
+    return column_data_model
+
+
 def within_model_domain(obsobj, bounds):
     """Checks if any of the observations are within the model domain.
 
