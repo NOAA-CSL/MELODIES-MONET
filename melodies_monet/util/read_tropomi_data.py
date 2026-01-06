@@ -2,6 +2,7 @@
 """
 
 import glob
+import warnings
 
 import netCDF4 as nc4
 import numpy as np
@@ -43,14 +44,6 @@ def _open_one_dataset(fname, variable_dict):
         }
     )
     _set_latlon(ds, lat[:], lon[:])
-    # _time_granule = time[:] + dtime[:] * MILISECONDS_TO_SECONDS
-    # if len(_time_granule.shape) == 2:
-    #     time_granule = xr.DataArray(data=_time_granule, dims=("time", "y"), attrs=time.__dict__)
-    # elif len(_time_granule.shape) == 3:
-    #     time_granule = xr.DataArray(
-    #         data=_time_granule, dims=("time", "y", "x"), attrs=time.__dict__
-    #     )
-    # ds["time_granule"] = xr.conventions.decode_cf_variable("time_granule", time_granule.variable)
     ds["time_granule"] = _add_time_granule(time, dtime)
 
     ds = ds.assign_coords()
@@ -102,6 +95,30 @@ def _set_latlon(ds, lat, lon):
         attrs={"units": "degrees_east"},
         coords={"longitude": (("y", "x"), lon[:].squeeze())},
     )
+
+
+def ensure_increasing_altitude(ds):
+    """Ensures that the altitude is increasing (i.e, the pressure should
+    decrease as z increases)
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset with the satellite data. If pressure is not included,
+        nothing will be done.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with corrected pressure
+    """
+    if ("pres_pa_mid" not in ds) and ("pres_pa_int" not in ds):
+        warnings.warn("Missing pressure information. Ignoring vertical directionality check")
+        return ds
+    pres_var = "pres_pa_mid" if "pres_pa_mid" in ds else "pres_pa_int"
+    if not (ds.isel(time=0).isel(z=slice(0,10)).diff(dim=z) > 0).any():
+        return ds
+    return ds.isel(z=slice(None, None, -1))
 
 
 def _add_time_granule(time, dtime):
@@ -227,6 +244,9 @@ def _calc_pressure_levels(netcdf_tropomi, product="check"):
         Two DataArrays containing the midlevel pressure and the
         pressure at the layer interface respectively.
     """
+    if "_CO_" in netcdf_tropomi["id"]:
+        pressure_level_bottom = _add_variable("pressure_levels", netcdf_tropomi)
+        return _calc_pressure_tropomi_co(pressure_level_bottom)
     tm5_constant_a = _add_variable("tm5_constant_a", netcdf_tropomi)
     tm5_constant_b = _add_variable("tm5_constant_b", netcdf_tropomi)
     surface_pressure = _add_variable("surface_pressure", netcdf_tropomi)
@@ -320,6 +340,11 @@ def _calc_pressure_tropomi_hcho(tm5_constant_a, tm5_constant_b, surface_pressure
         ) / 2
     midlayer_pressure.attrs = {"units": "Pa", "long_name": "midlayer_pressure_in_pa"}
     return midlayer_pressure, interface_pressure
+
+
+def _calc_pressure_tropomi_co(pressure_level_bottom):
+    num_times, num_y, num_x, num_z = pressure_level_bottom.shape
+    interface_pressure = xr.DataArray()
 
 
 def _calc_tm5_tropopause_pressure(processed_data, netcdf_tropomi):
