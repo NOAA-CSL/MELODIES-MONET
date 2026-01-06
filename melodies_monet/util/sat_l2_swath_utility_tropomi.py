@@ -634,6 +634,7 @@ def _regrid_and_apply_ak(
         output_dataset = xr.Dataset()
         output_dataset[mod_var] = modobj_regrid[mod_var]
         output_dataset[sat_var] = tropomi_mol_m2_to_molec_cm2(obsobj_cropped[sat_var])
+        output_dataset[mod_var] = output_dataset[mod_var].where(output_dataset[sat_var].notnull())
         output_pair[starttime_swath] = output_dataset
     return output_pair
 
