@@ -64,6 +64,7 @@ def _open_one_dataset(fname, variable_dict):
         if x in ds.dims:
             dimensions.append(x)
     dso.close()
+    ds = ensure_increasing_altitude(ds)
     return ds.transpose(*dimensions, ...)
 
 
@@ -115,10 +116,15 @@ def ensure_increasing_altitude(ds):
     if ("pres_pa_mid" not in ds) and ("pres_pa_int" not in ds):
         warnings.warn("Missing pressure information. Ignoring vertical directionality check")
         return ds
-    pres_var = "pres_pa_mid" if "pres_pa_mid" in ds else "pres_pa_int"
-    if not (ds.isel(time=0).isel(z=slice(0, 10)).diff(dim=z) > 0).any():
-        return ds
-    return ds.isel(z=slice(None, None, -1))
+    vertical_dim = {
+        'pres_pa_mid': 'z',
+        'pres_pa_int': 'z_stagg'
+    }
+    import matplotlib.pyplot as plt
+    for pres_var, vert_dim in vertical_dim.items():
+        if (ds[pres_var].isel(time=0).isel(**{vert_dim: slice(0, 10)}).diff(dim='z') > 0).any():
+            ds = ds.sel(**{vert_dim: slice(None, None, -1)})
+    return ds
 
 
 def _add_time_granule(time, dtime):
@@ -364,7 +370,7 @@ def _calc_pressure_tropomi_co(pressure_level_bottom):
         dims=("time", "z_stagg", "y", "x"),
         attrs={"long_name": "pressure_interface", "units": "Pa"},
     )
-    interface_pressure[:, :-1, :, :] = pressure_level_bottom_transpose.values
+    interface_pressure[:, 1:, :, :] = pressure_level_bottom_transpose.values
     midlayer_pressure = xr.DataArray(
         data=np.zeros((num_times, num_layers, num_y, num_x), dtype=np.float64),
         dims=("time", "z", "y", "x"),
