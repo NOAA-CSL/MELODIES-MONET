@@ -318,7 +318,7 @@ class observation:
                     self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
                 from .util.read_tropomi_data import open_datasets
-                print('Reading TROPOMI L2 NO2 with averaging kernel application')
+                print('Reading TROPOMI L2 with averaging kernel application')
                 self.obj = open_datasets(self.file, self.variable_dict)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
@@ -1519,9 +1519,18 @@ class analysis:
                             sat_sp = 'HCHO'
                             sp = 'formaldehyde_tropospheric_vertical_column'
                             key = "tropomi_l2_hcho"
+                        elif obs.sat_type == 'tropomi_l2_co':
+                            sat_sp = 'CO'
+                            if "carbonmonoxide_total_column_corrected" in obs.variable_dict:
+                                sp = "carbonmonoxide_total_column_corrected"
+                            else:
+                                print("Are you sure you don't want the corrected variable?"
+                                      " Using carbonmonoxide_total_column")
+                                sp = "carbonmonoxide_total_column"
+                            key = "tropomi_l2_co"
                         else:
                             raise KeyError(f" You asked for {obs.sat_type}. "
-                                           + "Only NO2 and HCHO L2 data have been implemented")
+                                           + "Only NO2, HCHO and CO L2 data have been implemented")
                         mod_sp = [
                             k_sp for k_sp, v in mod.mapping[key].items() if v == sp
                         ][0]
