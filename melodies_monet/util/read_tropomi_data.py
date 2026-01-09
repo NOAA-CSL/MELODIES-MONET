@@ -8,7 +8,6 @@ import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
-
 MILISECONDS_TO_SECONDS = 0.001
 
 
@@ -116,13 +115,9 @@ def ensure_increasing_altitude(ds):
     if ("pres_pa_mid" not in ds) and ("pres_pa_int" not in ds):
         warnings.warn("Missing pressure information. Ignoring vertical directionality check")
         return ds
-    vertical_dim = {
-        'pres_pa_mid': 'z',
-        'pres_pa_int': 'z_stagg'
-    }
-    import matplotlib.pyplot as plt
+    vertical_dim = {"pres_pa_mid": "z", "pres_pa_int": "z_stagg"}
     for pres_var, vert_dim in vertical_dim.items():
-        if (ds[pres_var].isel(time=0).isel(**{vert_dim: slice(0, 10)}).diff(dim='z') > 0).any():
+        if (ds[pres_var].isel(time=0).isel(**{vert_dim: slice(0, 10)}).diff(dim="z") > 0).any():
             ds = ds.sel(**{vert_dim: slice(None, None, -1)})
     return ds
 
@@ -209,11 +204,12 @@ def _add_variable(variable, netcdf_dataset):
     _replacements = {"layer": "z", "scanline": "y", "ground_pixel": "x"}
     _dimensions = list(var.dimensions)
     dimensions = [_replacements[x] if x in _replacements else x for x in _dimensions]
-    if np.issubdtype(var.dtype, np.integer):
-        var_values = var[:].filled(np.iinfo(var.dtype).min)
-        da = xr.DataArray(data=var_values, dims=dimensions, attrs=var.__dict__).astype(var.dtype)
+    dtype = var[:].dtype
+    if np.issubdtype(dtype, np.integer):
+        var_values = var[:].filled(np.iinfo(dtype).min)
+        da = xr.DataArray(data=var_values, dims=dimensions, attrs=var.__dict__).astype(dtype)
     else:
-        da = xr.DataArray(data=var[:], dims=dimensions, attrs=var.__dict__).astype(var.dtype)
+        da = xr.DataArray(data=var[:], dims=dimensions, attrs=var.__dict__).astype(dtype)
     return da
 
 
@@ -361,9 +357,7 @@ def _calc_pressure_tropomi_co(pressure_level_bottom):
     xr.DataArray, xr.DataArray
         DataArrays containing the pressure at the interface and at midlevel
     """
-    pressure_level_bottom_transpose = pressure_level_bottom.transpose(
-        "time", "z", "y", "x"
-    )
+    pressure_level_bottom_transpose = pressure_level_bottom.transpose("time", "z", "y", "x")
     num_times, num_layers, num_y, num_x = pressure_level_bottom_transpose.shape
     interface_pressure = xr.DataArray(
         data=np.zeros((num_times, num_layers + 1, num_y, num_x), dtype=np.float64),
