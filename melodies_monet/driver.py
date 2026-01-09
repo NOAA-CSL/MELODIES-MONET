@@ -318,7 +318,7 @@ class observation:
                     self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
                 from .util.read_tropomi_data import open_datasets
-                print('Reading TROPOMI L2 NO2 with averaging kernel application')
+                print('Reading TROPOMI L2 with averaging kernel application')
                 self.obj = open_datasets(self.file, self.variable_dict)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
@@ -342,11 +342,13 @@ class observation:
         -------
         None
         """ 
+        from melodies_monet.util.tools import check_for_scientific_floats
         if self.data_proc is not None:
             if 'filter_dict' in self.data_proc:
                 filter_dict = self.data_proc['filter_dict']
                 for column in filter_dict.keys():
                     filter_vals = filter_dict[column]['value']
+                    check_for_scientific_floats(filter_vals)
                     filter_op = filter_dict[column]['oper']
                     if filter_op == 'isin':
                         self.obj = self.obj.where(self.obj[column].isin(filter_vals),drop=drop)
@@ -555,6 +557,7 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
+        from melodies_monet.util.tools import filter_data
 
         print(self.model.lower())
 
@@ -661,6 +664,8 @@ class model:
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
+        if self.data_proc is not None:
+            self.obj = filter_data(self.obj, self.data_proc.get('filter_dict', None))
 
         self.preprocessing = control_dict['model'][self.label].get('preprocessing', None)
         if self.preprocessing is not None:
@@ -1514,9 +1519,18 @@ class analysis:
                             sat_sp = 'HCHO'
                             sp = 'formaldehyde_tropospheric_vertical_column'
                             key = "tropomi_l2_hcho"
+                        elif obs.sat_type == 'tropomi_l2_co':
+                            sat_sp = 'CO'
+                            if "carbonmonoxide_total_column_corrected" in obs.variable_dict:
+                                sp = "carbonmonoxide_total_column_corrected"
+                            else:
+                                print("Are you sure you don't want the corrected variable?"
+                                      " Using carbonmonoxide_total_column")
+                                sp = "carbonmonoxide_total_column"
+                            key = "tropomi_l2_co"
                         else:
                             raise KeyError(f" You asked for {obs.sat_type}. "
-                                           + "Only NO2 and HCHO L2 data have been implemented")
+                                           + "Only NO2, HCHO and CO L2 data have been implemented")
                         mod_sp = [
                             k_sp for k_sp, v in mod.mapping[key].items() if v == sp
                         ][0]

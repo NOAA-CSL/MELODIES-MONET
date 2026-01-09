@@ -42,6 +42,9 @@ default_ak_variable_names = {
         "airmass_factor_total": "formaldehyde_clear_air_mass_factor",
         "airmass_factor_troposphere": "formaldehyde_tropospheric_air_mass_factor",
     },
+    "tropomi_l2_co": {
+        "averaging_kernel": "column_averaging_kernel",
+    },
 }
 
 default_mod_variable_names = {
@@ -373,6 +376,8 @@ def apply_averaging_kernel(modobj, obsobj, sat_type, varname=None, averaging_ker
         return apply_averaging_kernel_no2(mod_p_cols, obsobj, averaging_kernel_params=ak_params)
     if sat_type == "tropomi_l2_hcho":
         return apply_averaging_kernel_hcho(mod_p_cols, obsobj, averaging_kernel_params=ak_params)
+    if sat_type == "tropomi_l2_co":
+        return apply_averaging_kernel_co(mod_p_cols, obsobj, averaging_kernel_params=ak_params)
 
     return mod_p_cols
 
@@ -442,6 +447,38 @@ def apply_averaging_kernel_hcho(mod_p_cols, obsobj, varname=None, averaging_kern
     ak = obsobj[averaging_kernel_params["averaging_kernel"]]
     if "tm5_tropopause_pressure" in obsobj:
         ak = ak.where(obsobj["pres_pa_mid"] >= obsobj["tm5_tropopause_pressure"], other=0)
+
+    column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
+    column_data_model.attrs = {
+        "description": f"Tropospheric column of model {varname} after applying averaging kernel",
+        "units": "molec/cm2",
+    }
+    return column_data_model
+
+
+def apply_averaging_kernel_co(
+    mod_p_cols, obsobj, varname=None, averaging_kernel_params=None
+):
+    """Applies the averaging kernel for TROPOMI total column CO and 
+    calculates the column. It is in the User Guide.
+
+    Parameters
+    ----------
+    mod_p_cols : xr.DataArray
+        DataArray containing the model HCHO partial columns. It has to be
+        previously regridded to satellite space.
+    obsobj : xr.Dataset
+        Dataset containing all the observational data, including the
+        variables related to the averaging kernel.
+    averaging_kernel_params : dict[str, str]
+        Dict containing the averaging kernel params
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the model columns after applying the averaging kernel.
+    """
+    ak = obsobj[averaging_kernel_params["averaging_kernel"]]
 
     column_data_model = xr.dot(ak, mod_p_cols, dim="z") * N_A / M2TOCM2
     column_data_model.attrs = {

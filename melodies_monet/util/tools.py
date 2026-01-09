@@ -4,8 +4,13 @@ from __future__ import division
 
 from builtins import range
 
+from collections.abc import Iterable
+import re
+import warnings
+
 import numpy as np
 import xarray as xr
+
 
 __author__ = 'barry'
 
@@ -632,3 +637,86 @@ def average_between_hours(data, start_hours, nhours):
             f"{nhours} means, starting at reported time. {data_out.attrs.get('description', '')}"
     )
     return data_out
+
+
+def check_for_scientific_floats(value):
+    """Recognizes that a value read by PyYAML in scientific notation
+    without and explicit decimal point is actually a float and not 
+    a string, and raises a warning.
+
+    Parameters
+    ----------
+    value: iterable | str | int | float
+      The original value as read by PyYAML
+
+    Returns
+    -------
+    None
+
+    Raises
+    -------
+    UserWarning
+        
+    """
+
+    sci_notation_pattern = r"^\d\d*[\.]?\d*e[+-]?\d\d*$"
+    if isinstance(value, str):
+        if re.match(sci_notation_pattern, value):
+            warnings.warn(
+                f"{value} is interpreted as a string. If you wanted a number, make sure to include"
+                " the decimal dot in the mantissa, and the sign in the exponent (e. g., 1e5 is"
+                " read as a string, but 1.0e+5 is read as a number). If you wanted a string,"
+                " ignore this warning. PyYAML quirks can be confusing, and this requirement"
+                " can vary depending on versions."
+            )
+            return
+    if isinstance(value, Iterable):
+        for v in value:
+            check_for_scientific_floats(v)
+
+
+def filter_data(data, filters=None, drop=True):
+    """Filters xarray datasets using a filter dict
+
+    Parameters
+    ----------
+    data : xr.Dataset
+        data that requires filtering
+    filters : dict
+        Dictionary with filters
+    drop : bool
+        Whether NaN values should be dropped
+
+    Returns
+    -------
+    xr.Dataset
+        Filtered data
+    """
+    if filters is None:
+        return
+    if not isinstance(filters, dict):
+        raise ValueError(f"If filters are provided, they should be a dict. Type {type(filters)}.")
+    for k in filters:
+        filter_vals = filters[k]['value']
+        filter_op = filters[k]['oper']
+        if filter_op == 'isin':
+            data = data.where(data[k].isin(filter_vals),drop=drop)
+        elif filter_op == 'isnotin':
+            data = data.where(~data[k].isin(filter_vals),drop=drop)
+        elif filter_op == '==':
+            data = data.where(data[k] == filter_vals,drop=drop)
+        elif filter_op == '>':
+            data = data.where(data[k] > filter_vals,drop=drop)
+        elif filter_op == '<':
+            data = data.where(data[k] < filter_vals,drop=drop)
+        elif filter_op == '>=':
+            data = data.where(data[k] >= filter_vals,drop=drop)
+        elif filter_op == '<=':
+            data = data.where(data[k] <= filter_vals,drop=drop)
+        elif filter_op == '!=':
+            data = data.where(data[k] != filter_vals,drop=drop)
+        else:
+            raise ValueError(f'Filter operation {filter_op!r} is not supported')
+        return data
+
+
