@@ -61,7 +61,7 @@ plots:
                        rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
                        ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
                        ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
-                       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+                       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
         plot_grp1:
                 type: 'gridded_spatial_bias'
                 fig_kwargs:
