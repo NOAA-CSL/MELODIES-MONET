@@ -730,16 +730,32 @@ def back_to_structured_grid(paired_object, target_grid):
 
     output_all = []
 
-    for k in paired_object.keys():
-        regridder = xe.Regridder(
-            paired_object[k],
-            target_grid,
-            ignore_degenerate=True,
-            unmapped_to_nan=True,
-            method="bilinear",
-        )
-        regridded_pair = regridder(paired_object[k])
-        output_all.append(regridded_pair)
+    try:
+        for k in paired_object.keys():
+            regridder = xe.Regridder(
+                paired_object[k],
+                target_grid,
+                ignore_degenerate=True,
+                unmapped_to_nan=True,
+                method="bilinear",
+            )
+            regridded_pair = regridder(paired_object[k])
+            output_all.append(regridded_pair)
+    except ValueError as e:
+        print(f"\033[91mValueError {e} found in the interpolation back to structured grid.\033[0m"
+              " Using nearest_s2d instead (nearest, source to destination)."
+              " Check xESMF's documentation for more details.")
+        for k in paired_object.keys():
+            regridder = xe.Regridder(
+                paired_object[k],
+                target_grid,
+                ignore_degenerate=True,
+                unmapped_to_nan=True,
+                method="nearest_s2d",
+            )
+            regridded_pair = regridder(paired_object[k])
+            output_all.append(regridded_pair)
+
 
     output_pair = xr.concat(output_all, dim="time")
     if len(output_pair.time) == 1:
