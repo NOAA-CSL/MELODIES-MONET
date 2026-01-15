@@ -266,7 +266,10 @@ class observation:
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
-                self.obj = mio.sat._omps_l3_mm.open_dataset(self.file)
+                try:
+                    self.obj = mio.sat._omps_l3_mm.open_dataset(self.file)
+                except AttributeError:
+                    self.obj = mio.sat.omps_l3.open_dataset(self.file)
             elif self.sat_type == 'omps_nm':
                 print('Reading OMPS_NM')
                 if time_interval is not None:
@@ -274,7 +277,11 @@ class observation:
                 else:
                     flst = self.file
 
-                self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
+                try:
+                    self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
+                except AttributeError:
+                    self.obj = mio.sat.omps_nadir.read_OMPS_nm(flst)
+
 
                 # couple of changes to move to reader
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
@@ -290,7 +297,11 @@ class observation:
                     flst = tsub.subset_mopitt_l3(self.file,time_interval)
                 else:
                     flst = self.file
-                self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
+                try:
+                    self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
+                                                                          'apriori_surf','apriori_prof','ak_col'])
+                except AttributeError
+                    self.obj = mio.sat.mopitt_l3.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
 
                 # Determine if monthly or daily product and set as attribute
@@ -305,8 +316,12 @@ class observation:
                 flst = tsub.subset_MODIS_l2(self.file,time_interval)
                 # self.obj = mio.sat._modis_l2_mm.read_mfdataset(
                 #     self.file, self.variable_dict, debug=self.debug)
-                self.obj = mio.sat._modis_l2_mm.read_mfdataset(
-                    flst, self.variable_dict, debug=self.debug)
+                try:
+                    self.obj = mio.sat._modis_l2_mm.read_mfdataset(
+                        flst, self.variable_dict, debug=self.debug)
+                except AttributeError:
+                    self.obj = mio.sat.modis_l2.read_mfdataset(
+                        flst, self.variable_dict, debug=self.debug)
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == 'tropomi_l2_no2' and (
@@ -314,16 +329,24 @@ class observation:
                 #from monetio import tropomi_l2_no2
                 self.sat_method = "replace_apriori"
                 print('Reading TROPOMI L2 NO2')
-                self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
-                    self.file, self.variable_dict, debug=self.debug)
+                try:
+                    self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
+                        self.file, self.variable_dict, debug=self.debug)
+                except AttributeError:
+                    self.obj = mio.sat.tropomi_l2_no2.read_trpdataset(
+                        self.file, self.variable_dict, debug=self.debug)
             elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
                 from .util.read_tropomi_data import open_datasets
                 print('Reading TROPOMI L2 with averaging kernel application')
                 self.obj = open_datasets(self.file, self.variable_dict)
             elif "tempo_l2" in self.sat_type:
                 print('Reading TEMPO L2')
-                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
-                    self.file, self.variable_dict, debug=self.debug)
+                try:
+                    self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
+                        self.file, self.variable_dict, debug=self.debug)
+                except AttributeError:
+                    self.obj = mio.sat.tempo_l2.open_dataset(
+                        self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
                 raise ValueError
@@ -592,11 +615,17 @@ class model:
                 self.mod_kwargs.update({'fname_surf' : self.files_surf})
             if len(self.files) > 1:
                 self.mod_kwargs.update({'concatenate_forecasts' : True})
-            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            try:
+                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models.cmaq.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             print('**** Reading WRF-Chem model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            try:
+                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models.wrfchem.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
             print('**** Reading UFS-AQM model output...')
             if 'rrfs' in self.model.lower():
@@ -610,7 +639,10 @@ class model:
                 warnings.warn(
                     "usage of _rrfs_cmaq_mm is deprecated, use models.ufs.open_mf_dataset",
                     DeprecationWarning)
-                loader = mio.models._rrfs_cmaq_mm.open_mfdataset
+                try:
+                    loader = mio.models._rrfs_cmaq_mm.open_mfdataset
+                except AttributeError:
+                    loader = mio.models.rrfs_cmaq.open_mfdataset
             self.obj = loader(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
@@ -621,7 +653,10 @@ class model:
         elif 'cesm_fv' in self.model.lower():
             print('**** Reading CESM FV model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            try:
+                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models.cesm_fv.open_mfdataset(self.files,**self.mod_kwargs)
         # CAM-chem-SE grid or MUSICAv0
         elif 'cesm_se' in self.model.lower(): 
             print('**** Reading CESM SE model output...')
@@ -631,7 +666,10 @@ class model:
                 example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
                 self.scrip_file = tutorial.fetch_example(example_id)
             self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
-            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            try:
+                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models.cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip      
         elif "camx" in self.model.lower():
@@ -639,7 +677,10 @@ class model:
             self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
             self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
             self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
-            self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models.camx.open_mfdataset(self.files, **self.mod_kwargs)
         elif 'raqms' in self.model.lower():
             self.mod_kwargs.update({'var_list': list_input_var})
             if time_interval is not None:
