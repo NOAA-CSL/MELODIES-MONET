@@ -300,7 +300,7 @@ class observation:
                 try:
                     self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
-                except AttributeError
+                except AttributeError:
                     self.obj = mio.sat.mopitt_l3.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
 
