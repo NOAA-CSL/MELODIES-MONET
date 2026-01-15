@@ -85,7 +85,7 @@ def tropomi_mol_m2_to_molec_cm2(column_data):
     return column_data_molec_cm2
 
 
-def interp_horizontal_mod2sat(obsobj, modobj, method="bilinear", isglobal=False, **kwargs):
+def interp_horizontal_mod2sat(obsobj, modobj, method="bilinear", is_global=False, **kwargs):
     """Interpolates model horizontally to satellite
 
     Parameters
@@ -97,7 +97,7 @@ def interp_horizontal_mod2sat(obsobj, modobj, method="bilinear", isglobal=False,
         interpolated to correct time.
     method : str
         Method of regridding, any method supported by xesmf should work.
-    isglobal : bool
+    is_global : bool
         Whether the model is global. If True, xe.Regridder will be set
         to periodic=True
     **kwargs
@@ -115,7 +115,7 @@ def interp_horizontal_mod2sat(obsobj, modobj, method="bilinear", isglobal=False,
         ignore_degenerate=True,
         unmapped_to_nan=True,
         method=method,
-        periodic=isglobal,
+        periodic=is_global,
         **kwargs,
     )
     return regridder(modobj)
@@ -149,7 +149,7 @@ def interpolate_time(modelobj, overpass_time=None):
             time=slice(day - np.timedelta64(1, "D"), day + np.timedelta64(1, "D"))
         )
         target_time = day + np.timedelta64(overpass_ns, "ns")
-        localtime = modelobj_day["time"] + utc_offset_nanoseconds
+        localtime = modelobj_day["time"].load() + utc_offset_nanoseconds
         if localtime.min() > target_time or localtime.max() < target_time:
             warnings.warn(
                 f"Target time {target_time} is outside model time range "
@@ -618,6 +618,7 @@ def _regrid_and_apply_ak(
     mod_var="NO2",
     sat_var="nitrogendioxide_tropospheric_column",
     sat_type="tropomi_l2_no2",
+    is_global=False,
 ):
     """Regrids and applies AK to one swath.
 
@@ -632,6 +633,9 @@ def _regrid_and_apply_ak(
         Variable name in the model dataset
     sat_var : str
         Variable name in the satellite dataset
+    is_global : bool
+        Whether the model is global and periodic=True needs to be
+        applied to xesmf
 
     Returns
     -------
@@ -661,8 +665,8 @@ def _regrid_and_apply_ak(
         modobj_at_date = modobj_at_overpass_time.where(
             modobj_dates_granules == d, drop=True
         ).drop_vars("time_utc")
-        modobj_regrid = interp_horizontal_mod2sat(obsobj_cropped, modobj_at_date)
-        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var)
+        modobj_regrid = interp_horizontal_mod2sat(obsobj_cropped, modobj_at_date, is_global=is_global)
+        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var, is_global=is_global)
         # Apply averaging kernel
         modobj_regrid[mod_var] = apply_averaging_kernel(
             modobj_regrid, obsobj_cropped, sat_type, varname=mod_var
@@ -711,7 +715,7 @@ def regrid_and_apply_ak(
     return output_pair
 
 
-def back_to_structured_grid(paired_object, target_grid):
+def back_to_structured_grid(paired_object, target_grid, is_global=False):
     """Reformats the output dictionary to a structured grid.
 
     Parameters
@@ -721,6 +725,8 @@ def back_to_structured_grid(paired_object, target_grid):
         data in satellite space after applying the ak as values
     target_grid : xr.Dataset
         Dataset containing the target grid information.
+    is_global : bool
+        Whether periodic=True should be applied to the data
 
     Returns
     -------
@@ -737,6 +743,7 @@ def back_to_structured_grid(paired_object, target_grid):
                 target_grid,
                 ignore_degenerate=True,
                 unmapped_to_nan=True,
+                periodic=is_global,
                 method="bilinear",
             )
             regridded_pair = regridder(paired_object[k])
@@ -751,6 +758,7 @@ def back_to_structured_grid(paired_object, target_grid):
                 target_grid,
                 ignore_degenerate=True,
                 unmapped_to_nan=True,
+                periodic=is_global,
                 method="nearest_s2d",
             )
             regridded_pair = regridder(paired_object[k])

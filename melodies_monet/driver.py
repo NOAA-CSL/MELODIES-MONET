@@ -1577,9 +1577,9 @@ class analysis:
                         ][0]
                         #TODO: allow user to select regrid method in yaml
                         paired_data_atswath = sutil.regrid_and_apply_ak(
-                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type
+                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type, is_global=obs.is_global,
                         )
-                        paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj)
+                        paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj, is_global=obs.is_global)
 
                         p = pair()
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
