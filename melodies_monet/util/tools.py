@@ -720,3 +720,37 @@ def filter_data(data, filters=None, drop=False):
         return data
 
 
+def parse_floats(data_to_parse):
+    """Parses data if it's not None. Designed to apply to vmin, vmax,
+    vdiff.
+
+    Parameters
+    ----------
+    data_to_parse : str, None, int, float, or combination of those.
+        data or list of data to parse
+
+    Returns
+    -------
+    float | None | Tuple[float | None]
+    """
+    if not isinstance(data_to_parse, Iterable):
+        return parse_val_to_float_or_none(data_to_parse)
+    parsed_data = [parse_val_to_float_or_none(data) for data in data_to_parse]
+    return tuple(parsed_data)
+
+
+def parse_val_to_float_or_none(data):
+    """Parses a single value to a float or None
+
+    Parameters
+    ----------
+    data : str | int | float | None
+        Data to parse
+
+    Returns
+    -------
+    float | None
+        Parsed data
+    """
+    parsed_data = float(data) if data is not None else None
+    return parsed_data
