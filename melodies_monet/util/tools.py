@@ -675,7 +675,7 @@ def check_for_scientific_floats(value):
             check_for_scientific_floats(v)
 
 
-def filter_data(data, filters=None, drop=True):
+def filter_data(data, filters=None, drop=False):
     """Filters xarray datasets using a filter dict
 
     Parameters
@@ -700,21 +700,21 @@ def filter_data(data, filters=None, drop=True):
         filter_vals = filters[k]['value']
         filter_op = filters[k]['oper']
         if filter_op == 'isin':
-            data = data.where(data[k].isin(filter_vals),drop=drop)
+            data = data.where(data[k].isin(filter_vals), drop=drop)
         elif filter_op == 'isnotin':
-            data = data.where(~data[k].isin(filter_vals),drop=drop)
+            data = data.where(~data[k].isin(filter_vals), drop=drop)
         elif filter_op == '==':
-            data = data.where(data[k] == filter_vals,drop=drop)
+            data = data.where(data[k] == filter_vals, drop=drop)
         elif filter_op == '>':
-            data = data.where(data[k] > filter_vals,drop=drop)
+            data = data.where(data[k] > filter_vals, drop=drop)
         elif filter_op == '<':
-            data = data.where(data[k] < filter_vals,drop=drop)
+            data = data.where(data[k] < filter_vals, drop=drop)
         elif filter_op == '>=':
-            data = data.where(data[k] >= filter_vals,drop=drop)
+            data = data.where(data[k] >= filter_vals, drop=drop)
         elif filter_op == '<=':
-            data = data.where(data[k] <= filter_vals,drop=drop)
+            data = data.where(data[k] <= filter_vals, drop=drop)
         elif filter_op == '!=':
-            data = data.where(data[k] != filter_vals,drop=drop)
+            data = data.where(data[k] != filter_vals, drop=drop)
         else:
             raise ValueError(f'Filter operation {filter_op!r} is not supported')
         return data
