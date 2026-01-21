@@ -754,3 +754,34 @@ def parse_val_to_float_or_none(data):
     """
     parsed_data = float(data) if data is not None else None
     return parsed_data
+
+
+def _select_vmin_vmax_vdiff(grp_dict, obs_plot_dict):
+    """Selects vmin and vmax from the existing data
+
+    Parameters
+    ----------
+    obs_plot_dict : dict | None
+        Dictionary with the data in the obs section of the YAML file
+    grp_dict : dict
+        Dictionary with the data in the plot section of the YAML file
+
+    Returns
+    -------
+    Tuple(float | None, float | None, float | None)
+    """
+    set_yaxis = False
+    if grp_dict.get('data_proc', {}).get('set_axis', False):
+        if obs_plot_dict is not None:
+            set_yaxis = True
+        else:
+            print('Warning: variables dict for ' + obsvar + ' not provided, so defaults used')
+    if set_yaxis:
+        vmin = obs_plot_dict.get("vmin_plot", None)
+        vmax = obs_plot_dict.get("vmax_plot", None)
+        vdiff = obs_plot_dict.get("vdiff_plot", None)
+    else:
+        vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
+        vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
+        vdiff = grp_dict.get("data_proc", {}).get("vdiff_plot", None)
+    return parse_floats([vmin, vmax, vdiff])
