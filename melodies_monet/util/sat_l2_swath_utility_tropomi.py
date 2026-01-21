@@ -666,7 +666,7 @@ def _regrid_and_apply_ak(
             modobj_dates_granules == d, drop=True
         ).drop_vars("time_utc")
         modobj_regrid = interp_horizontal_mod2sat(obsobj_cropped, modobj_at_date, is_global=is_global)
-        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var, is_global=is_global)
+        modobj_regrid = interp_vertical_mod2swath(obsobj_cropped, modobj_regrid, mod_var)
         # Apply averaging kernel
         modobj_regrid[mod_var] = apply_averaging_kernel(
             modobj_regrid, obsobj_cropped, sat_type, varname=mod_var
