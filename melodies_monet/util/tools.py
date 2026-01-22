@@ -731,12 +731,12 @@ def parse_floats(data_to_parse):
 
     Returns
     -------
-    float | None | Tuple[float | None]
+    float | None | list[float | None]
     """
     if not isinstance(data_to_parse, Iterable):
         return parse_val_to_float_or_none(data_to_parse)
     parsed_data = [parse_val_to_float_or_none(data) for data in data_to_parse]
-    return tuple(parsed_data)
+    return parsed_data
 
 
 def parse_val_to_float_or_none(data):
@@ -780,8 +780,10 @@ def _select_vmin_vmax_vdiff(grp_dict, obs_plot_dict):
         vmin = obs_plot_dict.get("vmin_plot", None)
         vmax = obs_plot_dict.get("vmax_plot", None)
         vdiff = obs_plot_dict.get("vdiff_plot", None)
+        nlevels = obs_plot_dict.get("nlevels", None)
     else:
         vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
         vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
         vdiff = grp_dict.get("data_proc", {}).get("vdiff_plot", None)
-    return parse_floats([vmin, vmax, vdiff])
+        nlevels = grp_dict.get("data_proc", {}).get("nlevels", None)
+    return tuple(parse_floats([vmin, vmax, vdiff]) + [nlevels])
