@@ -13,9 +13,9 @@ from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
-from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
+from melodies_monet.plots.xarray_plots import sel_region
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -350,45 +350,10 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
             cmap=cmap, edgecolor='k',linewidth=.8)
 
-    if domain_type == 'all' and domain_name == 'CONUS':
-        latmin= 25.0
-        lonmin=-130.0
-        latmax= 50.0
-        lonmax=-60.0
-        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-        plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    elif domain_type == 'custom:box' and domain_name is not None:
-        lonmin,lonmax,latmin,latmax = domain_info['bounds']
-        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-    elif domain_type.startswith('custom') or domain_name.startswith('auto-region'):
-        import xarray as xr
-        from ..util.region_select import select_region
-        _lon = np.arange(-179.995, 180, 0.01)
-        _lat = np.arange(-89.995, 90, 0.01)
-        _da = xr.DataArray(dims=["lat", "lon"], coords={
-            "lon": (["lon"], _lon),
-            "lat": (["lat"], _lat)
-        })
-        _da = 1
-        _da = select_region(_da, domain_type, domain_name, domain_info)
-        valid_data = _da.notnull()
-        lons = _da.longitude.where(valid_data)
-        lats = _da.latitude.where(valid_data)
-        del _da, _lon, lons, lats, valid_data
-        latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
-        title_add = domain_name + ': '
-    else:
-        latmin= math.floor(min(df.latitude))
-        lonmin= math.floor(min(df.longitude))
-        latmax= math.ceil(max(df.latitude))
-        lonmax= math.ceil(max(df.longitude))
-        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
+    extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
+    plt.title(title_add + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
-    if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+    ax.axes.set_extent(extent,crs=ccrs.PlateCarree())
     
     #Update colorbar
     f = plt.gcf()
@@ -838,56 +803,20 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
     
     #Determine the domain
-    if domain_type == 'all' and domain_name == 'CONUS':
-        latmin= 25.0
-        lonmin=-130.0
-        latmax= 50.0
-        lonmax=-60.0
-        title_add = domain_name + ': '
-    elif (domain_type == 'epa_region' or domain_type == 'auto-region:epa') and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-        title_add = 'EPA Region ' + domain_name + ': '
-    elif domain_type == 'custom:box' and domain_name is not None:
-        lonmin,lonmax,latmin,latmax = domain_info['bounds']
-        title_add = domain_name + ': '
-    elif domain_type.startswith('custom') or domain_name.startswith('auto-region'):
-        import xarray as xr
-        from ..util.region_select import select_region
-        _lon = np.arange(-179.995, 180, 0.01)
-        _lat = np.arange(-89.995, 90, 0.01)
-        _da = xr.DataArray(dims=["lat", "lon"], coords={
-            "lon": (["lon"], _lon),
-            "lat": (["lat"], _lat)
-        })
-        _da = 1
-        _da = select_region(_da, domain_type, domain_name, domain_info)
-        valid_data = _da.notnull()
-        lons = _da.longitude.where(valid_data)
-        lats = _da.latitude.where(valid_data)
-        del _da, _lon, lons, lats, valid_data
-        latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
-        title_add = domain_name + ': '
-    else:
-        latmin= math.floor(min(df.latitude))
-        lonmin= math.floor(min(df.longitude))
-        latmax= math.ceil(max(df.latitude))
-        lonmax= math.ceil(max(df.longitude))
-        title_add = domain_name + ': '
     
+    extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
     #Map the model output first.
-    cbar_kwargs = dict(aspect=15,shrink=.8)
+    cbar_kwargs = dict(aspect=14,shrink=.8)
     
-    #Add options that this could be included in the fig_kwargs in yaml file too.
-    if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax] 
     if 'crs' not in map_kwargs:
         map_kwargs['crs'] = proj
     
     #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
     #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
     #First determine colorbar, so can use the same for both contourf and scatter
-    if vmin is None and vmax is None:
+    if vmin is None:
         vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
+    if vmax is None:
         vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
         
     if nlevels is None:
@@ -924,7 +853,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
                     transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
                     cmap=cmap)
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
+    ax.axes.set_extent(extent,crs=ccrs.PlateCarree())    
     
     #Uncomment these lines if you update above just to verify colorbars are identical.
     #Also specify plot above scatter = ax.axes.scatter etc.
@@ -1884,25 +1813,10 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
             cmap=cmap, edgecolor='k',linewidth=.8)
 
-        if domain_type == 'all' and domain_name == 'CONUS':
-            latmin= 25.0
-            lonmin=-130.0
-            latmax= 50.0
-            lonmax=-60.0
-            plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-        elif domain_type == 'epa_region' and domain_name is not None:
-            latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
-            plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
-        else:
-            latmin= math.floor(min(df.latitude))
-            lonmin= math.floor(min(df.longitude))
-            latmax= math.ceil(max(df.latitude))
-            lonmax= math.ceil(max(df.longitude))
-            plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
+        extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
+        plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
-        if 'extent' not in map_kwargs:
-            map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
-        ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+        ax.axes.set_extent(extent, crs=ccrs.PlateCarree())
 
         #Update colorbar
         f = plt.gcf()

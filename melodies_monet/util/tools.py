@@ -693,7 +693,7 @@ def filter_data(data, filters=None, drop=False):
         Filtered data
     """
     if filters is None:
-        return
+        return data
     if not isinstance(filters, dict):
         raise ValueError(f"If filters are provided, they should be a dict. Type {type(filters)}.")
     for k in filters:
