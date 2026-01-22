@@ -2,19 +2,17 @@
 #
 
 import logging
-
 import warnings
+
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import monet as monet
+import monet
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
 from monet.plots.taylordiagram import TaylorDiagram as td
-from monet.util.tools import get_epa_region_bounds as get_epa_bounds
-from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 
 from ..plots import savefig
 
@@ -120,7 +118,7 @@ def make_timeseries(
         plt.ioff()
     # First define items for all plots
     # set default text size
-    def_text = dict(fontsize=14)
+    def_text = {"fontsize": 14}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -140,7 +138,9 @@ def make_timeseries(
     # Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None:
         # First define the colors for the observations.
-        obs_dict = dict(color="k", linestyle="-", marker="*", linewidth=1.2, markersize=6.0)
+        obs_dict = {
+            "color": "k", "linestyle": "-", "marker": "*", "linewidth": 1.2, "markersize": 6.0
+        }
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the obs_dict here.
             plot_kwargs = {**obs_dict, **plot_dict}
@@ -180,7 +180,9 @@ def make_timeseries(
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot the model output.
-        mod_dict = dict(color=None, linestyle="-", marker="*", linewidth=1.2, markersize=6.0)
+        mod_dict = {
+            "color": None, "linestyle": "-", "marker": "*", "linewidth": 1.2, "markersize": 6.0
+        }
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the mod_dict here.
             plot_kwargs = {**mod_dict, **plot_dict}
@@ -301,7 +303,6 @@ def make_taylor(
         Taylor diagram class defined in MONET
 
     """
-    # import pdb; pdb.set_trace()
 
     if mean_criteria == "space":
         dset_forplot = dset.mean(dim=("x", "y"))
@@ -309,14 +310,13 @@ def make_taylor(
         dset_forplot = dset.mean(dim="time")
     else:
         dset_forplot = dset
-    # import pdb; pdb.set_trace()
 
     # First define items for all plots
     if not debug:
         plt.ioff()
 
     # set default text size
-    def_text = dict(fontsize=14.0)
+    def_text = {"fontsize": 14.0}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -458,7 +458,9 @@ def calculate_boxplot(
         comb_bx = pd.DataFrame()
         label_bx = []
         # First define the colors for the observations.
-        obs_dict = dict(color="gray", linestyle="-", marker="x", linewidth=1.2, markersize=6.0)
+        obs_dict = {
+            "color": "gray", "linestyle": "-", "marker": "x", "linewidth": 1.2, "markersize": 6.0
+        }
         if plot_dict is not None:
             # Whatever is not defined in the yaml file is filled in with the obs_dict here.
             plot_kwargs = {**obs_dict, **plot_dict}
@@ -532,7 +534,7 @@ def make_boxplot(
         plt.ioff()
     # First define items for all plots
     # set default text size
-    def_text = dict(fontsize=14)
+    def_text = {"fontsize": 14}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -544,9 +546,9 @@ def make_boxplot(
     # Fix the order and palate colors
     order_box = []
     pal = {}
-    for i in range(len(label_bx)):
-        order_box.append(label_bx[i]["label"])
-        pal[label_bx[i]["label"]] = label_bx[i]["color"]
+    for bx in label_bx:
+        order_box.append(bx["label"])
+        pal[bx["label"]] = bx["color"]
 
     # Make plot
     if fig_dict is not None:
@@ -562,9 +564,9 @@ def make_boxplot(
         "whiskerprops": lineprops,
         "capprops": lineprops,
         "fliersize": 2.0,
-        "flierprops": dict(
-            marker="*", markerfacecolor="blue", markeredgecolor="none", markersize=6.0
-        ),
+        "flierprops": {
+            "marker": "*", "markerfacecolor": "blue", "markeredgecolor": "none", "markersize": 6.0
+        },
         "width": 0.75,
         "palette": pal,
         "order": order_box,
@@ -635,14 +637,14 @@ def make_spatial_dist(
     if not debug:
         plt.ioff()
 
-    def_map = dict(states=True, figsize=[15, 8])
+    def_map = {"states": True, "figsize": [15, 8]}
     if fig_dict is not None:
         map_kwargs = {**def_map, **fig_dict}
     else:
         map_kwargs = def_map
 
     # set default text size
-    def_text = dict(fontsize=20)
+    def_text = {"fontsize": 20}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -662,35 +664,11 @@ def make_spatial_dist(
         var2plot = var2plot.mean("time")
 
     # Determine the domain
-    if domain_type == "all" and domain_name == "CONUS":
-        latmin = 25.0
-        lonmin = -130.0
-        latmax = 50.0
-        lonmax = -60.0
-        title_add = domain_name + ": "
-    elif domain_type == "epa_region" and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
-        title_add = "EPA Region " + domain_name + ": "
-    elif domain_type == "giorgi_region" and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
-        title_add = "Giorgi Region " + domain_name + ": "
-    elif domain_name == "model":
-        latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
-        lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
-        title_add = ""
-    else:
-        valid_domain = dset.where(dset[varname].notnull(), drop=True)
-        latmin = valid_domain["latitude"].min().values
-        lonmin = valid_domain["longitude"].min().values
-        latmax = valid_domain["latitude"].max().values
-        lonmax = valid_domain["longitude"].max().values
-        title_add = domain_name + ": "
+    extent, title_add = sel_region(var2plot, domain_type, domain_name, **map_kwargs)
 
-    cbar_kwargs = dict(aspect=15, shrink=0.8)
+    cbar_kwargs = {"aspect": 15, "shrink": 0.8}
 
     # Add options that this could be included in the fig_kwargs in yaml file too.
-    if "extent" not in map_kwargs:
-        map_kwargs["extent"] = [lonmin, lonmax, latmin, latmax]
     if "crs" not in map_kwargs:
         map_kwargs["crs"] = proj
 
@@ -705,7 +683,7 @@ def make_spatial_dist(
     print(vmin, vmax)
     clevel = np.linspace(vmin, vmax, nlevels)
     if fig_dict is not None:
-        cmap = plt.get_cmap(fig_dict.get('cmap', 'plasma'), nlevels + 1)
+        cmap = plt.get_cmap(fig_dict.get("cmap", "plasma"), nlevels + 1)
     else:
         cmap = plt.get_cmap("plasma", nlevels + 1)
 
@@ -715,7 +693,7 @@ def make_spatial_dist(
     states = fig_dict.get("states", True)
     counties = fig_dict.get("counties", False)
     ax = monet.plots.mapgen.draw_map(
-        crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
+        crs=map_kwargs["crs"], extent=extent, states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
@@ -727,7 +705,7 @@ def make_spatial_dist(
         f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}"
     )
     plt.title(title_add + label + timestamps, fontweight="bold", **text_kwargs)
-    ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
+    ax.axes.set_extent(extent, crs=ccrs.PlateCarree())
 
     # Uncomment these lines if you update above just to verify colorbars are identical.
     # Also specify plot above scatter = ax.axes.scatter etc.
@@ -739,7 +717,8 @@ def make_spatial_dist(
     model_ax = f.get_axes()[0]
     cax = f.get_axes()[1]
 
-    # get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+    # get the position of the plot axis and use this to rescale nicely the color bar to the
+    # height of the plot.
     position_m = model_ax.get_position()
     position_c = cax.get_position()
     cax.set_position(
@@ -823,14 +802,14 @@ def make_spatial_bias_gridded(
     if not debug:
         plt.ioff()
 
-    def_map = dict(states=True, figsize=[15, 8])
+    def_map = {"states": True, "figsize": [15, 8]}
     if fig_dict is not None:
         map_kwargs = {**def_map, **fig_dict}
     else:
         map_kwargs = def_map
 
     # set default text size
-    def_text = dict(fontsize=20)
+    def_text = {"fontsize": 20}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -849,40 +828,11 @@ def make_spatial_bias_gridded(
     if len(diff_mod_min_obs.dims) == 3:
         diff_mod_min_obs = diff_mod_min_obs.mean("time")
 
-    # Determine the domain
-    if domain_type == "all" and domain_name == "CONUS":
-        latmin = 25.0
-        lonmin = -130.0
-        latmax = 50.0
-        lonmax = -60.0
-        title_add = domain_name + ": "
-    elif domain_type == "epa_region" and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, _ = get_epa_bounds(index=None, acronym=domain_name)
-        title_add = "EPA Region " + domain_name + ": "
-    elif domain_type == "giorgi_region" and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, _ = get_giorgi_bounds(index=None, acronym=domain_name)
-        title_add = "Giorgi Region " + domain_name + ": "
-    elif domain_name == "model":
-        latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
-        lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
-        title_add = ""
-    else:
-        valid_domain = dset.where(dset[varname_o].notnull() | dset[varname_m].notnull(), drop=True)
-        latmin = valid_domain["latitude"].min().values
-        lonmin = valid_domain["longitude"].min().values
-        latmax = valid_domain["latitude"].max().values
-        lonmax = valid_domain["longitude"].max().values
-        title_add = domain_name + ": "
-
+    extent, title_add = sel_region(dset[varname_o], domain_type, domain_name, **map_kwargs)
     # Map the model output first.
-    cbar_kwargs = dict(aspect=15, shrink=0.8)
+    cbar_kwargs = {"aspect": 15, "shrink": 0.8}
 
     # Add options that this could be included in the fig_kwargs in yaml file too.
-    if "extent" not in map_kwargs:
-        try:
-            map_kwargs["extent"] = [lonmin, lonmax, latmin, latmax]
-        except:
-            map_kwargs["extent"] = None
     if "crs" not in map_kwargs:
         map_kwargs["crs"] = proj
 
@@ -895,11 +845,6 @@ def make_spatial_bias_gridded(
             )
         )
 
-    if not isinstance(vdiff, (int, float)):
-        try:
-            vdiff = float(vdiff)
-        except Exception as e:
-            raise Exception(f"{e} error found: vdiff must be a single int or float.")
     if nlevels is None:
         nlevels = 21
 
@@ -914,7 +859,7 @@ def make_spatial_bias_gridded(
     states = fig_dict.get("states", True)
     counties = fig_dict.get("counties", False)
     ax = monet.plots.mapgen.draw_map(
-        crs=map_kwargs["crs"], extent=map_kwargs.get("extent", None), states=states, counties=counties
+        crs=map_kwargs["crs"], extent=extent, states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(
@@ -927,7 +872,7 @@ def make_spatial_bias_gridded(
         f" {dset['time'][0].values.astype(str)[:16]}$-${dset['time'][-1].values.astype(str)[:16]}"
     )
     plt.title(title_add + label_m + " - " + label_o + timestamps, fontweight="bold", **text_kwargs)
-    ax.axes.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
+    ax.axes.set_extent(extent, crs=ccrs.PlateCarree())
 
     # Uncomment these lines if you update above just to verify colorbars are identical.
     # Also specify plot above scatter = ax.axes.scatter etc.
@@ -940,7 +885,8 @@ def make_spatial_bias_gridded(
     model_ax = f.get_axes()[0]
     cax = f.get_axes()[1]
 
-    # get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
+    # get the position of the plot axis and use this to rescale nicely the color bar to the
+    # height of the plot.
     position_m = model_ax.get_position()
     position_c = cax.get_position()
     cax.set_position(
@@ -1036,7 +982,7 @@ def make_multi_boxplot(
         plt.ioff()
     # First define items for all plots
     # set default text size
-    def_text = dict(fontsize=14)
+    def_text = {"fontsize": 14}
     if text_dict is not None:
         text_kwargs = {**def_text, **text_dict}
     else:
@@ -1048,9 +994,9 @@ def make_multi_boxplot(
     # Fix the order and palate colors
     order_box = []
     pal = {}
-    for i in range(len(label_bx)):
-        order_box.append(label_bx[i]["label"])
-        pal[label_bx[i]["label"]] = label_bx[i]["color"]
+    for bx in label_bx:
+        order_box.append(bx["label"])
+        pal[bx["label"]] = bx["color"]
 
     # Make plot
     if fig_dict is not None:
@@ -1222,6 +1168,8 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
             lower_range = (1 - quantile) / 2
             range_max = dset_diurnal_group.quantile(upper_range)[varname]
             range_min = dset_diurnal_group.quantile(lower_range)[varname]
+        else:
+            raise NotImplementedError("Only total, std, IQR and pct: range shading is implemented")
         color = p[-1].get_color()
         ax.fill_between(dset_diurnal["hour"], range_min, range_max, alpha=0.2, color=color)
     vmax = kwargs.get("vmax", None)
@@ -1233,7 +1181,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     return ax
 
 
-def sel_region(domain_type=None, domain_name=None, domain_box=None):
+def sel_region(data, domain_type=None, domain_name=None, extent=None, **kwargs):
     """Selects box for region.
     If the region has a domain name, it is selected using
     get_epa_bounds or get_giorgi_bounds.
@@ -1248,34 +1196,60 @@ def sel_region(domain_type=None, domain_name=None, domain_box=None):
         'auto-region:CNA', 'custom'
     domain_name: str
         EPA or Giorgi region acronym
-    domain_box: list[int|float, int|float, int|float, int|float]
+    bounds: list[int|float, int|float, int|float, int|float]
         domain box containing the region to be plotted. Only read if
         region is 'custom'. Expected order: latmin, lonmin, latmax, lonmax
+    extent: None, list[int|float, int|float, int|float, int|float]
+        If provided, has automatic priority over anything else.
+    **kwargs: Extra keywords for easy plotting.
 
     Returns
     -------
-    Boundaries for the plotting
+    list[int|float, int|float, int|float, int|float]
+        Boundaries for the plotting, as [lonmin, lonmax, latmin, latmax]
     """
-    title_add = ""
-    if domain_type == "all" and domain_name == "CONUS":
-        latmin = 25.0
-        lonmin = -130.0
-        latmax = 50.0
-        lonmax = -60.0
-        title_add = domain_name + ": "
-    elif "epa" in domain_type and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, acro = get_epa_bounds(index=None, acronym=domain_name)
+    if domain_type == "epa_region" and domain_name is not None:
         title_add = "EPA Region " + domain_name + ": "
-    elif "giorgi" in domain_type and domain_name is not None:
-        latmin, lonmin, latmax, lonmax, acro = get_giorgi_bounds(index=None, acronym=domain_name)
-        title_add = "Giorgi Region " + domain_name + ": "
-    elif domain_type == "custom":
-        assert lonmax <= 180, "Longitude must be in range -180, 180"
-        latmin, lonmin, latmax, lonmax = domain_box
-    elif domain_type == "all":
-        latmin = -90
-        lonmin = -180
-        latmax = 90
-        lonmax = 180
-        title_add = domain_name + ": "
-    return latmin, lonmin, latmax, lonmax, title_add
+        title_add = f"EPA Region {domain_name}: "
+    elif domain_type == "giorgi_region" and domain_name is not None:
+        title_add = f"Giorgi Region {domain_name}: "
+    elif domain_name == "model":
+        title_add = ""
+    else:
+        title_add = f"{domain_name}: "
+    if extent is not None:
+        return extent, title_add
+
+    if domain_type == "all" and domain_name == "CONUS":
+        extent = [-130.0, -60.0, 50.0, 25.0]
+    if kwargs.get("extent_from_domain", False):
+        extent = kwargs.get("bounds", sel_domain_from_data(data))
+        return extent, title_add
+    return sel_domain_from_data(data), title_add
+
+
+def sel_domain_from_data(data):
+    """Selects domain from data. Designed for when the data are missing.
+
+    Parameters
+    ----------
+    data: xr.DataArray | pd.Series
+        data from which to select the domain
+
+    Returns
+    -------
+    list[float | int, float | int, float | int, float | int]
+        List with the data to set the extent of the map
+    """
+    if isinstance(data, (xr.DataArray)):
+        valid_mask = data.notnull()
+        lon = data["longitude"].where(valid_mask)
+        lat = data["latitude"].where(valid_mask)
+        lonmin, lonmax = lon.min(), lon.max()
+        latmin, latmax = lat.min(), lat.max()
+        return [lonmin, lonmax, latmin, latmax]
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        lonmin, lonmax = np.floor(min(data.longitude)), np.ceil(max(data.longitude))
+        latmin, latmax = np.floor(min(data.latitude)), np.ceil(max(data.latitude))
+        return [lonmin, lonmax, latmin, latmax]
+    raise NotImplementedError("Only region selection for xr.DataArray and pandas are implemented")
