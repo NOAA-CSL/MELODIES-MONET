@@ -185,7 +185,7 @@ def _walktree_search(variable, netcdf_dataset, path=""):
 
 
 def _add_variable(variable, netcdf_dataset):
-    """Creates xr.DataArray formated for MELODIES-MONET.
+    """Creates xr.DataArray formatted for MELODIES-MONET.
 
     Parameters
     ----------
@@ -401,7 +401,7 @@ def _calc_tm5_tropopause_pressure(processed_data, netcdf_tropomi):
 
 
 def apply_quality_flag(variable, netcdf_tropomi):
-    """Applyes quality_flags inplace
+    """Applies quality_flags inplace
 
     Parameters
     ----------

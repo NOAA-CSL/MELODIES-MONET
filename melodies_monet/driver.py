@@ -653,6 +653,7 @@ class model:
         elif 'cesm_fv' in self.model.lower():
             print('**** Reading CESM FV model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
+            self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
             try:
                 self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
             except AttributeError:
@@ -1577,9 +1578,8 @@ class analysis:
                         ][0]
                         #TODO: allow user to select regrid method in yaml
                         paired_data_atswath = sutil.regrid_and_apply_ak(
-                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type
-                        )
-                        paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj)
+                            obs.obj, mod.obj, mod_var=mod_sp, sat_var=sp, sat_type=obs.sat_type) #, is_global=mod.is_global,)
+                        paired_data_atgrid = sutil.back_to_structured_grid(paired_data_atswath, model_obj)#, is_global=mod.is_global)
 
                         p = pair()
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
@@ -1839,10 +1839,7 @@ class analysis:
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         # Query selected points if applicable
-                        if domain_type != 'all':
-                            p_region = select_region(p.obj, domain_type, domain_name, domain_info)
-                        else:
-                            p_region = p.obj
+                        p_region, bounds = select_region(p.obj, domain_type, domain_name, domain_info)
 
                         
                         if obs_type in ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
@@ -1877,10 +1874,7 @@ class analysis:
                             obs_dict = None
 
                         # Determine figure_kwargs and text_kwargs
-                        if 'fig_kwargs' in grp_dict.keys():
-                            fig_dict = grp_dict['fig_kwargs']
-                        else:
-                            fig_dict = None
+                        fig_dict = grp_dict.get('fig_kwargs', {})
                         if 'text_kwargs' in grp_dict.keys():
                             text_dict = grp_dict['text_kwargs']
                         else:
@@ -1902,14 +1896,7 @@ class analysis:
                             use_ylabel = None
 
                         # Determine if set axis values or use defaults
-                        if grp_dict['data_proc'].get('set_axis', False):
-                            if obs_plot_dict:  # Is not null
-                                set_yaxis = True
-                            else:
-                                print('Warning: variables dict for ' + obsvar + ' not provided, so defaults used')
-                                set_yaxis = False
-                        else:
-                            set_yaxis = False
+                        vmin, vmax, vdiff, nlevels = tools._select_vmin_vmax_vdiff(grp_dict, obs_plot_dict)
 
                         # Determine to calculate mean values or percentile
                         if 'percentile_opt' in obs_plot_dict.keys():
@@ -2023,6 +2010,7 @@ class analysis:
                             pairdf_reg = None
 
                         if plot_type.lower() == 'spatial_bias': 
+                            fig_dict["bounds"] = bounds
                             if use_percentile is None:
                                 outname = outname+'.mean'
                             else:
@@ -2033,17 +2021,6 @@ class analysis:
 
                         # Types of plots
                         if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
-                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
                             # Select time to use as index.
 
                             # 2024-03-01 MEB needs to only apply if pandas. fails for xarray
@@ -2170,7 +2147,7 @@ class analysis:
 
                         elif plot_type.lower() == 'curtain':
                             # Set cmin and cmax from obs_plot_dict for colorbar limits
-                            if set_yaxis:
+                            if grp_dict.get('data_proc').get('set_axis'):
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     cmin = obs_plot_dict['vmin_plot']
                                     cmax = obs_plot_dict['vmax_plot']
@@ -2183,12 +2160,6 @@ class analysis:
                                 cmax = None
                             
                             # Set vmin and vmax from grp_dict for altitude limits
-                            if set_yaxis:
-                                vmin = grp_dict.get('vmin', None)
-                                vmax = grp_dict.get('vmax', None)
-                            else:
-                                vmin = None
-                                vmax = None
 
                                 
                             curtain_config = grp_dict # Curtain plot grp YAML dict
@@ -2312,17 +2283,6 @@ class analysis:
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
-                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
                             # Select altitude variable from the .yaml file
                             altitude_variable = grp_dict['altitude_variable']
                             # Define the bins for binning the altitude
@@ -2374,17 +2334,6 @@ class analysis:
 
                         elif plot_type.lower() == 'vertical_single_date':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = None
-                                vmax = None
                             #begin plotting
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
@@ -2410,17 +2359,6 @@ class analysis:
 
                         elif plot_type.lower() == 'vertical_boxplot_os':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
-                                    vmin=None
-                                    vmax=None
-                            else:
-                                vmin=None
-                                vmax=None
                             #begin plotting
                             if p_index ==0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
@@ -2446,17 +2384,6 @@ class analysis:
 
                         elif plot_type.lower() == 'density_scatter_plot_os':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
-                                    vmin=None
-                                    vmax=None
-                            else:
-                                vmin=None
-                                vmax=None
 
                             #begin plotting
                             plt.figure()
@@ -2467,17 +2394,6 @@ class analysis:
                             del (pairdf)
                             
                         elif plot_type.lower() == 'violin':
-                            if set_yaxis:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = None
-                                vmax = None
                             
                             # Initialize the combined DataFrame for violin plots and labels/colors list
                             if p_index == 0:
@@ -2626,17 +2542,6 @@ class analysis:
                             else: 
                                 pairdf_sel = pairdf
 
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = None
-                                vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=obsvar,   
@@ -2665,17 +2570,6 @@ class analysis:
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
                         elif plot_type.lower() == 'multi_boxplot':
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                            else:
-                                vmin = None
-                                vmax = None
                             # First for p_index = 0 create the obs box plot data array.
                             
                             if p_index == 0:
@@ -2817,7 +2711,7 @@ class analysis:
                                 }
                             }
 
-                            if set_yaxis is True:
+                            if grp_dict.get('data_proc').get('set_axis'):
                                 if 'ty_scale' in obs_plot_dict.keys():
                                     plot_kwargs["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
@@ -2844,16 +2738,7 @@ class analysis:
                         
                         
                         elif plot_type.lower() == 'spatial_bias':
-                            if set_yaxis is True:
-                                if 'vdiff_plot' in obs_plot_dict.keys():
-                                    vdiff = obs_plot_dict['vdiff_plot']
-                                else:
-                                    print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
-                                    vdiff = None
-                            else:
-                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None),
-                                 vmax = grp_dict["data_proc"].get("vmax_plot", None),
-                                 vmin = grp_dict["data_proc"].get("vmin_plot", None),
+                            fig_dict['bounds'] = bounds
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             splots.make_spatial_bias(
@@ -2875,14 +2760,7 @@ class analysis:
                                 debug=self.debug
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
-                            if set_yaxis is True:
-                                if 'vdiff_plot' in obs_plot_dict.keys():
-                                    vdiff = obs_plot_dict['vdiff_plot']
-                                else:
-                                    print('Warning: vdiff_plot not specified for ' + obsvar + ', so default used.')
-                                    vdiff = None
-                            else:
-                                 vdiff = grp_dict["data_proc"].get("vdiff_plot", None)
+                            fig_dict["bounds"] = bounds
                             outname = "{}.{}".format(outname, p_label)
                             if self.obs[p.obs].sat_type is not None and (self.obs[p.obs].sat_type.startswith("tempo_l2") or self.obs[p.obs].sat_method == "apply_ak"):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
@@ -2912,16 +2790,7 @@ class analysis:
                             make_spatial_bias_gridded(**plot_kwargs)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_dist':
-                            if set_yaxis is True:
-                                vmax = obs_plot_dict.get("vmax_plot", None)
-                                vmin = obs_plot_dict.get("vmin_plot", None)
-                                if vmin is None:
-                                    print('Warning: vmin not specified for ' + obsvar + ', so default used.')
-                                if vmax is None:
-                                    print('Warning: vmax not specified for ' + obsvar + ', so default used.')
-                            else:
-                                 vmax = grp_dict["data_proc"].get("vmax_plot", None)
-                                 vmin = grp_dict["data_proc"].get("vmin_plot", None)
+                            fig_dict["bounds"] = bounds
                             outname = "{}.{}".format(outname, p.obs)
                             plot_kwargs = {
                                 "dset": pairdf,
@@ -2938,18 +2807,15 @@ class analysis:
                                 "text_dict": text_dict,
                                 "debug": self.debug,
                             }
-                            if isinstance(plot_kwargs["vmax"], str):
-                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
-                            if isinstance(plot_kwargs["vmin"], str):
-                                plot_kwargs["vmin"] = float(plot_kwargs["vmin"])
                             xrplots.make_spatial_dist(**plot_kwargs)
                             plot_kwargs["varname"] = modvar
                             plot_kwargs["label"] = p.model
                             plot_kwargs["outname"] = outname.replace(p.obs, p.model)
                             xrplots.make_spatial_dist(**plot_kwargs)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
+                            fig_dict["bounds"] = bounds
                             if cal_reg:
-                                if set_yaxis is True:
+                                if grp_dict.get('data_proc').get('set_axis'):
                                     if 'vdiff_reg_plot' in obs_plot_dict.keys():
                                         vdiff = obs_plot_dict['vdiff_reg_plot']
                                     else:
@@ -2980,24 +2846,7 @@ class analysis:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
                         # JianHe: need updates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
-                            if set_yaxis is True:
-                                if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                    nlevels = obs_plot_dict['nlevels_plot']
-                                elif all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
-                                    vmin = obs_plot_dict['vmin_plot']
-                                    vmax = obs_plot_dict['vmax_plot']
-                                    nlevels = None
-                                else:
-                                    print('Warning: vmin_plot and vmax_plot not specified for ' + obsvar + ', so default used.')
-                                    vmin = None
-                                    vmax = None
-                                    nlevels = None
-                            else:
-                                vmin = grp_dict.get("data_proc", {}).get("vmin_plot", None)
-                                vmax = grp_dict.get("data_proc", {}).get("vmax_plot", None)
-                                nlevels = grp_dict.get("data_proc", {}).get("nlevels", None)
+                            fig_dict["bounds"] = bounds
                             #Check if z dim is larger than 1. If so select, the first level as all models read through 
                             #MONETIO will be reordered such that the first level is the level nearest to the surface.
                             # Create model slice and select time window for spatial plots
@@ -3011,7 +2860,7 @@ class analysis:
                             except KeyError as e:
                                 raise Exception("MONET requires an altitude dimension named 'z'") from e
                             if grp_dict.get('data_proc', {}).get('crop_model', False) and domain_name != all:
-                                vmodel = select_region(vmodel, domain_type, domain_name, domain_info)
+                                vmodel, bounds = select_region(vmodel, domain_type, domain_name, domain_info)
 
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
@@ -3170,10 +3019,7 @@ class analysis:
                                 modvar = modvar + 'trpcol' 
                             
                             # Query selected points if applicable
-                            if domain_type != 'all':
-                                p_region = select_region(p.obj, domain_type, domain_name, domain_info)
-                            else:
-                                p_region = p.obj
+                            p_region, bounds = select_region(p.obj, domain_type, domain_name, domain_info)
 
                             dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
                             pairdf_all = p_region.to_dataframe(dim_order=dim_order)
