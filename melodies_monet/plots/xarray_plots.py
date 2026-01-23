@@ -1222,7 +1222,7 @@ def sel_region(data, domain_type=None, domain_name=None, extent=None, **kwargs):
 
     if domain_type == "all" and domain_name == "CONUS":
         extent = [-130.0, -60.0, 50.0, 25.0]
-    if kwargs.get("extent_from_domain", False):
+    if kwargs.get("extent_from_domain", False) and domain_type != "all":
         extent = kwargs.get("bounds", sel_domain_from_data(data))
         return extent, title_add
     return sel_domain_from_data(data), title_add
