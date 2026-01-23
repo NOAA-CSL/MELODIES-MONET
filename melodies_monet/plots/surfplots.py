@@ -311,7 +311,12 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-        
+
+    extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
+
+    if 'bounds' in map_kwargs:
+        del map_kwargs['bounds']
+
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column_o
@@ -350,7 +355,6 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
             df_mean, col1=column_o, col2=column_m, map_kwargs=map_kwargs,val_max=vdiff,
             cmap=cmap, edgecolor='k',linewidth=.8)
 
-    extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
     plt.title(title_add + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
     ax.axes.set_extent(extent,crs=ccrs.PlateCarree())
@@ -805,6 +809,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #Determine the domain
     
     extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
+    if 'bounds' in map_kwargs:
+        del map_kwargs['bounds']
     #Map the model output first.
     cbar_kwargs = dict(aspect=14,shrink=.8)
     
@@ -838,7 +844,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         ax = fig.add_subplot(1,1,1,projection=proj)
         
         _ = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
-                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+                    cmin=vmin, cmax=vmax, lon_range=extent[:2], lat_range=extent[2:],
                        ax=ax, state=fig_dict['states'] )
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
@@ -1809,11 +1815,13 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     if not df_reg.empty:
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
+        extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
+        if "bounds" in map_kwargs:
+            del map_kwargs['bounds']
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
             cmap=cmap, edgecolor='k',linewidth=.8)
 
-        extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
         ax.axes.set_extent(extent, crs=ccrs.PlateCarree())
