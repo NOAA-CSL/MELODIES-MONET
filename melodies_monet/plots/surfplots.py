@@ -314,8 +314,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
 
     extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
 
-    if 'bounds' in map_kwargs:
-        del map_kwargs['bounds']
+    map_kwargs.pop('bounds', None)
+    map_kwargs.pop('extent_from_domain', None)
 
     # set ylabel to column if not specified.
     if ylabel is None:
@@ -809,8 +809,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #Determine the domain
     
     extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
-    if 'bounds' in map_kwargs:
-        del map_kwargs['bounds']
+    map_kwargs.pop('bounds', None)
+    map_kwargs.pop('extent_from_domain', None)
     #Map the model output first.
     cbar_kwargs = dict(aspect=14,shrink=.8)
     
@@ -1816,8 +1816,8 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         #Specify val_max = vdiff. the sp_scatter_bias plot in MONET only uses the val_max value
         #and then uses -1*val_max value for the minimum.
         extent, title_add = sel_region(df, domain_type, domain_name, **map_kwargs)
-        if "bounds" in map_kwargs:
-            del map_kwargs['bounds']
+        map_kwargs.pop('bounds', None)
+        map_kwargs.pop('extent_from_domain', None)
         ax = monet.plots.sp_scatter_bias(
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
             cmap=cmap, edgecolor='k',linewidth=.8)
