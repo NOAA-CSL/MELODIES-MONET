@@ -97,28 +97,6 @@ plots:
       vmin_plot: 0
       vmax_plot: 2.e+16
       
-  plot_grp2:
-    type: 'timeseries'
-    fig_kwargs:
-      figsize: [12,6]
-    default_plot_kwargs:
-      linewidth: 2.0
-      markersize: 10.
-    text_kwargs:
-      fontsize: 18.
-    domain_type: ["custom:box"]
-    domain_name: ["Denver and Northern Front Range" ] 
-    domain_info:
-      "Denver and Northern Front Range":
-        bounds: [-105.5, -104., 39., 40.5]
-    data: ["tempo_l2_FNR_CAMX"]
-    data_proc:
-      ts_offset: (-4, 'h')
-      ts_avg_window: 'h'
-      set_axis: False
-      vmin_plot: 0
-      vmax_plot: 10
-      
   plot_grp3:
     type: 'diurnal'
     settings:
@@ -143,30 +121,6 @@ plots:
       vmin_plot: 0
       vmax_plot: 2.e+16
       
-  plot_grp4:
-    type: 'diurnal'
-    settings:
-      range_shading: 'IQR'
-    fig_kwargs:
-      figsize: [12,6]
-    default_plot_kwargs:
-      linewidth: 2.0
-      markersize: 10.
-    text_kwargs:
-      fontsize: 18.
-    domain_type: ["custom:box"]
-    domain_name: ["Denver and Northern Front Range" ] 
-    domain_info:
-      "Denver and Northern Front Range":
-        bounds: [-105.5, -104., 39., 40.5]
-    data: ["tempo_l2_FNR_CAMX"]
-    data_proc:
-      ts_offset: (-4, 'h')
-      ts_avg_window: 'h'
-      set_axis: False
-      vmin_plot: 0
-      vmax_plot: 6
-      
   plot_grp5:
     type: 'gridded_spatial_bias'
     fig_kwargs: 
@@ -179,7 +133,7 @@ plots:
     domain_info:
       "Denver and Northern Front Range":
         bounds: [-105.5, -104., 39., 40.5]
-    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"] 
     data_proc:
       set_axis: True
 
@@ -202,28 +156,9 @@ plots:
       vmax_plot: 1e16
       vmin_plot: 0
 
-  plot_grp7:
-    type: 'spatial_dist'
-    fig_kwargs:
-      states: True
-      counties: True
-      cmap: 'Spectral_r'
-    text_kwargs:
-      fontsize: 16
-    domain_type: ["custom:box"]
-    domain_name: ["Denver and Northern Front Range" ] 
-    domain_info:
-      "Denver and Northern Front Range":
-        bounds: [-105.5, -104., 39., 40.5]
-    data: ["tempo_l2_FNR_CAMX"]
-    data_proc:
-      set_axis: False
-      vmax_plot: 6
-      vmin_plot: 0
-
   plot_grp8:
     type: 'taylor'
-    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
+    data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX"] 
     domain_type: ["custom:box"]
     domain_name: ["Denver and Northern Front Range" ] 
     domain_info:
@@ -262,4 +197,4 @@ stats:
   domain_info:
     "Denver and Northern Front Range":
        bounds: [-105.5, -104., 39., 40.5]
-  data: ["tempo_l2_no2_CAMX" ,"tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
+  data: ["tempo_l2_no2_CAMX" ,"tempo_l2_hcho_CAMX"] 
