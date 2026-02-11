@@ -267,7 +267,7 @@ plots:
       rem_obs_nan: True
       set_axis: False
       
-plot_grp5:
+plot_grp6:
     type: "boxplot"
     fig_kwargs:
       figsize: [8, 6]
