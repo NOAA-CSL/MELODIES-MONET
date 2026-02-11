@@ -260,13 +260,25 @@ plots:
       figsize: [8, 6]
     text_kwargs:
       fontsize: 20.
-    domain_type: ["all","all"] 
-    domain_name: ["PVCO","DECO"]
-    data: ["canister_PVCO_CAMX","canister_DECO_CAMX"]
+    domain_type: ["all"] 
+    domain_name: ["PVCO"]
+    data: ["canister_PVCO_CAMX"]
     data_proc:
       rem_obs_nan: True
       set_axis: False
-
+      
+plot_grp5:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    domain_type: ["all"] 
+    domain_name: ["DECO"]
+    data: ["canister_DECO_CAMX"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
       
 #### STATS CALCULATION ####
 stats:
