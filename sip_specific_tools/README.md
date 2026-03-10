@@ -39,6 +39,8 @@ options:
 
 `output_name.nc`: Name of the output file. It will be netCDF
 
+Example: 
+./boulderair.py -c BoulderAIRStationBasicMetadataMM.csv -p Boulder_AIR_XYZ_voc_1hr_2022_July_MM.csv -v benzene,toluene,ethane,propane -r h -o BoulderAir2022_VOCs.nc
 
 ## Calculating ratios
 Right now, proper ratio calculation is not implemented in the base code of MELODIES-MONET.
