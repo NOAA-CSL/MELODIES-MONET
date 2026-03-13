@@ -839,6 +839,101 @@ class analysis:
                         p.obj = paired_data
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
+                     
+                     if obs.sat_type == 'omps_l2_no2':
+                        from .util import satellite_utilities as sutil
+
+                        # --------------------------------------------------
+                        # Select NO2 column type (from YAML / control_dict)
+                        # --------------------------------------------------
+                        col_type = self.control_dict["obs"]["omps_l2_no2"].get(
+                        "no2_column_type", "total"
+                        )
+
+                        if col_type == "total":
+                            obs_no2_var = "no2_totalcolumn"
+                            model_input_var = "no2_totalcolumn_model"
+
+                        elif col_type == "tropospheric":
+                            obs_no2_var = "no2_tropocolumn"
+                            model_input_var = "no2_tropocolumn_model"
+
+                        elif col_type == "stratospheric":
+                            obs_no2_var = "no2_stratcolumn"
+                            model_input_var = "no2_stratcolumn_model"
+
+                        else:
+                            raise ValueError(f"Unknown no2_column_type: {col_type}")
+
+
+                        # keys MUST refer to MODEL INPUT variables only
+                        #model_input_var = model_no2_var
+                        #keys = [model_input_var]
+
+                        # Trim observations to analysis window
+                        if 'time' in obs.obj.dims:
+                            obs.obj = obs.obj.sel(time=slice(self.start_time, self.end_time))
+
+                        # --------------------------------------------------
+                        # Choose AK vs no-AK pairing
+                        # --------------------------------------------------
+                        if pairing_kws.get('apply_ak', False):
+                            # AK requires vertical information
+                            model_obj = mod.obj[
+                                [model_input_var, 'no2_layer', 'pres_pa_mid', 'latitude', 'longitude']
+                            ]
+
+                            paired_data = sutil.omps_l2_no2_pairing_apriori_new(
+                                model_obj,
+                                obs.obj,
+                                [model_input_var],
+                                obs_no2_var=obs_no2_var,
+                            )
+
+                        else:
+                            model_obj = mod.obj[
+                            [model_input_var, 'latitude', 'longitude']
+                            ]
+
+                            paired_data = sutil.omps_l2_no2_pairing(
+                                model_obj,
+                                obs.obj,
+                                [model_input_var],
+                                obs_no2_var=obs_no2_var,
+                            )
+
+                        # --------------------------------------------------
+                        # QA masking (column-aware)
+                        # --------------------------------------------------
+                        # --------------------------------------------------
+                        # QA masking (handle AK vs non-AK outputs)
+                        # --------------------------------------------------
+                        if pairing_kws.get('apply_ak', False):
+                            #mask_var = f"{obs_no2_var}_revised"
+                            mask_var = obs_no2_var
+                        else:
+                            mask_var = obs_no2_var
+
+                        paired_data = paired_data.where(
+                            paired_data[mask_var].notnull()
+                        )
+
+                        # --------------------------------------------------
+                        # Store paired object
+                        # --------------------------------------------------
+                        p = pair()
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = [model_input_var]
+                        p.obs_vars = [obs_no2_var]
+                        p.obj = paired_data
+
+                        label = f"{p.obs}_{p.model}"
+                        self.paired[label] = p
+                        continue
+
+
 
                     if obs.sat_type == "tropomi_l2_no2":
                         from melodies_monet.util import sat_l2_swath_utility as no2util
