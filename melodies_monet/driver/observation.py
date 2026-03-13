@@ -186,7 +186,7 @@ class observation:
                     self.obj = self.obj.sel(time=slice(time_interval[0], time_interval[-1]))
             elif self.sat_type == 'omps_l2_no2':
                 #from monetio import _omps_no2_mm
-                print('Reading OMPS NO2')
+                print('Reading OMPS NO2 with the new development code')
                 self.obj = mio.sat.omps_l2_no2_mm.open_omps_l2_no2(self.file,control_dict=control_dict)
             elif self.sat_type == "mopitt_l3":
                 print("Reading MOPITT")
