@@ -148,6 +148,10 @@ class model:
             print("**** Reading WRF-Chem model output...")
             self.mod_kwargs.update({"var_list": list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files, **self.mod_kwargs)
+        elif 'ufschem_omps_no2' in self.model.lower():
+            print('**** Reading UFS-Chem model NO2 from new development code')
+            #self.mod_kwargs.update({'var_list' : list_input_var})
+            self.obj = mio.models.ufschem_omps_no2_mm.open_ufschem_no2(self.files,keep_layers=True)
         elif "chimere" in self.model.lower():
             print("**** Reading Chimere model output...")
             self.mod_kwargs.update(
