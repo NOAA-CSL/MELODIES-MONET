@@ -5,7 +5,7 @@
 analysis:
   start_time: "2022-07-20 00:00:00" # UTC
   end_time: "2022-07-20 23:59:59" # UTC
-  output_dir: ./output/boulderair  # relative to the program using this control file
+  output_dir: ../../../finalSIP_ouptut  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
   save:
@@ -25,10 +25,8 @@ model:
     radius_of_influence: 6000 # meters
     mapping: # of _model_ species name to _obs_ species name
       boulderair: 
-#        BENZ: "benzene"
-#        TOL: "toluene"
-        "NO": "no"
-        NO2: "no2"
+        BENZ: "benzene"
+        TOL: "toluene"
     projection: ~
     plot_kwargs: # optional
       color: "magenta"
@@ -37,8 +35,11 @@ model:
 
 obs:
   boulderair: # obs label
-    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/BoulderAir/BoulderAir_nox_2022_new.nc
-#    filename: /glade/work/plichtig/melodies_monet/AQE/BoulderAir_2022.nc  # includes VOCs
+  # netcdf file generated using the Boulder Air preprocessor: https://github.com/NCAR/MELODIES-MONET/tree/develop_acom_SIP/sip_specific_tools/preprocessors
+  # Documentation: https://github.com/NCAR/MELODIES-MONET/tree/develop_acom_SIP/sip_specific_tools
+   # e.g. ./boulderair.py -c BoulderAIRStationBasicMetadataMM.csv -p Boulder_AIR_XYZ_voc_1hr_2022_July_MM.csv -v benzene,toluene,ethane,propane -r h -o BoulderAir2022_VOCs.nc
+
+    filename: ../../../BoulderAir/BoulderAir2022_VOCs.nc
     obs_type: pt_sfc
     variables: 
       benzene:
@@ -46,10 +47,6 @@ obs:
         unit_scale_method: "*"
         nan_value: -1.0
         ylabel_plot: "Benzene (ppbv)"
-        vmin_plot: 10.0
-        vmax_plot: 35.0
-        vdiff_plot: 20.0
-        nlevels_plot: 21
       toluene:
         unit_scale: 1
         # ^ optional; Scaling factor
@@ -57,16 +54,6 @@ obs:
         # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         nan_value: -1.0
         ylabel_plot: "Toluene (ppbv)"
-      no:
-        unit_scale: 1
-        unit_scale_method: "*"
-        nan_value: -1.0
-        ylabel_plot: "NO (ppbv)"
-      no2:
-        unit_scale: 1
-        unit_scale_method: "*"
-        nan_value: -1.0
-        ylabel_plot: "NO2 (ppbv)"
      
 plots:
   plot_grp1:
@@ -131,6 +118,7 @@ plots:
       figsize: [10, 5]
       counties: True
       extent: [-105.4, -104.9, 39.9, 40.27]
+      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["all"] 
@@ -147,6 +135,7 @@ plots:
       counties: True
       figsize: [10, 5]
       extent: [-105.4, -104.9, 39.9, 40.27]
+      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["all"] 

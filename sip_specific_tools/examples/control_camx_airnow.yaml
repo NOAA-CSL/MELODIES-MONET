@@ -3,7 +3,7 @@
 analysis:
   start_time: "2016-07-10-00:00:00" # UTC
   end_time: "2016-07-17-23:00:00" # UTC
-  output_dir: ./output/airnow
+  output_dir: ../../../finalSIP_ouptut 
   debug: True
   save:
     paired:
@@ -21,7 +21,7 @@ model:
     files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.201607*.runS20.avrg.grd03.nc
     mod_type: "camx"
     surf_ony: True
-    radius_of_influence: 12000
+    radius_of_influence: 6000
     mapping:
       airnow:
         O3: "OZONE"
@@ -55,8 +55,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 24.
-    domain_type: ["custom:box", "siteid"]
-    domain_name: ["Front Range", "080310026"]
+    domain_type: ["state_name", "custom:box", "siteid"]
+    domain_name: ["CO", "Front Range", "080310026"]
     domain_info:
       "Front Range":
         bounds: [-106, -104., 39.16, 40.5]
@@ -64,7 +64,7 @@ plots:
     data_proc:
       rem_obs_nan: True
       ts_select_time: "time_local"
-      ts_avg_window: "D"
+      ts_avg_window: "h"
       set_axis: True
 
   plot_grp10:
@@ -76,8 +76,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 24.
-    domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_type: ["state_name", "custom:box", "siteid"]
+    domain_name: ["CO", "Front Range", "080310026"]
     domain_info:
       "Front Range":
         bounds: [-106, -104., 39.16, 40.5]
@@ -116,6 +116,7 @@ plots:
       states: True  # such as whether to show the state boundaries
       figsize: [10, 5]
       counties: True
+      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["state_name", "custom:box"]
@@ -134,6 +135,7 @@ plots:
       states: True
       counties: True
       figsize: [10, 5]
+      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]
@@ -145,7 +147,6 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True
-      crop_model: True
 
   plot_grp5:
     type: "boxplot"
@@ -153,8 +154,8 @@ plots:
       figsize: [8, 6]
     text_kwargs:
       fontsize: 20.
-    domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_type: ["state_name", "custom:box"]
+    domain_name: ["CO", "Front Range"]
     domain_info:
       "Front Range":
         bounds: [-106, -104., 39.16, 40.5] 

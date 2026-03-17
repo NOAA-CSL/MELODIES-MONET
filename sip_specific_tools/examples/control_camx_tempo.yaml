@@ -4,8 +4,8 @@ analysis:
   start_time: '2024-07-20'
   end_time: '2024-07-20 23:00:00'  # end time is set to last CAMx output time stamp
   debug: True
-  output_dir: ./output/tempo
-  output_dir_read: ./output/tempo
+  output_dir: ../../../finalSIP_ouptut 
+  output_dir_read: ../../../finalSIP_ouptut 
   save:
     paired:
       method: 'netcdf'
@@ -47,6 +47,8 @@ obs:
         var_applied: ['vertical_column_troposphere']
       vertical_column_troposphere:
         ylabel_plot: 'NO2 column'
+        vmax_plot: 1e16
+        vmin_plot: 0.0
       pressure: {}
       scattering_weights: {}
       amf_troposphere: {}

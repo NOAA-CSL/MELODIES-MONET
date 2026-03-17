@@ -3,7 +3,7 @@
 analysis:
         start_time: '2022-07-20-00:00:00'
         end_time: '2022-07-21-00:59:00'
-        output_dir: .
+        output_dir:  ../../../finalSIP_ouptut
         debug: False
         pairing_kwargs:
                 sat_grid_clm:
@@ -35,7 +35,7 @@ model:
                         linestyle: 'dotted'
 obs:
         mopitt:
-                filename: ./MOPITT/MOP03J-20220720-L3V5.9.3.he5
+                filename: ../../../MOPITT/MOP03J-20220720-L3V5.9.3.he5
                 obs_type: sat_grid_clm
                 sat_type: mopitt_l3
                 variables:

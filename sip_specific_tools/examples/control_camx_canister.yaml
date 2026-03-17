@@ -3,7 +3,7 @@
 analysis:
   start_time: "2016-06-01" # UTC
   end_time: "2016-09-30" # UTC
-  output_dir: ./output/canister  # relative to the program using this control file
+  output_dir: ../../../finalSIP_ouptut  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
   save:
@@ -20,7 +20,7 @@ model:
     files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.20160[6-9]*.runS20.avrg.grd03.nc
     mod_type: "camx"
     surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
-    radius_of_influence: 12000 # meters
+    radius_of_influence: 6000 # meters
     variables:
     mapping: # of _model_ species name to _obs_ species name
       canister_PVCO: 

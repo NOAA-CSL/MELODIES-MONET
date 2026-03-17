@@ -25,30 +25,28 @@ model:
     radius_of_influence: 6000 # meters
     mapping: # of _model_ species name to _obs_ species name
       pandora: 
-        NO2: "PANDORA_NO2"
+        FORM: "PANDORA_HCHO"
     projection: ~
     preprocessing:
-      total_columns: "NO2"
+      total_columns: "FORM"
 
 obs:
   pandora: # obs label
-#    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/input/Pandora*s1_BoulderCO*_L2_rnvh3p1-8.txt
-#    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/fromPablo/Demo/input/Pandora204s1_BoulderCO-NCAR_L2_rnvh3p1-8.txt
-    filename: ../../../pandora/Pandora204s1_BoulderCO-NCAR_L2_rnvh3p1-8.txt
     obs_type: pandora
+    filename: ../../../pandora/Pandora204s1_BoulderCO-NCAR_L2_rfus5p1-8.txt
     variables: # optional
-      "Column 62":
+      "Column 39":
          unit_scale: 6.02e+19 # mol/m2 to molec/cm2
          unit_scale_method: "*"
-         ylabel: 'NO$_2$ (molec/cm2)'
+         ylabel: 'HCHO (molec/cm2)'
          use_ylabel: True
-         rename: PANDORA_NO2
-         vmax_plot: 1e16
+         vmax_plot: 3e16
          vmin_plot: 0.0
-      "Column 39": {}
+         rename: PANDORA_HCHO
+      "Column 30": {}
     data_proc:
-      filter_dict: {"Column 39": {"oper": "<=", "value": 12}, "PANDORA_NO2": {"oper": ">=", "value": 0.0}}
-      # Column 39: L2Fit data quality flag, 0=assured high quality, 1=assured medium quality, 2=assured low quality, 10=not-assured high quality, 11=not-assured medium quality, 12=not-assured low quality
+#Column 30: L1 data quality flag, 0=assured high quality, 1=assured medium quality, 2=assured low quality, 10=not-assured high quality, 11=not-assured medium quality, 12=not-assured low quality
+      filter_dict: {"Column 30": {"oper": "<=", "value": 12}, "PANDORA_HCHO": {"oper": ">=", "value": 0.0}} 
 
 plots:
   plot_grp1:
@@ -73,7 +71,7 @@ plots:
       ts_avg_window: "h"
       # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
       set_axis: True
-      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs above.
 
   plot_grp10:
     type: "diurnal" # plot type
@@ -106,7 +104,6 @@ plots:
       states: True  # such as whether to show the state boundaries
       figsize: [10, 5]
       counties: True
-      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]
@@ -126,7 +123,6 @@ plots:
       states: True
       counties: True
       figsize: [10, 5]
-      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["custom:box"]

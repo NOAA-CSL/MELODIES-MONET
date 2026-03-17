@@ -6,7 +6,7 @@
 analysis:
   start_time: "2016-06-01 00:00:00" # UTC
   end_time: "2016-06-30 23:59:59" # UTC
-  output_dir: ./  # relative to the program using this control file
+  output_dir: ../../../finalSIP_ouptut 
   debug: True
   save:
     paired:
@@ -39,7 +39,7 @@ model:
 obs:
   noaa_gml: # obs label
     # use_airnow: True
-    filename: ./noaa/ESRL-GMD-OZWV_v2.0_HOUR_NWR_s20160101T000000Z_e20170101T000000Z_c20250423T143348Z.nc  
+    filename: ../../../noaa/ESRL-GMD-OZWV_v2.0_HOUR_NWR_s20160101T000000Z_e20170101T000000Z_c20250423T143348Z.nc  
     obs_type: ground
     ground_coordinate:
       latitude: 40.0531

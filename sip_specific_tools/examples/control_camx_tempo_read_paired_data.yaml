@@ -1,20 +1,18 @@
-# example yaml file to compare CAMx to TEMPO
+# example yaml file to compare HCHO, NO2 and FNR from CAMx and TEMPO
 
 analysis:
   start_time: '2024-07-20'
   end_time: '2024-07-20 23:00:00'
   debug: True
-  output_dir: ./output/tempo
-  output_dir_read: ./output/tempo
+  output_dir: ../../../finalSIP_ouptut 
+  output_dir_read: ../../../finalSIP_ouptut 
   save:
     paired:
       method: 'netcdf'
-      prefix:  #'2024-07-20'
       data: all
   read:
     paired:
       method: 'netcdf'
-      # output filenames should be: {prefix}_{obs}_{model}.nc4
       filenames: {'tempo_l2_no2_CAMX': ['2024-07-*_tempo_l2_no2_CAMX.nc4'] , 'tempo_l2_hcho_CAMX': ['2024-07-*_tempo_l2_hcho_CAMX.nc4']}
 
 obs:
@@ -94,7 +92,7 @@ plots:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
       set_axis: False
-      vmin_plot: 0   
+      vmin_plot: 0
       vmax_plot: 2.e+16
       
   plot_grp2:
@@ -117,7 +115,7 @@ plots:
       ts_avg_window: 'h'
       set_axis: False
       vmin_plot: 0   
-      vmax_plot: 2.e+16
+      vmax_plot: 6
       
   plot_grp3:
     type: 'diurnal'
@@ -181,7 +179,9 @@ plots:
         bounds: [-105.5, -104., 39., 40.5]
     data: ["tempo_l2_no2_CAMX","tempo_l2_hcho_CAMX","tempo_l2_FNR_CAMX"] 
     data_proc:
-      set_axis: True
+      set_axis: False
+      vmax_plot: 1e16
+      vmin_plot: 0
 
   plot_grp6:
     type: 'spatial_dist'

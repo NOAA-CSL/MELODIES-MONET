@@ -4,7 +4,7 @@
 analysis:
   start_time: "2016-07-01-06:00:00" # UTC
   end_time: "2016-07-10-05:00:00" # UTC
-  output_dir: ./output/airnow_reg  # relative to the program using this control file
+  output_dir: ../../../finalSIP_ouptut  # relative to the program using this control file
   debug: True
 
 model:
@@ -12,7 +12,7 @@ model:
     files: /glade/campaign/acom/acom-da/Denver2024-SIP/Denver_O3_2023/camx/outputs/runS20_2016/camxv72_cb6r5.201607*.runS20.avrg.grd03.nc
     mod_type: "camx"
     surf_ony: True
-    radius_of_influence: 12000
+    radius_of_influence: 6000
     mapping:
       airnow:
         O3: "OZONE"
@@ -30,7 +30,7 @@ obs:
         nan_value: -1.0
         ylabel_plot: "Ozone (ppbv)"
         vmin_plot: 15.0   # these limits are used if set_axis=True in the plots
-        vmax_plot: 70.0
+        vmax_plot: 80.0
         vdiff_plot: 20.0
         nlevels_plot: 21
         regulatory: True #Opt compute regulatory functions
@@ -47,8 +47,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 24.
-    domain_type: ["custom:box", "siteid"]
-    domain_name: ["Front Range", "080310026"]
+    domain_type: ["state_name", "custom:box", "siteid"]
+    domain_name: ["CO", "Front Range", "080310026"]
     domain_info:
       "Front Range":
         bounds: [-106, -104., 39.16, 40.5]
@@ -68,8 +68,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 24.
-    domain_type: ["custom:box"]
-    domain_name: ["Front Range"]
+    domain_type: ["state_name", "custom:box", "siteid"]
+    domain_name: ["CO", "Front Range", "080310026"]
     domain_info:
       "Front Range":
         bounds: [-106, -104., 39.16, 40.5]
@@ -108,6 +108,7 @@ plots:
       states: True  # such as whether to show the state boundaries
       figsize: [10, 5]
       counties: True
+      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
     text_kwargs:
       fontsize: 16.
     domain_type: ["state_name", "custom:box"]
