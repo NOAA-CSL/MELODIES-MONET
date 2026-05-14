@@ -1,0 +1,181 @@
+# Example yaml file to compare CAMx to AIRNOW meteorological and chemical surface observations
+# plots windrose and pollution rose
+
+analysis:
+  start_time: "2022-07-20 00:00:00" # UTC
+  end_time: "2022-07-20 23:00:00" # UTC
+  output_dir: ./airnow #_daytime
+  output_dir_read: ./airnow #_daytime
+  debug: True
+  save:
+    paired:
+      method: netcdf
+      data: all
+      prefix: 'MET' 
+  read:
+    paired:
+      method: netcdf
+      filenames: {'airnow_camx': ['MET_airnow_camx.nc4']}
+
+model:
+  camx: # model label
+    files: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/CAMx73.cb7r1_cf3.20220720.35.camx.avrg.grd03.nc
+    files_vert: /glade/campaign/acom/acom-da/Denver2024-SIP/Example_Files/camx.3d.4km_lonlatcorrected.20220720.nc
+    mod_type: "camx"
+    mod_kwargs:
+     surf_only: False  
+    extra_calc: # Add more complex calculations and their associated variables here.
+      windspeed:
+        u_comp: "uwind"
+        v_comp: "vwind"
+      winddir: 
+        u_comp: "uwind"
+        v_comp: "vwind"
+      wind_barb: 
+        u_comp: "uwind"
+        v_comp: "vwind"
+      rose_plot:
+        model_wdir: "winddir"
+        model_wspd: "windspeed" 
+    mapping: # of _model_ species name to _obs_ species name
+      airnow: # specifically for the obs labeled 'ish'
+        windspeed: "WS"
+        winddir: "WD"
+        O3: "OZONE"
+    projection: ~
+    plot_kwargs: # optional
+      color: "magenta"
+      marker: "s"
+      linestyle: "-"
+    
+obs:
+  airnow: # obs label
+    use_airnow: True
+    filename: /glade/campaign/acom/acom-weather/pfister/ANALYSIS/MELODIES/airnow/AirNow_20220719_20220722.nc
+    obs_type: pt_sfc
+    variables: # optional
+      OZONE:
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "Ozone (ppbv)"
+        ty_scale: 3.0 #Opt
+        vmin_plot: 0 #40.0
+        vmax_plot: 85 #70.0
+        vdiff_plot: 10.0
+        nlevels_plot: 21
+      WS:
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "Windspeed 10m (m/s)"
+        xlabel_plot: "Windspeed 10m (m/s)"
+        vmin_plot: 0
+        vmax_plot: 12
+        vdiff_plot: 4
+        nlevels_plot: 18
+      WD: 
+        unit_scale: 1
+        unit_scale_method: "*"
+        nan_value: -1.0
+        ylabel_plot: "Wind Direction 10m (deg)"
+        xlabel_plot: "Wind Direction 10m (deg)"
+        vmin_plot: 0
+        vmax_plot: 370
+        vdiff_plot: 4
+        nlevels_plot: 18
+    extra_calc: # Add more complex calculations and their associated variables here.
+      rose_plot:
+        obs_wdir: "WD"
+        obs_wspd: "WS"
+        
+plots:
+  plot_grp1:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] 
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["state_name","siteid"] 
+    domain_name: ["CO","080050006"] 
+    data: ["airnow_camx"] 
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      ts_avg_window: "H"
+      set_axis: True
+ 
+
+  plot_grp10:
+    type: "rose_plot"
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["state_name"] #, "custom:box"]
+    domain_name: ["CO"] #, "Front Range"]
+    domain_info:
+      "Front Range":
+         bounds: [-106, -104., 39.16, 40.9] 
+      "CO":
+         bounds: [-109.07, -102, 36.9, 41.1]
+    data: ["airnow_camx"] 
+    color_map: "YlOrRd"  
+     # Default Colormap for the density plot can be used. Options include:
+  #                       # 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+  #                       # 'jet', 'hot', 'cool', 'spring', 'summer', 'autumn', 'winter',
+  #                       # 'RdBu_r', 'seismic', 'coolwarm',
+  #                       # 'Blues', 'BuGn', 'YlOrRd', 'Greys'
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      wr_calm_limit: 0.1
+
+  plot_grp4:
+    type: "spatial_bias"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  
+      counties: True
+      figsize: [10, 5]
+#      extent_from_domain: True   # True to use the defined auto-region, False will cut it to area with data
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["state_name"] #, "custom:box"]
+    domain_name: ["CO"] #, "Front Range"]
+    data: ["airnow_camx"] 
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      wind_barb: True
+
+
+  plot_grp5:
+    type: "spatial_overlay"
+    fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
+      states: True  
+      counties: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["state_name"] 
+    domain_name: ["CO"]
+    data: ["airnow_camx"] 
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True 
+      wind_barb: True
+      
+stats:
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2 # optional; defaults to rounding to 3rd decimal place
+  output_table: True
+  output_table_kwargs: # optional
+    figsize: [7, 3]
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: "horizontal"
+    domain_type: ["state_name"] 
+    domain_name: ["CO"]
+  data: ["airnow_camx"]
