@@ -164,7 +164,7 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True 
-      wind_barb: True
+      wind_barb: True   #future versions of MELODIES MONET will allow a user to set the frequency to plot wind barbs
       
 stats:
   stat_list: ["MB", "MdnB", "R2", "RMSE"]
