@@ -2,10 +2,10 @@ analysis:
         start_time: '2023-06-27'
         end_time: '2023-06-28'
         debug: False
-        output_dir: /scratch1/BMC/rcm2/mbruckner/iagos
+        output_dir: /scratch4/BMC/rcm1/mbruckner/iagos
 obs:
         iagos:
-                filename: '/scratch1/BMC/rcm2/mbruckner/iagos/IAGOS_timeseries_2023062701364109_L2_3.1.0.nc4'
+                filename: '/scratch4/BMC/rcm1/mbruckner/iagos/IAGOS_profile_2023062720281502_L2_3.1.0-descent.nc4'
                 obs_type: aircraft
                 time_var: UTC_time
                 variables:
@@ -34,7 +34,7 @@ obs:
 
 model:
         ufsaqm:
-                files: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.202306*/12/aqm.t12z.dyn.*.nc'
+                files: '/scratch3/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.202306*/12/aqm.t12z.dyn.*.nc'
                 mod_type: 'ufs'
                 variables:
                         'pres_pa_mid':
