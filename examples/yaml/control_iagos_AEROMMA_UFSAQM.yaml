@@ -5,7 +5,7 @@ analysis:
         output_dir: /scratch4/BMC/rcm1/mbruckner/iagos
 obs:
         iagos:
-                filename: '/scratch4/BMC/rcm1/mbruckner/iagos/IAGOS_profile_2023062821030702_L2_3.1.0-ascent.nc4'
+                filename: '/scratch4/BMC/rcm1/mbruckner/iagos/IAGOS_timeseries_2023062816225906_L2_3.1.1.nc4'
                 obs_type: aircraft
                 time_var: UTC_time
                 variables:
