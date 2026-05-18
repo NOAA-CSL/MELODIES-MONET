@@ -48,7 +48,7 @@ model:
 
                 mapping:
                         iagos:
-                                o3: O3_P1
+                                co: CO_P1
 
                 plot_kwargs:
                         color: 'purple'
