@@ -57,26 +57,18 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
         # intermediate need: model NO2 partial columns for day
         # no2col_satm = np.nanmean(modobj_tm['no2col'].values, axis = 0)
         
-        # sum up tropopause
-        if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
-
-        else:
-            print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].sum(dim='z').values.squeeze()
-            
         # --- TROPOMI
         # number of swath
         nswath = len(obsobj[days])
 
         # intermediate array for all swaths
         no2_modgrid_all = np.zeros([ny, nx, nswath], dtype=np.float64)
-
+        tropopause_intermediate = np.zeros([ny, nx, nswath], dtype=np.float64)
         for ns in range(nswath):
             satlon = obsobj[days][ns]['lon']
             satlat = obsobj[days][ns]['lat']
             satno2 = obsobj[days][ns]['nitrogendioxide_tropospheric_column']
-
+            tm5_tropopause = obsobj[days][ns]['troppres']
             # regridding from swath grid to model grids
             grid_in = {'lon':satlon.values, 'lat':satlat.values}
 
@@ -84,17 +76,23 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
             
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2) # , keep_attrs=True
+            tpause_modgrid = regridder(tm5_tropopause)
             print('Done with TROPOMI regridding', days, ns)
 
             #regridder.destroy()
             del regridder
  
             no2_modgrid_all[:,:,ns] = no2_modgrid
+            tropopause_intermediate[:,:,ns] = tpause_modgrid
             print(' no2 satellite:', np.nanmin(no2_modgrid), np.nanmax(no2_modgrid))
 
         # daily averaged no2 trop. columns at model grids
         no2_modgrid_avg['nitrogendioxide_tropospheric_column'][nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
-
+        # daily averaged TM5 tropopause at model grid
+        tm5_tpause = np.nanmean(tropopause_intermediate,axis=2)
+        
+        # sum model to TM5 tropopause
+        no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
     del(modobj)
     del(obsobj)
 
@@ -152,20 +150,13 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
         #modobj_tm = modobj.sel(time=days)
         # no2col_satm = modobj_tm[f'{no2varname}_col'].mean(dim='time')
               
-        # sum up tropopause, needs to be revised to tropopause
-        if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
-
-        else:
-            print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].sum(dim='z').values.squeeze()
         # --- tropomi ---
         # number of swath
         nswath = len(obsobj[days])
 
         # array for all swaths
         no2_modgrid_all = np.zeros([ny, nx, nswath], dtype=np.float32)
-
+        tropopause_intermediate = np.zeros([ny, nx, nswath], dtype=np.float32)
         for ns in range(nswath):
             working_swath = obsobj[days][ns]     
 
@@ -192,13 +183,23 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
 
             # averaing kernel applied done
             satno2 = working_swath['nitrogendioxide_tropospheric_column'] * ratio 
+            
+            tm5_tropopause = working_swath['troppres'] 
 
             # regridding from swath grid to model grids
             regridder = xe.Regridder(grid_sat, grid_mod,'bilinear',ignore_degenerate=True,reuse_weights=False)
 
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2, keep_attrs=True)
+            tpause_modgrid = regridder(tm5_tropopause, keep_attrs=True)
             no2_modgrid_all[:,:,ns] = no2_modgrid[:,:]
+            tropopause_intermediate[:,:,ns] = tpause_modgrid
+
+        # daily averaged TM5 tropopause at model grid
+        tm5_tpause = np.nanmean(tropopause_intermediate,axis=2)
+
+        # sum model to TM5 tropopause
+        no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
 
         # daily averaged no2 trop. columns at model grids
         no2_modgrid_avg['nitrogendioxide_tropospheric_column'][nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
