@@ -148,6 +148,8 @@ plots:
       rem_obs_nan: True
       set_axis: True
       wind_barb: True
+      wind_barb_skip: 1
+
 
 
   plot_grp5:
