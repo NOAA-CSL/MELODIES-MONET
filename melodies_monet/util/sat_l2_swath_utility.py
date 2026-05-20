@@ -196,14 +196,14 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             tropopause_intermediate[:,:,ns] = tpause_modgrid
 
         # daily averaged TM5 tropopause at model grid
-        tm5_tpause = np.nanmean(np.where(no2_modgrid_all > 0.0,tropopause_intermediate,np.nan),axis=2)
-
-        # sum model to TM5 tropopause
-        no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
+        tm5_tpause = np.nanmean(np.where(tropopause_intermediate > 0.0,tropopause_intermediate,np.nan),axis=2)
 
         # daily averaged no2 trop. columns at model grids
         no2_modgrid_avg['nitrogendioxide_tropospheric_column'][nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
-
+        # sum model to TM5 tropopause
+        no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
+    # filter model to where trompomi data exists
+    no2_modgrid_avg[f'{no2varname}trpcol'] = xr.where(no2_modgrid_avg['nitrogendioxide_tropospheric_column'].isnull(),np.nan,no2_modgrid_avg[f'{no2varname}trpcol'])
     return no2_modgrid_avg
 
 
