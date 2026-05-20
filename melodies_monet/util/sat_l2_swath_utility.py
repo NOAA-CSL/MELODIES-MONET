@@ -196,7 +196,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             tropopause_intermediate[:,:,ns] = tpause_modgrid
 
         # daily averaged TM5 tropopause at model grid
-        tm5_tpause = np.nanmean(tropopause_intermediate,axis=2)
+        tm5_tpause = np.nanmean(np.where(no2_modgrid_all > 0.0,tropopause_intermediate,np.nan),axis=2)
 
         # sum model to TM5 tropopause
         no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
