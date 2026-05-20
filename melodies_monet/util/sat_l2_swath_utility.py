@@ -187,7 +187,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             tm5_tropopause = working_swath['troppres'] 
 
             # regridding from swath grid to model grids
-            regridder = xe.Regridder(grid_sat, grid_mod,'bilinear',ignore_degenerate=True,reuse_weights=False)
+            regridder = xe.Regridder(grid_sat, grid_mod,'bilinear',ignore_degenerate=True,reuse_weights=False,unmapped_to_nan=True)
 
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2, keep_attrs=True)
