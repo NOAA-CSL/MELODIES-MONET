@@ -430,6 +430,11 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     """
     if debug is False:
         plt.ioff()
+    if plot_dict is None:
+        # Ensure plot_dict is a dictionary
+        # Setting a dict as the default will use the same dict each time
+        # Modifications will accumulate
+        plot_dict = {}
     #First define items for all plots
     #set default text size
     def_text = dict(fontsize=14)
