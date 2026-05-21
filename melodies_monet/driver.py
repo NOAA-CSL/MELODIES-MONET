@@ -652,6 +652,8 @@ class model:
                     if 'rename' in d:
                         self.obj = self.obj.rename({v:d['rename']})
                         self.variable_dict[d['rename']] = self.variable_dict.pop(v)
+        if "valid_time" in self.obj.dims:
+            self.obj = self.obj.rename(valid_time="time")
 
     def mask_and_scale(self):
         """Mask and scale model data including unit conversions.
