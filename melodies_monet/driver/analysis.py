@@ -840,12 +840,12 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
                      
-                     if obs.sat_type == 'omps_l2_no2':
-                        from .util import satellite_utilities as sutil
+                    if obs.sat_type == 'omps_l2_no2':
+                        from melodies_monet.util import satellite_utilities as sutil
 
-                        # --------------------------------------------------
-                        # Select NO2 column type (from YAML / control_dict)
-                        # --------------------------------------------------
+                         # --------------------------------------------------
+                         # Select NO2 column type (from YAML / control_dict)
+                         # --------------------------------------------------
                         col_type = self.control_dict["obs"]["omps_l2_no2"].get(
                         "no2_column_type", "total"
                         )
@@ -874,15 +874,14 @@ class analysis:
                         if 'time' in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time, self.end_time))
 
-                        # --------------------------------------------------
+                        #  --------------------------------------------------
                         # Choose AK vs no-AK pairing
                         # --------------------------------------------------
                         if pairing_kws.get('apply_ak', False):
                             # AK requires vertical information
                             model_obj = mod.obj[
-                                [model_input_var, 'no2_layer', 'pres_pa_mid', 'latitude', 'longitude']
+                               [model_input_var, 'no2_layer', 'pres_pa_mid', 'latitude', 'longitude']
                             ]
-
                             paired_data = sutil.omps_l2_no2_pairing_apriori_new(
                                 model_obj,
                                 obs.obj,
@@ -894,33 +893,29 @@ class analysis:
                             model_obj = mod.obj[
                             [model_input_var, 'latitude', 'longitude']
                             ]
-
+                            
                             paired_data = sutil.omps_l2_no2_pairing(
-                                model_obj,
-                                obs.obj,
-                                [model_input_var],
-                                obs_no2_var=obs_no2_var,
-                            )
-
-                        # --------------------------------------------------
-                        # QA masking (column-aware)
-                        # --------------------------------------------------
-                        # --------------------------------------------------
-                        # QA masking (handle AK vs non-AK outputs)
-                        # --------------------------------------------------
+                              model_obj,
+                              obs.obj,
+                             [model_input_var],
+                             obs_no2_var=obs_no2_var,
+                             )
+                         # --------------------------------------------------
+                         # QA masking (column-aware)
+                         # --------------------------------------------------
+                         # --------------------------------------------------
+                         # QA masking (handle AK vs non-AK outputs)
+                         # --------------------------------------------------
                         if pairing_kws.get('apply_ak', False):
                             #mask_var = f"{obs_no2_var}_revised"
                             mask_var = obs_no2_var
                         else:
                             mask_var = obs_no2_var
+                            paired_data = paired_data.where(paired_data[mask_var].notnull())
 
-                        paired_data = paired_data.where(
-                            paired_data[mask_var].notnull()
-                        )
-
-                        # --------------------------------------------------
-                        # Store paired object
-                        # --------------------------------------------------
+                         # --------------------------------------------------
+                         # Store paired object
+                         # --------------------------------------------------
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
