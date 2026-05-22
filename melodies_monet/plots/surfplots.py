@@ -556,6 +556,8 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+    if plot_dict is None:
+        plot_dict = {}
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column
@@ -569,11 +571,8 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
     if ax is None: 
         #First define the colors for the observations.
         obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=1.2, markersize=6.)
-        if plot_dict is not None:
-            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-            plot_kwargs = {**obs_dict, **plot_dict}
-        else:
-            plot_kwargs = obs_dict
+        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+        plot_kwargs = {**obs_dict, **plot_dict}
         # create the figure
         if fig_dict is not None:
             f,ax = plt.subplots(**fig_dict)    
@@ -1293,7 +1292,7 @@ def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_na
         else:
             plot_kwargs = obs_dict
     else:
-        plot_kwargs = plot_dict
+        plot_kwargs = plot_dict if plot_dict is not None else {}
 
     #For all, a column to the dataframe and append the label info to the list.
     plot_kwargs['column'] = column
