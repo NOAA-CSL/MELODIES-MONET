@@ -880,7 +880,7 @@ class analysis:
                         if pairing_kws.get('apply_ak', False):
                             # AK requires vertical information
                             model_obj = mod.obj[
-                               [model_input_var, 'no2_layer', 'pres_pa_mid', 'latitude', 'longitude']
+                               [model_input_var, 'no2_layer', 'pres_pa_mid', 'latitude', 'longitude','time_utc_hour']
                             ]
                             paired_data = sutil.omps_l2_no2_pairing_apriori_new(
                                 model_obj,

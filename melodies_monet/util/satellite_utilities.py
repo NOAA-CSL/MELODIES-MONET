@@ -405,7 +405,7 @@ def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     return ds
 
 
-##new code for mapting satellite into model grid (2/22/2026; nazrul)
+##new code for mapting satellite OMPS NO2 into model grid (5/22/2026; nazrul)
 
 def _standardize_omps_swath_dims_new(obs_data):
     """
@@ -424,38 +424,44 @@ def _standardize_omps_swath_dims_new(obs_data):
     return ds
 
 
-def _select_model_time_within_1hr(model_data, obs_swath):
-    """
-    Select model time within ±1 hour of satellite overpass.
-    """
+def _get_valid_model_time_indices(model_data, obs_swath):
     import numpy as np
 
-    times = obs_swath.time.values
+    swath_hours = obs_swath["utc_hour"].values.astype(int)
+    model_hours = model_data["time_utc_hour"].values.astype(int)
 
-    if len(times) == 0:
+    valid_idx = []
+
+    for i, mh in enumerate(model_hours):
+        diff = np.abs(swath_hours - mh)
+        diff = np.minimum(diff, 24 - diff)
+
+        if np.any(diff <= 1):
+            valid_idx.append(i)
+
+    return valid_idx
+
+
+def _select_swath_for_model_hour(obs_swath, model_hour):
+    import numpy as np
+
+    swath_hours = obs_swath["utc_hour"].values.astype(int)
+
+    diff = np.abs(swath_hours - model_hour)
+    diff = np.minimum(diff, 24 - diff)
+
+    swath_idx = np.where(diff <= 1)[0]
+
+    if len(swath_idx) == 0:
         return None
 
-    #Use central time instead of np.medican (datetime safe)
-    t_center = times[len(times)//2]
-
-    model_times = model_data.time.values
-    time_diff = np.abs(model_times - t_center)
-
-    valid_idx = np.where(time_diff <= np.timedelta64(1, 'h'))[0]
-
-    if len(valid_idx) == 0:
-        return None
-
-    f = valid_idx[np.argmin(time_diff[valid_idx])]
-    return model_data.isel(time=f)
+    return obs_swath.isel(time=swath_idx)
 
 
-def _compute_pixel_level_satellite_adjustment(model_data_t,
-                                             obs_swath,
-                                             obs_no2_var):
+def _compute_pixel_level_satellite_adjustment(model_data_t,obs_swath,obs_no2_var="no2_totalcolumn"):
     """
-    Use model vertical shape factor to adjust satellite column
-    using AK + prior.
+    Use model vertical shape factor to adjust satellite column using AK + prior.
+    model_data_t should contain only ONE model time.
     """
 
     import numpy as np
@@ -464,36 +470,40 @@ def _compute_pixel_level_satellite_adjustment(model_data_t,
 
     obs_swath = _standardize_omps_swath_dims_new(obs_swath)
 
-    # --- Interpolate model profile to swath (nearest neighbor)
-    regridr = xe.Regridder(
-        model_data_t[['latitude','longitude']],
-        obs_swath[['latitude','longitude']],
-        'nearest_s2d',
+    # Regrid model profile to satellite pixels
+    regridder = xe.Regridder(
+        model_data_t[["latitude", "longitude"]],
+        obs_swath[["latitude", "longitude"]],
+        "nearest_s2d",
         reuse_weights=False
     )
 
-    no2_layer_swath = regridr(model_data_t['no2_layer'])
-    pres_mid_swath  = regridr(model_data_t['pres_pa_mid'])
+    no2_layer_swath = regridder(model_data_t["no2_layer"])
+    pres_mid_swath = regridder(model_data_t["pres_pa_mid"])
 
-    PressureLevel = obs_swath['PressureLevel'].values*100
-    sat_presmid_pa = 0.5 * (
-    PressureLevel[:, :, :-1] +
-    PressureLevel[:, :, 1:])
+    # Remove single model time dimension if present
+    #no2_layer_swath = no2_layer_swath.squeeze()
+    #pres_mid_swath = pres_mid_swath.squeeze()
 
-    shp_prior = obs_swath['NO2_ShapeFactor'].values
-    ak_obs    = obs_swath['AveragingKernel'].values
+    PressureLevel = obs_swath["PressureLevel"].values * 100.0 # hPa to Pa
+    sat_presmid_pa = 0.5 * (PressureLevel[:, :, :-1] +
+                            PressureLevel[:, :, 1:])
 
-    ntime, ny, nlay_sat = sat_presmid_pa.shape
-    shp_mod = np.full_like(shp_prior, np.nan)
+    shp_prior = obs_swath["NO2_ShapeFactor"].values
+    ak_obs = obs_swath["AveragingKernel"].values
 
-    # --- Compute model shape factor per pixel
+    ntime, nxtrack, nlay_sat = sat_presmid_pa.shape
+    shp_mod = np.full_like(shp_prior, np.nan, dtype=np.float32)
+
+    # Compute model shape factor per satellite pixel
     for i in range(ntime):
-        for j in range(ny):
+        for j in range(nxtrack):
 
             pm = pres_mid_swath[:, i, j].values
             nm = no2_layer_swath[:, i, j].values
 
-            valid = (pm > 0) & (nm > 0)
+            valid = (pm > 0) & (nm > 0) & np.isfinite(pm) & np.isfinite(nm)
+
             if valid.sum() < 2:
                 continue
 
@@ -504,28 +514,27 @@ def _compute_pixel_level_satellite_adjustment(model_data_t,
                     spl
                 )
 
-                interp_prof = np.where(interp_prof > 0,
-                                       interp_prof,
-                                       np.nan)
+                interp_prof = np.where(interp_prof > 0, interp_prof, np.nan)
 
                 tot = np.nansum(interp_prof)
+
                 if tot > 0:
                     shp_mod[i, j, :] = interp_prof / tot
 
-            except:
+            except Exception:
                 continue
 
-    # --- AK correction with tropopause separation
-    PTROP = 15000.0  # 150 hPa
+    # AK correction
+    PTROP = 15000.0 # Pa = 150 hPa
 
-    mask_total  = np.ones_like(sat_presmid_pa, dtype=bool)
-    mask_tropo  = sat_presmid_pa >= PTROP
-    mask_strato = sat_presmid_pa <  PTROP
+    mask_total = np.ones_like(sat_presmid_pa, dtype=bool)
+    mask_tropo = sat_presmid_pa > PTROP
+    mask_strato = sat_presmid_pa <= PTROP
 
     term = (ak_obs - 1.0) * (shp_prior - shp_mod)
 
-    ratio_total  = 1.0 + np.nansum(term * mask_total,  axis=2)
-    ratio_tropo  = 1.0 + np.nansum(term * mask_tropo,  axis=2)
+    ratio_total = 1.0 + np.nansum(term * mask_total, axis=2)
+    ratio_tropo = 1.0 + np.nansum(term * mask_tropo, axis=2)
     ratio_strato = 1.0 + np.nansum(term * mask_strato, axis=2)
 
     if obs_no2_var == "no2_totalcolumn":
@@ -536,102 +545,153 @@ def _compute_pixel_level_satellite_adjustment(model_data_t,
         ratio_use = ratio_strato
 
     obs_raw = obs_swath[obs_no2_var].values
-    obs_revised = np.where(ratio_use > 0.0,
-                           obs_raw * ratio_use,
-                           np.nan)
+    obs_revised = np.where(
+        ratio_use > 0,
+        obs_raw * ratio_use,
+        np.nan
+    )
 
     return obs_raw, obs_revised
 
 def omps_l2_no2_pairing_apriori_new(model_data,
-                                obs_swath,
-                                model_var_list,
-                                obs_no2_var="no2_totalcolumn"):
-    """
-    Final pairing:
-    - Satellite adjusted using model vertical shape
-    - Spatially averaged into model grid
-    - Model column unchanged
-    """
+                                    obs_swath,
+                                    model_var_list,
+                                    obs_no2_var="no2_totalcolumn"):
 
     import numpy as np
     import xarray as xr
+    import gc
 
-    # 1. Select model time
-    model_data_t = _select_model_time_within_1hr(model_data,
-                                                 obs_swath)
-    if model_data_t is None:
-        raise ValueError("No model time within ±1 hour")
+    valid_idx = _get_valid_model_time_indices(model_data, obs_swath)
+    print(valid_idx)
+    if len(valid_idx) == 0:
+        raise ValueError("No model time within ±1 hour of swath UTC hour")
 
-    # 2. Pixel-level AK adjustment
-    obs_raw, obs_revised = \
-        _compute_pixel_level_satellite_adjustment(
+    model_hours_all = model_data["time_utc_hour"].values.astype(int)
+    print(model_hours_all)
+    # Use model grid
+    lat_mod = model_data["latitude"].isel(time=0).values \
+        if "time" in model_data["latitude"].dims else model_data["latitude"].values
+
+    lon_mod = model_data["longitude"].isel(time=0).values \
+        if "time" in model_data["longitude"].dims else model_data["longitude"].values
+
+    grid_shape = lat_mod.shape
+
+    # Final accumulated 2D grids
+    sat_raw_sum = np.zeros(grid_shape, dtype=np.float32)
+    sat_rev_sum = np.zeros(grid_shape, dtype=np.float32)
+    model_sum = np.zeros(grid_shape, dtype=np.float32)
+    n_obs_total = np.zeros(grid_shape, dtype=np.float32)
+
+    for it in valid_idx:
+        print(f"START {it}", flush=True)
+        mh = int(model_hours_all[it])
+        print(f"Processing model time index {it}, UTC hour {mh}",flush=True)
+
+        obs_sub = _select_swath_for_model_hour(obs_swath, mh)
+
+        if obs_sub is None:
+            continue
+
+        # Select one model time only; removes time dimension
+        model_data_t = model_data.isel(time=it)
+        print(f"BEFORE AK {it}", flush=True)
+        # Pixel-level model-shape / AK adjustment
+        obs_raw, obs_revised = _compute_pixel_level_satellite_adjustment(
             model_data_t,
-            obs_swath,
+            obs_sub,
             obs_no2_var
         )
+        print(f"DONE AK {it}", flush=True)
+        sat_lat = obs_sub["latitude"].values
+        sat_lon = obs_sub["longitude"].values
+        sat_lon = np.where(sat_lon < 0, sat_lon + 360, sat_lon)
 
-    # 3. Spatial binning to model grid
-    lat_mod = model_data_t.latitude.values
-    lon_mod = model_data_t.longitude.values
+        lon_mod_use = np.where(lon_mod < 0, lon_mod + 360, lon_mod)
 
-    sat_lat = obs_swath['latitude'].values
-    sat_lon = obs_swath['longitude'].values
-    sat_lon = np.where(sat_lon < 0, sat_lon + 360, sat_lon)
+        model_col = model_data_t[model_var_list[0]].values
 
-    grid_sum_raw = np.zeros(lat_mod.shape)
-    grid_sum_rev = np.zeros(lat_mod.shape)
-    grid_count   = np.zeros(lat_mod.shape)
+        # Temporary 2D grid for this time window
+        sat_raw_sum_t = np.zeros(grid_shape, dtype=np.float32)
+        sat_rev_sum_t = np.zeros(grid_shape, dtype=np.float32)
+        count_t = np.zeros(grid_shape, dtype=np.float32)
 
-    for i in range(sat_lat.shape[0]):
-        for j in range(sat_lat.shape[1]):
+        for i in range(sat_lat.shape[0]):
+            for j in range(sat_lat.shape[1]):
 
-            lat_val = sat_lat[i, j]
-            lon_val = sat_lon[i, j]
+                if not np.isfinite(obs_revised[i, j]):
+                    continue
 
-            iy = np.argmin(np.abs(lat_mod[:,0] - lat_val))
-            ix = np.argmin(np.abs(lon_mod[0,:] - lon_val))
+                lat_val = sat_lat[i, j]
+                lon_val = sat_lon[i, j]
 
-            if np.isfinite(obs_raw[i,j]):
-                grid_sum_raw[iy, ix] += obs_raw[i,j]
-                grid_sum_rev[iy, ix] += obs_revised[i,j]
-                grid_count[iy, ix]   += 1
+                if not np.isfinite(lat_val) or not np.isfinite(lon_val):
+                    continue
 
-    sat_raw_grid = np.where(grid_count>0,
-                            grid_sum_raw/grid_count,
-                            np.nan)
+                # Nearest model grid cell
+                iy = np.argmin(np.abs(lat_mod[:, 0] - lat_val))
+                ix = np.argmin(np.abs(lon_mod_use[0, :] - lon_val))
 
-    sat_rev_grid = np.where(grid_count>0,
-                            grid_sum_rev/grid_count,
-                            np.nan)
+                sat_raw_sum_t[iy, ix] += obs_raw[i, j]
+                sat_rev_sum_t[iy, ix] += obs_revised[i, j]
+                count_t[iy, ix] += 1
+        print(f"DONE PIXEL LOOP {it}", flush=True)
+        valid_cell = count_t > 0
 
-    # 4. Model column (UNMODIFIED)
-    model_column_grid = model_data_t[model_var_list[0]].values
+        # Accumulate satellite values into final 2D grid
+        sat_raw_sum[valid_cell] += sat_raw_sum_t[valid_cell]
+        sat_rev_sum[valid_cell] += sat_rev_sum_t[valid_cell]
 
-    # 5. Final dataset
+        # Model value repeated for cells that have satellite obs
+        model_sum[valid_cell] += model_col[valid_cell] * count_t[valid_cell]
+
+        n_obs_total[valid_cell] += count_t[valid_cell]
+        print(f"DONE ACCUMULATION {it}",flush=True)
+        del obs_sub, model_data_t
+        gc.collect()
+
+    # Final 2D satellite averages
+    sat_raw_2d = np.where(n_obs_total > 0,sat_raw_sum / n_obs_total,np.nan)
+    sat_rev_2d = np.where(n_obs_total > 0,sat_rev_sum / n_obs_total,np.nan)
+    model_2d = np.where(n_obs_total > 0,model_sum / n_obs_total,np.nan)
     ds_out = xr.Dataset(
         {
-            f"{obs_no2_var}_model":
-                (['grid_yt','grid_xt'], model_column_grid),
-
-            f"{obs_no2_var}":
-                (['grid_yt','grid_xt'], sat_rev_grid),
-
-            f"{obs_no2_var}_raw":
-                (['grid_yt','grid_xt'], sat_raw_grid),
+            f"{obs_no2_var}_model": (
+                ["grid_yt", "grid_xt"],
+                model_2d.astype(np.float32)
+            ),
+            f"{obs_no2_var}_sat": (
+                ["grid_yt", "grid_xt"],
+                sat_rev_2d.astype(np.float32)
+            ),
+            f"{obs_no2_var}_sat_raw": (
+                ["grid_yt", "grid_xt"],
+                sat_raw_2d.astype(np.float32)
+            ),
+            "n_obs": (
+                ["grid_yt", "grid_xt"],
+                n_obs_total.astype(np.float32)
+            ),
         },
         coords={
-            'grid_yt': model_data_t.grid_yt,
-            'grid_xt': model_data_t.grid_xt,
-            'latitude': model_data_t.latitude,
-            'longitude': model_data_t.longitude,
+            "grid_yt": model_data["grid_yt"].values,
+            "grid_xt": model_data["grid_xt"].values,
+            "latitude": (
+                ["grid_yt", "grid_xt"],
+                lat_mod
+            ),
+            "longitude": (
+                ["grid_yt", "grid_xt"],
+                lon_mod
+            ),
         },
         attrs={
-            "PTROP_Pa": 15000.0,
-            "AK_correction": "model_shape_adjusted_satellite",
-            "resolution": "model_grid",
+            "pairing_method": "pixel_level_AK_adjustment_then_satellite_binning_to_model_grid",
+            "time_selection": "model times within +/-1 hour of swath utc_hour",
+            "final_dimension": "2D model grid",
         }
     )
 
     return ds_out
-
 
