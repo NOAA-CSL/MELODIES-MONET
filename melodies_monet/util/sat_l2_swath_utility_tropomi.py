@@ -21,8 +21,6 @@ from .sat_l2_swath_utility_tempo import (  # calc_grid_corners,
 )
 from .tools import calc_partialcolumn, N_A
 
-# import warnings
-
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -144,6 +142,7 @@ def interpolate_time(modelobj, overpass_time=None):
 
     days = np.unique(modelobj["time"].dt.floor("D"))
     interpolated_data = []
+    numeric_vars = [v for v in modelobj.data_vars if np.issubdtype(modelobj[v].dtype, np.number)]
     for day in days:
         modelobj_day = modelobj.sel(
             time=slice(day - np.timedelta64(1, "D"), day + np.timedelta64(1, "D"))
@@ -157,7 +156,7 @@ def interpolate_time(modelobj, overpass_time=None):
                 f"{np.datetime_as_string(localtime.max().values)}), skipping."
             )
             continue
-        interp = _interpolate_time(target_time, localtime, modelobj_day)
+        interp = _interpolate_time(target_time, localtime, modelobj_day, numeric_vars)
         interp = interp.expand_dims("time", axis=0).assign_coords(time=[target_time])
         interp["time_utc"] = target_time - utc_offset_nanoseconds
         interpolated_data.append(interp)
@@ -165,7 +164,7 @@ def interpolate_time(modelobj, overpass_time=None):
     return concat_data
 
 
-def _interpolate_time(target_time, localtime, data):
+def _interpolate_time(target_time, localtime, data, numeric_vars=None):
     """Applies time interpolation to the data.
 
     Parameters
@@ -176,6 +175,9 @@ def _interpolate_time(target_time, localtime, data):
         Local time of the model data.
     data : xr.DataArray
         Data to interpolate.
+    numeric_vars : list, None
+        list of numeric variables. If None, multiplication is applied to
+        everything
 
     Returns
     -------
@@ -188,7 +190,9 @@ def _interpolate_time(target_time, localtime, data):
     )
     previous_data = data.isel(time=previous_index).drop_vars("time")
     next_data = data.isel(time=next_index).drop_vars("time")
-    interp = (previous_weight * previous_data) + (next_weight * next_data)
+    if numeric_vars is None:
+        numeric_vars = list(data.data_vars)
+    interp = (previous_weight * previous_data[numeric_vars]) + (next_weight * next_data[numeric_vars])
     return interp
 
 
