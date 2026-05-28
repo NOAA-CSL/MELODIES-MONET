@@ -682,6 +682,10 @@ class model:
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:
                 self.obj = mio.models.camx.open_mfdataset(self.files, **self.mod_kwargs)
+        elif "chimere" in self.model.lower():
+            self.mod_kwargs.update({"var_list" : list_input_var})
+            self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
+            self.obj = mio.models.chimere.open_mfdataset(self.files, **self.mod_kwargs)
         elif 'raqms' in self.model.lower():
             self.mod_kwargs.update({'var_list': list_input_var})
             if time_interval is not None:
