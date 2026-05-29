@@ -656,6 +656,7 @@ def _regrid_and_apply_ak(
     )
 
     obsobj_dates = np.unique(obsobj["time_granule"].dt.floor("D"))
+    obsobj_dates = obsobj_dates[np.isfinite(obsobj_dates)]
     modobj_dates_granules = modobj_at_overpass_time["time_utc"].dt.floor("D")
     for d in obsobj_dates:
         if d not in modobj_dates_granules:
@@ -675,7 +676,7 @@ def _regrid_and_apply_ak(
         modobj_regrid[mod_var] = apply_averaging_kernel(
             modobj_regrid, obsobj_cropped, sat_type, varname=mod_var
         )
-        starttime_swath = np.datetime_as_string(obsobj["time_granule"].min().values)
+        starttime_swath = np.datetime_as_string(obsobj["time_granule"].min(skipna=True).values)
         output_dataset = xr.Dataset()
         output_dataset[mod_var] = modobj_regrid[mod_var]
         output_dataset[sat_var] = tropomi_mol_m2_to_molec_cm2(obsobj_cropped[sat_var])
@@ -768,6 +769,7 @@ def back_to_structured_grid(paired_object, target_grid, is_global=False):
             regridded_pair = regridder(paired_object[k])
             output_all.append(regridded_pair)
 
+    breakpoint()
 
     output_pair = xr.concat(output_all, dim="time")
     if len(output_pair.time) == 1:
