@@ -769,8 +769,6 @@ def back_to_structured_grid(paired_object, target_grid, is_global=False):
             regridded_pair = regridder(paired_object[k])
             output_all.append(regridded_pair)
 
-    breakpoint()
-
     output_pair = xr.concat(output_all, dim="time")
     if len(output_pair.time) == 1:
         return output_pair
