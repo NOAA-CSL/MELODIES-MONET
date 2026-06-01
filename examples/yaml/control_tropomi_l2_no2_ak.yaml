@@ -1,0 +1,56 @@
+analysis:
+        start_time: '2023-06-27-00:00:00'
+        end_time: '2023-06-29-00:59:00'
+        output_dir: /scratch4/BMC/rcm1/mbruckner/tropomi/
+        debug: False
+model:
+        ufschem: 
+                files: '/scratch3/BMC/rcm2/mbruckner/modeloutput/ufschem/comrot/aeromma_1x1/gfs.2023062[6-9]/00/model_data/atmos/history/gfs.t00z.atmf*.nc'
+                mod_type: 'ufs'
+                is_global: True
+                mod_to_overpass: True
+                variables: 
+                       no2:
+                               unit_scale: 1
+                               unit_scale_method: '*'
+                mapping: 
+                       tropomi_l2_no2: 
+                                no2: nitrogendioxide_tropospheric_column
+                plot_kwargs: 
+                        color: 'purple'
+                        marker: '^'
+                        linestyle: 'dotted'
+obs:
+        tropomi:
+                debug: False
+                filename: /scratch4/BMC/rcm1/mbruckner/tropomi/2023/NO2/S5P_OFFL_L2__NO2____2023062[7-9]T*
+                obs_type: sat_swath_clm
+                sat_type: tropomi_l2_no2
+                sat_method: apply_ak
+                variables:
+                        qa_value:
+                                fillvalue: 9.96921e+36
+                        nitrogendioxide_tropospheric_column: {"quality_flag": "qa_value", "qa_thresh_min": 0.75}
+                        averaging_kernel:
+                                fillvalue: 9.96921e+36
+                        air_mass_factor_total:
+                                fillvalue: 9.96921e+36
+                        air_mass_factor_troposphere:
+                                fillvalue: 9.96921e+36
+                        tm5_tropopause_pressure:
+                               fillvalues: 9.96921e+36
+plots:
+        plot_grp1:
+                type: 'gridded_spatial_bias'
+                fig_kwargs:
+                        states: True
+                        figsize: [10,5]
+                text_kwargs:
+                        fontsize: 16.
+                domain_type: ['all']
+                domain_name: ['aqm_domain']
+                data: ['tropomi_ufsaqm']
+                data_proc:
+                        rem_obs_nan: True
+                        set_axis: True
+

@@ -20,7 +20,7 @@ obs:
     filename: /scratch4/BMC/rcm1/mbruckner/tropomi/2023/NO2/S5P_OFFL_L2__NO2____20230628T*nc
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
-      #sat_method: replace_apriori
+    sat_method: replace_apriori
 
     variables:
         qa_value:
