@@ -49,10 +49,10 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
         attrs=dict(description="daily tropomi data at model grids"),)
 
     for nd in range(nobstime):
-        days = list(obsobj.keys())[nd]
+        days = time[nd].strftime('%Y-%m-%d')
         # --- model
         # get model no2 trop. columns at 13:00 - 14:00 localtime
-        modobj_tm = modobj.sel(time=days.strfime('%Y-%d-%m'))
+        modobj_tm = modobj.sel(time=days)
         
         # intermediate need: model NO2 partial columns for day
         # no2col_satm = np.nanmean(modobj_tm['no2col'].values, axis = 0)
@@ -65,6 +65,7 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
         no2_modgrid_all = np.zeros([ny, nx, nswath], dtype=np.float64)
         tropopause_intermediate = np.zeros([ny, nx, nswath], dtype=np.float64)
         for ns in range(nswath):
+            print(obsobj[days][ns])
             satlon = obsobj[days][ns]['lon']
             satlat = obsobj[days][ns]['lat']
             satno2 = obsobj[days][ns]['nitrogendioxide_tropospheric_column']
@@ -72,7 +73,7 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
             # regridding from swath grid to model grids
             grid_in = {'lon':satlon.values, 'lat':satlat.values}
 
-            regridder = xe.Regridder(grid_in, no2_modgrid_avg[['lat','lon']],'bilinear',ignore_degenerate=True,reuse_weights=False)
+            regridder = xe.Regridder(grid_in, no2_modgrid_avg[['latitude','longitude']],'bilinear',ignore_degenerate=True,reuse_weights=False,unmapped_to_nan=True)
             
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2) # , keep_attrs=True
@@ -93,6 +94,8 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
         
         # sum model to TM5 tropopause
         no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= tm5_tpause).sum(dim='z').values.squeeze()
+    # filter model to where trompomi data exists
+    no2_modgrid_avg[f'{no2varname}trpcol'] = xr.where(no2_modgrid_avg['nitrogendioxide_tropospheric_column'].isnull(),np.nan,no2_modgrid_avg[f'{no2varname}trpcol'])
     del(modobj)
     del(obsobj)
 
