@@ -1,11 +1,11 @@
 analysis:
         start_time: '2023-06-27-00:00:00'
-        end_time: '2023-06-29-00:59:00'
+        end_time: '2023-06-28-00:59:00'
         output_dir: /scratch4/BMC/rcm1/mbruckner/tropomi/
         debug: False
 model:
         ufschem: 
-                files: '/scratch3/BMC/rcm2/mbruckner/modeloutput/ufschem/comrot/aeromma_1x1/gfs.2023062[6-9]/00/model_data/atmos/history/gfs.t00z.atmf*.nc'
+                files: '/scratch3/BMC/rcm2/mbruckner/modeloutput/ufschem/comrot/aeromma_1x1/gfs.2023062[6-8]/00/model_data/atmos/history/gfs.t00z.atmf*.nc'
                 mod_type: 'ufs'
                 is_global: True
                 mod_to_overpass: True
@@ -21,9 +21,9 @@ model:
                         marker: '^'
                         linestyle: 'dotted'
 obs:
-        tropomi:
+        tropomi_l2_no2:
                 debug: False
-                filename: /scratch4/BMC/rcm1/mbruckner/tropomi/2023/NO2/S5P_OFFL_L2__NO2____2023062[7-9]T*
+                filename: /scratch4/BMC/rcm1/mbruckner/tropomi/2023/NO2/S5P_OFFL_L2__NO2____20230627T*
                 obs_type: sat_swath_clm
                 sat_type: tropomi_l2_no2
                 sat_method: apply_ak
@@ -48,9 +48,23 @@ plots:
                 text_kwargs:
                         fontsize: 16.
                 domain_type: ['all']
-                domain_name: ['aqm_domain']
-                data: ['tropomi_ufsaqm']
+                domain_name: ['global']
+                data: ['tropomi_l2_no2_ufschem']
                 data_proc:
                         rem_obs_nan: True
                         set_axis: True
-
+stats:
+  #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  stat_list: ['MB','NMB', 'R2', 'RMSE'] #List stats to calculate. Dictionary of definitions included in plots/proc_stats.py Only stats listed below are currently working.
+  #Full calc list ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', 'NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1','E1', 'IOA', 'AC']
+  round_output: 2 #Opt, defaults to rounding to 3rd decimal place.
+  output_table: True #Always outputs a .txt file. Optional to also output as a table.
+  output_table_kwargs: #Opt
+    figsize: [12, 6] # figure size
+    fontsize: 12.
+    xscale: 1.4
+    yscale: 1.4
+    edges: 'horizontal'
+  domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
+  domain_name: ['global'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['tropomi_l2_no2_ufschem'] # make this a list of pairs in obs_model where the obs is the obs labeland model is the model_label
