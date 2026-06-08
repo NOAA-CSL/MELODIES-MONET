@@ -1,17 +1,19 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 # This is an example file for specifying groups of files to loop over when using .util.tools.loop_pairing()
 #
-# First group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
+# First group for pairings. The name of this group, 0801, will be the prefix of the saved netcdf files 
 # each top level group will always consist of only 'model' and 'obs' as groups
-'0722': # file prefix label to be used when saving this group
+'0801': # file prefix label to be used when saving this group
   model: 
     # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
-    wrfchem_v4.2: '/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot/0722/*'
+    wrfchem_v4.2: '/wrk/d2/rschwantes/MM_example_data/output_w_3hr_raqms_fire_correct/wrfout_d01_2023-08-0[1,2]*'
   obs: 
     # under model this will have pairs of [model dataset name as in control file]: [filenames to open]
-    firexaq: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190722_R1.ict'
+    aeromma: '/wrk/d2/rschwantes/MM_example_data/obs/aeromma/revised_AEROMMA_20230801_Merge_downloaded_Apr2025.csv'
 # Second group for pairings. The name of this group, 0722, will be the prefix of the saved netcdf files 
-'0905': # file prefix label to be used when saving this group
+'0802': # file prefix label to be used when saving this group
   model:
-    wrfchem_v4.2: '/wrk/users/charkins/melodies-monet_data/wrfchem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_berk_vcp_noI_phot_soa/0905/*'
+    wrfchem_v4.2: '/wrk/d2/rschwantes/MM_example_data/output_w_3hr_raqms_fire_correct/wrfout_d01_2023-08-02*'
   obs:
-    firexaq: '/wrk/d2/rschwantes/obs/firex-aq/R1/10s_merge/firexaq-mrg10-dc8_merge_20190905_R1.ict'
+    aeromma: '/wrk/d2/rschwantes/MM_example_data/obs/aeromma/revised_AEROMMA_20230802_Merge_downloaded_Apr2025.csv'

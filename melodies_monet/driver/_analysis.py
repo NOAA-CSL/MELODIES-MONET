@@ -1661,7 +1661,7 @@ class analysis:
                                 ):
                                     altitude_yax2 = grp_dict["data_proc"]["altitude_yax2"]
                                     ax = airplots.add_yax2_altitude(
-                                        ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2
+                                        ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2, avg_window = a_w,
                                     )
                                 savefig(outname + ".png", logo_height=150)
 
