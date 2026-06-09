@@ -479,7 +479,7 @@ def convert_std_to_amb(
     temp_var=None,
     pres_var=None,
     standard_pressure=101325.0,
-    standard_temperature=273.0
+    standard_temperature=273.15
 ):
     """
     Convert aerosol concentrations from standard to ambient conditions.
@@ -499,7 +499,7 @@ def convert_std_to_amb(
         Default is 101325 Pa (international standard atmosphere).
     standard_temperature: float, optional
         Standard temperature in K used for defining standard conditions.
-        Default is 273 K.
+        Default is 273.15 K.
     
     """
     if convert_vars is None:
@@ -511,41 +511,6 @@ def convert_std_to_amb(
 
     for var in convert_vars:
         ds[var] = ds[var] * factor
-
-
-
-def convert_std_to_amb_ams(ds, convert_vars=None, temp_var=None, pres_var=None):
-    """ 
-    Backwards compatable wrapper for AMS Dataset.
-    This uses international std atmosphere defination
-    Pressure = 101325 Pa
-    Temperature = 273 K
-    """
-    return convert_std_to_amb(
-        ds,
-        convert_vars=convert_vars,
-        temp_var=temp_var,
-        pres_var=pres_var,
-        standard_pressure=101325.0,
-        standard_temperature=273.0
-    )
-
-
-def convert_std_to_amb_bc(ds, convert_vars=None, temp_var=None, pres_var=None):
-    """
-    Backwards compatable wrapper for AMS Dataset.
-    This uses black carbon aircraft processing standard
-    Presure = 101300 Pa
-    Temperature = 273 K
-    """
-    return convert_std_to_amb(
-        ds,
-        convert_vars=convert_vars,
-        temp_var=temp_var,
-        pres_var=pres_var,
-        standard_pressure=101300.0,
-        standard_temperature=273.0
-    )
 
 
 
