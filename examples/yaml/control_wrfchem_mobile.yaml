@@ -1,49 +1,59 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 # General Description:  
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
 # Opt: Specifying the variable or variable group is optional
 # For now all plots except time series average over the analysis window. 
 # Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
-  start_time: '2022-09-11-06:00:00' #UTC
-  end_time: '2022-09-12-06:00:00' #UTC
-  output_dir: /wrk/charkins/melodies_monet/aircraft/develop_aircraft_mobile/Output_hrrr-smoke #Opt if not specified plots stored in code directory.
+  start_time: '2021-08-03-00:00:00' #UTC
+  end_time: '2021-08-04-05:00:00' #UTC
+  output_dir: ./output/sunvex_mobile #Opt if not specified plots stored in code directory.
   debug: True
 model:
-  hrrr-smoke: # model label
-    files: /wrk/users/charkins/megan_mobile_data/HRRR/aqm_HRRR-Smoke_2022091106.nc.subset.nc
-    mod_type: random
+  wrfchem_v4.2: # model label
+    files: /wrk/d2/rschwantes/MM_example_data/sunvex_base_mobile/wrfout_d01_2021-08-0[3,4]_*
+    mod_type: 'wrfchem'
+    mod_kwargs: 
+      mech: 'racm_esrl_vcp'
     mapping: #model species name : obs species name
-      mobile_fire:
-        PM2_5_DRY: 'PM2.5_5min'
-        'TMP_2maboveground': 'Temperature_5min'
+      sunvex_mobile: # specifically for the obs labeled 'airnow'
+        uvmet10_wspd: "WindSpd_calc_m_s"
+        T2: "AirTemp_C"
     plot_kwargs: #Opt
       color: 'dodgerblue'
       marker: '^'
       linestyle: ':' 
 obs:
-  mobile_fire: # obs label
-    filename: '/wrk/users/charkins/megan_mobile_data/Fire_obs_all/treated_final_modtime.csv'
+  sunvex_mobile: # obs label
+    filename: '/wrk/d2/rschwantes/MM_example_data/obs/sunvex/recap-NOAAMET_CSLML_20210803_R0.ict'
     obs_type: mobile
-    resample: '600S' 
-    time_var: 'time_5min'
-    variables: #Opt 
-      'PM2.5_5min':
-        unit_scale: 1 #Opt Scaling factor 
+    resample: '30s' # Switch to 10 minutes when testing. If you do not provide resample, pairing occurs 
+    # at the observational time resolution
+    variables: #Opt
+      'WindSpd_calc_m_s':
+        unit_scale: 1 #Opt Scaling factor
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-
-        ylabel_plot: 'PM2.5 (units?)'
-      'Temperature_5min':
-        unit_scale: 273.15 #Opt Scaling factor 
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'Wind Speed (m/s)'
+      'AirTemp_C':
+        unit_scale: 273.15 #Opt Scaling factor
         unit_scale_method: '+' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-        ylabel_plot: 'Temperature (K)' #Optional to set ylabel so can include units and/or instr etc.
-      'Latitude_5min':
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'T2 (K)'
+      'GPSLat_deg':
             rename: latitude # name to convert this variable to
             unit_scale: 1 #Opt Scaling factor 
             unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-      'Longitude_5min':
+      'GPSLon_deg':
             rename: longitude # name to convert this variable to
             unit_scale: 1 #Opt Scaling factor 
             unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+
 plots:
   plot_grp1:
     type: 'timeseries' # plot type
@@ -55,12 +65,12 @@ plots:
     text_kwargs: #Opt
       fontsize: 18.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['mobile_fire_hrrr-smoke'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['sunvex_mobile_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: null # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
+      #ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type
@@ -72,11 +82,11 @@ plots:
     text_kwargs: #Opt
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['mobile_fire_hrrr-smoke'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['sunvex_mobile_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-      set_axis: True #If select True, add ty_scale for each variable in obs.
+      set_axis: False #If select True, add ty_scale for each variable in obs.
   plot_grp3:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
@@ -84,8 +94,8 @@ plots:
     text_kwargs: #Opt
       fontsize: 20.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['mobile_fire_hrrr-smoke'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['sunvex_mobile_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
@@ -104,6 +114,5 @@ stats:
     yscale: 1.4
     edges: 'horizontal'
   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-  data: ['mobile_fire_hrrr-smoke'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-  
+  domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['sunvex_mobile_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
