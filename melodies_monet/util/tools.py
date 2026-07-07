@@ -298,6 +298,14 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
 def vert_interp(ds_model,df_obs,var_name_list):
     from pandas import merge_asof
 
+    #The model data will occationally be pulled in as float32 to save memory especially with Pandas2.
+    #While Pandas read_csv and float defaults to float64, which is used to read in the observations.
+    #Let's upcast the matching model columns to float64 to ensure consistency with observations
+    #during this pairing step, while keeping model data at float32 for other variables to save memory.
+    match_cols = ['latitude', 'longitude', 'pressure_model']
+    for col in match_cols:
+        ds_model[col] = ds_model[col].astype('float64')
+    
     ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
     var_name_list.append('pressure_model_nan')
 
@@ -330,8 +338,9 @@ def vert_interp(ds_model,df_obs,var_name_list):
             "occurs for vertical pairing. Extrapolating beyond the model top is not recommended. Proceed with caution.")
     df_model.drop(labels=['x','y','z','pressure_obs','pressure_model_nan','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
-
-    final_df_model = merge_asof(df_obs, df_model, 
+     
+    # Reset index in df_obs before pairing so time is a column like df_model for consistency.
+    final_df_model = merge_asof(df_obs.reset_index(), df_model, 
                             by=['latitude', 'longitude', 'pressure_obs'], 
                             on='time', direction='nearest')
 
