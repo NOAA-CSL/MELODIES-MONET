@@ -1,3 +1,5 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 analysis:
   output_dir: ./output/aircraft_ufsaqm
   debug: True

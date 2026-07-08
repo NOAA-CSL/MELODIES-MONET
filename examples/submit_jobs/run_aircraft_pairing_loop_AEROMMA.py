@@ -1,3 +1,5 @@
+# This Python file has been last tested with MELODIES MONET version 1.1.
+
 # This code uses MELODIES-MONET to read in a .yaml file 
 # and produces sets of paired aircraft observations. 
 # For an interactive script see jupyter notebooks in main directory.
@@ -8,8 +10,8 @@ import os
 import dask
 an = driver.analysis()
 # -- Update the yaml file below
-control_fn = 'control_aircraft_looping_AEROMMA_UFSAQM-submit.yaml'
-file_pairs_yaml='supplementary_aircraft_looping_file_pairs_AEROMMA_UFSAQM-submit.yaml'
+control_fn = '../yaml/control_aircraft_looping_AEROMMA_UFSAQM-submit.yaml'
+file_pairs_yaml='../yaml/supplementary_yaml/supplementary_aircraft_looping_file_pairs_AEROMMA_UFSAQM-submit.yaml'
 an.control = control_fn
 an.read_control()
 
