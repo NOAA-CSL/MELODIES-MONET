@@ -65,15 +65,15 @@ _examples = {
     "ufsaqm": {
         "merge_0627_L1": (
             "example_model_data/ufsaqm_example/0627_L1_aeromma_ufsaqm.nc4",
-            "sha256:c0a0f9e09d0049063a51ab6de9e18aa3d11ef4f8eb2557b307fe12a9728924c5",
+            "sha256:a0d4c8fcf0e1d83b69091964ce4935326259c256a2b0e440a9904aabb9b90d24",
         ),
         "merge_0627_L2": (
             "example_model_data/ufsaqm_example/0627_L2_aeromma_ufsaqm.nc4",
-            "sha256:01174c41b84740eca9cfe88806ce62268fe82fcff20e6b420d3e8f39406d853b",
+            "sha256:58c45ee2fda7e36ef98b4b5078340caef354140542019aaa89ebfecb46f0d208",
         ),
         "merge_0628_L1": (
             "example_model_data/ufsaqm_example/0628_L1_aeromma_ufsaqm.nc4",
-            "sha256:2711a2eb64a9136cb7e7853354db060e63a8e2ebae47345a74ee642ad485837d",
+            "sha256:220fc061e5410e6c3e6c5997e90e6dcd037f42a096b7ff843f61c537f2e29aff",
         ),
         "model_data": (
             "example_model_data/ufsaqm_example/aqm.t12z.dyn.f001.nc",
