@@ -332,7 +332,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     
     print(f"cmin and cmax set dynamically based on model and observation data to {cmin} and {cmax}")
 
-    fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]})
+    fig, axs = plt.subplots(nrows=2, figsize=grp_dict.get('fig_kwargs', {}).get('figsize', (20, 8)), sharex=True, gridspec_kw={'height_ratios': [1, 1]}, constrained_layout=True)
 
     # Handling custom color maps
     if 'color_map_custom' in grp_dict and grp_dict['color_map_custom'] is True and 'colors' in grp_dict:

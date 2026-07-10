@@ -1738,8 +1738,8 @@ class analysis:
                             ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
 
                             # Define target pressures for interpolation based on the range of pressure_model
-                            min_pressure = ds_model["pressure_model"].min().compute()
-                            max_pressure = ds_model["pressure_model"].max().compute()
+                            min_pressure = ds_model["pressure_model"].min().compute().item()
+                            max_pressure = ds_model["pressure_model"].max().compute().item()
 
                             # Fetch the interval and num_levels from curtain_config
                             interval = curtain_config.get(
