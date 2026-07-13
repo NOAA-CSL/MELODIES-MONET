@@ -6,11 +6,11 @@
 #SBATCH --time=05:00:00                                                                       
 #SBATCH --ntasks=5
 # -- Update to your account number
-#SBATCH --account=rcm1
+#SBATCH --account=rcm2
 
 # -- Update to the location of your conda environment
-source /scratch2/BMC/rcm1/rhs/anaconda3/bin/activate py36_monet_default
+source /scratch4/BMC/rcm1/rhs/miniconda3/bin/activate melodies-monet-test-examples
 
 # -- Update the location and name of your run script
-cd /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/examples/submit_jobs/
+cd /scratch3/BMC/rcm2/rhs/MM_AEROMMA/test_examples/code2/MELODIES-MONET/examples/submit_jobs/
 python run_melodies_monet.py

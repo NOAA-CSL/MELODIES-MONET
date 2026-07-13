@@ -114,7 +114,7 @@ Aircraft specific plots are described below:
    **Violin** - Violin plot comparing one or more model results with one
    observation over the analysis window.
 
-.. figure:: /_static/figures/plot_grp5.curtain.O3_CL_RYERSON.2019-09-05_12.2019-09-06_00.all.CONUS_firexaq_vs_wrfchem_v4.2.png
+.. figure:: /_static/figures/plot_grp5.curtain.O3_CL.2023-08-02_00.2023-08-02_23.all.Chicago_aeromma_vs_wrfchem_v4.2.png
 
    **Curtain** - Curtain plot comparing one model results with one
    observation over the analysis window. Note: for multiple models being compared to one observation, each model-observation set would have a separate curtain plot.

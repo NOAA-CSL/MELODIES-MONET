@@ -113,9 +113,6 @@ plots:
     domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
-      #See 'altitde_yax2' list below for secondary y-axis options
-      #altitude_variable: altitude  
-      #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       #ts_avg_window: #'h' # pandas resample rule (e.g., 'h', 'D'). No averaging is done if ts_avg_window is null or not specified.
@@ -125,12 +122,10 @@ plots:
       #vmax2: #5000 #12000 #Optional #Subset limits for secondary y-axis (altitude_variable) 
       altitude_yax2:
         altitude_variable: altitude
-        altitude_ticks: 1000
+#        altitude_ticks: 1000
         ylabel2: Altitude (m)
         plot_kwargs_y2:
           color: g
-        altitude_unit: m
-        altitude_scaling_factor: 1
         #filter_dict: #Default is min and max if filter_dict doesn't define the options below (or if they are commented out)
         #  altitude:
         #    oper: "between"

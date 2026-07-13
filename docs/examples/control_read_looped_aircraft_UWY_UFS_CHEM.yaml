@@ -149,13 +149,12 @@ plots:
     domain_name: ['White Lake MI (72632)'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['uwy_ufschem'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
-      altitude_variable: pressure_obs  
       rem_obs_nan: True 
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
       altitude_yax2:
         altitude_variable: pressure_obs
-        altitude_ticks: 20000
+#        altitude_ticks: 20000
         ylabel2: Pressure (Pa)
         plot_kwargs_y2:
           color: g

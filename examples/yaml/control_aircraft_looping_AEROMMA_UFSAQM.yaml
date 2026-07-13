@@ -1,5 +1,7 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 analysis:
-  output_dir:  /scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/processed/jupyter/
+  output_dir: ./output/aircraft_ufsaqm
   debug: True
   
 model:
@@ -26,7 +28,7 @@ obs:
   aeromma: # obs label
     obs_type: aircraft
     time_var: Time_Start
-    resample: '600s' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    resample: '30s' #Switch to 600s for testing.
     variables: #Opt 
       'O3_CL':
         unit_scale: 1 #Opt Scaling factor 

@@ -1,37 +1,65 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 # General Description:  
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
 # Opt: Specifying the variable or variable group is optional
 # For now all plots except time series average over the analysis window. 
 # Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
-  start_time: '2021-07-25-00:00:00' #UTC
-  end_time: '2021-07-25-23:00:00' #UTC
-  output_dir: /wrk/charkins/melodies_monet/aircraft/develop_aircraft_ground/Output #Opt if not specified plots stored in code directory.
+  start_time: '2021-08-09-00:00:00' #UTC
+  end_time: '2021-08-09-23:59:00' #UTC
+  output_dir: ./output/sunvex_ground #Opt if not specified plots stored in code directory.
   debug: True
 model:
   wrfchem_v4.2: # model label
-    files: /wrk/users/charkins/MM_data/pasadena_ground_ict/corresponding_model/0725/wrfout_d01_2021-07-25_*
+    files: '/wrk/d2/rschwantes/MM_example_data/sunvex_base/*'
     mod_type: 'wrfchem'
     mod_kwargs: 
       mech: 'racm_esrl_vcp'
     mapping: #model species name : obs species name
       pasadena_ground:
-        PM2_5_DRY: "AerComp_OrganicAerosol_PM1" # not correct species pairing but using as example
+        o3: "O3_NOAA_NOxCaRD_ppbv"
+        "no": "NO_NOAA_NOxCaRD_ppbv"
+        no2: "NO2_NOAA_NOxCaRD_ppbv"
     plot_kwargs: #Opt
       color: 'dodgerblue'
       marker: '^'
       linestyle: ':' 
 obs:
   pasadena_ground: # obs label
-    filename: '/wrk/users/charkins/MM_data/pasadena_ground_ict/20210725/recap-CIT-AMS1-NR-PM1_CITLL_20210725_RB.ict'
+    filename: '/wrk/d2/rschwantes/MM_example_data/obs/sunvex/recap-NOAANOxCaRD-NO2-NOx-NO-NOy-Ox-O3_CITN_20210809_R0.ict'
     obs_type: ground
-    ground_coordinate: {'latitude':34.136363,'longitude':-118.126817}
-    #resample: '600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
-    variables: #Opt 
-      'AerComp_OrganicAerosol_PM1': 
-        unit_scale: 1 #Opt Scaling factor 
+    ground_coordinate: {'latitude':34.140289,'longitude':-118.125371}
+    #resample: '600s' # Switch to 10 minutes when testing. If you do not provide resample, pairing occurs 
+    # at the observational time resolution
+    variables: #Opt
+      'O3_NOAA_NOxCaRD_ppbv':
+        unit_scale: 1 #Opt Scaling factor
         unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
-        ylabel_plot: 'PM1 (units?)'
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'Ozone NOxCaRD (ppb)'
+        vmin_plot: 0.0
+        vmax_plot: 120.0
+      'NO_NOAA_NOxCaRD_ppbv':
+        unit_scale: 1 #Opt Scaling factor
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO NOxCaRD (ppb)'
+        vmin_plot: 0.0
+        vmax_plot: 10.0
+      'NO2_NOAA_NOxCaRD_ppbv':
+        unit_scale: 1 #Opt Scaling factor
+        unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        nan_value: -7777 # Opt Set this value to NaN
+        LLOD_value: -8888 # Opt Set this value to LLOD_setvalue
+        LLOD_setvalue: 0.0 # Opt Set LLOD_value=LLOD_setvalue, applied AFTER unit_scale and obs_unit
+        ylabel_plot: 'NO2 NOxCaRD (ppb)'
+        vmin_plot: 0.0
+        vmax_plot: 30.0
 
 plots:
   plot_grp1:
@@ -44,12 +72,12 @@ plots:
     text_kwargs: #Opt
       fontsize: 18.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_name: ['Pasadena, CA'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
+      #ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
   plot_grp2:
     type: 'taylor' # plot type
@@ -61,7 +89,7 @@ plots:
     text_kwargs: #Opt
       fontsize: 16.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_name: ['Pasadena, CA'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
@@ -73,12 +101,11 @@ plots:
     text_kwargs: #Opt
       fontsize: 20.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_name: ['Pasadena, CA'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
-
 
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
@@ -94,5 +121,5 @@ stats:
     yscale: 1.4
     edges: 'horizontal'
   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  domain_name: ['Pasadena, CA'] #List of domain names. If domain_type = all domain_name is used in plot title.
   data: ['pasadena_ground_wrfchem_v4.2'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
