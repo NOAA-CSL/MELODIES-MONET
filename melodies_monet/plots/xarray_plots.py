@@ -900,11 +900,13 @@ def make_spatial_bias_gridded(
     ax = monet.plots.mapgen.draw_map(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
+    # make copy of longitude that is 0-360 (global data may have striations if -180-180)
+    lon_copy = xr.where(dset.longitude < 0, dset.longitude + 360, dset.longitude)
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(
     #     dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
     # )
-    c = ax.axes.pcolormesh(dset.longitude, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm)
+    c = ax.axes.pcolormesh(lon_copy, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm)
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (

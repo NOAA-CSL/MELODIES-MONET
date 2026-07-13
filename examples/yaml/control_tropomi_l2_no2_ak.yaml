@@ -40,6 +40,26 @@ obs:
                         tm5_tropopause_pressure:
                                fillvalues: 9.96921e+36
 plots:
+        plot_grp2:
+                type: 'timeseries' # plot type
+                fig_kwargs: #Opt to define figure options
+                figsize: [12,6] # figure size if multiple plots
+                default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+                        linewidth: 2.0
+                        markersize: 10.
+                text_kwargs: #Opt
+                        fontsize: 18.
+                domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+                domain_name: ['global'] #List of domain names. If domain_type = all domain_name is used in plot title.
+                data: ['tropomi_l2_no2_ufschem'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+                data_proc:
+                        #See 'altitde_yax2' list below for secondary y-axis options
+                        #altitude_variable: altitude  
+                        #altitude_ticks: 1000  # Altitude tick interval in meters (for secondary y-axis for altitude (m))
+                        rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+                        ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+                        ts_avg_window:  'H'# pandas resample rule (e.g., 'H', 'D'). No averaging is done if ts_avg_window is null or not specified.
+                        set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs. 
         plot_grp1:
                 type: 'gridded_spatial_bias'
                 fig_kwargs:
