@@ -280,9 +280,23 @@ def get_epa_region_df(df):
 
 def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
+    import numpy as np
+    
+    #result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
+                                 #interpolation = interpolation,extrapolation = extrapolation)
 
-    result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
-                                 interpolation = interpolation,extrapolation = extrapolation)
+    levels_in = np.asarray(levels)
+    vertical_in = vertical.chunk().data
+    interp = interpolation
+    # Pressures should always be strictly positive, so the log is always well defined 
+    if interpolation in ('log-linear', 'loglinear', 'log_linear'):
+        levels_in = np.log(levels_in)
+        vertical_in = np.log(vertical_in)
+        interp = 'linear'
+
+    result = stratify.interpolate(levels_in, vertical_in, da.chunk().data, axis=axis,
+                                 interpolation = interp,extrapolation = extrapolation)
+
     dims = da.dims
     out = xr.DataArray(result, dims=dims)
     for i in dims:
@@ -295,8 +309,25 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
                 out.coords[i] = da.coords[i]
     return out
 
-def vert_interp(ds_model,df_obs,var_name_list):
+def vert_interp(ds_model,df_obs,var_name_list,method='linear'):
+
+    """
+    Vertically interpolate model columns onto the obs pressures
+
+    
+    method : {'linear', 'nearest', 'log-linear'}
+        Vertical interpolation method for the species/met variables. 'linear'
+        (default) and 'nearest' map directly to ``stratify``; 'log-linear'
+        interpolates linearly in log-pressure
+
+    """
     from pandas import merge_asof
+
+    _allowed = {'linear', 'nearest', 'log-linear', 'loglinear', 'log_linear'}
+    if method not in _allowed:
+        print(f"Warning: unknown vertical interp method {method!r}; using 'linear'. "
+              f"Supported options: linear, nearest, log-linear.")
+        method = 'linear'
 
     ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
     var_name_list.append('pressure_model_nan')
@@ -316,7 +347,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
         else:
             out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
                                   ds_model['pressure_model'],axis=1,
-                                  interpolation='linear',extrapolation='nearest')
+                                  interpolation=method,extrapolation='nearest')
         out.name = var_name
         var_out_list.append(out)
 
@@ -331,10 +362,32 @@ def vert_interp(ds_model,df_obs,var_name_list):
     df_model.drop(labels=['x','y','z','pressure_obs','pressure_model_nan','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
-    final_df_model = merge_asof(df_obs, df_model, 
-                            by=['latitude', 'longitude', 'pressure_obs'], 
-                            on='time', direction='nearest')
+    # final_df_model = merge_asof(df_obs, df_model, 
+    #                         by=['latitude', 'longitude', 'pressure_obs'], 
+    #                         on='time', direction='nearest')
+    
+    # The model's pressure_obs is produced by stratifying onto the obs levels in the
+    # model's float32 dtype (i.e. float32(level)); the obs pressure is float64(level).
+    df_obs = df_obs.copy()
+    for _k in ['latitude', 'longitude', 'pressure_obs']:
+        if _k in df_obs.columns and _k in df_model.columns:
+            if df_obs[_k].dtype != df_model[_k].dtype:
+                df_obs[_k] = df_obs[_k].astype(df_model[_k].dtype)
 
+    # When a model variable shares the obs variable's name (e.g. mapping O3:'O3'),
+    # MM's plotting expects the MODEL column suffixed '_new' (obs stays bare). Rename
+    # the colliding model columns here so merge_asof doesn't fall back to its default
+    # _x/_y suffixes
+    
+    _join_keys = {'latitude', 'longitude', 'pressure_obs', 'time'}
+    _overlap = (set(df_model.columns) & set(df_obs.columns)) - _join_keys
+    if _overlap:
+        df_model = df_model.rename(columns={_c: f"{_c}_new" for _c in _overlap})
+        
+    final_df_model = merge_asof(df_obs, df_model,
+                            by=['latitude', 'longitude', 'pressure_obs'],
+                            on='time', direction='nearest')
+    
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
@@ -473,83 +526,49 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         an.pair_data()
         an.save_analysis()
 
-def convert_std_to_amb(
-    ds,
-    convert_vars=None,
-    temp_var=None,
-    pres_var=None,
-    standard_pressure=101325.0,
-    standard_temperature=273.0
-):
-    """
-    Convert aerosol concentrations from standard to ambient conditions.
+def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
     
-    Parameters
-    ----------
-    ds: xarray.Dataset
-        Dataset containing variables to convert.
-    convert_vars: list of str, optional
-        List of variable names in ds to apply conversion to.
-    temp_var: str
-        Name of temperature variable in ds (units must be Kelvin).
-    pres_var: str
-        Name of pressure variable in ds (units must be Pascal).
-    standard_pressure: float, optional
-        Standard pressure in Pa used for defining standard conditions.
-        Default is 101325 Pa (international standard atmosphere).
-    standard_temperature: float, optional
-        Standard temperature in K used for defining standard conditions.
-        Default is 273 K.
+    # Convert variables from std to amb
     
-    """
-    if convert_vars is None:
-        convert_vars = []
-
-    std_air = standard_pressure * N_A / (R * standard_temperature)
-    Airnum = ds[pres_var] * N_A / (R * ds[temp_var])
-    factor = Airnum / std_air
-
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    # Losch = 2.69e25 # loschmidt's number
+    #I checked the more detailed icart files
+    #273 K, 1 ATM (101325 Pa)
+    std_ams = 101325.*N_A/(R*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_ams = Airnum/std_ams
+    
     for var in convert_vars:
-        ds[var] = ds[var] * factor
+        ds[var] = ds[var]*convert_std_to_amb_ams
+
+def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
+    
+    # Convert variables from std to amb
+    
+    # Units of temp_var must be K
+    # Units of pres_var must be Pa 
+    
+    #So I just need to convert the obs from std to amb.
+    # Losch = 2.69e25 # loschmidt's number
+    #1013 mb, 273 K (101300 Pa)
+    std_bc = 101300.*N_A/(R*273.)
+    #use pressure_obs now, which is in pa
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
+    
+    # amb to std = Losch / Airnum
+    convert_std_to_amb_bc = Airnum/std_bc
+    
+    for var in convert_vars:
+        ds[var] = ds[var]*convert_std_to_amb_bc
 
 
-
-def convert_std_to_amb_ams(ds, convert_vars=None, temp_var=None, pres_var=None):
-    """ 
-    Backwards compatable wrapper for AMS Dataset.
-    This uses international std atmosphere defination
-    Pressure = 101325 Pa
-    Temperature = 273 K
-    """
-    return convert_std_to_amb(
-        ds,
-        convert_vars=convert_vars,
-        temp_var=temp_var,
-        pres_var=pres_var,
-        standard_pressure=101325.0,
-        standard_temperature=273.0
-    )
-
-
-def convert_std_to_amb_bc(ds, convert_vars=None, temp_var=None, pres_var=None):
-    """
-    Backwards compatable wrapper for AMS Dataset.
-    This uses black carbon aircraft processing standard
-    Presure = 101300 Pa
-    Temperature = 273 K
-    """
-    return convert_std_to_amb(
-        ds,
-        convert_vars=convert_vars,
-        temp_var=temp_var,
-        pres_var=pres_var,
-        standard_pressure=101300.0,
-        standard_temperature=273.0
-    )
-
-
-
-def calc_partialcolumn(modobj, var="NO2", unit="molecules/cm2"):
+def calc_partialcolumn(modobj, var="NO2"):
     """Calculates the partial column of a species from its concentration
     within a gridcell.
 
@@ -559,29 +578,15 @@ def calc_partialcolumn(modobj, var="NO2", unit="molecules/cm2"):
         Model data
     var : str
         variable to calculate the partial column from
-    unit : str
-        units for the output partial column (currently only 'molecules/cm2'
-        and mol/m2 are supported)    
 
     Returns
     -------
     xr.DataArray
         DataArray containing the partial column of the species.
     """
-    if unit not in ["molecules/cm2", "mol/m2"]:
-        raise ValueError(
-            "Unsupported unit for partial column calculation. "
-            "Supported units are 'molecules/cm2' and 'mol/m2'."
-        )    
-    
-    ppbv2molefrac = 1e-9
+    ppbv2molmol = 1e-9
     m2_to_cm2 = 1e4
-    
-    if unit == "molecules/cm2":
-        fac_units = ppbv2molefrac * N_A / m2_to_cm2
-    else:
-        fac_units = ppbv2molefrac
-        
+    fac_units = ppbv2molmol * N_A / m2_to_cm2
     partial_col = (
         modobj[var]
         * modobj["pres_pa_mid"]
@@ -589,7 +594,7 @@ def calc_partialcolumn(modobj, var="NO2", unit="molecules/cm2"):
         * fac_units
         / (R * modobj["temperature_k"])
     )
-    partial_col.attrs = {"units": f"{unit}", "long_name": f"{var} partial column"}
+    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
     return partial_col
 
 
@@ -640,3 +645,4 @@ def calc_geolocaltime(modobj):
     localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
     return localtime
+
