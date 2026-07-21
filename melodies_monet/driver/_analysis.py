@@ -52,6 +52,7 @@ class analysis:
         self.add_logo = True
         """bool, default=True : Add the MELODIES MONET logo to the plots."""
         self.pairing_kwargs = {}
+        self.montage_config = None  # place all output into a single "image" rather than hyperscrolling through directories
 
     def __repr__(self):
         return (
@@ -130,6 +131,8 @@ class analysis:
             self.read = self.control_dict["analysis"]["read"]
         if "add_logo" in self.control_dict["analysis"].keys():
             self.add_logo = self.control_dict["analysis"]["add_logo"]
+        if "montage" in self.control_dict["analysis"].keys():
+            self.montage_config = self.control_dict["analysis"]["montage"]
 
         if "regrid" in self.control_dict["analysis"].keys():
             self.regrid = self.control_dict["analysis"]["regrid"]
@@ -167,6 +170,102 @@ class analysis:
             from dask.callbacks import Callback
 
             Callback.active = set()
+
+    def montage(self):
+        
+        """
+        place all images into a single "image" rather than hyperscrolling through output. 
+
+        one montage per plot type, per flight subdirectories, etc. 
+
+        - cols: columns in the sheet.
+        - thumb_width: px width each thumbnail is scaled to.
+        
+        - group_by: groups PNGs sharing the "<grp>.<type>.<var>" filename stem (one
+          montage each, tiling matching plots across subdirs); 'all' puts every
+          matched PNG on a single sheet.
+          
+        - search: relative to the plot dir. Use
+          ``'*.png'`` for a flat run (surface/satellite), ``'*/*.png'`` for
+          per-flight subdirectories.
+          
+        - plot_dir: where to look for PNGs.
+        - outdir: output subdir under ``plot_dir``.
+        """
+        if not self.montage_config:
+            return
+            
+        import glob as _glob
+        import math as _math
+        
+        try:
+            from PIL import Image
+        except ImportError:
+            print("montage: Pillow (PIL) not installed; pip install PIL skipping.", flush=True)
+            return
+
+        print("Creating montages... NOTE: This feature is designed to help with rapid analysis. It is not intended to be used as publication quality output!")
+        
+        cfg = self.montage_config if isinstance(self.montage_config, dict) else {}
+        cols = int(cfg.get("cols", 6))
+        thumb_w = int(cfg.get("thumb_width", 420))
+        group_by = cfg.get("group_by", "plotname")
+        search = cfg.get("search", "*/*.png")
+        plot_dir = os.path.expandvars(cfg.get("plot_dir", self.output_dir or "."))
+        out = os.path.join(plot_dir, cfg.get("outdir", "montages"))
+        
+        # IF the user makes the plot_dir and output_dir the same, it will simply to not find the .pngs. You don't want an endless cycle of montages creating montages creating montages. 
+        #os.makedirs(out, exist_ok=True)
+
+        # fix: Warn and redirect montages into a new subdir within output_dir
+        if os.path.abspath(out) == os.path.abspath(plot_dir):
+            print(f"montage: WARNING outdir == plot_dir ({plot_dir}). The source "
+                  "outdir cannot be the same as the plot_dir. Otherwise, you will endlessly montage your montages. Redirecting montages to a "
+                  "'montages' subdir here:", flush=True)
+
+            out = os.path.join(plot_dir, "montages")
+            print(out)
+
+        if not os.path.isdir(out):
+            os.makedirs(out, exist_ok=True)
+            print(f"montage: created montage directory {out}", flush=True)
+            
+        files = sorted(_glob.glob(os.path.join(plot_dir, search)))
+        # never recurse into our own output
+        files = [f for f in files if os.path.dirname(f) != out]
+        if not files:
+            print(f"montage: no PNGs matched {os.path.join(plot_dir, search)}", flush=True)
+            return
+
+        if group_by == "all":
+            groups = {"all": files}
+        elif group_by == "type": # group by plot type
+            groups = {}
+            for p in files:
+                parts = os.path.basename(p).split(".")
+                key = parts[1] if len(parts) > 1 else parts[0]
+                groups.setdefault(key, []).append(p)
+        else:  # share the <grp>.<type>.<var> stem (useful for the aircraft plots )
+            groups = {}
+            for p in files:
+                key = ".".join(os.path.basename(p).split(".")[:3])
+                groups.setdefault(key, []).append(p)
+
+        for k, gfiles in groups.items():
+            gfiles = sorted(gfiles)
+            thumbs = [Image.open(f).convert("RGB") for f in gfiles]
+            maxw = max(t.width for t in thumbs)
+            scale = thumb_w / maxw
+            tw = int(maxw * scale)
+            th = int(max(t.height for t in thumbs) * scale)
+            rows = _math.ceil(len(thumbs) / cols)
+            sheet = Image.new("RGB", (cols * tw, rows * th), "white")
+            for i, t in enumerate(thumbs):
+                r, c = divmod(i, cols)
+                sheet.paste(t.resize((tw, th)), (c * tw, r * th))
+            dest = os.path.join(out, f"montage_{k}.png")
+            sheet.save(dest)
+            print(f"montage: wrote {dest} ({len(gfiles)} tiles)", flush=True)            
 
     def save_analysis(self):
         """Save all analysis attributes listed in analysis section of input yaml file.
@@ -3032,6 +3131,9 @@ class analysis:
 
         # Restore figure count warning
         plt.rcParams["figure.max_open_warning"] = initial_max_fig
+
+        # call montage if in analysis block
+        self.montage()
 
     def stats(self):
         """Calculate statistics specified in the input yaml file.
