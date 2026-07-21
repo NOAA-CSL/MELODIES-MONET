@@ -34,6 +34,15 @@ except ImportError:
     windrose = None
     WindroseAxes = None
 
+# Regulatory calculations were moved to melodies_monet.util.regulatory_tools.
+# Re-export them here so existing splots.make_*_regulatory(...) call sites resolve.
+from melodies_monet.util.regulatory_tools import (
+    make_24hr_regulatory,
+    calc_24hr_ave_v1,
+    make_8hr_regulatory,
+    calc_8hr_rolling_max_v1,
+)
+
 def calc_default_colors(p_index):
     """List of default colors, lines, and markers to use if user does not 
     specify them in the input yaml file.
