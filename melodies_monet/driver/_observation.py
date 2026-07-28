@@ -192,11 +192,6 @@ class observation:
         None
         """
         from melodies_monet.util import time_interval_subset as tsub
-        from melodies_monet.util.tools_sat import (
-            mask_and_scale_sat,
-            sum_variables_sat,
-            filter_obs_sat,
-        )
         from glob import glob
 
         try:
@@ -279,23 +274,36 @@ class observation:
                     )
                 # self.obj = granules, an OrderedDict of Datasets, keyed by datetime_str,
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
-            elif self.sat_type == 'tropomi_l2_no2' and (
-                    self.sat_method == None or self.sat_method == "replace_apriori"):
+            elif self.sat_type == "tropomi_l2_no2":
                 # from monetio import tropomi_l2_no2
-                print("Reading TROPOMI L2 NO2")
-                try:
+                if self.sat_method == "replace_apriori":
+                    # Legacy NO2-specific reader (Meng): preslev/troppres,
+                    print("Reading TROPOMI L2 NO2 (replace_apriori, legacy reader)")
                     self.obj = mio.sat.tropomi_l2_no2.read_trpdataset(
                         self.file, self.variable_dict, debug=self.debug
                     )
-                except AttributeError:
-                    self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
-                        self.file, self.variable_dict, debug=self.debug
+                else:
+                    # Generic TROPOMI reader
+                    # consumed directly by the conservative/unstructured pairing.
+                    print("Reading TROPOMI L2 NO2 (generic reader)")
+                    self.obj = mio.sat.tropomi_l2.open_datasets(
+                        self.file, self.variable_dict
                     )
-            elif self.sat_type.startswith('tropomi_l2') and self.sat_method == "apply_ak":
-
-                print('Reading TROPOMI L2 with averaging kernel application')
-                self.obj = mio.sat.tropomi_l2.open_datasets(self.file, self.variable_dict)        
-
+                    
+            elif self.sat_type == "tropomi_l2_hcho":
+                # Generic TROPOMI reader, which is same as NO2 conservative path
+                print("Reading TROPOMI L2 HCHO (generic reader)...")
+                self.obj = mio.sat.tropomi_l2.open_datasets(
+                    self.file, self.variable_dict
+                )
+                
+            elif self.sat_type == "tropomi_l2_co":
+                # Generic TROPOMI reader
+                print("Reading TROPOMI L2 CO (generic reader)...")
+                self.obj = mio.sat.tropomi_l2.open_datasets(
+                    self.file, self.variable_dict
+                )
+                
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:
@@ -312,9 +320,6 @@ class observation:
         except ValueError as e:
             print("something happened opening file:", e)
             return
-        mask_and_scale_sat(self)  # mask and scale values from the control values
-        sum_variables_sat(self)
-        filter_obs_sat(self)
 
     def filter_obs(self):
         """Filter observations based on filter_dict.
