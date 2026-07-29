@@ -297,6 +297,8 @@ class analysis:
                 # set the model label in the dictionary and model class instance
                 if "is_global" in self.control_dict["model"][mod].keys():
                     m.is_global = self.control_dict["model"][mod]["is_global"]
+                if "is_track" in self.control_dict["model"][mod].keys():
+                    m.is_track = self.control_dict["model"][mod]["is_track"]
                 if "mod_to_overpass" in self.control_dict["model"][mod].keys():
                     m.mod_to_overpass = self.control_dict["model"][mod]["mod_to_overpass"]
                 if "radius_of_influence" in self.control_dict["model"][mod].keys():
@@ -377,7 +379,11 @@ class analysis:
                             m.proj = ccrs.Projection(proj_in)
 
                 # open the model
-                if load_files:
+                if m.is_track:
+                    # track_pairing opens and reshapes track-only model data
+                    # during pair_data, so only resolve the file list here.
+                    m.glob_files()
+                elif load_files:
                     m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
                 self.models[m.label] = m
 
@@ -565,6 +571,40 @@ class analysis:
         print("1, in pair data")
         for model_label in self.models:
             mod = self.models[model_label]
+
+            # along-track model output: paired 1-D along the track, not gridded
+            if getattr(mod, "is_track", False):
+                from melodies_monet.util.track_pairing import pair_track_model
+
+                for obs_to_pair in mod.mapping.keys():
+                    obs = self.obs[obs_to_pair]
+                    track_map = mod.mapping[obs_to_pair]  # {model_var: obs_var}
+                    obs_file = self.control_dict["obs"][obs_to_pair]["filename"]
+                    tdf = pair_track_model(mod.files[0], obs_file, track_map)
+                    # a model var sharing the obs var's name must carry the '_new'
+                    # suffix that the plotting code expects
+                    _obsnames = set(track_map.values())
+                    tdf = tdf.rename(columns={
+                        f"{ov}_mod": (f"{mv}_new" if mv in _obsnames else mv)
+                        for mv, ov in track_map.items()
+                    })
+                    p = pair()
+                    p.type = "aircraft"
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = list(track_map.keys())
+                    p.obs_vars = list(track_map.values())
+                    p.filename = "{}_{}.nc".format(p.obs, p.model)
+                    p.obj = (
+                        tdf.set_index("time").to_xarray()
+                        .expand_dims("x").transpose("time", "x")
+                    )
+                    self.paired["{}_{}".format(p.obs, p.model)] = p
+                    print(f"[track] paired {p.obs}_{p.model}: {len(tdf)} points",
+                          flush=True)
+                continue
+
             # Now we have the models we need to loop through the mapping table for each network and pair the data
             # each paired dataset will be output to a netcdf file with 'model_label_network.nc'
             for obs_to_pair in mod.mapping.keys():
