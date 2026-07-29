@@ -18,7 +18,7 @@ The MDA8 ozone metric is calculated based on the following:
   4) The MDA8 value is only used for a given day if at least 18 of the 24 possible 8-hour averages are available
 
 As described in the EPA report on
-`Health Risk and Exposure Assessment for Ozone <https://www3.epa.gov/ttn/naaqs/standards/ozone/data/20140131healthrea4a.pdf>`__
+`Health Risk and Exposure Assessment for Ozone <https://www.epa.gov/system/files/documents/2025-02/health-risk-and-exposure-assessment-for-ozone-final-report_0.pdf>`__
 (page 8).
 
 The 24 hour average PM\ :sub:`2.5` \ metric is calculated based on the following:

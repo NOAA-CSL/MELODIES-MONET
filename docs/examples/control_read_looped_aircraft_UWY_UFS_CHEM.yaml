@@ -1,0 +1,194 @@
+# General Description:  
+
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+
+analysis:
+  start_time: '2023-08-01 00:00:00' #UTC
+  end_time: '2023-08-02-00:00:00' #UTC
+  output_dir: ./output/uwy_ufschem # relative to the program using this control file
+  debug: True
+  read:
+      paired:
+          method: 'netcdf' # 'netcdf' or 'pkl'
+          filenames: {'uwy_ufschem': ["0801_12Z_72632_uwy_ufschem.nc4"]}          
+          # example for netcdf method. 
+          # Uses dict of form {group1: str or iterable of filenames, group2:...}  
+          # Any wildcards will be expanded
+          
+          # filenames: {'airnow_wrfchem_v4.2'['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} 
+          # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
+      # models:
+      # obs:
+      
+model:
+  ufschem: # model label
+    files: example:ufschem:2023-08-01 #example:ufschem:2023-06
+    mod_type: 'ufschem'
+    radius_of_influence: 100000 #meters
+    
+    extra_calc: # Add more complex calculations and their associated variables here.
+
+    ####### Extra_calc naming example
+    # variable_calculating
+      # variable required for calculation: "variable name in model"
+      
+      dewpoint:
+        specific_hum: "spfh" # string of what it is in the model
+        pres_calc: "pressure_model"
+      rel_hum: 
+        specific_hum: "spfh"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
+      windspeed:
+        u_comp: "ugrd"  
+        v_comp: "vgrd" 
+      winddir: 
+        u_comp: "ugrd" 
+        v_comp: "vgrd"
+      ptemp_mod:
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
+    
+    mapping: #model species name : obs species name
+      uwy: 
+        temperature_k: temperature_C
+        dewpoint: dpt_obs
+        rel_hum: relh_obs
+        windspeed: windspeed_obs
+        winddir: wdir_obs
+        ptemp_mod: ptemp_obs
+        
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+            
+    projection: null
+    plot_kwargs: #Opt
+      color: 'dodgerblue'
+      marker: '^'
+      linestyle: ':' 
+obs:
+  uwy: # obs label
+    filename: example:uwy-sonde:2023-08-01 #example:uwy-sonde:2023-06
+    obs_type: aircraft
+    time_var: time
+    resample: '2s' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    
+    extra_calc:
+      ptemp_obs:
+        temp_calc: "temperature_C"
+        pres_calc: "pressure_obs"
+        
+    variables: #Opt 
+      'pressure_hPa':
+            rename: pressure_obs # name to convert this variable to
+            unit_scale: 100 
+            unit_scale_method: '*'
+            ylabel_plot: 'Pressure (Pa)'
+            xlabel_plot: 'Pressure (Pa)'
+            nan_value: -1 
+            
+      'temperature_C':
+            unit_scale: 273.15 
+            unit_scale_method: '+'
+            ylabel_plot: 'Temperature (K)'
+            xlabel_plot: 'Temperature (K)'
+            nan_value: -1
+
+      'dew point temperature_C':
+          rename: dpt_obs 
+          unit_scale: 273.15 
+          unit_scale_method: '+'
+          ylabel_plot: 'Dewpoint (K)'
+          xlabel_plot: 'Dewpoint (K)'
+          nan_value: -1
+
+      'relative humidity_%':
+          rename: relh_obs 
+          unit_scale: 1 
+          unit_scale_method: '*' 
+          ylabel_plot: 'Relative Humidity (%)'
+          xlabel_plot: 'Relative Humidity (%)'
+          nan_value: -1
+
+      'wind speed_m/s':
+          rename: windspeed_obs 
+          unit_scale: 1 
+          unit_scale_method: '*'
+          ylabel_plot: 'Windspeed (m/s)'
+          xlabel_plot: 'Windspeed (m/s)'
+          nan_value: -1 
+
+      ptemp_obs:
+          ylabel_plot: 'Potential Temperature (K)'
+          xlabel_plot: 'Potential Temperature (K)'
+          
+      'wind direction_degree':
+          rename: wdir_obs 
+          unit_scale: 1 
+          unit_scale_method: '*'
+          ylabel_plot: 'Wind direction (deg)'
+          xlabel_plot: 'Wind direction (deg)'
+          nan_value: -1
+plots:
+  plot_grp1:
+    type: 'timeseries' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [12,6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 5.
+    text_kwargs: #Opt
+      fontsize: 18.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['White Lake MI (72632)'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['uwy_ufschem'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      altitude_variable: pressure_obs  
+      rem_obs_nan: True 
+      ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      altitude_yax2:
+        altitude_variable: pressure_obs
+        altitude_ticks: 20000
+        ylabel2: Pressure (Pa)
+        plot_kwargs_y2:
+          color: g
+        #default to min and max if don't use filter options below
+        #filter_dict:
+        #  pressure_obs:
+        #    oper: "between"
+        #    value: [0,100000]
+            
+  plot_grp2:
+    type: 'vertprofile'  # plot type
+    fig_kwargs:  # Opt to define figure options
+      figsize: [10, 14]  # figure size
+    default_plot_kwargs:  # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:  # Opt
+      fontsize: 24.
+    ylabel_vert: Pressure (Pa)
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['White Lake MI (72632)'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['uwy_ufschem']  
+    data_proc:
+      rem_obs_nan: True  
+      set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
+      interquartile_style: 'shading' # or 'box'
+    altitude_variable: pressure_obs #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
+    vertprofile_bins:
+      range:
+        start: 0
+        stop: 100001
+        step: 5000
+    #blh_calc: True
+    vmin: 0  #Optional
+    vmax: 100000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+    gridlines: True

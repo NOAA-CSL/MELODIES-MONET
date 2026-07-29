@@ -1,0 +1,62 @@
+analysis:
+        start_time: '2023-08-05-00:00:00'
+        end_time: '2023-08-06-00:00:00'
+        debug: True
+        output_dir: /home/mbruckner/MELODIES_MONET/test_plots
+        save:
+                paired:
+                        method: 'netcdf'
+                        prefix: 'aeromma_control'
+                        data: 'all'
+        read:
+                paired:
+                        method: 'netcdf'
+                        filename: {'omps_nm_ufschem': ['aeromma_control_*.nc4']}
+model:
+        ufschem:
+                files: /wrk/da12/mbruckner/ufschem/gfs.20230805/gfs.t00z.atmf*.nc
+                #files: /wrk/d2/rschwantes/UFS-Chem_v1/UFS_C96_aeromma_AM4/gfs.2023080[1-2]/00/model_data/atmos/history/gfs.t00z.atmf*.nc
+                mod_type: 'ufschem'
+                is_global: True
+                mod_to_overpass: True
+                mapping:
+                        omps_nm:
+                                o3: ozone_column
+obs:
+        omps_nm:
+                filename: /wrk/da12/mbruckner/omps/OMPS-NPP_NMTO3-L2_v2.1_2023m0805t*.h5
+                obs_type: sat_swath_clm
+                sat_type: omps_nm
+                sat_method: apply_ak
+                variables:
+                        ozone_column:
+                                ylabel_plot: 'DU'
+plots:
+        plt_grp1:
+                type: 'gridded_spatial_bias'
+                fig_kwargs:
+                        states: True
+                        figsize: [10, 5]
+                test_kwargs:
+                        fontsize: 16
+                domain_type: ['all']
+                domain_name: ['Global']
+                data: ['omps_nm_ufschem']
+                data_proc:
+                        rem_obs_nan: True
+                        set_axis: True
+        plot_grp2:
+            type: 'taylor' # plot type
+            fig_kwargs: #Opt to define figure options
+              figsize: [8,8] # figure size if multiple plots
+            default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+              linewidth: 2.0
+              markersize: 10.
+            text_kwargs: #Opt
+              fontsize: 16.
+            domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+            domain_name: ['Global'] #List of domain names. If domain_type = all domain_name is used in plot title.
+            data: ['omps_nm_ufschem'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+            data_proc:
+              rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+              set_axis: True #If select True, add ty_scale for each variable in obs.

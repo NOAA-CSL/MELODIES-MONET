@@ -3,9 +3,13 @@
 import os
 import logging
 import xarray as xr
-from monetio.sat._gridded_eos_mm import read_gridded_eos
 
-from .analysis_util import fill_date_template, find_file
+try:
+    from monetio.sat.gridded_eos import read_gridded_eos
+except AttributeError:
+    from monetio.sat._gridded_eos_mm import read_gridded_eos
+
+from melodies_monet.util.analysis_util import fill_date_template, find_file
 
 
 def read_grid_models(config, date_str, model=None):

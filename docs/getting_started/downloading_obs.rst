@@ -16,7 +16,8 @@ observational data over and over again for the same analysis period. We will wor
 in the future.
 
 The MELODIES MONET tool has a Command Line Interface (CLI) that can be used to download and create 
-MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ.
+MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ. For users experiencing extended 
+download times, refer to the note below. 
 
 The Command Line Interface allows users to very easily download datasets with a single command line argument. 
 Generally, users only need to select which subcommand to use (i.e., which observational data set you want to download) 
@@ -45,6 +46,17 @@ There are many other optional features available that are fully described in the
    with download restrictions), you will need to use the MELODIES MONET Command Line Interface on a 
    machine without download restrictions and manually copy the netCDF files produced 
    onto the NOAA Hera machine.
+
+.. note::
+   For users using ISH and ISH-LITE, download times can be significant. Running this command in the CLI is be reccomended 
+   if you are experiencing extended wait times while downloading any dataset. Connection times between MELODIE-MONET and the 
+   data server can time out. With this loop, the download can fail, but will automatically try again::
+
+   $ until melodies-monet get-ish-lite -s 2017-07-01 -e 2017-07-03 --no-compress; do     echo "Download failed, retrying in 10 seconds...";     sleep 10; done
+
+   More generally::
+
+   $ until melodies-monet get-<dataset> -s <start_date> -e <end_date> --no-compress; do     echo "Download failed, retrying in 10 seconds...";     sleep 10; done
 
 Aircraft, Sonde, Mobile, and Ground Campaign Data
 -------------------------------------------------

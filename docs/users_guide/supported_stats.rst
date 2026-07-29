@@ -40,6 +40,10 @@ NMdnE            Normalized Median Error (%)
 FE               Fractional Error (%)
 R2               Coefficient of Determination (R2)
 RMSE             Root Mean Square Error
+MAE              Mean absolute error
+MSE              Mean squared error
+MAPE             Mean absolute percentage error
+SMAPE            Symmetric Mean absolute percentage error
 d1               Modified Index of Agreement
 E1               Modified Coefficient of Efficiency
 IOA              Index of Agreement

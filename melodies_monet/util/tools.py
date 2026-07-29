@@ -396,7 +396,7 @@ def find_obs_time_bounds(files=[],time_var=None):
             elif extension in ['.ict', '.icartt']:
                 obs = mio.icartt.add_data(file)
             elif extension in ['.csv']:
-                from .read_util import read_aircraft_obs_csv
+                from melodies_monet.util.read_util import read_aircraft_obs_csv
                 obs = read_aircraft_obs_csv(filename=file,time_var=time_var)
             else:
                 raise ValueError(f'extension {extension!r} currently unsupported')
@@ -473,49 +473,83 @@ def loop_pairing(control,file_pairs_yaml='',file_pairs={},save_types=['paired'])
         an.pair_data()
         an.save_analysis()
 
-def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
+def convert_std_to_amb(
+    ds,
+    convert_vars=None,
+    temp_var=None,
+    pres_var=None,
+    standard_pressure=101325.0,
+    standard_temperature=273.0
+):
+    """
+    Convert aerosol concentrations from standard to ambient conditions.
     
-    # Convert variables from std to amb
+    Parameters
+    ----------
+    ds: xarray.Dataset
+        Dataset containing variables to convert.
+    convert_vars: list of str, optional
+        List of variable names in ds to apply conversion to.
+    temp_var: str
+        Name of temperature variable in ds (units must be Kelvin).
+    pres_var: str
+        Name of pressure variable in ds (units must be Pascal).
+    standard_pressure: float, optional
+        Standard pressure in Pa used for defining standard conditions.
+        Default is 101325 Pa (international standard atmosphere).
+    standard_temperature: float, optional
+        Standard temperature in K used for defining standard conditions.
+        Default is 273 K.
     
-    # Units of temp_var must be K
-    # Units of pres_var must be Pa 
-    
-    #So I just need to convert the obs from std to amb.
-    # Losch = 2.69e25 # loschmidt's number
-    #I checked the more detailed icart files
-    #273 K, 1 ATM (101325 Pa)
-    std_ams = 101325.*N_A/(R*273.)
-    #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
-    
-    # amb to std = Losch / Airnum
-    convert_std_to_amb_ams = Airnum/std_ams
-    
+    """
+    if convert_vars is None:
+        convert_vars = []
+
+    std_air = standard_pressure * N_A / (R * standard_temperature)
+    Airnum = ds[pres_var] * N_A / (R * ds[temp_var])
+    factor = Airnum / std_air
+
     for var in convert_vars:
-        ds[var] = ds[var]*convert_std_to_amb_ams
-
-def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
-    
-    # Convert variables from std to amb
-    
-    # Units of temp_var must be K
-    # Units of pres_var must be Pa 
-    
-    #So I just need to convert the obs from std to amb.
-    # Losch = 2.69e25 # loschmidt's number
-    #1013 mb, 273 K (101300 Pa)
-    std_bc = 101300.*N_A/(R*273.)
-    #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
-    
-    # amb to std = Losch / Airnum
-    convert_std_to_amb_bc = Airnum/std_bc
-    
-    for var in convert_vars:
-        ds[var] = ds[var]*convert_std_to_amb_bc
+        ds[var] = ds[var] * factor
 
 
-def calc_partialcolumn(modobj, var="NO2"):
+
+def convert_std_to_amb_ams(ds, convert_vars=None, temp_var=None, pres_var=None):
+    """ 
+    Backwards compatable wrapper for AMS Dataset.
+    This uses international std atmosphere defination
+    Pressure = 101325 Pa
+    Temperature = 273 K
+    """
+    return convert_std_to_amb(
+        ds,
+        convert_vars=convert_vars,
+        temp_var=temp_var,
+        pres_var=pres_var,
+        standard_pressure=101325.0,
+        standard_temperature=273.0
+    )
+
+
+def convert_std_to_amb_bc(ds, convert_vars=None, temp_var=None, pres_var=None):
+    """
+    Backwards compatable wrapper for AMS Dataset.
+    This uses black carbon aircraft processing standard
+    Presure = 101300 Pa
+    Temperature = 273 K
+    """
+    return convert_std_to_amb(
+        ds,
+        convert_vars=convert_vars,
+        temp_var=temp_var,
+        pres_var=pres_var,
+        standard_pressure=101300.0,
+        standard_temperature=273.0
+    )
+
+
+
+def calc_partialcolumn(modobj, var="NO2", unit="molecules/cm2"):
     """Calculates the partial column of a species from its concentration
     within a gridcell.
 
@@ -525,15 +559,29 @@ def calc_partialcolumn(modobj, var="NO2"):
         Model data
     var : str
         variable to calculate the partial column from
+    unit : str
+        units for the output partial column (currently only 'molecules/cm2'
+        and mol/m2 are supported)    
 
     Returns
     -------
     xr.DataArray
         DataArray containing the partial column of the species.
     """
-    ppbv2molmol = 1e-9
+    if unit not in ["molecules/cm2", "mol/m2"]:
+        raise ValueError(
+            "Unsupported unit for partial column calculation. "
+            "Supported units are 'molecules/cm2' and 'mol/m2'."
+        )    
+    
+    ppbv2molefrac = 1e-9
     m2_to_cm2 = 1e4
-    fac_units = ppbv2molmol * N_A / m2_to_cm2
+    
+    if unit == "molecules/cm2":
+        fac_units = ppbv2molefrac * N_A / m2_to_cm2
+    else:
+        fac_units = ppbv2molefrac
+        
     partial_col = (
         modobj[var]
         * modobj["pres_pa_mid"]
@@ -541,7 +589,7 @@ def calc_partialcolumn(modobj, var="NO2"):
         * fac_units
         / (R * modobj["temperature_k"])
     )
-    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
+    partial_col.attrs = {"units": f"{unit}", "long_name": f"{var} partial column"}
     return partial_col
 
 
@@ -588,7 +636,7 @@ def calc_geolocaltime(modobj):
     # but it is very cheap to redo and should make us be safer.
 
     hrs2ms = 3600_000
-    timedelta = (modobj["longitude"].values * hrs2ms / 15).astype('timedelta64[ms]')
+    timedelta = (modobj["longitude"] * hrs2ms / 15).astype('timedelta64[ns]')
     localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
     return localtime

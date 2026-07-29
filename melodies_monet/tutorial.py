@@ -43,6 +43,10 @@ _examples = {
             "example_observation_data/surface/AIRNOW_20190701_20190731.nc",
             "sha256:67da806bcdca90289147254a3fa63a746b8a63ef973a497d0b47c789d48291c2",
         ),
+        "2017-07": (
+            "example_observation_data/surface/AirNow_20170701_20170703.nc",
+            "sha256:b924c66424b7f0f663eca946273fe8b6ce43953f5e97fd00564e0720f9b074fe",
+        )
     },
     "camchem": {
         "fv": (
@@ -88,6 +92,20 @@ _examples = {
             "sha256:b78522d6bcbfbc5dc6243cfd3ca8465c7d5aaebbcb49a9c30b9cbd9b99209aff",
         ),
     },
+    "ufschem": {
+        "2017-07": (
+            "example_model_data/ufschem_example/2017_07_01_03_ufschemv1.nc",
+            "sha256:a014e678b983e3c3dcdd3c451e74e82e684408498f13b00c49aa66ed252d8504",
+        ),
+        "2017-07_sfc": (
+            "example_model_data/ufschem_example/2017_07_01_03_ufschemv1_sfc.nc",
+            "sha256:218bb48e40e521d270a48b873eba925cd8064b7923aa69345d8f72a19a12f736",
+        ),
+        "2023-08-01": (
+            "example_model_data/ufschem_example/2023_08_01_ufschemv1.nc",
+            "sha256:e2bce72a4eb6a42db312ee0c013aa35b62d4a4858c79750bbaba67fe88eafd6c",
+        ),
+    },
     "aeronet": {
         "2019-09": (
             "example_observation_data/surface/AERONET_L15_20190901_20190930.nc",
@@ -122,7 +140,26 @@ _examples = {
             "sha256:cb078e01937d1fd7e1aea542cdcd3ffa5a78223d2aa339c3179b1834bbd45b0f",
         ),
     },
+    "ish": {
+        "2017-07" : (
+            "example_observation_data/surface/ISH_20170701_20170703.nc",
+            "sha256:beb7d5965728f07959ede6406b670b0b87fb15b99c27dfa561f105d48f81dd65",
+        ),
+    },
+    "ish-lite": {
+        "2017-07" : (
+            "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
+            "sha256:d2f86bbf56fb1049db90cd1fc520d032f988f5f668edf2018ffd34e67ed9c310",
+        ),
+    },
+    "uwy-sonde": {
+        "2023-08-01" : (
+            "example_observation_data/profile/met_sonde_2023080112-72632.csv",
+            "sha256:c5715bb7935c9a3f0a8e8c6ecd40bc8e0098e26f8a3eafbf5fba4fa02cab7424",
+        ),
+    },
 }
+
 """Files to fetch for a certain example, paths relative to the FTP site."""
 
 _examples_flat = {

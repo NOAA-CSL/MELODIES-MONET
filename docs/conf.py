@@ -69,6 +69,8 @@ nb_execution_excludepatterns = [
     "examples/airnow_*.ipynb",
     "examples/camchem.ipynb",
     "examples/*_paired_data.ipynb",
+    "examples/UWyoming*.ipynb",
+    "examples/*ish*.ipynb",
 ]
 nb_execution_show_tb = True
 
@@ -196,18 +198,18 @@ texinfo_documents = [
 # -- Extension configuration -------------------------------------------------
 
 linkcheck_ignore = [
-    # Auth required:
-    "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
-    "https://www2.cisl.ucar.edu/resources/conda-environments",
-    # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    # linkcheck struggles with some DOIs:
     "https://doi.org/10.3390/atmos8110210",
     "https://doi.org/10.1021/acs.est.5c00902",
-    # NCEI sites having problems
+    "https://doi.org/10.1093/pnasnexus/pgad483",
+    # NCEI sites having problems:
     "https://www.ncdc.noaa.gov/crn/",
     "https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database",
-    #PNAS sites having problems:
-    "https://doi.org/10.1093/pnasnexus/pgad483"
+    # RRFS site can be flaky or slow to respond:
+    "https://rapidrefresh.noaa.gov/monet_rrfs_verif/",
+    # AERONET site can be flaky or slow to respond:
+    "https://aeronet.gsfc.nasa.gov/",
 ]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 

@@ -24,7 +24,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     import xarray as xr
     from glob import glob
     import os
-    from .. import tutorial
+    from melodies_monet import tutorial
     
     # Determine where to read files from
     if getattr(analysis,'output_dir_read') is not None:
@@ -207,8 +207,10 @@ def read_aircraft_obs_csv(filename,time_var=None):
     """
     import xarray as xr
     import pandas as pd
+    import numpy as np
     
     df = pd.read_csv(filename)
+    
     if time_var is not None:
         df.rename(columns={time_var:'time'},inplace=True)
         df['time']  = pd.to_datetime(df['time'])
@@ -217,5 +219,12 @@ def read_aircraft_obs_csv(filename,time_var=None):
     df.sort_values(by='time',inplace=True,ignore_index=True)
         
     df.set_index('time',inplace=True)
+
+    # remove white spaces from the columns. Specifically an issue with UWY files
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # place a nan
+    # inplace = true assigns it back to df. 
+    df.replace(r'^\s*$', np.nan, regex=True, inplace=True) 
     
     return xr.Dataset.from_dataframe(df)

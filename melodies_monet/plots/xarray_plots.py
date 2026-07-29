@@ -16,7 +16,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 plt.set_loglevel(level="warning")
 logging.getLogger("PIL").setLevel(logging.WARNING)
@@ -1149,7 +1149,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     dset_copy["time"] = dset_copy["time"] + np.timedelta64(time_offset, "h")
 
     dset_copy = dset_copy.mean(dim=["x", "y"])
-    dset_diurnal_group = dset_copy.groupby("time.hour")
+    dset_diurnal_group = dset_copy[[varname]].groupby("time.hour")
     dset_diurnal = dset_diurnal_group.median()
 
     # Set some defaults
