@@ -17,7 +17,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages

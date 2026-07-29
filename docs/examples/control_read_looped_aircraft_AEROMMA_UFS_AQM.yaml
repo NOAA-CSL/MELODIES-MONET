@@ -144,6 +144,7 @@ plots:
       markersize: 10.
     text_kwargs:  # Opt
       fontsize: 36.
+    ylabel_vert: Altitude (m)
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: ['Los Angeles']  # List of domain names. If domain_type = all, domain_name is used in plot title.
     data: ['aeromma_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
@@ -153,11 +154,44 @@ plots:
       interquartile_style: 'shading' # or 'box'
     #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
     altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
-    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
-    vertprofile_bins: [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000] # meters
-    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
-    vmin: #0  #Optional
-    vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+  
+    vertprofile_bins:
+      range:
+        start: 0
+        stop: 4000
+        step: 500
+        
+    vmin: -1 #0  #Optional
+    vmax: 4001 #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
+  plot_grp2a:
+    type: 'vertprofile'  # plot type
+    fig_kwargs:  # Opt to define figure options
+      figsize: [10, 14]  # figure size
+    default_plot_kwargs:  # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 4.0
+      markersize: 10.
+    text_kwargs:  # Opt
+      fontsize: 36.
+    gridlines: True
+    ylabel_vert: Altitude (m)
+    domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ['Los Angeles']  # List of domain names. If domain_type = all, domain_name is used in plot title.
+    data: ['aeromma_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True  # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
+      interquartile_style: 'box' # or 'shading'
+    #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
+    altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
+  
+    vertprofile_bins:
+      range:
+        start: 0
+        stop: 4000
+        step: 500
+        
+    vmin: -1 #0  #Optional
+    vmax: 4001 #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
   plot_grp3:
     type: 'violin'
     fig_kwargs:
@@ -168,8 +202,22 @@ plots:
     domain_name: ['Los Angeles']
     data: ['aeromma_ufsaqm']
     data_proc:
+      rem_obs_nan: True
+      set_axis: False
+  plot_grp3a:
+    type: 'violin'
+    fig_kwargs:
+      figsize: [10, 8]
+    text_kwargs:
+      fontsize: 24.
+    gridlines: True
+    domain_type: ['all']
+    domain_name: ['Los Angeles']
+    data: ['aeromma_ufsaqm']
+    data_proc:
       rem_obs_nan: True 
-      set_axis: False   
+      set_axis: False
+      set_stat_sig: True
   plot_grp4:
     type: 'scatter_density'
     fig_kwargs:
@@ -233,3 +281,17 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+  plot_grp6a:
+    type: 'boxplot' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 6] # figure size 
+    text_kwargs: #Opt
+      fontsize: 24.
+    gridlines: True
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      set_stat_sig: True

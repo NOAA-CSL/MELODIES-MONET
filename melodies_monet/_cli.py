@@ -145,7 +145,7 @@ def run(
     typer.secho(f"with full path: {p.absolute().as_posix()}", fg=INFO_COLOR)
 
     with _timer("Importing the driver"):
-        from .driver import analysis
+        from melodies_monet.driver import analysis
     
     with _timer("Reading control file and initializing"):
         an = analysis()
@@ -245,7 +245,7 @@ def get_aeronet(
     import numpy as np
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 
@@ -371,7 +371,7 @@ def get_airnow(
     import monetio as mio
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 
@@ -558,7 +558,7 @@ def get_ish_lite(
     import monetio as mio
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 
@@ -774,7 +774,7 @@ def get_ish(
     import monetio as mio
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 
@@ -985,7 +985,7 @@ def get_aqs(
     import monetio as mio
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 
@@ -1279,7 +1279,7 @@ def get_openaq(
     import monetio as mio
     import pandas as pd
 
-    from .util.write_util import write_ncf
+    from melodies_monet.util.write_util import write_ncf
 
     global DEBUG
 

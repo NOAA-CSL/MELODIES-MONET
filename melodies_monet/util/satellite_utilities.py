@@ -6,6 +6,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+import warnings
+import logging
+
+numba_logger = logging.getLogger("numba")
+numba_logger.setLevel(logging.WARNING)
+
 def vertical_regrid(input_press, input_values, output_press):
     '''
     This function uses interp1d to regrid vertical layers in a 3D array
@@ -51,15 +57,12 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     outmod : xarray.Dataset 
         revised model data at local overpass time
     '''
-
-    nst, = opass_tms.shape
-    # nmt, = modobj.time.shape
-    # ny,nx = modobj.longitude.shape
+    from .tools import calc_geolocaltime
     
-    # Determine local time offset
-    local_utc_offset = (modobj['longitude']/15).round().astype('timedelta64[h]')
+    nst, = opass_tms.shape
+
     # initialize local time as variable
-    modobj['localtime'] = modobj['time'] + local_utc_offset
+    modobj['localtime'] = calc_geolocaltime(modobj)
 
     # initialize new model object with satellite datetimes
     outmod = []
@@ -79,7 +82,7 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     outmod['time'] = (['time'],opass_tms)
     
     if partial_col:
-        from .tools import calc_partialcolumn        
+        from melodies_monet.util.tools import calc_partialcolumn        
         outmod[f'{partial_col}_col'] = calc_partialcolumn(outmod,var=partial_col)
         
     return outmod
@@ -299,10 +302,38 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
                                                                             
                                                                             
 
+def calculate_omps_dp(swath_data,model_surface_pressure):
+    ''' Calculates OMPS vertical layer thickness in hPa. Takes into account model surface pressure
+
+    Parameters
+    ----------
+    swath_data : xr.Dataset
+        OMPS data. Must include pressure
+    model_surface_pressure : xr.DataArray
+        surface pressure from model in Pa
+    Returns
+    -------
+    xr.DataArray
+        OMPS vertical layer thickness in hPa
+    
+    '''
+    dp_swath_hPa = xr.full_like(swath_data.apriori,np.nan)
+    
+    down = swath_data.pressure.roll(z=-1)
+    up = swath_data.pressure.roll(z=1)
+    down[-1] = 0
+    
+    dp_swath_hPa[:,:,:] = ((up-swath_data['pressure'])/2+(swath_data['pressure']-down)/2) #.values
+    dp_swath_hPa[0,:,:] = ((swath_data['pressure']-down)[0]/2) + (model_surface_pressure/100.-swath_data['pressure'][0])
+    dp_swath_hPa[-1,:,:] = ((up-swath_data['pressure'])[-1]/2+(swath_data['pressure']-down)[-1]).values
+    
+    return dp_swath_hPa                                                                                  
+
 def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     'Pairs model ozone mixing ratio data with OMPS nm. Applies satellite apriori column to model observations.'
     try:
         import xesmf as xe
+        import stratify
     except ImportError:
         print('satellite_utilities: xesmf module not found')
         raise
@@ -310,96 +341,38 @@ def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
     
     print('pairing with averaging kernel application')
-                     
-    # Grab necessary shape information
-    nf,nz_m,nx_m,ny_m = model_data[ozone_ppbv_varname[0]].shape
-    nx,ny = obs_data.ozone_column.shape
-    ## initialize intermediates for use in calculating column
-    pressure_temp = np.zeros((nz_m,nx,ny))
-    ozone_temp = np.zeros((nz_m,nx,ny))
-    sfc = np.zeros((nx,ny))
-    ## loop over model time steps
-    for f in range(nf):
+
+    paired_ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],np.zeros_like(obs_data.ozone_column.values)),
+                 'ozone_column':(['time','y'],obs_data.ozone_column.values)
+                           },
+                coords={
+                    'longitude':(['time','y'],obs_data['longitude'].values),
+                    'latitude':(['time','y'],obs_data['latitude'].values),
+                    'time':(['time'],obs_data.time.values),
+                })
+    # use model datestamps to loop over
+    ## once omps reader is brought in-line with newer readers, follow similar structure to tropomi with ak application
+    model_dates = model_data['time'].dt.floor("D")
+    obs_dates = obs_data['time'].dt.floor('D')
+    for d,day in enumerate(model_dates):
+        obs_day = obs_data.where( obs_dates == day,drop = True).transpose('z','x','y')
+        if obs_day.sizes['x'] == 0:
+            warnings.warn(f'Observations does not contain data for {day}, skipping.')
+            continue
+        model_day = model_data.isel(time=d)
         
-        tindex = np.where(np.abs(obs_data.time - model_data.time[f]) <= (model_data.time[1]-model_data.time[0]))[0]
-        if len(tindex):
-            # regrid spatially (model lat/lon to satellite swath lat/lon)
-            regridr = xe.Regridder(model_data.isel(time=f),obs_data[['latitude','longitude']].sel(x=tindex),'bilinear')
-            regrid_oz = regridr(model_data[ozone_ppbv_varname[0]][f])
-            regrid_p = regridr(model_data['pres_pa_mid'][f]) # this one should be pressure variable (for the interpolation).
-            sfp = regridr(model_data['surfpres_pa'][f])
-            # fixes for observations before/after model time range.
-            if f == (nf-1):
-                t2 = np.where((obs_data.time[tindex] >= model_data.time[f]))[0]
-                ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
-                pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
-                sfc[t2,:] = sfp[t2,:].values 
-                tind_2 = np.where((obs_data.time[tindex] < model_data.time[f]) & 
-                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
+        # horizontal regridding of model to obs
+        rgd_fn = xe.Regridder(model_day[['latitude','longitude']], obs_day[['latitude','longitude']],method="bilinear", periodic=True)
+        mod_regrid = rgd_fn(model_day)
 
-                ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
-                pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
-                sfc[tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
-            elif f == 0:
-                t2 = np.where((obs_data.time[tindex] <= model_data.time[f]))[0]
-                ozone_temp[:,tindex[t2],:] = regrid_oz[:,t2,:].values
-                pressure_temp[:,tindex[t2],:] = regrid_p[:,t2,:].values
-                sfc[tindex[t2],:] = sfp[t2,:].values 
-                tind_2 = np.where((obs_data.time[tindex] > model_data.time[f]) & 
-                                  (np.abs(obs_data.time[tindex] - model_data.time[f]) <= (model_data.time[1]-model_data.time[0])))[0]
-                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex[tind_2]])/(model_data.time[1]-model_data.time[0]))
-                ozone_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz[:,tind_2,:].values
-                pressure_temp[:,tindex[tind_2],:] += np.expand_dims(tfac1.values,axis=1)*regrid_p[:,tind_2,:].values
-                sfc[tind_2,:] += np.expand_dims(tfac1.values,axis=1)*sfp[tind_2,:].values
-            else:
-                tfac1 = 1-(np.abs(model_data.time[f] - obs_data.time[tindex])/(model_data.time[1]-model_data.time[0]))
-                ozone_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_oz.values
-                pressure_temp[:,tindex,:] += np.expand_dims(tfac1.values,axis=1)*regrid_p.values
-                sfc[tindex,:] += np.expand_dims(tfac1.values,axis=1)*sfp.values
-    # Interpolate model data to satellite pressure levels
-    from wrf import interplevel
-    # note: for interpolation in pressure coordinates to work, z dimension must be such that the smallest 
-    # pressure is on the bottom. With Melodies-Monet model datasets, this requires flipping the z dimension 
-    # as the model readers are set up to ensure the surface is at index 0. 
-    ozone_satp = interplevel(ozone_temp[::-1],pressure_temp[::-1]/100.,obs_data.pressure,missing=np.nan)
-    ozone_satp = ozone_satp.values
-    
-    ozone_satp[np.isnan(ozone_satp)] = 0
-    oz = np.zeros_like(obs_data.ozone_column.values)
-    
-    nl,n1,n2 = ozone_satp.shape
-    
-    # delta pressure calculation for satellite pressure midlevels
-    p = obs_data.pressure.values
-    shift_down = np.roll(p,-1)
-    shift_down[-1] =0
+        # vertical regridding
+        obs_day['dp_hPa'] = calculate_omps_dp(obs_day,mod_regrid['surfpres_pa'])
+        mod_regrid = stratify.interpolate(obs_day.pressure*100,mod_regrid['pres_pa_mid'],mod_regrid[ozone_ppbv_varname[0]].values,axis=0)
+        # partial column calc
+        mod_o3_pcol = mod_regrid*obs_day['dp_hPa']*du_fac
+        # apply ak and calculate total columns
+        mod_o3_totcol = obs_day['apriori'].sum('z') + (obs_day['layer_efficiency'] * (mod_o3_pcol - obs_day['apriori'])).sum('z')
 
-    shift_up = np.roll(p,1)
-    band = (shift_up-p)/2+(p-shift_down)/2
-   
-    band[0] = (p-shift_down)[0]/2
-
-    band[-1] = (shift_up-p)[-1]/2 + (p-shift_down)[-1]
-    for i in range(nl):
-        
-        if i != 0:
-            dp = band[i]
-        else:
-            sfc[sfc == 0] = np.nan
-            dp = np.abs(sfc/100. - obs_data.pressure[i].values) + band[i]
-
-        add = du_fac*dp*ozone_satp[i]
-        eff = obs_data.layer_efficiency[:,:,i].values
-        ap = obs_data.apriori[:,:,i].values
-        oz = oz + ap*(1-eff) + (eff)*(add)
- 
-    ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],oz),
-                     'ozone_column':(['time','y'],obs_data.ozone_column.values)
-                               },
-                    coords={
-                        'longitude':(['time','y'],obs_data['longitude'].values),
-                        'latitude':(['time','y'],obs_data['latitude'].values),
-                        'time':(['time'],obs_data.time.values),
-                    })
-    return ds
+        paired_ds[ozone_ppbv_varname[0]].loc[dict(time=obs_day.time)] = mod_o3_totcol
+  
+    return paired_ds
