@@ -90,6 +90,27 @@ or other interactive Python session,
 as it gives you some visual indication of the progress of multi-file data loading
 and some parts of the processing.
 
+**montage:** This is an optional dictionary. When present, after all plots are
+made the resulting PNGs are tiled into contact sheets, so a run can be reviewed
+in a few images rather than by scrolling through directories. Requires Pillow;
+if it is not installed the step is skipped with a message. This is intended for
+rapid analysis, not for publication-quality output. Options are:
+
+* **plot_dir:** Directory to search for PNGs. Defaults to ``output_dir``.
+* **outdir:** Subdirectory of ``plot_dir`` to write the montages to. Defaults to
+  ``montages``. This must differ from ``plot_dir``; if the two match it is
+  redirected into a ``montages`` subdirectory so that montages are not
+  themselves tiled into further montages.
+* **search:** Glob relative to ``plot_dir``. Use ``'*.png'`` for a flat run
+  (surface, satellite) or ``'*/*.png'`` when plots are written to per-flight
+  subdirectories. Defaults to ``'*/*.png'``.
+* **group_by:** ``plotname`` (default) groups PNGs sharing the
+  ``<group>.<type>.<variable>`` filename stem, which tiles the same plot across
+  subdirectories; ``type`` groups by plot type; ``all`` places every matched PNG
+  on a single sheet.
+* **cols:** Number of columns per sheet. Defaults to 6.
+* **thumb_width:** Pixel width each thumbnail is scaled to. Defaults to 420.
+
 
 Models
 ------
@@ -116,11 +137,30 @@ Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expan
 * gsdchem
 * cesm_fv
 * cesm_se
+* mpas
 * camx
 * raqms
 
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
+
+**scrip_file:** The location of a SCRIP file describing an unstructured mesh.
+Required for ``mod_type: cesm_se`` (CAM-chem-SE, MUSICAv0) unless ``mesh_file``
+is provided instead.
+
+**mesh_file:** The location of a native unstructured mesh or model init file,
+for example an MPAS mesh. This is the alternative to ``scrip_file`` for
+``mod_type: mpas``. One of ``scrip_file`` or ``mesh_file`` must be provided for
+unstructured model output.
+
+Reading an unstructured mesh requires the optional ``uxarray`` dependency
+(``pip install melodies-monet[unstructured]``). Without it, model output is
+still read and the existing SCRIP-based plotting path is used.
+
+**is_track:** This is an optional argument. Set this to ``true`` when the model
+output was written along an observation track (e.g. a flight path) rather than
+on a grid, and so is already one-dimensional in time. Pairing then joins on
+time and no spatial interpolation is done. Defaults to ``false``.
 
 **mod_kwargs**: This is an optional dictionary to include information to 
 provide to the model dataset reader scripts in MONETIO (``monetio/models/*_mm.py``).
@@ -559,6 +599,20 @@ Define the number of distinct colors in the color bar (e.g., 30).
 **pressure_units:** For 'curtain' plot only. Units to use only for the y-axis label. 
 No conversions occur. Current options are only 'hPa' and 'Pa'.
 
+**vert_coord:** For 'curtain' plot only. The vertical coordinate to stratify and
+plot against. Options are 'pressure' (default) and 'altitude'. With 'altitude'
+the model column is converted hypsometrically from pressure and temperature and
+the y-axis is not inverted. If model temperature is unavailable this falls back
+to 'pressure' with a warning.
+
+**altitude_units:** For 'curtain' plot only. Units to use for the y-axis label
+when ``vert_coord`` is 'altitude'. No conversions occur. Defaults to 'm'.
+
+**model_temp_var**, **model_phis_var**, **model_ps_var:** For 'curtain' plot
+only, and only for along-track model output (``is_track: true``). The model
+variable names for temperature, surface geopotential and surface pressure, used
+to build the vertical coordinate. Default to 'T', 'PHIS' and 'PS'.
+
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
@@ -639,6 +693,25 @@ observation label is first and the model label is second
       *  ``***``: 1.00e-04 < p <= 1.00e-03
       * ``****``: p <= 1.00e-04
 
+   * **reduction:** Optional dictionary controlling how a variable is collapsed
+     over time before plotting. Options are:
+
+      * **time_reduction:** 'mean' (default) or 'median'.
+      * **daily_first:** If = True, reduce to daily values before applying
+        ``time_reduction``, so that days contribute equally regardless of how
+        many observations each contains. Defaults to False.
+      * **common_mask:** If = True (default), reduce model and observations over
+        the same set of times, so the two are not averaged over different
+        sampling.
+      * **min_obs:** Minimum number of valid observations required at a location
+        for it to be retained. Defaults to 0.
+      * **hour_range:** Optional ``[start, end]`` hour-of-day pair restricting
+        the reduction to those hours, e.g. ``[12, 16]`` to cover afternoon
+        satellite overpass hours.
+      * **hour_basis:** How ``hour_range`` is interpreted: 'solar' (default,
+        approximated as UTC + longitude/15), 'utc', or 'local'. The solar basis
+        is the meaningful choice when comparing a fixed local-time overpass
+        against model output spanning many longitudes.
    * **wind_barb:** If = True, add wind barbs to the plot. Defaults to False.
    * **wind_barb_step:** Step or stride frequency to plot every nth wind barb to declutter plot. 
      Defaults to 1.
