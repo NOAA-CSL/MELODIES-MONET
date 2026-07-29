@@ -9,14 +9,14 @@ from monet.util.stats import (
     MdnO, MdnP, RM, RMdn, MB, MdnB, NMB, NMdnB, FB, ME, MdnE,NME, NMdnE,
     FE,
     # MNPB, MdnNPB, MNPE, MdnNPE, NMPB, NMdnPB, NMPE, NMdnPE,
-    R2, RMSE,
+    R2, RMSE, MAE, MSE, MAPE, SMAPE,
     d1, E1, IOA, AC,
     # HSS, ETS,
     WDMB, WDMdnB, WDNMB_m, WDME, WDMdnE, WDRMSE, WDIOA, WDAC
 )
 import numpy as np
 import matplotlib.pyplot as plt
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 def produce_stat_dict(stat_list,spaces=False):
     """Select statistics. Only statistics listed in the default dictionary 
@@ -64,10 +64,15 @@ def produce_stat_dict(stat_list,spaces=False):
                       'FE' : 'Fractional Error (%)',
                       'R2' : 'Coefficient of Determination (R2)',
                       'RMSE' : 'Root Mean Square Error',
+                      'MAE' : 'Mean Absolute Error',
+                      'MSE' : 'Mean Squared Error',
+                      'MAPE' : 'Mean Absolute Percentage Error',
+                      'SMAPE' : 'Symmetric Mean Absolute Percentage Error',
                       'd1' : 'Modified Index of Agreement',
                       'E1' : 'Modified Coefficient of Efficiency',
                       'IOA' : 'Index of Agreement',
                       'AC' : 'Anomaly Correlation'}
+    
     stat_fullname_list = []
     for stat_id in stat_list:
         if spaces is False:
@@ -183,6 +188,14 @@ def calc(df,stat=None,obsvar=None,modvar=None,wind=False):
             value = RMSE(obs,mod,axis=None)
     elif stat == 'd1':
         value = d1(obs,mod,axis=None)
+    elif stat == 'MAE':
+        value = MAE(obs, mod, axis = None)
+    elif stat == 'MSE':
+        value = MSE(obs, mod, axis = None)
+    elif stat == 'MAPE':
+        value = MAPE(obs, mod, axis = None)
+    elif stat == 'SMAPE':
+        value = SMAPE(obs, mod, axis = None)
     elif stat == 'E1':
         value = E1(obs,mod,axis=None)
     elif stat == 'IOA':

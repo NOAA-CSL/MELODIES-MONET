@@ -1,0 +1,111 @@
+# Example pairing script that pairs University of Wyoming sonde data with UFS-Chem 
+
+analysis:
+  start_time: '2023-08-01 00:00:00' #UTC
+  end_time: '2023-08-02-00:00:00' #UTC
+  output_dir:  ./output/uwy_ufschem
+  debug: True
+
+model:
+  ufschem: # model label
+    mod_type: 'ufschem'
+    radius_of_influence: 100000 #meters
+
+    extra_calc: # Add more complex calculations and their associated variables here.
+
+    ####### Extra_calc naming example
+    # variable_calculating
+      # variable required for calculation: "variable name in model"
+      
+      dewpoint:
+        specific_hum: "spfh" # string of what it is in the model
+        pres_calc: "pressure_model"
+      rel_hum: 
+        specific_hum: "spfh"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
+      windspeed:
+        u_comp: "ugrd"  
+        v_comp: "vgrd" 
+      winddir: 
+        u_comp: "ugrd" 
+        v_comp: "vgrd"
+      ptemp_mod:
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
+        
+    mapping: #model species name : obs species name
+      uwy: 
+        temperature_k: temperature_C
+        dewpoint: dpt_obs
+        rel_hum: relh_obs
+        windspeed: windspeed_obs
+        winddir: wdir_obs
+        ptemp_mod: ptemp_obs
+        
+    variables:
+        'pres_pa_mid':
+            rename: pressure_model # name to convert this variable to, use 'pressure_model' for aircraft obs
+            unit_scale: 1 #Opt Scaling factor 
+            unit_scale_method: '*' #Opt Multiply = '*' , Add = '+', subtract = '-', divide = '/'
+        
+        'temperature_k':
+            unit_scale: 1 
+            unit_scale_method: '*' 
+            
+        'spfh':
+            unit_scale: 1 # 1000
+            unit_scale_method: '*' 
+            
+    projection: null
+    
+obs:
+  uwy: # obs label
+    obs_type: aircraft
+    time_var: time
+    resample: '2s' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    # for UWY sonde data, shorter resample windows (e.g. 1s) are reccomended.
+    
+    extra_calc:
+      ptemp_obs:
+        temp_calc: "temperature_C"
+        pres_calc: "pressure_obs"
+
+        # NOTE: for extra_calc, default SI units below are reccomended. 
+        
+    variables: #Opt 
+      'pressure_hPa':
+            rename: pressure_obs # name to convert this variable to
+            unit_scale: 100 
+            unit_scale_method: '*'
+            nan_value: -1
+            
+      'temperature_C':
+            unit_scale: 273.15 
+            unit_scale_method: '+' 
+            nan_value: -1
+            
+      'dew point temperature_C':
+          rename: dpt_obs 
+          unit_scale: 273.15 
+          unit_scale_method: '+' 
+          nan_value: -1        
+
+      'relative humidity_%':
+          rename: relh_obs 
+          unit_scale: 1 
+          unit_scale_method: '*'
+          nan_value: -1 
+
+      'wind speed_m/s':
+          rename: windspeed_obs 
+          unit_scale: 1 
+          unit_scale_method: '*' 
+          nan_value: -1 
+
+      'wind direction_degree':
+          rename: wdir_obs 
+          unit_scale: 1 
+          unit_scale_method: '*' 
+          nan_value: -1
+          

@@ -20,10 +20,10 @@ jobs:
       fail-fast: false  # always both
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: docs/environment-docs.yml
           cache-environment: true
@@ -40,10 +40,12 @@ jobs:
       - name: Versions
         run: |
           which python
-          python -m pip list | grep monet
-          micromamba list | grep monet
+          python -m pip list | grep -E 'monet|pandas|xarray'
+          micromamba list | grep -E 'monet|pandas|xarray'
           python -c "import monetio; print('monetio.__version__', getattr(monetio, '__version__', '?'))"
           python -c "import monet;   print('monet.__version__',   getattr(monet, '__version__', '?'))"
+          python -c "import pandas as pd; print('pd.__version__', getattr(pd, '__version__', '?'))"
+          python -c "import xarray as xr; print('xr.__version__', getattr(xr, '__version__', '?'))"
 
       - name: pytest
         run: python -m pytest -v -ra melodies_monet
@@ -95,10 +97,10 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: docs/environment-docs.yml
           cache-environment: true
@@ -124,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check that .py files have the license header
         run: python3 ci/check-for-license-header.py

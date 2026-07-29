@@ -12,7 +12,7 @@
 
 # Location of Natural Earth shapefiles
 # Directory structure: {res}_{cultural,physical} e.g. '110m_physical'
-src_base=/scratch1/RDARCH/rda-arl-gpu/Barry.Baker/emissions/nexus/cartopy_shapefiles
+src_base=/scratch4/BMC/rcm1/qrasool/cartopy_shapefiles ##/scratch1/RDARCH/rda-arl-gpu/Barry.Baker/emissions/nexus/cartopy_shapefiles
 
 # Cartopy user data dir, where cartopy checks for shapefiles by default
 cartopy_data_dir=~/.local/share/cartopy

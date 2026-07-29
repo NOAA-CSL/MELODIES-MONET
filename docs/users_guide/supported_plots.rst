@@ -61,7 +61,12 @@ Surface Evaluation
 .. figure:: /_static/figures/plot_grp7.multi_boxplot.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.png
    :scale: 35 %
 
-   **Multi-BOX-plot** - Like BOX-plot, but including multiple regions.
+   **Multi-BOX-plot** - Like BOX-plot, but bin data into multiple EPA regions.
+
+.. figure:: /_static/figures/plot_grp5.multi_boxplot.t.2017-07-01_00.2017-07-03_00.state.MI.png
+   :scale: 35 %
+
+   **Multi-BOX-plot** - Like BOX-plot, but bin data into intervals based on a provided variable like observed temperature.
 
 .. figure:: /_static/figures/plot_grp6.scorecard.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.png
 
@@ -73,13 +78,24 @@ Surface Evaluation
 
    **Critical Success Index** Plot of the Critical Success Index, as commonly used in Forecast evaluation.
 
+.. figure:: /_static/figures/plot_grp6.scatter_density.temp.2017-07-01_00.2017-07-03_00.state.MI_ish_lite_vs_ufschem_v1.png
+   :scale: 25 %
+
+   **Scatter Density** - Scatter density plot comparing one model results with one
+   observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot.
+
+.. figure:: /_static/figures/plot_grp6.rose_plot.ws.2017-07-01_00.2017-07-03_00.siteid.72539614815.png
+   :scale: 20 %
+
+   **Rose plot** - Wind rose if provide wind speed or polution rose if you provide another variable. In the wind rose plots, calm winds are plotted as an inner circle for wind direction and data is removed for pollution rose plots based on the threshold set in your yaml file.
+
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NCAR/projects/150/>`__ 
 under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Aircraft Evaluation 
 ^^^^^^^^^^^^^^^^^^^
-Timeseries, Taylor, and BOX-plots described above in Surface Evaluation can also be created for aircraft evaluation. 
+Timeseries, Taylor, BOX-plots, and Scatter Density plots described above in Surface Evaluation can also be created for aircraft evaluation. 
 Aircraft specific plots are described below:
 
 .. figure:: /_static/figures/plot_grp1.timeseries.CO_LGR.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
@@ -97,12 +113,6 @@ Aircraft specific plots are described below:
 
    **Violin** - Violin plot comparing one or more model results with one
    observation over the analysis window.
-
-.. figure:: /_static/figures/plot_grp4.scatter_density.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles_aeromma_vs_ufsaqm.png
-   :scale: 25 %
-
-   **Scatter Density** - Scatter density plot comparing one model results with one
-   observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot. 
 
 .. figure:: /_static/figures/plot_grp5.curtain.O3_CL_RYERSON.2019-09-05_12.2019-09-06_00.all.CONUS_firexaq_vs_wrfchem_v4.2.png
 
