@@ -661,11 +661,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         _is_unstruct = uxgrid is not None or any(
             d in mod_field.dims for d in ("n_face", "ncol"))
         if _is_unstruct and uxgrid is None:
-            _gf = vmodel.attrs.get("mio_scrip_file") or vmodel.attrs.get("mio_grid_file")
+            _gf = vmodel.attrs.get("mio_scrip_file") or vmodel.attrs.get("mio_mesh_file")
             if not _gf:
                 raise ValueError(
                     "satplots.make_spatial_overlay: unstructured model but no "
-                    "uxgrid passed and no mio_scrip_file/mio_grid_file attr."
+                    "uxgrid passed and no mio_scrip_file/mio_mesh_file attr."
                 )
     
             uxgrid = ux.open_grid(_gf)
