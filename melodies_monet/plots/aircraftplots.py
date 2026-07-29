@@ -176,6 +176,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
     
 ####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
 def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2): 
@@ -238,7 +240,12 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
 
 
 ###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
-def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, cmax=None, plot_dict=None, outname='plot', domain_type=None, domain_name=None, obs_label_config=None, text_dict=None, debug=False):
+def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, 
+                      mod_var, obs_var, grp_dict, vmin=None, vmax=None, cmin=None, 
+                      cmax=None, plot_dict=None, outname='plot', 
+                      domain_type=None, domain_name=None, obs_label_config=None, 
+                      text_dict=None, debug=False, vert_coord='pressure'):
+    
     """
     Generates a curtain plot comparing model data with obs across altitude (Pressure, right now) over time,
     with the ability to customize the appearance through a configuration dictionary.
@@ -346,9 +353,11 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     
     ##axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold')) #removed explicit y-axis label (made it flexible: see pressure_units via yaml)
-    axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+    if vert_coord != 'altitude':
+        axs[0].invert_yaxis()  # Invert y-axis to have max pressure at the bottom
+        axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom 
+        
     axs[0].tick_params(axis='both', labelsize=text_dict.get('labelsize', 14))
-    axs[1].invert_yaxis()  # Invert y-axis to have max pressure at the bottom (FOR SECOND SUBPLOT)
 
     # Set y-axis limits if vmin and vmax are provided
     if vmin is not None and vmax is not None:
@@ -359,30 +368,40 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     else:
         vmin, vmax = axs[0].get_ylim()
 
-
-
     # Retrieve pressure units from grp_dict or default to 'Pa'
     pressure_units = grp_dict.get('pressure_units', 'Pa')
     
     # Set y-tick labels and y-axis label based on pressure units
-    if pressure_units == 'hPa':
-        y_axis_label = 'Pressure (hPa)'
+    if vert_coord == 'altitude':
+        altitude_units = grp_dict.get('altitude_units', 'm')
+        y_axis_label = (
+            'Meters (m)'
+            if altitude_units == 'm'
+            else f'Altitude ({altitude_units})'
+        )
     else:
-        y_axis_label = 'Pressure (Pa)'
-    
+        pressure_units = grp_dict.get('pressure_units', 'Pa')
+        y_axis_label = (
+            'Pressure (hPa)'
+            if pressure_units == 'hPa'
+            else f'Pressure ({pressure_units})'
+        )
+        
     # Apply y-tick labels and y-axis labels (both subplots)
     axs[0].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
                       fontweight=text_dict.get('fontweight', 'bold'))
     axs[1].set_ylabel(y_axis_label, fontsize=text_dict.get('fontsize', 18),
                       fontweight=text_dict.get('fontweight', 'bold'))
-   
 
     # Set y-axis ticks at specified intervals for axs[0] (first subplot)
     if 'interval' in grp_dict:
         interval = grp_dict['interval']
         print(f"Interval value: {interval}")  # This will print the interval value
-        y_ticks = np.arange(vmin, vmax + interval, interval)
-        y_ticks = y_ticks[y_ticks <= vmax]  # Ensure ticks do not exceed vmax
+
+        # add support for if y-axis is inverted for pressure 
+        lo, hi = sorted([float(vmin), float(vmax)])
+        y_ticks = np.arange(lo, hi + interval, interval)
+        y_ticks = y_ticks[(y_ticks >= lo) & (y_ticks <= hi)]
         print(f"Calculated y_ticks: {y_ticks}")
         axs[0].set_yticks(y_ticks)
         # Format y-tick labels
@@ -422,7 +441,6 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     # Only close the plot if not in debug mode
     if not debug:
         plt.close()
-
 
     #Diagnostic Histogram
     #plt.figure(figsize=(10, 4))
@@ -531,12 +549,22 @@ def make_vertprofile(df, column=None, label=None, ax=None,
             f, ax = plt.subplots(**fig_dict)    
         else: 
             f, ax = plt.subplots(figsize=(10, 6))
-       
+
+        # Drop rows with no altitude (e.g. a flight missing the altitude variable)
+        # so pd.cut doesn't produce NaN bins that break the .mid lookup
+        df = df[df[altitude_variable].notna()]
+        if df.empty:
+            print(
+                f"Warning: make_vertprofile: no valid {altitude_variable!r} values "
+                f"for {label!r}; skipping vertical profile.")
+            return ax
+            
         # Bin the altitude variable and calculate median and interquartiles
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
         
-        # Calculate the midpoints of the altitude bins
-        bin_midpoints = altitude_bins.apply(lambda x: x.mid)
+        # Calculate the midpoints of the altitude bins & guard NaN bins
+        bin_midpoints = altitude_bins.apply(
+            lambda x: x.mid if isinstance(x, pd.Interval) else np.nan)
         
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
@@ -638,9 +666,11 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     # If plot has been created, add to the current axes
     else:
         # This means that an axis handle already exists, so use it to plot the model output
+        df = df[df[altitude_variable].notna()]
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
-        # Calculate the midpoints of the altitude bins
-        bin_midpoints = altitude_bins.apply(lambda x: x.mid)
+        # Calculate the midpoints of the altitude bins and guard NaN bins
+        bin_midpoints = altitude_bins.apply(
+            lambda x: x.mid if isinstance(x, pd.Interval) else np.nan)
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         # can be .groupby(bin_midpoints) as well (qzr)
@@ -907,8 +937,8 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
             raise ImportError(
                 "statannotations is required for set_stat_sig. "
                 "Install with: conda install -c conda-forge statannotations "
-                "or with: pip install statannotations"
-            )
+                "or with: pip install statannotations")
+
         # statistical significance of the means 
         p_values = []
     
