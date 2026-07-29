@@ -656,11 +656,11 @@ def make_spatial_dist(
     )
 
     if is_unstructured and uxgrid is None:
-        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_grid_file")
+        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_mesh_file")
         if not grid_file:
             raise ValueError(
                 "make_spatial_dist: unstructured input but no uxgrid passed "
-                "and no mio_scrip_file/mio_grid_file attr on dset."
+                "and no mio_scrip_file/mio_mesh_file attr on dset."
             )
 
         uxgrid = ux.open_grid(grid_file)
@@ -899,11 +899,11 @@ def make_spatial_bias_gridded(
         d in dset[varname_m].dims for d in ("n_face", "ncol"))
     
     if is_unstructured and uxgrid is None:
-        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_grid_file")
+        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_mesh_file")
         if not grid_file:
             raise ValueError(
                 "make_spatial_bias_gridded: unstructured input but no uxgrid "
-                "passed and no mio_scrip_file/mio_grid_file attr on dset.")
+                "passed and no mio_scrip_file/mio_mesh_file attr on dset.")
 
         uxgrid = ux.open_grid(grid_file)
     if not debug:
