@@ -7,6 +7,11 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
+try:
+    import uxarray as ux
+except ImportError:  # optional dep
+    ux = None
+import cartopy.feature as cfeature
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -18,6 +23,15 @@ from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize
 import math
 from melodies_monet.plots import savefig
+
+# Regulatory calculations live in melodies_monet.util.regulatory_tools.
+# Re-export them here so existing splots.make_*_regulatory(...) call sites resolve.
+from melodies_monet.util.regulatory_tools import (
+    make_24hr_regulatory,
+    calc_24hr_ave_v1,
+    make_8hr_regulatory,
+    calc_8hr_rolling_max_v1,
+)
 
 try:
     from scipy.stats import ttest_ind
@@ -34,57 +48,15 @@ except ImportError:
     windrose = None
     WindroseAxes = None
 
-def make_24hr_regulatory(df, col=None):
-    """Calculates 24-hour averages
-    
-    Parameters
-    ----------
-    df : dataframe
-        Model/obs pair of hourly data
-    col : str
-        Column label of observation variable to apply the calculation 
-    Returns
-    -------
-    dataframe
-        dataframe with applied calculation
-        
-    """
-    #return calc_24hr_ave(df, col)
-    return calc_24hr_ave_v1(df, col)
+# Regulatory calculations
 
-def calc_24hr_ave_v1(df, col=None):
-    df.index = df.time_local
-    # select sites with nobs >=18, 75% completeness
-    df_24hr_ave = (df.groupby("siteid")[col].resample("D").sum(min_count=18, numeric_only=True)/df.groupby("siteid")[col].resample("D").count()).reset_index().dropna()
-    df = df.reset_index(drop=True)
-    return df.merge(df_24hr_ave, on=["siteid", "time_local"])
+    # - make_24hr_regulatory
+    # - calc_24hr_ave_v1
+    # - make_8hr_regulatory
+    # - calc_8hr_rolling_max_v1) 
+    # - get_utcoffset 
 
-def make_8hr_regulatory(df, col=None):
-    """Calculates 8-hour rolling average daily
-    
-    Parameters
-    ----------
-    df : dataframe
-        Model/obs pair of hourly data
-    col : str
-        Column label of observation variable to apply the calculation 
-    Returns
-    -------
-    dataframe
-        dataframe with applied calculation
-        
-    """
-    #return calc_8hr_rolling_max(df, col, window=8)
-    return calc_8hr_rolling_max_v1(df, col, window=8)
-
-def calc_8hr_rolling_max_v1(df, col=None, window=None):
-    df.index = df.time_local
-    df_rolling = df.groupby("siteid")[col].rolling(window,min_periods=6,center=True, win_type="boxcar").mean(numeric_only=True).reset_index().dropna()
-    # JianHe: select sites with nobs >=18, 75% completeness based on EPA
-    df_rolling.index = df_rolling.time_local
-    df_rolling_max = df_rolling.groupby("siteid").resample("D").max(min_count=18, numeric_only=True).reset_index().dropna()
-    df = df.reset_index(drop=True)
-    return df.merge(df_rolling_max, on=["siteid", "time_local"])
+# moved to melodies_monet.util.regulatory_tools.py (https://github.com/NCAR/MELODIES-MONET/issues/175)
 
 def calc_default_colors(p_index):
     """List of default colors, lines, and markers to use if user does not 
@@ -192,7 +164,7 @@ def map_projection(m, *, model_name=None):
             central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
     elif mod in {'ufs'} and m.is_global is True: # added global option for ufs-chem here 
         proj = ccrs.PlateCarree()
-    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms', 'mpas'}:
         proj = ccrs.PlateCarree()
     elif mod == 'random':
         proj = ccrs.PlateCarree()
@@ -266,10 +238,10 @@ def get_utcoffset(lat,lon):
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', u_comp = None, v_comp = None, wind_barb=False,
-                      wind_barb_step=1, wind_barb_kwargs=None,
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False): 
-        
+                      wind_barb_step=1, wind_barb_kwargs=None, uxgrid=None,
+                      domain_type=None, domain_name=None, fig_dict=None,
+                      text_dict=None,debug=False):
+
     """Creates surface spatial bias plot. 
     
     Parameters
@@ -300,10 +272,6 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         Name of v_component in the model to use for wind barbs
     wind_barb : boolean
         Whether to plot wind barbs (True) or not (False)
-    wind_barb_step : integer
-        Step or stride frequency to plot every nth wind_barb to declutter plot
-    wind_barb_kwargs : dictionary
-        Dictionary containing information about wind barbs
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -392,33 +360,39 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
     if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
+        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
     #print(df.columns)
-    
+
     if wind_barb:
         if u_comp is not None and v_comp is not None:
-            #Recalculate mean, so always use mean for windbarbs and not percentiles.
-            df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
-
+            # always use mean for windbarbs (not percentiles)
+            df_mean_wind = df.groupby(['siteid'], as_index=False).mean(numeric_only=True)
             u_mod = df_mean_wind[u_comp]
             v_mod = df_mean_wind[v_comp]
 
             if wind_barb_kwargs is None:
                 wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
-
-            ax.barbs(
-                df_mean_wind["longitude"][::wind_barb_step], # long
-                df_mean_wind["latitude"][::wind_barb_step], # lat
-                u_mod[::wind_barb_step]*1.94384, 
-                v_mod[::wind_barb_step]*1.94384, # u, v
-                transform=ccrs.PlateCarree(),
-                **wind_barb_kwargs,
-            )  # order per matplot lib follows (x, y, u, v)
+            
+            if uxgrid is not None:
+                # unstructured model paired to sites: flatten to 1-D numpy + subsample.
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::wind_barb_step]
+                mu   = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
+            else: 
+                ax.barbs(
+                    df_mean_wind["longitude"][::wind_barb_step], # long
+                    df_mean_wind["latitude"][::wind_barb_step], # lat
+                    u_mod[::wind_barb_step]*1.94384, 
+                    v_mod[::wind_barb_step]*1.94384, # u, v
+                    transform=ccrs.PlateCarree(),
+                    **wind_barb_kwargs,)  # order per matplot lib follows (x, y, u, v)
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
-
+     
     #Update colorbar
     f = plt.gcf()
     model_ax = f.get_axes()[0]
@@ -432,6 +406,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
     
 def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -493,14 +469,13 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+        
+    # plot_dict can arrive as None when a plot group has no 'default_plot_kwargs'
+    if plot_dict is None:
+        plot_dict = {}
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default would use the same dict each time
-        # Modifications would accumulate
-        plot_dict = dict()
     if label is not None:
         plot_dict['label'] = label
     if vmin is not None and vmax is not None:
@@ -511,8 +486,11 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     if ax is None: 
         #First define the colors for the observations.
         obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=1.2, markersize=6.)
-        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-        plot_kwargs = {**obs_dict, **plot_dict}
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
         # create the figure
         if fig_dict is not None:
             f,ax = plt.subplots(**fig_dict)    
@@ -707,6 +685,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
     # Save the scatter density plot for the current pair immediately
     print(f"Saving scatter density plot to {outname}...")
     savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
+    if not plt.isinteractive():
+        plt.close(plt.gcf())
     plt.show()
 
     return ax
@@ -767,14 +747,13 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+    
+    # plot_dict can arrive as None when a plot group has no 'default_plot_kwargs'
+    if plot_dict is None:
+        plot_dict = {}
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default will use the same dict each time
-        # Modifications will accumulate
-        plot_dict = dict()
     if label is not None:
         plot_dict['label'] = label
     if vmin is not None and vmax is not None:
@@ -786,8 +765,11 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
     if ax is None: 
         #First define the colors for the observations.
         obs_dict = dict(color='k', linestyle='-',marker='*', linewidth=1.2, markersize=6.)
-        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-        plot_kwargs = {**obs_dict, **plot_dict}
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
         # create the figure
         if fig_dict is not None:
             f,ax = plt.subplots(**fig_dict)    
@@ -898,11 +880,6 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     if ylabel is None:
         ylabel = column_o
     #Then, if no plot has been created yet, create a plot and plot the first pair.
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default will use the same dict each time
-        # Modifications will accumulate
-        plot_dict = dict()
 
     if dia is None:
         # create the figure
@@ -961,10 +938,10 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot',
-                      u_comp = None, v_comp = None, wind_barb = False,
-                      wind_barb_step=1, wind_barb_kwargs=None,
+                      u_comp = None, v_comp = None, wind_barb = False, wind_barb_step=1, wind_barb_kwargs=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
+                      text_dict=None, uxgrid = None, debug=False, gridlines=False,
+                      reduction_dict=None):
         
     """Creates spatial overlay plot. 
     
@@ -1000,10 +977,6 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         Name of v_component in the model to use for wind barbs
     wind_barb : boolean
         Whether to plot wind barbs (True) or not (False)
-    wind_barb_step : integer
-        Step or stride frequency to plot every nth wind_barb to declutter plot
-    wind_barb_kwargs : dictionary
-        Dictionary containing information about wind barbs
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -1012,6 +985,17 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         Dictionary containing information about figure
     text_dict : dictionary
         Dictionary containing information about text
+    uxgrid: 
+        Specifiy if plotting unstructured grid data
+    reduction_dict : dictionary
+        Time-reduction / diurnal-window controls, same keys as
+        satplots.make_spatial_overlay (time_reduction, daily_first,
+        common_mask, min_obs, hour_range, hour_basis). On the surface path
+        the obs site aggregates and the model time reduction honor them;
+        common_mask/min_obs apply to the site scatter only (the gridded
+        model background is complete, so they have nothing to mask there).
+        NOTE: not well tested on the surface path yet -- a warning prints
+        whenever these are set.
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
@@ -1024,6 +1008,12 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     """
     if debug is False:
         plt.ioff()
+
+    if reduction_dict:
+        print(
+            "Warning: time-reduction / diurnal-window controls on the surface "
+            "overlay have not been well tested. Verify results before use."
+        )
         
     def_map = dict(states=True,figsize=[15, 8])
     if fig_dict is not None:
@@ -1042,11 +1032,64 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     if ylabel is None:
         ylabel = column_o
     
-    #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+    # #Take the mean for each siteid
+    # df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
     
-    #Take the mean over time for the model output
-    vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
+    # #Take the mean over time for the model output
+    # vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
+
+    red = reduction_dict or {}
+    how = str(red.get("time_reduction", "mean")).lower()
+    if how not in ("mean", "median"):
+        print(f"make_spatial_overlay: unknown time_reduction '{how}', using 'mean'.")
+        how = "mean"
+    daily_first = bool(red.get("daily_first", False))
+    common_mask = bool(red.get("common_mask", True))
+    min_obs = int(red.get("min_obs", 0))
+    hour_range = red.get("hour_range")
+    hour_basis = red.get("hour_basis", "solar")
+
+    def _hour_keep(hh, lon):
+        """True where hour-of-day hh (+ basis offset) falls in hour_range."""
+        h0, h1 = float(hour_range[0]), float(hour_range[1])
+        b = str(hour_basis).lower()
+        if b == "utc":
+            lst = hh % 24
+        elif b == "solar":
+            lst = (hh + lon / 15.0) % 24
+        else:
+            lst = (hh + float(hour_basis)) % 24
+        return ((lst >= h0) & (lst < h1)) if h0 <= h1 else ((lst >= h0) | (lst < h1))
+
+    #Reduce the obs to one value per siteid (controlled by reduction_dict)
+    dfx = df
+    if hour_range is not None and "time" in dfx.columns:
+        _hh = dfx["time"].dt.hour + dfx["time"].dt.minute / 60.0
+        dfx = dfx[_hour_keep(_hh, dfx["longitude"])]
+    if common_mask and column_m in dfx.columns:
+        dfx = dfx[dfx[column_o].notna() & dfx[column_m].notna()]
+    _n_valid = dfx.groupby("siteid")[column_o].count()
+    if daily_first and "time" in dfx.columns:
+        dfx = (dfx.assign(_date=dfx["time"].dt.floor("D"))
+                  .groupby(["siteid", "_date"], as_index=False)
+                  .mean(numeric_only=True))
+    if how == "median":
+        df_mean = dfx.groupby(["siteid"], as_index=False).median(numeric_only=True)
+    else:
+        df_mean = dfx.groupby(["siteid"], as_index=False).mean(numeric_only=True)
+    if min_obs > 0:
+        df_mean = df_mean[df_mean["siteid"].map(_n_valid).fillna(0) >= min_obs]
+
+    #Reduce the model output over time (same window/compositing as the obs;
+    #common_mask/min_obs do not apply to the gridded background)
+    _vm = vmodel[column_m]
+    if hour_range is not None and "time" in _vm.dims:
+        _hh = _vm["time"].dt.hour + _vm["time"].dt.minute / 60.0
+        _lon = vmodel["longitude"] if "longitude" in vmodel else 0.0
+        _vm = _vm.where(_hour_keep(_hh, _lon))
+    if daily_first and "time" in _vm.dims:
+        _vm = _vm.resample(time="1D").mean()
+    vmodel_mean = getattr(_vm, how)(dim="time").squeeze()
     
     #Determine the domain
     if domain_type == 'all' and domain_name == 'CONUS':
@@ -1059,10 +1102,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
-        valid_data = vmodel.notnull()
-        lons = vmodel.where(valid_data).longitude
-        lats = vmodel.where(valid_data).latitude
-        latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
+        # valid_data = vmodel.notnull()
+        # lons = vmodel.where(valid_data).longitude
+        # lats = vmodel.where(valid_data).latitude
+        # latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
+        # df should already be subset of requested region. Using vmodel plots the whole model grid with obs overlaid. 
+        latmin = math.floor(min(df.latitude))
+        lonmin = math.floor(min(df.longitude))
+        latmax = math.ceil(max(df.latitude))
+        lonmax = math.ceil(max(df.longitude))
         title_add = domain_name + ': '
     else:
         latmin= math.floor(min(df.latitude))
@@ -1079,7 +1127,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax] 
     if 'crs' not in map_kwargs:
         map_kwargs['crs'] = proj
-
+    
     #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
     #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
     #First determine colorbar, so can use the same for both contourf and scatter
@@ -1096,15 +1144,41 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         
     # For unstructured grid, we need a more advanced plotting code
     # Call an external function (Plot_2D)
-    if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from melodies_monet.plots.Plot_2D import Plot_2D
+    # if vmodel.attrs.get('mio_has_unstructured_grid',False):
+    #     from melodies_monet.plots.Plot_2D import Plot_2D
         
-        fig = plt.figure( figsize=fig_dict['figsize'] )
-        ax = fig.add_subplot(1,1,1,projection=proj)
+    #     fig = plt.figure( figsize=fig_dict['figsize'] )
+    #     ax = fig.add_subplot(1,1,1,projection=proj)
+    
+    if vmodel.attrs.get('mio_has_unstructured_grid', False):
+        # Resolve uxgrid: passed by the driver, or open from scrip attr
+        if uxgrid is None:
+            scrip_file = vmodel.attrs.get('mio_scrip_file', '')
+            if not scrip_file:
+                raise ValueError(
+                    "surfplots.make_spatial_overlay: unstructured model but no "
+                    "uxgrid passed and no mio_scrip_file attr."
+                )
+            uxgrid = ux.open_grid(scrip_file)
+
+        #grid_file = vmodel.attrs.get('mio_grid_file', '')
+        #scrip_file = vmodel.attrs.get('mio_scrip_file', '')
         
-        _ = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
-                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-                       ax=ax, state=fig_dict['states'] )
+        from melodies_monet.plots.uxarray_render import render_unstructured_field
+
+        states = fig_dict.get('states', True)
+        counties = fig_dict.get('counties', False)
+        ax = monet.plots.mapgen.draw_map(
+            crs=proj, extent=[lonmin, lonmax, latmin, latmax],
+            states=states, counties=counties,
+        )
+        render_unstructured_field(
+            ax.axes, vmodel_mean, uxgrid,
+            cmap=cmap, norm=norm, #extent=[lonmin, lonmax, latmin, latmax], # this helps speed up plotting 
+            coast=False, borders=False, states=False, gridlines=False,
+            colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
+        )
+        
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
@@ -1114,30 +1188,42 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         if u_comp is not None and v_comp is not None:
             u_mod = vmodel[u_comp].mean(dim='time').squeeze()
             v_mod = vmodel[v_comp].mean(dim='time').squeeze()
-
+            
             if wind_barb_kwargs is None:
                 wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
-
-            ax.barbs(
-                u_mod["longitude"][::wind_barb_step,::wind_barb_step].values, # long
-                u_mod["latitude"][::wind_barb_step,::wind_barb_step].values, # lat
-                u_mod[::wind_barb_step,::wind_barb_step].values*1.94384, 
-                v_mod[::wind_barb_step,::wind_barb_step].values*1.94384, # u, v
-                transform=ccrs.PlateCarree(),
-                **wind_barb_kwargs,
-            )  # order per matplot lib follows (x, y, u, v)
+            if uxgrid is not None or "n_face" in getattr(u_mod, "dims", ()):
+                # unstructured: flatten to 1-D numpy, then subsample
+                mlon = np.asarray(u_mod["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(u_mod["latitude"].values).ravel()[::wind_barb_step]
+                mu = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
+            else:
+                ax.barbs(
+                    u_mod["longitude"][::wind_barb_step, ::wind_barb_step].values,
+                    u_mod["latitude"][::wind_barb_step, ::wind_barb_step].values,
+                    u_mod[::wind_barb_step, ::wind_barb_step].values*1.94384,
+                    v_mod[::wind_barb_step, ::wind_barb_step].values*1.94384,
+                    transform=ccrs.PlateCarree(),
+                    **wind_barb_kwargs,
+                )
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
     plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
-     
+    
     ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
                     transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
                     cmap=cmap)
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
-    
+
+    if gridlines:
+        gl = ax.axes.gridlines(draw_labels=True, lw=1.0, color="black", alpha=0.5, linestyle=":")
+        gl.top_labels = False
+        gl.right_labels = False
+        
     #Uncomment these lines if you update above just to verify colorbars are identical.
     #Also specify plot above scatter = ax.axes.scatter etc.
     #cbar = ax.figure.get_axes()[1] 
@@ -1158,6 +1244,10 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
+
+    if debug is False:
+        plt.close(plt.gcf())  # long multi-group jobs otherwise accumulate open figures
+            
     return ax
     
 
@@ -1187,18 +1277,16 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
         list of string labels to use in box-plot
 
     """
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default will use the same dict each time
-        # Modifications will accumulate
-        plot_dict = dict()
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = []
         #First define the colors for the observations.
         obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
-        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-        plot_kwargs = {**obs_dict, **plot_dict}
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
     else:
         plot_kwargs = plot_dict
     #For all, a column to the dataframe and append the label info to the list.
@@ -1212,7 +1300,7 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
 
     return comb_bx, label_bx
 
-def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=None, interval_var=None, interval_labels=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
+def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=None, interval_var=None, interval_labels=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None, hour_range=None, hour_basis="solar"): 
     """Combines data into acceptable format for box-plot
     
     Parameters
@@ -1253,24 +1341,28 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     df_reg_epa = pd.DataFrame()
     df_short =  pd.DataFrame()
 
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default will use the same dict each time
-        # Modifications will accumulate
-        plot_dict = dict()
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = [] 
         #First define the colors for the observations.
         obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
-        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-        plot_kwargs = {**obs_dict, **plot_dict}
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
     else:
         plot_kwargs = plot_dict
     #For all, a column to the dataframe and append the label info to the list.
     plot_kwargs['column'] = column
     plot_kwargs['label'] = label
-    
+
+    if hour_range is not None:
+        # hour_range is a satellite-path feature for now.
+        # this feature is mostly for the satellite so someone can compare tempo and tropomi observations to one another 
+        print("calculate_multi_boxplot (surface): hour_range is only applied on "
+              "the satellite path; ignoring it for this ground-obs plot.")
+        
     if region_name is not None and interval_var is not None:
         print("Warning! Region name and interval name were both provided. Defaulted to region_name. Plotting proceeded.")
         
@@ -1284,14 +1376,49 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
         else:
             comb_bx[label] = df[column] 
             region_bx['set_regions']=df[region_name[0]]
-            
+
+    elif interval_var == "dayofweek":
+        # Day-of-week (e.g. weekday vs weekend) grouping. dayofweek is well
+        # defined for BOTH daily regulatory metrics (MDA8 O3 / 24-hr PM2.5)
+
+        # interval_list=[0,5,7], interval_labels=[weekday, weekend].
+        src = df_reg if df_reg is not None else df
+        col = column + "_reg" if df_reg is not None else column
+        comb_bx[label] = src[col]
+
+        # need to generalize this time  
+        # surface pairdf has 'time_local'; satellite pairdf (to_dataframe) has
+        # 'time' (UTC) 
+        # day-of-week shouyld be the same for either since an
+        # afternoon overpass shouldnt crosses the local date boundary
+        _tcol = "time_local" if "time_local" in src.columns else "time"
+        src["interval_labels"] = pd.cut(
+            pd.to_datetime(src[_tcol]).dt.dayofweek,
+            bins=interval_list,
+            labels=interval_labels,
+            include_lowest=True,
+            right=False,
+        )
+        region_bx["set_regions"] = src["interval_labels"]
+        
     elif interval_var is not None: 
         if df_reg is not None:
-            raise NotImplementedError('Interval multi-box plots not available yet for regulatory metrics') 
+            raise NotImplementedError(
+                "Interval multi-box plots (other than 'dayofweek') are not "
+                "available for regulatory metrics: regulatory values are daily "
+                "aggregates, so sub-daily intervals like hour-of-day are undefined."
+            ) 
         else:
-            comb_bx[label] = df[column] 
+            comb_bx[label] = df[column]
+            _ivals = df[interval_var]
+            # Binning a datetime column  with numeric edges
+            # use .dt.hour.
+            # "bins must be of datetime64 dtype".
+            if (pd.api.types.is_datetime64_any_dtype(_ivals)
+                    and all(isinstance(b, (int, float)) for b in interval_list)):
+                _ivals = _ivals.dt.hour
             df['interval_labels'] = pd.cut(
-                df[interval_var], 
+                _ivals, 
                 bins = interval_list,
                 labels=interval_labels,
                 include_lowest=True, 
@@ -1305,8 +1432,9 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     return comb_bx, label_bx,region_bx             
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
-                 domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False):
+                 domain_type=None, domain_name=None, 
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False, showfliers=True,
+                 hline=None):
 
     """Creates box-plot. 
 
@@ -1386,6 +1514,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
                   'whiskerprops': lineprops, 'capprops': lineprops,
                   'fliersize' : 2.0,
+                  'showfliers': showfliers,
                   'flierprops': dict(marker='*',
                                      markerfacecolor='blue',
                                      markeredgecolor='none',
@@ -1403,12 +1532,6 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
 
     if set_stat_sig:
-        if Annotator is None:
-            raise ImportError(
-                "statannotations is required for set_stat_sig. "
-                "Install with: conda install -c conda-forge statannotations "
-                "or with: pip install statannotations"
-            )
         # statistical significance of the means 
         p_values = []
         
@@ -1440,8 +1563,15 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     if vmin is not None and vmax is not None:
         ax.set_ylim(ymin = vmin, ymax = vmax)
 
+    # reference line (e.g. hline: 0 for bias boxplots)
+    if hline is not None:
+        plt.gca().axhline(float(hline), color="k", linestyle="--",
+                          linewidth=1.2, zorder=0)
+        
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if debug is False:
+        plt.close(plt.gcf())
   
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_labels=None,
                        model_name_list=None,ylabel = None, xlabel = None, vmin = None, vmax = None, 
@@ -1601,6 +1731,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if debug is False:
+        plt.close(plt.gcf())
 
 def make_rose_plot(rose_df, 
                    obsvar, # obs windspeed
@@ -1666,12 +1798,7 @@ def make_rose_plot(rose_df,
     plot 
         rose plot  
     """
-    if windrose is None:
-        raise ImportError(
-            "windrose is required for rose_plot. "
-            "Install with: conda install -c conda-forge windrose "
-            "or with: pip install windrose"
-        )
+    
     if debug is False:
         plt.ioff()
     def_text = dict(fontsize=14)
@@ -1681,7 +1808,7 @@ def make_rose_plot(rose_df,
         text_kwargs = def_text
         
     #Plot settings
-    fig = plt.figure(figsize = (8,8))  # Use figdict?
+    fig = plt.figure(figsize = (8,8))
     rect_set1 = [0.3, 0.1, 0.4, 0.8]
     rect_set2 = [0.98, 0.1, 0.4, 0.8]
 
@@ -1771,6 +1898,8 @@ def make_rose_plot(rose_df,
     
     print(f"Saving rose plot to {outname}...")
     savefig(outname + '.png', loc=4, logo_height=150, dpi=300)
+    if debug is False:
+        plt.close(plt.gcf())
     
     plt.show()
     return (ax1, ax2)
@@ -1804,19 +1933,17 @@ def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_na
     """
     region_bx = pd.DataFrame()                   
     msa_bx = pd.DataFrame()                      
-    time_bx = pd.DataFrame()
-    if plot_dict is None:
-        # Ensure plot_dict is a dictionary
-        # Setting a dict as the default will use the same dict each time
-        # Modifications will accumulate
-        plot_dict = dict()
+    time_bx = pd.DataFrame()               
     if comb_bx is None and label_bx is None:
         comb_bx = pd.DataFrame()
         label_bx = []
         #First define the colors for the observations.
         obs_dict = dict(color='gray', linestyle='-',marker='x', linewidth=1.2, markersize=6.)
-        #Whatever is not defined in the yaml file is filled in with the obs_dict here.
-        plot_kwargs = {**obs_dict, **plot_dict}
+        if plot_dict is not None:
+            #Whatever is not defined in the yaml file is filled in with the obs_dict here.
+            plot_kwargs = {**obs_dict, **plot_dict}
+        else:
+            plot_kwargs = obs_dict
     else:
         plot_kwargs = plot_dict
 
@@ -2174,6 +2301,8 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
     #save figure
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if not plt.isinteractive():
+        plt.close(plt.gcf())
 
 
 from monet.util.stats import scores as scores_function
@@ -2268,8 +2397,7 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, column_m=None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
-                                 u_comp = None, v_comp = None, wind_barb=False,
-                                 wind_barb_step=1, wind_barb_kwargs=None,
+                                 u_comp = None, v_comp = None, wind_barb=False, wind_barb_step=1, wind_barb_kwargs=None,
                                  domain_type=None, domain_name=None, fig_dict=None,
                                  text_dict=None,debug=False):
 
@@ -2301,10 +2429,6 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
         Name of v_component in the model to use for wind barbs
     wind_barb : boolean
         Whether to plot wind barbs (True) or not (False)
-    wind_barb_step : integer
-        Step or stride frequency to plot every nth wind_barb to declutter plot
-    wind_barb_kwargs : dictionary
-        Dictionary containing information about wind barbs
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -2393,40 +2517,60 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
             latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
             plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
         else:
-            latmin= math.floor(min(df.latitude))
-            lonmin= math.floor(min(df.longitude))
-            latmax= math.ceil(max(df.latitude))
-            lonmax= math.ceil(max(df.longitude))
+            # latmin= math.floor(min(df.latitude))
+            # lonmin= math.floor(min(df.longitude))
+            # latmax= math.ceil(max(df.latitude))
+            # lonmax= math.ceil(max(df.longitude))
+            
+            # domain selection masks out-of-box rows to NaN (rows are kept, not
+            # dropped), so use pandas .min()/.max() which skip NaN; builtin
+            # min()/max() would return NaN to math.floor(NaN) and crash
+            _lat = df.latitude.dropna()
+            _lon = df.longitude.dropna()
+            if _lat.empty or _lon.empty:
+                print("Warning: no valid lat/lon for " + str(domain_name)
+                      + "; skipping exceedance extent.")
+                latmin, lonmin, latmax, lonmax = 25.0, -130.0, 50.0, -60.0
+            else:
+                latmin= math.floor(_lat.min())
+                lonmin= math.floor(_lon.min())
+                latmax= math.ceil(_lat.max())
+                lonmax= math.ceil(_lon.max())
             plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
         if 'extent' not in map_kwargs:
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
         ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
-        if wind_barb:
-            if u_comp is not None and v_comp is not None and df_wind is not None:
-                #Recalculate mean, so always use mean for windbarbs and not percentiles.
-                #Also use regular dataframe with hourly data and not the regulatory dataframe, 
-                #which only has wind fields in it for midnight local time.
-                df_mean_wind=df_wind.groupby(['siteid'],as_index=False).mean(numeric_only=True)
-            
-                u_mod = df_mean_wind[u_comp]
-                v_mod = df_mean_wind[v_comp]
+    if wind_barb:
+        if u_comp is not None and v_comp is not None and df_wind is not None:
+            # always use mean for windbarbs (not percentiles)
+            df_mean_wind = df_wind.groupby(['siteid'], as_index=False).mean(numeric_only=True)
+            u_mod = df_mean_wind[u_comp]
+            v_mod = df_mean_wind[v_comp]
 
-                if wind_barb_kwargs is None:
-                    wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
+            if wind_barb_kwargs is None:
+                wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
 
+            if uxgrid is not None:
+                # unstructured model paired to sites: flatten to 1-D numpy + subsample.
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::wind_barb_step]
+                mu   = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
+            else:
                 ax.barbs(
-                    df_mean_wind["longitude"][::wind_barb_step], # long
-                    df_mean_wind["latitude"][::wind_barb_step], # lat
-                    u_mod[::wind_barb_step]*1.94384, 
-                    v_mod[::wind_barb_step]*1.94384, # u, v
+                    df_mean_wind["longitude"][::wind_barb_step],
+                    df_mean_wind["latitude"][::wind_barb_step],
+                    u_mod[::wind_barb_step] * 1.94384,
+                    v_mod[::wind_barb_step] * 1.94384,
                     transform=ccrs.PlateCarree(),
                     **wind_barb_kwargs,
-                )  # order per matplot lib follows (x, y, u, v)
-            else:
-                print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
-        
+                )
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            
         #Update colorbar
         f = plt.gcf()
         model_ax = f.get_axes()[0]
@@ -2440,6 +2584,8 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
 
         #plt.tight_layout(pad=0)
         savefig(outname + '_exceedance.png', loc=4, logo_height=120)
+        if not plt.isinteractive():
+            plt.close(plt.gcf())
     else:
         print('No exceedance found!')
 
