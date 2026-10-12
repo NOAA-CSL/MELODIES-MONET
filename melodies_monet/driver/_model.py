@@ -16,6 +16,7 @@ class model:
         """Initialize a :class:`model` object."""
         self.model = None
         self.is_global = False
+        self.is_track = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
