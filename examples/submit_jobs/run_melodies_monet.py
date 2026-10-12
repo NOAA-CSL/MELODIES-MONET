@@ -10,7 +10,7 @@ import os
 import dask
 an = driver.analysis()
 # -- Update the yaml file below
-an.control = '../yaml/control_cmaq-rrfs_surface-all-short_test_jupyter.yaml'
+an.control = '../yaml/control_ufsaqm_airnow_surface-submit.yaml'
 an.read_control()
 # -- Lines below make a copy of the namelist in the plot directory for reference later
 cmd = 'cp ' + an.control + ' ' + an.control_dict['analysis']['output_dir']

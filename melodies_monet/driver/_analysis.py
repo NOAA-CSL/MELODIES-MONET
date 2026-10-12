@@ -1661,7 +1661,7 @@ class analysis:
                                 ):
                                     altitude_yax2 = grp_dict["data_proc"]["altitude_yax2"]
                                     ax = airplots.add_yax2_altitude(
-                                        ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2
+                                        ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2, avg_window = a_w,
                                     )
                                 savefig(outname + ".png", logo_height=150)
 
@@ -1738,8 +1738,8 @@ class analysis:
                             ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
 
                             # Define target pressures for interpolation based on the range of pressure_model
-                            min_pressure = ds_model["pressure_model"].min().compute()
-                            max_pressure = ds_model["pressure_model"].max().compute()
+                            min_pressure = ds_model["pressure_model"].min().compute().item()
+                            max_pressure = ds_model["pressure_model"].max().compute().item()
 
                             # Fetch the interval and num_levels from curtain_config
                             interval = curtain_config.get(

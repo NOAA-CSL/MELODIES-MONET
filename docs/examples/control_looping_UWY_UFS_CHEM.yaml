@@ -63,7 +63,7 @@ obs:
   uwy: # obs label
     obs_type: aircraft
     time_var: time
-    resample: '2s' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 
+    resample: '10s' #'600s' #10 min so works on Hera as a test. Can comment this if submitting a job. 
     # for UWY sonde data, shorter resample windows (e.g. 1s) are reccomended.
     
     extra_calc:

@@ -96,7 +96,8 @@ You can select the resampling time window. For testing purposes you can choose
 Jupyter notebook. This Jupyter notebook 
 ``examples/jupyter_notebooks/AEROMMA_UFS-AQM_Aircraft_Pairing.ipynb``
 pairs `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_ observational data with 
-the UFS-AQM model with a long resampling window of 600 s for testing purposes. This 
+the UFS-AQM model with a 30 s resampling window 
+(and an option to switch to 600 s for testing purposes). This 
 Jupyter notebook calls this YAML file ``examples/yaml/control_aircraft_looping_AEROMMA_UFSAQM.yaml``,
 which describes how to perform the analysis. This supplementary YAML file 
 ``examples/yaml/supplementary_yaml/supplementary_aircraft_looping_file_pairs_AEROMMA_UFSAQM.yaml``,

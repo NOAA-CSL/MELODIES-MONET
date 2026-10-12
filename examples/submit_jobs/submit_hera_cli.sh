@@ -9,8 +9,8 @@
 #SBATCH --account=rcm2
 
 # -- Update to the location of your conda environment
-source /scratch2/BMC/rcm1/rhs/miniconda3/bin/activate mm_dev_cli
+source /scratch4/BMC/rcm1/rhs/miniconda3/bin/activate melodies-monet-test-examples
 
 # -- Run MELODIES MONET through a command line call instead
-cd /scratch2/BMC/rcm1/rhs/MONET/main/wrf-chem/qindan_test/
-melodies-monet run control_wrfchem_cli.yaml
+cd /scratch3/BMC/rcm2/rhs/MM_AEROMMA/test_examples/code2/MELODIES-MONET/examples/yaml/
+melodies-monet run control_ufsaqm_airnow_surface-submit.yaml

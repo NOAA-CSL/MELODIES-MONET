@@ -1,5 +1,7 @@
+# This YAML file has been last tested with MELODIES MONET version 1.1.
+
 analysis:
-  output_dir:  /scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/processed/submit/
+  output_dir: ./output/AEROMMA_submit/
   debug: False
   
 model:
