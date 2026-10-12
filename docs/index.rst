@@ -124,6 +124,7 @@ Table of Contents
    :maxdepth: 4
    :caption: Current Applications
 
+   applications/gallery
    applications/publications
    applications/forecasts
    applications/other_tools
