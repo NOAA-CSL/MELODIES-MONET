@@ -33,11 +33,14 @@ The other datasets can be downloaded in the same way::
     $ melodies-monet get-ish-lite -s 2023-08-01 -e 2023-09-01
     $ melodies-monet get-openaq -s 2023-08-01 -e 2023-09-01
 
-The Command Line Interface will default to compressing the dataset, which can significantly save space. However, this
-compression step also takes time and some users have run into problems. Users can easily turn this compression off 
-by adding ``--no-compress``::
+By default, the Command Line Interface writes the dataset without compression. Adding ``--compress`` packs
+floating-point variables to integers and applies zlib compression, which can significantly save space.
+However, this compression is lossy
+(values are only recovered approximately, including, in certain cases, missing values which are stored as -1),
+it takes time, and some users have run into problems.
+Use it only if file size is a concern::
 
-    $ melodies-monet get-aqs -s 2023-08-01 -e 2023-09-01 --no-compress
+    $ melodies-monet get-aqs -s 2023-08-01 -e 2023-09-01 --compress
 
 There are many other optional features available that are fully described in the Appendix :doc:`/cli`.
 
