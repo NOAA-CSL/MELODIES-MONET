@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
+import warnings
+
 import numpy as np
 from pandas.api.types import is_float_dtype
 
@@ -201,9 +203,19 @@ def compress_variable(da):
         Description of returned object.
 
     """
+    had_nan = da.isnull().any().item()
     da = da.fillna(-1)
     mn, mx = get_min_max(da)
     scale_factor, offset = compute_scale_and_offset(mn, mx, 32, dtype=da.dtype)
+    if had_nan:
+        packed_fill = pack_value(-1, scale_factor, offset, dtype=np.int32)
+        decoded_fill = float(packed_fill) * float(scale_factor) + float(offset)
+        if decoded_fill != -1:
+            warnings.warn(
+                f"Variable {da.name!r}: NaN values filled with -1 will decode as "
+                f"{decoded_fill!r} instead of -1 after compression.",
+                stacklevel=2,
+            )
     da.data = pack_value(da, scale_factor, offset, dtype=np.int32).data
     da.attrs['scale_factor'] = scale_factor.values
     da.attrs['add_offset'] = offset.values
