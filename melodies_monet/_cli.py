@@ -228,7 +228,7 @@ def get_aeronet(
             "if using default output file name)."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
@@ -353,7 +353,7 @@ def get_airnow(
             "if using default output file name)."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
@@ -533,7 +533,7 @@ def get_ish_lite(
             "if using default output file name)."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
@@ -748,7 +748,7 @@ def get_ish(
             "if using default output file name)."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
@@ -961,7 +961,7 @@ def get_aqs(
             "if using default output file name)."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
@@ -1261,7 +1261,7 @@ def get_openaq(
             "Only applicable to the 'api-v3' method."
         )
     ),
-    compress: bool = typer.Option(True, help=(
+    compress: bool = typer.Option(False, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
             "significant space savings."
