@@ -52,14 +52,14 @@ There are many other optional features available that are fully described in the
 
 .. note::
    For users using ISH and ISH-LITE, download times can be significant. Running this command in the CLI is be reccomended 
-   if you are experiencing extended wait times while downloading any dataset. Connection times between MELODIE-MONET and the 
+   if you are experiencing extended wait times while downloading any dataset. Connection times between MELODIES MONET and the
    data server can time out. With this loop, the download can fail, but will automatically try again::
 
-   $ until melodies-monet get-ish-lite -s 2017-07-01 -e 2017-07-03 --no-compress; do     echo "Download failed, retrying in 10 seconds...";     sleep 10; done
+   $ until melodies-monet get-ish-lite -s 2017-07-01 -e 2017-07-03 --no-compress; do echo "Download failed, retrying in 10 seconds..."; sleep 10; done
 
    More generally::
 
-   $ until melodies-monet get-<dataset> -s <start_date> -e <end_date> --no-compress; do     echo "Download failed, retrying in 10 seconds...";     sleep 10; done
+   $ until melodies-monet get-<dataset> -s <start_date> -e <end_date> --no-compress; do echo "Download failed, retrying in 10 seconds..."; sleep 10; done
 
 Aircraft, Sonde, Mobile, and Ground Campaign Data
 -------------------------------------------------
